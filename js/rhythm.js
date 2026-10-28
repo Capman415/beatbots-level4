@@ -12,25 +12,50 @@ R.SUB={w:[0],h:[0],q:[0],e:[0,.5],s:[0,.25,.5,.75],r:[]};
 R.sounds=seq=>{const o=[];let b=0;seq.forEach((k,i)=>{for(const f of R.SUB[k])o.push({b:b+f,i,k,f});b+=R.BEATS[k]});return o};
 R.len=seq=>seq.reduce((a,k)=>a+(R.BEATS[k&&k.k?k.k:k]||0),0);
 // ---------- glyphs (stems up). s = notehead size ----------
-function head(x,y,s,filled){ctx.save();ctx.translate(x,y);ctx.rotate(-.35);ctx.beginPath();ctx.ellipse(0,0,s,s*.72,0,0,7);
-  if(filled){ctx.fill()}else{ctx.lineWidth=s*.34;ctx.stroke()}ctx.restore()}
-R.glyph=(k,x,y,s,col='#19191f')=>{ctx.save();ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineCap='butt';const st=s*3.4,lw=Math.max(2,s*.24);
-  const stem=(hx,hy)=>{ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(hx+s*.86,hy-s*.2);ctx.lineTo(hx+s*.86,hy-st);ctx.stroke()};
-  if(k==='w'){ctx.save();ctx.translate(x,y);ctx.beginPath();ctx.ellipse(0,0,s*1.15,s*.78,0,0,7);ctx.fill();ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.ellipse(0,0,s*.55,s*.42,-.8,0,7);ctx.fill();ctx.restore()}
-  else if(k==='h'){head(x,y,s,false);stem(x,y)}
-  else if(k==='q'){head(x,y,s,true);stem(x,y)}
+function head(x,y,s,filled,g=ctx){g.save();g.translate(x,y);g.rotate(-.35);g.beginPath();g.ellipse(0,0,s,s*.72,0,0,7);
+  if(filled){g.fill()}else{g.lineWidth=s*.34;g.stroke()}g.restore()}
+R.glyph=(k,x,y,s,col='#19191f',g=ctx)=>{g.save();g.fillStyle=col;g.strokeStyle=col;g.lineCap='butt';const st=s*3.4,lw=Math.max(2,s*.24);
+  const stem=(hx,hy)=>{g.lineWidth=lw;g.beginPath();g.moveTo(hx+s*.86,hy-s*.2);g.lineTo(hx+s*.86,hy-st);g.stroke()};
+  if(k==='w'){g.save();g.translate(x,y);g.beginPath();g.ellipse(0,0,s*1.15,s*.78,0,0,7);g.fill();g.globalCompositeOperation='destination-out';g.beginPath();g.ellipse(0,0,s*.55,s*.42,-.8,0,7);g.fill();g.restore()}
+  else if(k==='h'){head(x,y,s,false,g);stem(x,y)}
+  else if(k==='q'){head(x,y,s,true,g);stem(x,y)}
   else if(k==='e'||k==='s'){const n=k==='e'?2:4,gap=k==='e'?s*2.9:s*2.2,x0=x-gap*(n-1)/2;
-    for(let i=0;i<n;i++){head(x0+i*gap,y,s*(k==='s'?.86:1),true);stem(x0+i*gap,y)}
-    const bx0=x0+s*.86-lw/2,bx1=x0+gap*(n-1)+s*.86+lw/2,bh=s*.62;ctx.fillRect(bx0,y-st,bx1-bx0,bh);if(k==='s')ctx.fillRect(bx0,y-st+bh*1.7,bx1-bx0,bh)}
-  else if(k==='r'){ctx.lineWidth=lw*1.2;ctx.lineJoin='round';const u=s*.9,yy=y-s*1.7;ctx.beginPath();ctx.moveTo(x-u*.4,yy-u*1.6);ctx.lineTo(x+u*.5,yy-u*.5);ctx.lineTo(x-u*.3,yy+u*.3);ctx.lineTo(x+u*.5,yy+u*1.2);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(x+u*.5,yy+u*1.2);ctx.quadraticCurveTo(x-u*.7,yy+u*.9,x-u*.1,yy+u*2.1);ctx.stroke()}
-  ctx.restore()};
-// glossy clay tile holding a note (w = width in px, one beat = bw)
-R.tile=(k,x,y,w,h,o={})=>{const c=R.COLS[k],r=Math.min(22,h*.22);ctx.save();ctx.globalAlpha=o.alpha??1;
-  BB.rrect(x+3,y+8,w,h,r,'rgba(0,0,0,.28)');BB.rrect(x,y,w,h,r,BB.lg(y,y+h,c),o.edge||'rgba(25,25,31,.85)',o.lw||4);
-  ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.clip();BB.rrect(x+8,y+5,w-16,h*.32,r*.7,BB.lg(y,y+h*.36,['rgba(255,255,255,.45)','rgba(255,255,255,.04)']));ctx.restore();
-  if(o.glyph!==false)R.glyph(k,x+w/2-(k==='e'||k==='s'?0:h*.05),y+h*.74,h*.12*(o.gs||1),o.gcol||COL.ink);
-  if(o.label){BB.text(R.NAME[k],x+w/2,y+h*.15,Math.min(24,h*.16),'#fff',{stroke:4})}
+    for(let i=0;i<n;i++){head(x0+i*gap,y,s*(k==='s'?.86:1),true,g);stem(x0+i*gap,y)}
+    const bx0=x0+s*.86-lw/2,bx1=x0+gap*(n-1)+s*.86+lw/2,bh=s*.62;g.fillRect(bx0,y-st,bx1-bx0,bh);if(k==='s')g.fillRect(bx0,y-st+bh*1.7,bx1-bx0,bh)}
+  else if(k==='r'){g.lineWidth=lw*1.2;g.lineJoin='round';const u=s*.9,yy=y-s*1.7;g.beginPath();g.moveTo(x-u*.4,yy-u*1.6);g.lineTo(x+u*.5,yy-u*.5);g.lineTo(x-u*.3,yy+u*.3);g.lineTo(x+u*.5,yy+u*1.2);g.stroke();
+    g.beginPath();g.moveTo(x+u*.5,yy+u*1.2);g.quadraticCurveTo(x-u*.7,yy+u*.9,x-u*.1,yy+u*2.1);g.stroke()}
+  g.restore()};
+// ---------- tangible notes: painted, extruded enamel-on-metal note objects (cached sprites) ----------
+// The note glyph itself is the object: dark ink rim, 3D extrusion in the kind's deep colour, enamel face gradient,
+// specular streak, soft contact shadow. Matches the painted v2 props (warm key light from upper left).
+const n3c={};
+function tint(src,fill){const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.drawImage(src,0,0);g.globalCompositeOperation='source-in';g.fillStyle=fill(g,c);g.fillRect(0,0,c.width,c.height);return c}
+R.noteSize=(k,w,h)=>Math.min(h*.2,w/(k==='s'?8.6:k==='e'?6.2:k==='w'?2.9:3.1));
+R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'+(o.gs||1);if(n3c[key])return n3c[key];
+  const s=R.noteSize(k,w,h)*(o.gs||1)*sc,PAD=Math.ceil(s*.9),cw=Math.ceil(w*sc)+PAD*2,ch=Math.ceil(h*sc)+PAD*2;
+  const m=document.createElement('canvas');m.width=cw;m.height=ch;const mg=m.getContext('2d');
+  const gx=cw/2+(k==='e'||k==='s'||k==='w'?0:-s*.4),gy=PAD+h*sc*.86-(k==='w'?h*sc*.3:0);
+  if(k==='w'){mg.save();mg.translate(gx,gy);mg.fillStyle='#000';mg.beginPath();mg.ellipse(0,0,s*1.25,s*.85,0,0,7);mg.fill();mg.globalCompositeOperation='destination-out';mg.beginPath();mg.ellipse(0,0,s*.55,s*.42,-.8,0,7);mg.fill();mg.restore()}
+  else R.glyph(k,gx,gy,s,'#000',mg);
+  const c=R.COLS[k],out=document.createElement('canvas');out.width=cw;out.height=ch;const g=out.getContext('2d');
+  const ink=tint(m,()=>'#141419'),deep=tint(m,()=>c[2]),face=tint(m,(gg)=>{const L=gg.createLinearGradient(0,PAD,0,ch-PAD);L.addColorStop(0,c[0]);L.addColorStop(.55,c[1]);L.addColorStop(1,c[2]);return L});
+  const d=Math.max(2,s*.16);// extrusion depth
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.drawImage(ink,Math.cos(a)*s*.11+d*.6,Math.sin(a)*s*.11+d)}// ink rim around the back
+  for(let i=Math.ceil(d);i>0;i--)g.drawImage(deep,i*.6,i);
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.drawImage(ink,Math.cos(a)*s*.07,Math.sin(a)*s*.07)}
+  g.drawImage(face,0,0);
+  // light: soft top-left bevel highlight + specular streak, clipped to the face
+  const hl=tint(m,(gg)=>{const L=gg.createLinearGradient(0,0,cw*.3,ch);L.addColorStop(0,'rgba(255,255,255,.55)');L.addColorStop(.45,'rgba(255,255,255,0)');return L});
+  g.save();g.globalCompositeOperation='source-atop';g.drawImage(hl,-s*.06,-s*.08);g.restore();
+  const sp=document.createElement('canvas');sp.width=cw;sp.height=ch;const sg=sp.getContext('2d');sg.drawImage(m,0,0);sg.globalCompositeOperation='destination-out';sg.drawImage(m,s*.09,s*.12);
+  const spt=tint(sp,()=>'rgba(255,255,255,.7)');g.drawImage(spt,0,0);
+  return n3c[key]={c:out,sc,PAD,gy:gy/sc}};
+// a note object standing in a w x h box (bottom of box = the surface it rests on)
+R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
+  if(o.shadow!==false){const sw=Math.min(w*.46,R.noteSize(k,w,h)*(k==='s'?4.6:k==='e'?3.4:1.8));const gr=ctx.createRadialGradient(x+w/2,y+h,0,x+w/2,y+h,sw);gr.addColorStop(0,'rgba(0,0,0,.42)');gr.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=gr;ctx.save();ctx.translate(x+w/2,y+h);ctx.scale(1,.22);ctx.translate(-x-w/2,-y-h);ctx.beginPath();ctx.arc(x+w/2,y+h,sw,0,7);ctx.fill();ctx.restore()}
+  if(o.glyph!==false){const sp=R.note3d(k,w,h,o);ctx.drawImage(sp.c,x-sp.PAD/sp.sc,y-sp.PAD/sp.sc,sp.c.width/sp.sc,sp.c.height/sp.sc)}
+  if(o.label){const fs=Math.min(22,h*.17),tw=BB.measure(R.NAME[k],fs)+16;BB.rrect(x+w/2-tw/2,y-fs*.2,tw,fs+10,7,'#fbf6e6','rgba(25,25,31,.8)',2);BB.text(R.NAME[k],x+w/2,y+fs*.3+3,fs,COL.ink)}
   if(o.beats){BB.text(String(R.BEATS[k]),x+w-18,y+h-18,22,'#fff',{stroke:4})}
   ctx.restore()};
 // segmented beat pills: one cell per beat; ti-ti = 2 segments, tika-tika = 4, half/whole stretch over cells

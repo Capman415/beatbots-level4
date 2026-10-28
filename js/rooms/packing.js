@@ -39,7 +39,7 @@ R.crateDraw=(k,x,y,w,h,o={})=>{const im=BB.V2.crate,c=R.COLS[k];ctx.save();ctx.g
   // tinted label + name tag
   const lw=Math.min(w-40,Math.max(70,h*1.1)),lx=x+w/2-lw/2,ly=y+h*.22,lh=h*.62;BB.rrect(lx,ly,lw,lh,10,BB.lg(ly,ly+lh,[c[0],c[1]]),'rgba(25,25,31,.8)',3);
   ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(lx+6,ly+4,lw-12,lh*.22);
-  R.glyph(k,lx+lw/2-(k==='e'||k==='s'?0:4),ly+lh*.83,lh*.12*(k==='s'?.85:1),COL.ink);
+  R.tile(k,lx+4,ly+lh*.06,lw-8,lh*.86,{shadow:false,gs:.95});
   if(o.tag!==false&&w>60){const tw=BB.measure(R.NAME[k],18)+18;BB.rrect(x+12,y-12,tw,28,8,'#fbf6e6',COL.ink,2);BB.text(R.NAME[k],x+12+tw/2,y+3,18,COL.ink)}
   BB.text(String(R.BEATS[k]),x+w-22,y+h-20,24,'#fff',{stroke:4});ctx.restore()};
 class PackingRoom{constructor(o={}){this.o=o}

@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v11.1';
+BB.VERSION='v12';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -80,9 +80,9 @@ BB.glow=(x,y,r,col,a=1)=>{const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addCol
 // ---------- particles + shake ----------
 const parts=[];BB.parts=parts;
 BB.burst=(x,y,n,o={})=>{if(BB.phone){n=Math.ceil(n*(BB.q?.7:.4));if(parts.length>(BB.q?140:70))return}for(let i=0;i<n;i++){const a=(o.a0??0)+(o.spread??Math.PI*2)*Math.random(),sp=(o.speed||400)*(.4+Math.random()*.8);
-  parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(o.up||0),life:o.life||.8,age:0,size:(o.size||10)*(.6+Math.random()*.8),col:o.cols?o.cols[i%o.cols.length]:(o.col||'#ffe066'),g:o.g??900,kind:o.kind||'spark',rot:Math.random()*6})}};
+  parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(o.up||0),life:o.life||.8,age:0,size:(o.size||10)*(.6+Math.random()*.8),col:o.cols?o.cols[i%o.cols.length]:(o.col||'#ffe066'),g:o.g??900,kind:o.kind||'spark',rot:Math.random()*6,w:o.world?1:0})}};
 BB.updParts=dt=>{for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.age+=dt;if(p.age>p.life){parts.splice(i,1);continue}p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=1-dt*(p.kind==='dust'?3:.5);p.rot+=dt*5}};
-BB.drawParts=()=>{for(const p of parts){const k=1-p.age/p.life;ctx.globalAlpha=Math.min(1,k*1.5);ctx.fillStyle=p.col;
+BB.drawParts=(world=0)=>{for(const p of parts){if((p.w||0)!==world)continue;const k=1-p.age/p.life;ctx.globalAlpha=Math.min(1,k*1.5);ctx.fillStyle=p.col;
   if(p.kind==='spark'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.atan2(p.vy,p.vx));ctx.fillRect(-p.size,-p.size*.2,p.size*2,p.size*.4);ctx.restore()}
   else if(p.kind==='star'){BB.star(p.x,p.y,p.size*k+2,p.col,p.rot)}
   else{ctx.beginPath();ctx.arc(p.x,p.y,p.size*(p.kind==='dust'?(1.5-k*.5):k),0,7);ctx.fill()}}ctx.globalAlpha=1};
@@ -134,6 +134,8 @@ BB.isTalking=w=>BB.talking&&BB.talking.who===w&&BB.t<BB.talking.until;
 // ---------- microphone: RMS meter + clap onset detection ----------
 const mic=BB.mic={ok:false,state:'off',rms:0,level:0,peak:0,floor:.005,sens:1,onsets:[],lastOn:-1,tickLevel:0,hold:0};
 const sensSteps=[.5,.7,1,1.4,2,2.8];mic.sensIdx=2;
+try{const v=+localStorage.getItem('bb_sens');if(v>=0&&v<=5&&localStorage.getItem('bb_sens')!==null)mic.sensIdx=v}catch(e){}
+BB.setSens=i=>{mic.sensIdx=Math.max(0,Math.min(5,i));try{localStorage.setItem('bb_sens',mic.sensIdx)}catch(e){}};
 BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic.err='';ac.resume().catch(()=>{});
   return mic.starting=(async()=>{try{
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoSupport'};
@@ -171,9 +173,9 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   const lvl=clamp(Math.sqrt(rms*sens*6),0,1);mic.level=Math.max(lvl,mic.level-dt*1.8);
   const tNow=ac.currentTime-.02;
   if(window.GroupGate){GroupGate.push(tNow,GroupGate.hf(MicCore.buf),dt);GroupGate.sensMul=sens}// group-clap gate log
-  const thr=Math.max(mic.floor*2.5+.004,.008/sens);mic.thr=thr;// same rule as mic-test.html
+  const thr=window.GroupGate?GroupGate.onsetThr(mic.floor,sens):Math.max(mic.floor*2.2+.0015,.003)/sens;mic.thr=thr;// shared rule (group.js)
   const allFreqs=[880,1320];const nt=nonTonalEnergy(allFreqs);
-  if(rms>thr&&rms>mic.prev*1.35&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
+  if(rms>thr&&rms>mic.prev*(window.GroupGate?GroupGate.ONSET_JUMP:1.3)&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
     const chk=selfCheck(tNow);let ok=true;
     if(chk==='hard')ok=false;
     else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.6&&e>nonTonalFloor*6}// clap = mostly broadband energy

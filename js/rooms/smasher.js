@@ -27,13 +27,22 @@ const HAM={x:PL+222*PS,y:PT+286*PS,w:230*PS,h:264*PS},COLLAR=PT+290*PS,ANVIL=PT+
 const KINDS=['h','q','e','s','r'],BX=[95,225,355,485,615],BASE=520;
 const CART={x:250,base:FLOOR};
 const WIN={x:1300,y:170,w:580,h:420},TRAY={x:1300,y:625,w:580,h:190};
-const ORDERS=[
- {seq:['h','q','q'],note:'halves and quarters'},
- {seq:['q','e','e','q'],note:'with ti-ti'},
- {seq:['e','s','q','s'],note:'the first tika-tika!',prank:1},
- {seq:['s','r','e','s'],note:'tika-tika with rests',rest:1},
- {seq:['e','s','s','q'],note:'RUSH ORDER',rush:1,rest:1},
+// Curated order pool, one stage per teaching step. Each play deals one order per stage (never the same set twice in a row),
+// so the room is replayable but always runs: halves/quarters -> ti-ti -> first tika-tika (prank) -> rests -> rush.
+const POOL=[
+ {note:'halves and quarters',seqs:[['h','q','q'],['q','q','h'],['q','h','q'],['h','h']]},
+ {note:'with ti-ti',seqs:[['q','e','e','q'],['e','q','e','q'],['e','e','q','q'],['q','q','e','e'],['h','e','e'],['e','e','h']]},
+ {note:'the first tika-tika!',prank:1,seqs:[['e','s','q','s'],['q','s','e','q'],['s','q','e','q'],['e','q','s','q'],['q','e','s','q']]},
+ {note:'tika-tika with rests',rest:1,seqs:[['s','r','e','s'],['e','r','s','q'],['s','e','r','s'],['q','s','r','e'],['s','q','r','e']]},
+ {note:'RUSH ORDER',rush:1,rest:1,seqs:[['e','s','s','q'],['s','s','e','q'],['e','s','r','e'],['s','e','s','r'],['q','s','e','s']]},
 ];
+const ORDERS=POOL.map(p=>({...p,seq:p.seqs[0]}));// fixed set for ?fixed (and docs)
+function dealOrders(){let last=null;try{last=JSON.parse(localStorage.getItem('bb_sm_last')||'null')}catch(e){}
+  const q=new URLSearchParams(location.search);if(q.has('fixed'))return ORDERS;
+  let seed=q.has('seed')?(+q.get('seed')||1):(Date.now()%2147483646)+1;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+  let pick;for(let n=0;n<6;n++){pick=POOL.map(p=>Math.floor(rnd()*p.seqs.length));if(!last||pick.some((v,i)=>v!==last[i]))break}
+  try{localStorage.setItem('bb_sm_last',JSON.stringify(pick))}catch(e){}
+  return POOL.map((p,i)=>{const o={...p,seq:p.seqs[pick[i]]};delete o.seqs;return o})}
 const SMASH={w:['h','h'],h:['q','q'],q:['e'],e:['s']};
 const howTo={title:'NOTE SMASHER: smash notes to fill the orders!',
   steps:['Tap a basket (or the cart), then TO PRESS.','Clap together (or tap SMASH!) to smash it.','Tap a basket, then TO TRAY to fill the 4 beats.','Ring the bell. Listen, then clap the order back.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
@@ -44,7 +53,7 @@ const howTo={title:'NOTE SMASHER: smash notes to fill the orders!',
     if(f<.3){R.tile(k,-60,-20,120,80,{label:false})}else{const kk=ks[Math.min(4,st+1)];const m=st===0?2:st===1?2:1;for(let i=0;i<m;i++)R.tile(kk,-60+(i-(m-1)/2)*140*Math.min(1,(f-.3)*4),-20,120,80)}
     BB.text(R.NAME[k]+'  \u2192  '+(SMASH[k]?SMASH[k].map(z=>R.NAME[z]).join(' + '):''),0,140,30,'#fff',{stroke:4});ctx.restore()}};
 class SmasherRoom{constructor(o={}){this.o=o}
-  enter(){this.inv={h:0,q:0,e:0,s:0,r:9};this.anvil=null;this.tray=[];this.fly=[];this.crumbs=[];this.sel=null;this.oi=this.o.startAt||0;this.done=0;this.said={};
+  enter(){this.orders=dealOrders();this.inv={h:0,q:0,e:0,s:0,r:9};this.anvil=null;this.tray=[];this.fly=[];this.crumbs=[];this.sel=null;this.oi=this.o.startAt||0;this.done=0;this.said={};
     this.ham=0;this.hamV=null;this.motes=R.motes(26);this.cust={x:2200,k:0};this.lastOverride=-9;this.firstTika=!this.o.startAt||this.o.startAt<3;
     this.state='load';R.loadImgs([['smash_bg','jpg'],['press','png'],['hammer','png'],['customer','png'],['basket','png']]).then(()=>{this.static=this.bake();
       if(this.o.skipIntro||this.o.startAt)this.beginOrder();else this.startIntro()});BB.mic.take()}
@@ -59,7 +68,11 @@ class SmasherRoom{constructor(o={}){this.o=o}
     for(const bx of [80,640]){g.fillStyle='#6c4a2a';g.beginPath();g.moveTo(bx-8,BASE+22);g.lineTo(bx+8,BASE+22);g.lineTo(bx-8,BASE+70);g.closePath();g.fill()}
     if(V.press)g.drawImage(V.press,PL,PT,PW,PH);
     // nameplate text baked onto the press
-    g.font="21px 'Rammetto One'";g.textAlign='center';g.textBaseline='middle';g.fillStyle='#3a3226';g.fillText('SMASH-O-MATIC 4000',PL+388*PS,PT+105*PS);
+    // fitted inside the cream plate (plate spans x 250..428, y 88..138 in press.png), two lines, engraved look
+    {const cx=PL+339*PS,cy=PT+113*PS,pw=(428-250)*PS-14;g.textAlign='center';g.textBaseline='middle';
+     const fit=(txt,px,y,col)=>{g.font=px+"px 'Rammetto One'";const m=g.measureText(txt).width,sx=Math.min(1,pw/m);g.save();g.translate(cx,y);g.scale(sx,1);
+       g.fillStyle='rgba(255,255,255,.55)';g.fillText(txt,0,1.2);g.fillStyle=col;g.fillText(txt,0,0);g.restore()};
+     fit('SMASH-O-MATIC',17,cy-9*PS,'#3a3226');fit('4000',14,cy+12*PS,'#b5482a')}
     // cart of whole notes
     R.shadow(g,CART.x,CART.base,190,.55);if(V.cart)g.drawImage(V.cart,CART.x-190,CART.base-225,380,225);
     return c}
@@ -73,7 +86,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
     if(t>3.6&&!this.said.s2){this.said.s2=1;this.voEnd=BB.t+BB.say('sm_intro')}
     if(t>4.6&&BB.t>(this.voEnd||0)+.2){this.jr=null;this.beginOrder()}}
   skipIntro(){this.jr=null;BB.talking=null;BB.caption=null;this.beginOrder()}
-  beginOrder(){const O=ORDERS[this.oi];this.O=O;this.state='order';this.tray=[];this.cust={x:2200,k:this.oi,in:BB.t};this.mood=null;this.rushT=O.rush?BB.t:null;this.prank=null;this.tries=0;this.cb=null;
+  beginOrder(){const O=this.orders[this.oi];this.O=O;this.state='order';this.tray=[];this.cust={x:2200,k:this.oi,in:BB.t};this.mood=null;this.rushT=O.rush?BB.t:null;this.prank=null;this.tries=0;this.cb=null;
     if(this.oi===0){this.cardT=BB.t;setTimeout(()=>BB.scene===this&&BB.say('sm_how'),2500)}
     else if(O.rush)BB.say('sm_rush');else if(O.rest&&!this.said.rest){this.said.rest=1;BB.say('sm_rest')}else BB.say('sm_order');
     BB.sfx.bleep()}
@@ -130,7 +143,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
     this.fly.push({k:'x',x0,y0:TRAY.y+110,x1:p?p.x:1800,y1:FLOOR-150,t0:BB.t,d:.5,arc:300,end:()=>{BB.sfx.bonk();if(p){p.ph='hit';p.t3=BB.t;BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(p.x,FLOOR-200,12,{col:COL.yellow,kind:'star',size:14,g:300})}}})}
   pause(){BB.paused=true;BB.ac.suspend()}
   resume(){BB.paused=false;BB.ensureMic()}
-  next(){this.done++;this.oi++;this.tray=[];this.cb=null;if(this.oi>=ORDERS.length){this.state='end';this.st=BB.t;BB.say('sm_done');BB.sfx.fanfare();
+  next(){this.done++;this.oi++;this.tray=[];this.cb=null;if(this.oi>=this.orders.length){this.state='end';this.st=BB.t;BB.say('sm_done');BB.sfx.fanfare();
       if(!BB.save.done.includes('smasher')){BB.save.done.push('smasher');localStorage.setItem('bb4',JSON.stringify(BB.save))}}else this.beginOrder()}
   // pointer: drag a basket straight onto the press or the tray (taps are handled by buttons)
   pdown(p){if(this.state!=='order')return false;const k=this.hitBasket(p);if(!k)return false;this.drag={k,x0:p.x,y0:p.y};return true}
@@ -174,7 +187,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
     ctx.translate(sx,sy);
     if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#2a3a38';ctx.fillRect(0,0,W,H)}
     R.lampGlow([[312,170],[520,215],[1393,215],[1628,170]],t);
-    this.drawCartNotes();this.drawBaskets();this.drawPress();this.drawWindow();this.drawTray();
+    this.drawCartNotes();this.drawBaskets();this.drawLifts();this.drawPress();this.drawWindow();this.drawTray();
     if(this.jr)BB.staticJr(this.jr.x,FLOOR-(this.jr.hop||0),130,{run:this.jr.run,glitch:this.jr.hop?.6:0});
     if(this.prank&&this.prank.ph!=='done'){const p=this.prank;BB.staticJr(p.x,FLOOR,130,{run:p.ph==='in'||p.ph==='run'?1:0,dizzy:p.ph==='hit',rot:p.ph==='hit'?Math.sin(t*10)*.15:0,glitch:p.ph==='hit'?.7:0});
       if(p.ph==='wait')R.bubble(p.x,FLOOR-280,'extra static! hee hee')}
@@ -191,11 +204,23 @@ class SmasherRoom{constructor(o={}){this.o=o}
   drawCartNotes(){const t=BB.t;for(let i=0;i<4;i++)BB.wholeNote(CART.x-110+i*72,CART.base-205-Math.abs(Math.sin(t*1.2+i))*4,26,{rot:-.2+i*.15});
     BB.rrect(CART.x-120,CART.base-300,240,52,20,BB.lg(CART.base-300,CART.base-248,['#fbf6e6','#d8d0b8']),'#8a806b',4);BB.text('WHOLE NOTES',CART.x,CART.base-273,28,'#28403c');
     if(this.sel==='w')this.selRing(CART.x,CART.base-120,210)}
+  // per-basket pile slots (stable jitter, so notes don't reshuffle); remembers counts to animate adds and lifts
+  pileFor(k,n){const P=this.piles=this.piles||{},t=BB.t;let p=P[k];if(!p)p=P[k]={items:[]};
+    const SL=[[-14,-64,-.3],[18,-63,.34],[2,-70,-.06],[-24,-60,-.55]];
+    while(p.items.length<n){const j=p.items.length,sl=SL[j%4];p.items.push({x:sl[0],y:sl[1],r:sl[2],add:p.init?t:0})}
+    while(p.items.length>n){const it=p.items.pop();/* the fly-out animation carries the picked note */}
+    p.init=1;return p.items}
+  drawLifts(){const t=BB.t;if(!this.lifts)return;this.lifts=this.lifts.filter(l=>t-l.t<.45);
+    for(const l of this.lifts){const f=(t-l.t)/.45,e=ease.out(f);ctx.save();ctx.translate(l.x,l.y-e*90);ctx.rotate(l.r*(1-e));ctx.globalAlpha=1-f*f;ctx.scale(1+e*.15,1+e*.15);R.tile(l.k,-42,-70,84,62,{gs:.95,shadow:false});ctx.restore()}}
   drawBaskets(){const V=BB.V2,t=BB.t;KINDS.forEach((k,i)=>{if(k==='r'&&!(this.O&&this.O.rest))return;const x=BX[i],n=this.inv[k],pop=this.binPop&&this.binPop.k===k&&t-this.binPop.t<.35?1+.12*Math.sin((t-this.binPop.t)/.35*Math.PI):1;
       ctx.save();ctx.translate(x,BASE);ctx.scale(pop,pop);
-      // pieces peeking out of the basket
-      const show=k==='r'?2:Math.min(n,3);for(let j=0;j<show;j++)R.tile(k,-50+j*10-(show-1)*5,-150+j*6,100,72,{gs:.9});
-      if(V.basket){const h=104,w=V.basket.width*h/V.basket.height;ctx.drawImage(V.basket,-w/2,-h,w,h)}
+      // notes nestled IN the basket: a little pile below the rim, front rim drawn over them; count changes add/lift notes
+      const pile=this.pileFor(k,k==='r'?2:Math.min(n,4));
+      const bh=104,bw=V.basket?V.basket.width*bh/V.basket.height:138;if(V.basket)ctx.drawImage(V.basket,-bw/2,-bh,bw,bh);// back wall + inside
+      {const gr=ctx.createRadialGradient(0,-66,3,0,-66,50);gr.addColorStop(0,'rgba(20,10,4,.6)');gr.addColorStop(1,'rgba(20,10,4,0)');ctx.save();ctx.translate(0,-66);ctx.scale(1,.22);ctx.translate(0,66);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,-66,50,0,7);ctx.fill();ctx.restore()}// contact shadow inside
+      for(const p of pile){const a=p.add?ease.out(clamp((t-p.add)/.3,0,1)):1;if(a<=0)continue;ctx.save();ctx.translate(p.x,p.y-(1-a)*70);ctx.rotate(p.r);ctx.globalAlpha=Math.min(1,a*2);R.tile(k,-50,-84,100,84,{gs:1,shadow:false});ctx.restore()}
+      // front rim + basket front layered over the notes (clip: below the opening's centre line, outside its lower half)
+      if(V.basket){ctx.save();ctx.beginPath();ctx.rect(-bw,-70,bw*2,80);ctx.ellipse(0,-70,55,10,0,0,Math.PI*2);ctx.clip('evenodd');ctx.drawImage(V.basket,-bw/2,-bh,bw,bh);ctx.restore()}
       const lb=k==='r'?'REST':R.NAME[k]+' x'+n;BB.rrect(-56,-14,112,34,10,'rgba(0,0,0,.28)');BB.rrect(-56,-18,112,34,10,BB.lg(-18,16,['#fbf6e6','#d8d0b8']),'#8a806b',3);BB.text(lb,0,0,k==='s'?17:20,'#28403c',{maxW:100});
       ctx.restore();if(this.sel===k)this.selRing(x,BASE-70,90);
       if(this.empty&&this.empty.k===k&&t-this.empty.t<1.4)R.bubble(x,BASE-200,k==='h'?'smash a WHOLE':'smash '+({q:'a HALF',e:'a TA',s:'a TI-TI'}[k]),COL.ink)});

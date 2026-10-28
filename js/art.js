@@ -70,8 +70,8 @@ BB.micMeter=(x,y,o={})=>{const m=BB.mic;BB.rrect(x+2,y+8,330,110,26,'rgba(0,0,0,
     const by=y+22+(9-i)*3,bh=64-(9-i)*3;BB.rrect(bx,by,14,bh,4,c);if(on){ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(bx+2,by+2,4,bh-4)}}
   if(o.band){const bx0=x+95+(o.band==='soft'?0:6*20),bw=(o.band==='soft'?4:4)*20-6;BB.rrect(bx0-3,y+14,bw+6,80,6,null,o.band==='soft'?'#b6f0ff':'#ffd23c',3)}};
 BB.sensButtons=(x,y)=>{const m=BB.mic;
-  BB.button(x,y,90,90,'−',{size:50,id:'sens-',onClick:()=>m.sensIdx=Math.max(0,m.sensIdx-1)});
-  BB.button(x+110,y,90,90,'+',{size:50,id:'sens+',onClick:()=>m.sensIdx=Math.min(5,m.sensIdx+1)})};
+  BB.button(x,y,90,90,'−',{size:50,id:'sens-',onClick:()=>BB.setSens(m.sensIdx-1)});
+  BB.button(x+110,y,90,90,'+',{size:50,id:'sens+',onClick:()=>BB.setSens(m.sensIdx+1)})};
 BB.pauseBtn=(onClick,x=W/2-110,y=24)=>{BB.button(x,y,220,110,'PAUSE',{style:'teal',size:34,id:'pause',onClick,labelDx:24,
   icon:(ix,iy)=>{ix=x+52;ctx.fillStyle=COL.yellow;ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const bx of[ix-14,ix+4]){ctx.fillRect(bx,iy-17,11,34);ctx.strokeRect(bx,iy-17,11,34)}}})};
 BB.overrideBtn=(onClick,o={})=>{const x=W-370,y=H-150;BB.button(x,y,340,125,'MANUAL',{style:'red',size:40,sub:'OVERRIDE',id:'override',onClick,pop:o.pop})};
@@ -95,6 +95,11 @@ BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRec
   BB.rrect(x+950,y+200,490,420,26,'#0b1917',COL.teal2,4);howTo.example(x+950,y+200,490,420,BB.realT());
   BB.text('Say it:',x+120,y+h-170,34,COL.yellow,{align:'left'});
   BB.text(howTo.words,x+240,y+h-170,34,'#fff',{align:'left',maxW:1150});
+  // clap sensitivity (also in MIC SETUP): softer claps count when turned up
+  {const m=BB.mic,sx=x+950,sy=y+762;BB.text('Clap sensitivity',sx+245,sy+18,30,COL.yellow,{stroke:4});
+   BB.button(sx,sy+42,80,80,'−',{size:46,id:'psens-',onClick:()=>BB.setSens(m.sensIdx-1)});
+   for(let i=0;i<6;i++){const on=i<=m.sensIdx;BB.rrect(sx+102+i*50,sy+92-i*8,38,22+i*8,6,on?(i<2?'#6ee678':i<4?'#ffe066':'#ff9c5c'):'#2f4242','rgba(0,0,0,.35)',2)}
+   BB.button(sx+410,sy+42,80,80,'+',{size:46,id:'psens+',onClick:()=>BB.setSens(m.sensIdx+1)})}
   BB.button(W/2-210,y+h-130,420,110,'RESUME',{style:'green',size:56,id:'resume',onClick:onResume})};
 let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)/1000;rl=n;return rt};
 // room title card
