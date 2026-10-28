@@ -113,7 +113,7 @@ class MapScene{constructor(justDone){this.justDone=justDone}
 BB.MapScene=MapScene;BB.MicScene=MicScene;
 // ---- boot ----
 async function boot(){ctx.setTransform(1,0,0,1,0,0);
-  await Promise.all([BB.loadImages(['sprocket','sorter','turtle','rocket','whisper','boom','tinytv']),BB.loadV2(),document.fonts.load("40px 'Rammetto One'"),document.fonts.load("40px 'Lilita One'")]);
+  await Promise.all([BB.loadImages(['sprocket','sorter','turtle','rocket','whisper','boom','tinytv','jr_a']),BB.loadV2(),document.fonts.load("40px 'Rammetto One'"),document.fonts.load("40px 'Lilita One'")]);
   BB.loadVO(BB.VO_LINES||[]);
   const p=new URLSearchParams(location.search);
   const ro={skipIntro:p.has('skip'),startAt:+p.get('at')||0,auto:p.has('auto')};
