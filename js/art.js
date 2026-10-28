@@ -125,3 +125,31 @@ BB.prop=(name,x,base,h,o={})=>{const im=BB.V2[name];if(!im)return;let hh=h;const
   if(o.shadow!==false)BB.contactShadow(x,base,w*.55,o.shadowA??.45);
   ctx.save();ctx.translate(x,base);if(o.rot)ctx.rotate(o.rot);if(o.flip)ctx.scale(-1,1);ctx.globalAlpha=o.alpha??1;ctx.drawImage(src,-w/2,-hh+(o.sink||0),w,hh);ctx.restore();return {x,w,h:hh}};
 })();
+// ---- v12.3 soft/loud clap check: 3-4 soft claps, then 3-4 loud claps -> GroupGate.calLoud (forte vs normal) ----
+BB.VO_LINES=(BB.VO_LINES||[]).concat([
+ ['lc_soft',"Loudness check! Clap softly, like a whisper.",'sprocket'],
+ ['lc_loud',"Now clap loudly! Big, strong claps!",'sprocket'],
+ ['lc_done',"Got it! Now I know soft from loud.",'sprocket'],
+ ['lc_again',"Hmm. Make the loud claps much louder than the soft ones.",'sprocket']]);
+BB.LoudCal=class{constructor(onDone){this.onDone=onDone;this.soft=[];this.loud=[];this.go('soft')}
+  go(ph){this.ph=ph;this.t0=BB.t;this.last=0;BB.mic.take();if(ph==='soft')BB.say('lc_soft');else if(ph==='loud')BB.say('lc_loud')}
+  get busy(){return this.ph!=='gone'}
+  update(){const t=BB.t,G=window.GroupGate;if(this.ph==='gone')return;BB.dynMode=t;// don't teach the normal-clap scale
+    if(this.ph==='soft')BB.softClap=t;
+    const os=BB.mic.take();if(this.ph==='soft'||this.ph==='loud'){const a=this[this.ph];
+      if(t-this.t0>.6)for(const o of os)if(o.rms&&t-this.last>.15&&a.length<4){a.push(o.rms);this.last=t;this.pop=t}
+      const el=t-this.t0;if((a.length>=4&&t-this.last>.5)||el>7){if(this.ph==='soft')this.go('loud');else this.finish()}}
+    else if(this.ph==='done'&&t-this.t0>2.4){this.ph='gone';this.onDone&&this.onDone(this.ok)}}
+  finish(){const G=window.GroupGate,med=a=>{const b=[...a].sort((x,y)=>x-y);return b[b.length>>1]};
+    this.ok=false;if(G&&this.soft.length>=2&&this.loud.length>=2){const s=med(this.soft),l=med(this.loud);if(20*Math.log10(l/s)>4){G.calLoud(s,l);this.ok=G.calOk()}}
+    this.ph='done';this.t0=BB.t;BB.say(this.ok?'lc_done':'lc_again');if(this.ok)BB.sfx.ding()}
+  skip(){if(this.ph==='gone')return;this.ph='gone';this.onDone&&this.onDone(false)}
+  draw(cx,cy){if(this.ph==='gone')return;const t=BB.t,COL=BB.COL,ctx=BB.ctx,pw=760,ph=300,x=cx-pw/2,y=cy-ph/2;
+    BB.panel(x,y,pw,ph,34);BB.text('LOUDNESS CHECK',cx,y+50,40,COL.yellow,{font:'Rammetto One',stroke:6});
+    const soft=this.ph==='soft',done=this.ph==='done';
+    BB.text(done?(this.ok?'Got it! Soft and loud saved.':'Hmm, try louder loud claps next time.'):soft?'Clap SOFTLY  (piano)':'Clap LOUDLY!  (forte)',cx,y+118,done?36:soft?40:50,done?(this.ok?COL.green:'#ff9c8a'):'#fff',{stroke:5,maxW:pw-60});
+    const a=soft?this.soft:this.loud;if(!done)for(let i=0;i<4;i++){const on=i<a.length,px=cx-135+i*90,pop=on&&i===a.length-1&&this.pop?Math.max(0,1-(t-this.pop)/.3):0;
+      ctx.fillStyle=on?(soft?'#9ad8ff':'#ff8a5a'):'rgba(255,255,255,.15)';ctx.beginPath();ctx.arc(px,y+190,(soft?20:30)*(1+pop*.4),0,7);ctx.fill();if(on){ctx.strokeStyle=COL.ink;ctx.lineWidth=3;ctx.stroke()}}
+    else{const sl=this.soft.length,ll=this.loud.length;BB.text(`soft claps: ${sl}   loud claps: ${ll}`,cx,y+190,28,'#cfe',{})}
+    if(!done)BB.button(x+pw-170,y+ph-74,150,56,'Skip',{size:28,id:'lcskip',onClick:()=>this.skip()});
+    BB.text(done?'':soft?'tiny, quiet claps':'big, strong claps',cx-60,y+ph-46,26,'rgba(255,255,255,.7)')}};

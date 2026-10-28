@@ -42,7 +42,7 @@ class TitleScene{enter(){this.t0=BB.t}
     BB.rrect(W/2-560,1018,1120,50,25,'rgba(15,25,24,.7)');BB.text('Best on a big screen. Tap full screen (top right) for the whole board.',W/2,1045,28,'#fff',{stroke:4})}}
 // ---- Mic setup ----
 class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)this.state='on';setTimeout(()=>BB.say('mic'),300)}
-  update(dt){const o=BB.mic.take();if(o.length){this.heard+=o.length;this.flash=BB.t;BB.burst(W/2,560,18,{cols:['#ffe066','#6ee678','#fff'],kind:'star',size:14,g:300})}}
+  update(dt){if(this.lc){this.lc.update();return}const o=BB.mic.take();if(o.length){this.heard+=o.length;this.flash=BB.t;BB.burst(W/2,560,18,{cols:['#ffe066','#6ee678','#fff'],kind:'star',size:14,g:300})}}
   async turnOn(){this.state='asking';const ok=await BB.startMic();
     if(ok){this.state='calib';// measure how loud our own click track is in the mic so it is not mistaken for claps
       // latency calibration: play 4 beeps, measure when the mic hears each one
@@ -56,6 +56,7 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
     times.forEach((x,i)=>setTimeout(()=>this.gIdx=i,(x-BB.ac.currentTime)*1000));
     setTimeout(()=>{const Es=times.map(x=>GroupGate.measure(x+GroupGate.W0,x+GroupGate.W1).E);const c=GroupGate.calibrate(Es);
       this.gRes=Es.filter(e=>e>0).length>=2?'Got it! I know how loud your class is.':'Hmm, I barely heard you. Try again or skip.';BB.mic.onsets=[];this.state='on'},(times[3]+.6-BB.ac.currentTime)*1000)}
+  loudCal(){if(this.state!=='on'||this.lc)return;this.lc=new BB.LoudCal(ok=>{this.lc=null;this.lcRes=ok?'Soft & loud saved!':'';BB.mic.onsets=[]})}
   draw(){menuBg('title_bg',.25);BB.panel(260,120,1400,800,44);
     BB.text('MICROPHONE CHECK',W/2,215,64,'#fff',{font:'Rammetto One',stroke:8});
     BB.contactShadow(450,880,150,.45);BB.sprite('sprocket',450,880,400,{squash:BB.isTalking('sprocket')?Math.sin(BB.t*18)*.015:0});
@@ -77,7 +78,9 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
       const f=this.flash&&BB.t-this.flash<.4;BB.text(this.heard?`Heard ${this.heard} clap${this.heard>1?'s':''}!`:'...',W/2+300,410,40,f?COL.green:COL.yellow);
       BB.micMeter(W/2+130,470);BB.text('Sensitivity',W/2+215,620,28,'#fff');BB.sensButtons(W/2+115,640);
       BB.button(W/2+350,600,330,140,'CONTINUE',{style:'green',size:48,id:'cont',onClick:()=>BB.go(new MapScene())})
-      BB.button(W/2+90,770,560,80,'Class clap check (optional)',{size:32,id:'gcal',onClick:()=>this.groupCal()});if(this.gRes)BB.text(this.gRes,W/2+370,880,26,COL.green,{maxW:620})}
+      BB.button(W/2+90,770,275,80,'Class clap check',{size:28,id:'gcal',onClick:()=>this.groupCal()});BB.button(W/2+375,770,275,80,'Soft / loud check',{size:28,id:'lcal',onClick:()=>this.loudCal()});
+      const rs=[this.gRes,this.lcRes].filter(Boolean).join('  ');if(rs)BB.text(rs,W/2+370,880,24,COL.green,{maxW:620})}
+    if(this.lc){ctx.fillStyle='rgba(10,20,20,.55)';ctx.fillRect(0,0,W,H);this.lc.draw(W/2,H/2-40)}
     BB.captionBox()}}
 // ---- Room map ----
 class MapScene{constructor(justDone){this.justDone=justDone}

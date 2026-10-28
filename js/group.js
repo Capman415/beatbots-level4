@@ -21,9 +21,12 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   dB(r){return 20*Math.log10(Math.max(r,1e-6))},
   // centre = median of recent NORMAL claps (piano/forte rocks don't teach it). Normal claps read ~0.5,
   // +10 dB reads 1.0 (forte needs >= LOUD_MIN), and the soft side spans 30 dB so even whisper claps light the bar.
-  centre(sens){const L=this.loud;if(L.calLo!=null&&L.calHi!=null&&L.calHi-L.calLo>4)return(L.calLo+L.calHi)/2;
+  // v12.3 soft/loud clap check: forte line sits a quarter of the way down from the class's LOUD claps (so a
+  // normal-volume class falls short), piano line sits halfway between soft and loud.
+  centre(sens){const L=this.loud;if(L.calLo!=null&&L.calHi!=null&&L.calHi-L.calLo>4)return L.calHi-this.CAL_F*(L.calHi-L.calLo)-6;
     if(L.peaks.length>=4){const a=[...L.peaks].sort((x,y)=>x-y);return a[a.length>>1]}return-30-20*Math.log10(sens||1)},
   notePeak(rms){const L=this.loud;L.peaks.push(this.dB(rms));if(L.peaks.length>40)L.peaks.shift()},
+  CAL_F:.3,calOk(){const L=this.loud;return L.calLo!=null&&L.calHi!=null&&L.calHi-L.calLo>4},
   calLoud(softRms,loudRms){this.loud.calLo=softRms?this.dB(softRms):null;this.loud.calHi=loudRms?this.dB(loudRms):null},
   lvl(rms,sens){const d=this.dB(rms)-this.centre(sens);return Math.min(1,Math.max(0,d>=0?.5+d/20:.5+d/60))},
   SOFT_BAR:.1,SOFT_MAX:.65,LOUD_MIN:.8,// SOFT_BAR = first green meter segment lit

@@ -125,7 +125,7 @@ class MineRoom{
   // -------- rock flow --------
   beginRock(first){const R=ROCKS[this.rockI];this.R=R;this.stage=0;this.state='drop';this.st=BB.t;this.rockY=-400;this.marks=[0,0,0,0];this.missVO=false;
     const newFloor=first||ROCKS[this.rockI-1]&&ROCKS[this.rockI-1].f!==R.f;
-    if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4)this.startCave();
+    if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4){this.startCave();if(!(BB.debug&&this.o&&this.o.auto))this.lcWant=1}
       this.voEnd=BB.t+9;setTimeout(()=>{if(BB.scene===this)this.voEnd=BB.t+BB.say(FLOORS[R.f].vo)},R.f===4?3000:first?2200:300)}
     else this.voEnd=BB.t+.5;
     if(R.bonus&&!newFloor){this.voEnd=BB.t+.5;BB.caption={txt:'BONUS! Andante + forte: slow and LOUD!',who:'sprocket',until:BB.t+3.5,start:BB.t}}}
@@ -212,7 +212,9 @@ class MineRoom{
     if(this.botWalk!==undefined&&!this.botRoll)this.rollBot(1960,BOT_X,1.4,t);this.botWalk=undefined;
     if(this.botRoll){const r=this.botRoll,k=clamp((t-r.t)/r.dur,0,1);this.botX=lerp(r.from,r.to,ease.inOut(k));r.k=k;if(k>=1)this.botRoll=null}
     if(this.state==='drop'){const k=clamp((t-this.st)/.9,0,1);this.rockY=lerp(-400,0,ease.out(k));if(k>=1&&!this.landed){this.landed=1;BB.sfx.clunk();BB.shake(4)}
-      if(k>=1&&t>this.voEnd){this.landed=0;this.state='count';this.startBeat()}}
+      if(k>=1&&t>this.voEnd&&this.lcWant&&!this.lc){this.lcWant=0;if(BB.mic.ok)this.lc=new BB.LoudCal(()=>{this.lc=null;this.voEnd=BB.t+.3})}
+      if(this.lc)this.lc.update();
+      if(k>=1&&t>this.voEnd&&!this.lc&&!this.lcWant){this.landed=0;this.state='count';this.startBeat()}}
     if(this.beat){this.scheduleTicks();if(this.state==='count'&&this.beatNow()>=3.6)this.state='dig';this.handleOnsets();this.evalMeasures()}
     else BB.mic.take();
     this.updCave();if(this.chipFly&&!this.chipFly.done&&BB.t-this.chipFly.t>1.4){this.chipFly.done=1;this.chip=1;this.chipPop=BB.t;BB.sfx.ding();BB.sfx.chime()}
@@ -266,6 +268,7 @@ class MineRoom{
     if(c.y>GY&&BB.q){ctx.fillStyle='rgba(255,240,200,.35)';for(const d of this.dust){ctx.beginPath();ctx.arc(d.x,d.y,d.s,0,7);ctx.fill()}}
     BB.drawParts();
     if(this.state==='intro')this.drawIntroHUD();else if(this.state!=='end')this.drawHUD();
+    if(this.lc)this.lc.draw(W/2,330);// v12.3 cave-in intro: soft/loud clap check before the piano+allegro rocks
     BB.captionBox();if(this.state!=='intro')this.drawChipFly();
     if(this.R&&BB.t-this.cardT<2.4&&this.state!=='end'){const F=FLOORS[this.R.f];BB.titleCard(this.rockI===0?'ROOM 1: NOTE MINE':F.name,this.rockI===0?'Static Jr. ate the whole notes. Dig them back up!':F.mean,(BB.t-this.cardT)/2.4)}
     if(this.state==='end')this.drawEnd();
@@ -309,6 +312,16 @@ class MineRoom{
     BB.prop('elev',1940,ey+56,336,{shadow:false});
     drawCart(CART_X+10,ey,this.count);
     if(this.botOnLift()){const end=this.state==='end'&&this.botX>SHAFT[1]-10;this.drawBot(end?GY:ey,end?.3+.05*Math.sin(t*3):.2+.1*Math.sin(t*3))}
+    // v12.3: folding cage gate in FRONT of the bot - it closes while he rides, folds open for roll on/off
+    {const on=this.botOnLift()&&Math.abs(this.botX-1940)<36,dtg=Math.min(.05,Math.max(0,t-(this._gT||t)));this._gT=t;this.gate=clamp((this.gate||0)+(on?1:-1)*dtg*3.2,0,1);
+     const g=ease.inOut(this.gate),L=1818,R=2062,yt=ey-142,yb=ey+6,w=22+(R-L-22)*g,x0=R-w,n=Math.max(2,Math.round(2+9*g));
+     ctx.save();ctx.lineCap='round';
+     ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=5;ctx.beginPath();for(let i=0;i<n-1;i++){const xa=x0+w*i/(n-1),xb=x0+w*(i+1)/(n-1);ctx.moveTo(xa+3,yt+12);ctx.lineTo(xb+3,yb-6);ctx.moveTo(xb+3,yt+12);ctx.lineTo(xa+3,yb-6)}ctx.stroke();
+     ctx.strokeStyle='#4a4a50';ctx.lineWidth=4;ctx.beginPath();for(let i=0;i<n-1;i++){const xa=x0+w*i/(n-1),xb=x0+w*(i+1)/(n-1);ctx.moveTo(xa,yt+8);ctx.lineTo(xb,yb-8);ctx.moveTo(xb,yt+8);ctx.lineTo(xa,yb-8)}ctx.stroke();
+     for(let i=0;i<n;i++){const x=x0+w*i/(n-1);ctx.fillStyle=BB.lg(yt,yb,['#7a7a82','#3c3c42']);ctx.fillRect(x-4,yt,8,yb-yt);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(x-3,yt,2,yb-yt)}
+     ctx.fillStyle='#2f2f34';ctx.fillRect(x0-6,yt-4,w+12,9);ctx.fillRect(x0-6,yb-6,w+12,9);
+     if(g>.9){ctx.fillStyle=COL.yellow;ctx.beginPath();ctx.arc(x0+2,(yt+yb)/2,7,0,7);ctx.fill();ctx.strokeStyle='#19191f';ctx.lineWidth=2;ctx.stroke()}
+     ctx.restore()}
     // Static Jr. diving
     if(this.jr.vis&&(this.jr.mode==='dive'))BB.staticJr(this.jr.x,this.jr.y,110,{rot:this.jr.rot,glitch:.6});
     // warehouse floor slab (with the NOTE MINE hatch)

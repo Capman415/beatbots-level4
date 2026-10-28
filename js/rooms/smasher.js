@@ -21,12 +21,13 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['sm_rest',"A rest is one beat of silence. Shh!",'sprocket'],
  ['sm_done',"Five orders served! Room two complete! Next stop, the Packing Station!",'sprocket'],
  ['jr_extra',"Hee hee! Extra static!",'jr'],
+ ['jr_mix',"Hee hee! I mixed up your order! Bet you can't fix it!",'jr'],
 ]);
 const FLOOR=952,PX=960,PH=760,PS=PH/900,PW=673*PS,PL=PX-PW/2,PT=FLOOR-PH;
 const HAM={x:PL+222*PS,y:PT+286*PS,w:230*PS,h:264*PS},COLLAR=PT+290*PS,ANVIL=PT+628*PS,ROD=[PL+290*PS,PL+395*PS];
 const KINDS=['h','q','e','s','r'],BX=[95,225,355,485,615],BASE=520;
 const CART={x:250,base:FLOOR};
-const WIN={x:1300,y:170,w:580,h:420},TRAY={x:1300,y:625,w:580,h:190};
+const JRX=1228;const WIN={x:1300,y:170,w:580,h:420},TRAY={x:1300,y:625,w:580,h:190};
 // Curated order pool, one stage per teaching step. Each play deals one order per stage (never the same set twice in a row),
 // so the room is replayable but always runs: halves/quarters -> ti-ti -> first tika-tika (prank) -> rests -> rush.
 const POOL=[
@@ -151,7 +152,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
     else if(this.state==='order'&&this.anvil)this.smash();}
   // v12.2 prank: once the class has built the order right, Static Jr. zaps the tray and SCRAMBLES the beats.
   // The class compares with the ticket and taps two notes to swap them; when it matches again he gets bonked and runs.
-  startPrank(){this.prank={t:BB.t,x:2050,ph:'in'};BB.sfx.glitch();BB.say('jr_extra',{overlap:true})}
+  startPrank(){this.prank={t:BB.t,x:JRX,ph:'in'};BB.sfx.glitch();BB.say('jr_mix',{overlap:true})}
   scramble(){const want=this.O.seq.join();let a=this.tray.slice();for(let n=0;n<20;n++){a=this.tray.slice().sort(()=>Math.random()-.5);if(a.map(x=>x.k).join()!==want)break}
     this.tray=a;this.zapT=BB.t;this.swapSel=null;BB.sfx.zap();BB.shake(4);BB.burst(TRAY.x+TRAY.w/2,TRAY.y+110,30,{cols:['#b07cff','#5ac8fa','#fff'],kind:'star',size:10,speed:700,g:200})}
   scrambled(){return !!(this.prank&&this.prank.ph==='wait')}
@@ -160,8 +161,9 @@ class SmasherRoom{constructor(o={}){this.o=o}
   checkFixed(){if(this.tray.map(x=>x.k).join()!==this.O.seq.join())return;const p=this.prank;BB.sfx.ding();
     this.fly.push({k:'x',x0:TRAY.x+TRAY.w/2,y0:TRAY.y+110,x1:p.x,y1:FLOOR-150,t0:BB.t,d:.5,arc:300,end:()=>{BB.sfx.bonk();p.ph='hit';p.t3=BB.t;BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(p.x,FLOOR-200,12,{col:COL.yellow,kind:'star',size:14,g:300})}});p.ph='fixed'}
   updPrank(dt){const p=this.prank,t=BB.t-p.t;
-    if(p.ph==='in'){p.x=lerp(2050,1700,ease.out(clamp(t/1,0,1)));if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
-    if(p.ph==='wait'){p.x=1700+Math.sin(BB.t*6)*10;if(BB.t-p.t2>25)this.fixOrder()}// safety: never stall the room
+    if(p.ph==='in'){p.x=JRX;// v12.3: glitches in beside the tray (no overlap with the order boxes)
+if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
+    if(p.ph==='wait'){p.x=JRX+Math.sin(BB.t*6)*6;if(BB.t-p.t2>25)this.fixOrder()}// safety: never stall the room
     if(p.ph==='hit'){if(BB.t-p.t3>1.5)p.ph='run'}
     if(p.ph==='run'){p.x+=dt*1100;if(p.x>2200)p.ph='done'}}
   fixOrder(){const pool=this.tray.slice(),out=[];for(const k of this.O.seq){const i=pool.findIndex(x=>x.k===k);out.push(pool.splice(i,1)[0])}this.tray=out;this.swapSel=null;this.checkFixed()}
@@ -215,8 +217,8 @@ class SmasherRoom{constructor(o={}){this.o=o}
     R.lampGlow([[312,170],[520,215],[1393,215],[1628,170]],t);
     this.drawCartNotes();this.drawBaskets();this.drawLifts();this.drawPress();this.drawWindow();this.drawTray();
     if(this.jr)BB.staticJr(this.jr.x,FLOOR-(this.jr.hop||0),130,{run:this.jr.run,glitch:this.jr.hop?.6:0});
-    if(this.prank&&this.prank.ph!=='done'){const p=this.prank;BB.staticJr(p.x,FLOOR,130,{run:p.ph==='in'||p.ph==='run'?1:0,dizzy:p.ph==='hit',rot:p.ph==='hit'?Math.sin(t*10)*.15:0,glitch:p.ph==='hit'?.7:0});
-      if(p.ph==='wait')R.bubble(p.x,FLOOR-280,'extra static! hee hee')}
+    if(this.prank&&this.prank.ph!=='done'){const p=this.prank;const gi=p.ph==='in'?1-clamp((t-p.t)/1,0,1):0;BB.staticJr(p.x,FLOOR,90,{run:p.ph==='run'?1:0,dizzy:p.ph==='hit',rot:p.ph==='hit'?Math.sin(t*10)*.15:0,glitch:p.ph==='hit'?.7:gi});
+      if(p.ph==='wait')R.bubble(p.x-60,FLOOR-210,'I mixed it up! hee hee')}
     for(const f of this.fly)this.drawFly(f);
     if(this.drag&&Math.hypot(BB.ptr.x-this.drag.x0,BB.ptr.y-this.drag.y0)>30&&(this.drag.k==='w'||this.inv[this.drag.k])){ctx.save();ctx.globalAlpha=.9;R.tile(this.drag.k,BB.ptr.x-60,BB.ptr.y-42,120,84,{label:true});ctx.restore()}
     for(const c of this.crumbs){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.r);ctx.fillStyle=c.c;ctx.strokeStyle=COL.ink;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-c.s,0);ctx.lineTo(0,-c.s*.7);ctx.lineTo(c.s,c.s*.3);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}

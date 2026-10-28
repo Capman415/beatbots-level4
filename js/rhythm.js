@@ -62,7 +62,7 @@ R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
   if(o.beats){BB.text(String(R.BEATS[k]),x+w-18,y+h-18,22,'#fff',{stroke:4})}
   ctx.restore()};
 // segmented beat pills: one cell per beat; ti-ti = 2 segments, tika-tika = 4, half/whole stretch over cells
-R.pills=(cx,y,seq,st={})=>{const bw=st.bw||150,gap=st.gap||24,ph=50,tot=4*bw+3*gap;BB.rrect(cx-tot/2-28,y-40,tot+56,100,30,'rgba(0,0,0,.25)');BB.well(cx-tot/2-30,y-50,tot+60,100,30);
+R.pills=(cx,y,seq,st={})=>{const L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0)),gap=st.gap||(L>4?14:24),bw=st.bw||(L>4?Math.floor((672-(L-1)*gap)/L):150),ph=50,tot=L*bw+(L-1)*gap;BB.rrect(cx-tot/2-28,y-40,tot+56,100,30,'rgba(0,0,0,.25)');BB.well(cx-tot/2-30,y-50,tot+60,100,30);
   let b=0,si=0;seq.forEach((k,i)=>{const n=R.BEATS[k],x=cx-tot/2+b*(bw+gap),w=n*bw+(n-1)*gap,subs=R.SUB[k];
     if(k==='r'){BB.rrect(x,y-ph/2,w,ph,14,'#1b2a29','rgba(235,245,240,.4)',3);R.glyph('r',x+w/2,y+ph*.62,9,'rgba(235,245,240,.7)')}
     else{const sg=subs.length===1?[[0,1]]:subs.map((f,j)=>[f,f+1/subs.length]);const sgap=k==='s'?6:8;
@@ -95,35 +95,35 @@ Object.assign(BB.sfx,{
 });
 // ---------- clap-back: "my turn" (the machine plays it) then "your turn" (the class claps it) ----------
 // seq = 4-beat rhythm. Measure 0 plays it with the click; measure 1 the class claps. Group-gated on the beat-start sounds.
-class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60/this.bpm;this.snd=R.sounds(seq);this.n=this.snd.length;
+class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60/this.bpm;this.snd=R.sounds(seq);this.n=this.snd.length;this.L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0));// beats in the pattern (4, 6 or 8)
     this.t0=ac.currentTime+.35;this.next=0;this.lit=new Array(this.n).fill(0);this.marks=new Array(this.n).fill(0);this.got=new Array(this.n).fill(0);this.pend=[];this.done=false;this.onDone=o.onDone;this.voice=o.voice||(()=>{});this.cnt=o.countIn!==false;
     this.base=this.cnt?4:0;// optional count-in measure
     BB.mic.take();}
   beatNow(){return(ac.currentTime-this.t0)/this.spb}
-  phase(){const b=this.beatNow()-this.base;return b<0?'count':b<4?'listen':b<8?'ready':b<12?'clap':'end'}// v12.2: 4-beat count-in between listen and clap
+  phase(){const b=this.beatNow()-this.base;return b<0?'count':b<this.L?'listen':b<this.L+4?'ready':b<2*this.L+4?'clap':'end'}// v12.2: 4-beat count-in between listen and clap
   update(dt){const ahead=ac.currentTime+.12,spb=this.spb,T0=this.t0+this.base*spb;
-    while(this.t0+this.next*spb<ahead&&this.next<this.base+12){const t=this.t0+this.next*spb,rd=this.next>=this.base+4&&this.next<this.base+8;BB.sfx.tick(t,this.next%4===0||rd,rd?1:.8);this.next++}
+    while(this.t0+this.next*spb<ahead&&this.next<this.base+2*this.L+4){const t=this.t0+this.next*spb,rd=this.next>=this.base+this.L&&this.next<this.base+this.L+4;BB.sfx.tick(t,this.next%4===0||rd,rd?1:.8);this.next++}
     // machine plays the rhythm in measure "listen"
     if(!this.sched){this.sched=1;this.snd.forEach((s,i)=>{const t=T0+s.b*spb;BB.sfx.block(t);setTimeout(()=>{this.lit[i]=1;this.voice(s)},Math.max(0,(t-ac.currentTime)*1000))});
-      if(BB.debug)this.snd.forEach((s,i)=>{if(Math.random()<.93){const t=T0+(8+s.b)*spb+(Math.random()-.5)*.05;setTimeout(()=>BB.simClap(t,.7),Math.max(0,(t-ac.currentTime)*1000+30))}})}
+      if(BB.debug)this.snd.forEach((s,i)=>{if(Math.random()<.93){const t=T0+(this.L+4+s.b)*spb+(Math.random()-.5)*.05;setTimeout(()=>BB.simClap(t,.7),Math.max(0,(t-ac.currentTime)*1000+30))}})}
     for(let i=0;i<this.n;i++){this.lit[i]=Math.max(0,this.lit[i]-dt*2.5);if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5)}
-    const ons=BB.mic.take(),C=T0+8*spb;const G=window.GroupGate,gated=BB.mic.ok&&G&&!BB.debug;
+    const ons=BB.mic.take(),C=T0+(this.L+4)*spb;const G=window.GroupGate,gated=BB.mic.ok&&G&&!BB.debug;
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;let best=-1,bd=1;
       for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),tol=Math.min(.13,gapB*spb*.48),d=Math.abs(o.t-te);if(d<tol&&d<bd){bd=d;best=i}}
       if(best<0){if(gated&&o.t>C)G.stray(o.t);continue}
       const s=this.snd[best];if(gated&&!o.sim&&s.f===0){this.got[best]=2;this.pend.push(best)}else this.hit(best)}
     if(gated)this.pend=this.pend.filter(i=>{const te=C+this.snd[i].b*spb;if(ac.currentTime-.02<te+G.W1+.02)return true;const m=G.judge(te);if(m.ok)this.hit(i);else{this.got[i]=0;this.few=BB.t}return false});
-    if(!this.done&&ac.currentTime>C+4*spb+.25){this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;this.score=sc;this.onDone&&this.onDone(sc)}}
+    if(!this.done&&ac.currentTime>C+this.L*spb+.25){this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;this.score=sc;this.onDone&&this.onDone(sc)}}
   hit(i){this.got[i]=1;this.marks[i]=.01;BB.sfx.tink(undefined,.6)}
   override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}
-  cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-8;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
+  cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-this.L-4;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
   draw(cx,y){const ph=this.phase();R.pills(cx,y,this.seq,{lit:this.lit,marks:this.marks,cur:this.cursor(),words:true});
     const bn=this.beatNow();let msg='';
     if(ph==='count'){const n=4-Math.floor(bn);msg=n>0?'Listen... '+n:'';}
-    else if(ph==='listen')msg='MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-4)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
+    else if(ph==='listen')msg='MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-this.L)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
     if(msg)BB.text(msg,cx,y-125,ph==='ready'?56:40,ph==='clap'||msg==='GO!'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
     // beat dots under the pills
-    if(ph!=='end'&&bn>=0){const tot=4*150+3*24,bi=Math.floor(bn)%4,rd=ph==='ready';for(let i=0;i<4;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*174,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*174,y+62,40,'rgba(110,230,120,A)',.5)}}}}
+    if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*150+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
 R.ClapBack=ClapBack;
 // ---------- shared room bits ----------
 // bake a static layer once (background + anything that never moves). Phones bake at half size.

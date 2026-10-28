@@ -3,7 +3,7 @@
 'use strict';
 (()=>{const ctx=BB.ctx,COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB,R=BB.R;
 BB.VO_LINES=(BB.VO_LINES||[]).concat([
- ['pk_intro',"Static Jr. destroyed the orders! Let's pack new rhythm crates. Every pallet holds four beats.",'sprocket'],
+ ['pk_intro',"Static Jr. destroyed the orders! Let's pack new rhythm crates. Fill every beat on the pallet. Four beats, then six, then eight!",'sprocket'],
  ['pk_how',"Tap a column, then tap DROP. Or swap it with NEXT!",'sprocket'],
  ['pk_full',"Pallet full! Listen, then clap the cargo code!",'sprocket'],
  ['pk_big',"Boing! Too big! Count the beats that are left.",'sprocket'],
@@ -15,17 +15,19 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['pk_done',"All orders packed! Room three complete! Next stop, the Label Room!",'sprocket'],
  ['jr_fit',"Wrong fit! Hee hee!",'jr'],
 ]);
-const FLOOR=947,CX0=640,CW=160,CTOP=230,ROWY=575,CH=128;
+// v12.3: taller chute (longer fall) and 4/6/8-beat pallets; the chute stays 640 px wide, columns narrow as beats grow
+const FLOOR=947,CX0=640,CTOP=172,ROWY=575,CH=128;let NB=4,CW=160;const setNB=n=>{NB=n;CW=640/n};
 const NEXTP={x:1350,y:170,w:330,h:430};
-const ROUNDS=[
- {mode:'free',pool:['h','q','e','q','s'],txt:'FREE BUILD: fill 4 beats any way!'},
- {mode:'free',pool:['w','h','q','e','s','r'],txt:'FREE BUILD: wholes, halves and rests too!'},
- {mode:'match',code:['h','e','q'],txt:'MATCH THE CODE'},
- {mode:'match',code:['s','q','r','e'],txt:'MATCH THE CODE'},
- {mode:'limited',set:['e','s','q','q'],txt:'ONLY 4 CRATES: use them all!'},
- {mode:'match',code:['q','s','e','r'],prank:1,txt:"MATCH THE CODE (watch out!)"},
+const ROUNDS=[// gradual: 4 beats -> 6 -> 8 (quarter, half, whole, ti-ti, tika-tika, rest only - no dotted notes)
+ {n:4,mode:'free',pool:['h','q','e','q','s'],txt:'FREE BUILD: fill 4 beats any way!'},
+ {n:4,mode:'free',pool:['w','h','q','e','s','r'],txt:'FREE BUILD: wholes, halves and rests too!'},
+ {n:4,mode:'match',code:['h','e','q'],txt:'MATCH THE CODE'},
+ {n:6,mode:'free',pool:['h','q','e','s','r'],txt:'BIGGER PALLET: fill 6 beats!'},
+ {n:6,mode:'limited',set:['h','h','e','q'],txt:'ONLY 4 CRATES: use them all!'},
+ {n:8,mode:'match',code:['w','e','s','q','r'],txt:'8-BEAT CODE'},
+ {n:8,mode:'match',code:['h','s','e','q','r','e','q'],prank:1,txt:"8-BEAT CODE (watch out!)"},
 ];
-const howTo={title:'PACKING STATION: pack 4 beats on every pallet!',
+const howTo={title:'PACKING STATION: fill every beat on the pallet!',
   steps:['A crate falls down the chute. Its size = its beats.','Tap a column (1-4) to move it. Tap DROP to drop it.','Tap SWAP to trade it with the NEXT crate.','Full pallet? Listen, then clap the cargo code back!','No mic? Tap MANUAL OVERRIDE when they nail it.'],
   words:'whole = 4 beats   half = 2   ta, ti-ti, tika-tika, rest = 1 beat each',
   example:(x,y,w,h,t)=>{const ph=(t%4)/4;ctx.save();ctx.translate(x+w/2,y+h/2);const cw=100;
@@ -50,22 +52,22 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(V.pack_bg)g.drawImage(V.pack_bg,0,0,W,H);
     // chute: shadow, frame, dark glass interior with column lanes
     R.shadow(g,W/2,FLOOR+8,420,.6);
-    g.fillStyle='rgba(0,0,0,.3)';g.fillRect(CX0-34,CTOP-60+14,4*CW+68,ROWY+CH+60-CTOP+60);
-    const fr=g.createLinearGradient(CX0-30,0,CX0+4*CW+30,0);fr.addColorStop(0,'#7c8a8c');fr.addColorStop(.5,'#c9d2d3');fr.addColorStop(1,'#6a7678');g.fillStyle=fr;g.fillRect(CX0-30,CTOP-60,4*CW+60,ROWY+CH+40-CTOP+60);
-    const ig=g.createLinearGradient(0,CTOP,0,ROWY+CH);ig.addColorStop(0,'#16282a');ig.addColorStop(1,'#20393a');g.fillStyle=ig;g.fillRect(CX0,CTOP-10,4*CW,ROWY+CH+10-CTOP+10);
-    for(let i=1;i<4;i++){g.fillStyle='rgba(160,210,200,.16)';g.fillRect(CX0+i*CW-2,CTOP-10,4,ROWY-CTOP+10)}
-    g.font="64px 'Rammetto One'";g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(180,230,220,.14)';for(let i=0;i<4;i++)g.fillText(String(i+1),CX0+i*CW+CW/2,CTOP+40);
+    g.fillStyle='rgba(0,0,0,.3)';g.fillRect(CX0-34,CTOP-60+14,NB*CW+68,ROWY+CH+60-CTOP+60);
+    const fr=g.createLinearGradient(CX0-30,0,CX0+NB*CW+30,0);fr.addColorStop(0,'#7c8a8c');fr.addColorStop(.5,'#c9d2d3');fr.addColorStop(1,'#6a7678');g.fillStyle=fr;g.fillRect(CX0-30,CTOP-60,NB*CW+60,ROWY+CH+40-CTOP+60);
+    const ig=g.createLinearGradient(0,CTOP,0,ROWY+CH);ig.addColorStop(0,'#16282a');ig.addColorStop(1,'#20393a');g.fillStyle=ig;g.fillRect(CX0,CTOP-10,NB*CW,ROWY+CH+10-CTOP+10);
+    for(let i=1;i<NB;i++){g.fillStyle='rgba(160,210,200,.16)';g.fillRect(CX0+i*CW-2,CTOP-10,4,ROWY-CTOP+10)}
+    g.font=(NB>6?48:64)+"px 'Rammetto One'";g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(180,230,220,.14)';for(let i=0;i<NB;i++)g.fillText(String(i+1),CX0+i*CW+CW/2,CTOP+40);
     // rivets
-    g.fillStyle='#4d585a';for(let y=CTOP-40;y<ROWY+CH+30;y+=70){for(const x of [CX0-16,CX0+4*CW+16]){g.beginPath();g.arc(x,y,5,0,7);g.fill()}}
+    g.fillStyle='#4d585a';for(let y=CTOP-40;y<ROWY+CH+30;y+=70){for(const x of [CX0-16,CX0+NB*CW+16]){g.beginPath();g.arc(x,y,5,0,7);g.fill()}}
     // yellow header
-    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.moveTo(CX0-90,CTOP-102+10);g.lineTo(CX0+4*CW+90,CTOP-102+10);g.lineTo(CX0+4*CW+30,CTOP-48+10);g.lineTo(CX0-30,CTOP-48+10);g.fill();
-    const hg=g.createLinearGradient(0,CTOP-102,0,CTOP-48);hg.addColorStop(0,'#ffe680');hg.addColorStop(1,'#e8b830');g.fillStyle=hg;g.beginPath();g.moveTo(CX0-90,CTOP-102);g.lineTo(CX0+4*CW+90,CTOP-102);g.lineTo(CX0+4*CW+30,CTOP-48);g.lineTo(CX0-30,CTOP-48);g.closePath();g.fill();g.strokeStyle='#19191f';g.lineWidth=4;g.stroke();
+    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.moveTo(CX0-90,CTOP-102+10);g.lineTo(CX0+NB*CW+90,CTOP-102+10);g.lineTo(CX0+NB*CW+30,CTOP-48+10);g.lineTo(CX0-30,CTOP-48+10);g.fill();
+    const hg=g.createLinearGradient(0,CTOP-102,0,CTOP-48);hg.addColorStop(0,'#ffe680');hg.addColorStop(1,'#e8b830');g.fillStyle=hg;g.beginPath();g.moveTo(CX0-90,CTOP-102);g.lineTo(CX0+NB*CW+90,CTOP-102);g.lineTo(CX0+NB*CW+30,CTOP-48);g.lineTo(CX0-30,CTOP-48);g.closePath();g.fill();g.strokeStyle='#19191f';g.lineWidth=4;g.stroke();
     g.font="30px 'Rammetto One'";g.fillStyle='#3a2a10';g.fillText('DROP CHUTE',W/2,CTOP-73);
     // steel stand under the chute down to the floor
-    for(const x of [CX0-10,CX0+4*CW-40]){const lg=g.createLinearGradient(x,0,x+50,0);lg.addColorStop(0,'#5d696b');lg.addColorStop(.5,'#aab4b5');lg.addColorStop(1,'#4d585a');g.fillStyle=lg;g.fillRect(x,ROWY+CH+40,50,FLOOR-ROWY-CH-30)}
-    g.fillStyle='#6a7678';g.fillRect(CX0-10,ROWY+CH+120,4*CW+20,26);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(CX0-10,ROWY+CH+146,4*CW+20,8);
+    for(const x of [CX0-10,CX0+NB*CW-40]){const lg=g.createLinearGradient(x,0,x+50,0);lg.addColorStop(0,'#5d696b');lg.addColorStop(.5,'#aab4b5');lg.addColorStop(1,'#4d585a');g.fillStyle=lg;g.fillRect(x,ROWY+CH+40,50,FLOOR-ROWY-CH-30)}
+    g.fillStyle='#6a7678';g.fillRect(CX0-10,ROWY+CH+120,NB*CW+20,26);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(CX0-10,ROWY+CH+146,NB*CW+20,8);
     // hazard strip + pallet bed
-    for(let i=0;i<24;i++){g.fillStyle=i%2?'#19191f':'#f2c230';g.beginPath();const x=CX0-30+i*((4*CW+60)/24);g.moveTo(x,ROWY+CH+14);g.lineTo(x+(4*CW+60)/24,ROWY+CH+14);g.lineTo(x+(4*CW+60)/24-12,ROWY+CH+40);g.lineTo(x-12,ROWY+CH+40);g.fill()}
+    for(let i=0;i<24;i++){g.fillStyle=i%2?'#19191f':'#f2c230';g.beginPath();const x=CX0-30+i*((NB*CW+60)/24);g.moveTo(x,ROWY+CH+14);g.lineTo(x+(NB*CW+60)/24,ROWY+CH+14);g.lineTo(x+(NB*CW+60)/24-12,ROWY+CH+40);g.lineTo(x-12,ROWY+CH+40);g.fill()}
     return c}
   startIntro(){this.state='intro';this.st=BB.t;this.jr={x:-160};this.wreck=[];for(let i=0;i<6;i++)this.wreck.push({k:['h','q','e','s','w','r'][i],x:CX0+80+i*100,y:ROWY+40,vx:0,vy:0,r:0,hit:0})}
   intro(dt){const t=BB.t-this.st,j=this.jr;j.x=lerp(-160,W+200,clamp(t/3.2,0,1));
@@ -75,23 +77,23 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(t>2.6&&!this.said.i){this.said.i=1;this.voEnd=BB.t+BB.say('pk_intro')}
     if(t>3.2&&BB.t>(this.voEnd||0)+.1)this.skipIntro()}
   skipIntro(){this.jr=null;this.wreck=null;BB.talking=null;BB.caption=null;this.beginRound()}
-  beginRound(){const Rd=ROUNDS[this.ri];this.Rd=Rd;this.state='play';this.cells=[null,null,null,null];this.placed=[];this.cur=null;this.cb=null;this.tries=0;this.prank=null;this.palletIn=BB.t;
+  beginRound(){const Rd=ROUNDS[this.ri];this.Rd=Rd;setNB(Rd.n||4);if(this.bakedN!==NB){this.static=this.bake();this.bakedN=NB}this.state='play';this.cells=new Array(NB).fill(null);this.placed=[];this.cur=null;this.cb=null;this.tries=0;this.prank=null;this.palletIn=BB.t;
     if(Rd.mode==='limited')this.q=Rd.set.slice().sort(()=>Math.random()-.5);else if(Rd.mode==='match')this.q=[...Rd.code,'w','h'].sort(()=>Math.random()-.5);else this.q=[];this.fillQ();
     if(this.ri===0){this.cardT=BB.t;setTimeout(()=>BB.scene===this&&BB.say('pk_how'),2600)}
     else if(Rd.mode==='match'&&!this.said.m){this.said.m=1;BB.say('pk_match')}else if(Rd.mode==='limited')BB.say('pk_limited');
     this.spawn()}
   fillQ(){const Rd=this.Rd;while(this.q.length<4){if(Rd.mode==='match')this.q.push(...Rd.code.filter(k=>!this.cells.includes(k)||true).sort(()=>Math.random()-.5));
-      else if(Rd.mode==='limited')break;else{let left=4;const set=[];while(left>0){const ok=Rd.pool.filter(k=>R.BEATS[k]<=left);const k=ok[Math.random()*ok.length|0];set.push(k);left-=R.BEATS[k]}this.q.push(...set.sort(()=>Math.random()-.5))}}}
+      else if(Rd.mode==='limited')break;else{let left=NB;const set=[];while(left>0){const ok=Rd.pool.filter(k=>R.BEATS[k]<=left);const k=ok[Math.random()*ok.length|0];set.push(k);left-=R.BEATS[k]}this.q.push(...set.sort(()=>Math.random()-.5))}}}
   gapMax(){let m=0,r=0;for(const c of this.cells){r=c?0:r+1;m=Math.max(m,r)}return m}
   spawn(){if(!this.q.length){this.fillQ();if(!this.q.length)return}
     // never deadlock: if nothing in the queue can fit, slip in a crate that does (match mode: the crate the code needs next)
     const g=this.gapMax();if(this.Rd.mode==='match'){let b=0,need=[];for(const k of this.Rd.code){if(!this.cells[b])need.push(k);b+=R.BEATS[k]}if(!need.some(k=>this.q.includes(k)))this.q.unshift(need[0])}
     else if(!this.q.some(k=>R.BEATS[k]<=g))this.q.unshift(g>=2?'h':'q');const k=this.q.shift();const w=R.BEATS[k];let col=this.firstFree(w);this.cur={k,col,y:CTOP-CH-10,fast:0,t:BB.t,x:CX0+col*CW};this.fillQ()}
-  firstFree(w){for(let c=0;c<=4-w;c++){let ok=true;for(let i=0;i<w;i++)if(this.cells[c+i])ok=false;if(ok)return c}return 0}
+  firstFree(w){for(let c=0;c<=NB-w;c++){let ok=true;for(let i=0;i<w;i++)if(this.cells[c+i])ok=false;if(ok)return c}return 0}
   left(){return this.cells.filter(x=>!x).length}
-  setCol(c){const cu=this.cur;if(!cu||this.state!=='play')return;const w=R.BEATS[cu.k];cu.col=clamp(c,0,4-w)}
+  setCol(c){const cu=this.cur;if(!cu||this.state!=='play')return;const w=R.BEATS[cu.k];cu.col=clamp(c,0,NB-w)}
   drop(){if(this.cur&&this.state==='play'){this.cur.fast=1;BB.sfx.whoosh(undefined,.3)}}
-  swap(){const cu=this.cur;if(!cu||this.state!=='play'||!this.q.length)return;const nk=this.q[0];this.q[0]=cu.k;cu.k=nk;cu.col=clamp(cu.col,0,4-R.BEATS[nk]);this.swapT=BB.t;BB.sfx.pop();
+  swap(){const cu=this.cur;if(!cu||this.state!=='play'||!this.q.length)return;const nk=this.q[0];this.q[0]=cu.k;cu.k=nk;cu.col=clamp(cu.col,0,NB-R.BEATS[nk]);this.swapT=BB.t;BB.sfx.pop();
     if(this.prank&&this.prank.ph==='wait'&&cu.k!=='w'&&this.q[0]==='w'){this.q.shift();this.prankHit()}}
   land(){const cu=this.cur,w=R.BEATS[cu.k];let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;
     let why='';if(!fit)why=this.left()<w?`too big! ${w} > ${this.left()}`:'no room there!';
@@ -102,7 +104,7 @@ class PackingRoom{constructor(o={}){this.o=o}
       if(!this.said.big&&why.startsWith('too')){this.said.big=1;BB.say('pk_big')}else if(why.startsWith('the code')&&!this.said.wk){this.said.wk=1;BB.say('pk_wrongk')}
       const k=cu.k;this.cur=null;if(!(this.prank&&k==='w'))this.q.push(k);else this.prankHit(true);setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),700)}}
   codeAt(col){let b=0;for(const k of this.Rd.code){if(b===col)return R.NAME[k];if(col>b&&col<b+R.BEATS[k])return R.NAME[k]+' (it starts on beat '+(b+1)+')';b+=R.BEATS[k]}return '?'}
-  seq(){const s=[];for(let c=0;c<4;){const k=this.cells[c];s.push(k);c+=R.BEATS[k]}return s}
+  seq(){const s=[];for(let c=0;c<NB;){const k=this.cells[c];s.push(k);c+=R.BEATS[k]}return s}
   lock(){this.state='lock';this.st=BB.t;BB.sfx.clunk();BB.sfx.thunk(BB.ac.currentTime+.15);BB.shake(5);BB.say('pk_full');setTimeout(()=>{if(BB.scene!==this)return;this.state='clap';this.cb=new R.ClapBack(this.seq(),{bpm:84,onDone:sc=>this.clapDone(sc)})},2200)}
   clapDone(sc){this.tries++;if(sc>=.6||this.tries>=2){this.state='ship';this.st=BB.t;BB.sfx.fanfare();BB.say('pk_great');BB.burst(W/2,ROWY+40,40,{cols:['#ffe066','#6ee678','#fff','#5ac8fa'],kind:'star',size:14,speed:800,g:500})}
     else{BB.say('sm_again');setTimeout(()=>BB.scene===this&&this.state==='clap'&&(this.cb=new R.ClapBack(this.seq(),{bpm:84,onDone:s=>this.clapDone(s)})),1800)}}
@@ -119,14 +121,14 @@ class PackingRoom{constructor(o={}){this.o=o}
   pause(){BB.paused=true;BB.ac.suspend()}
   resume(){BB.paused=false;BB.ensureMic()}
   // pointer: tap a column to steer, or drag the falling crate sideways
-  pdown(p){if(this.state!=='play'||!this.cur)return false;if(p.x>CX0&&p.x<CX0+4*CW&&p.y>CTOP-60&&p.y<ROWY+CH){this.dragC={x0:p.x,col0:this.cur.col};this.setCol(Math.floor((p.x-CX0)/CW)-(p.y>this.cur.y&&p.y<this.cur.y+CH?0:0));return true}return false}
+  pdown(p){if(this.state!=='play'||!this.cur)return false;if(p.x>CX0&&p.x<CX0+NB*CW&&p.y>CTOP-60&&p.y<ROWY+CH){this.dragC={x0:p.x,col0:this.cur.col};this.setCol(Math.floor((p.x-CX0)/CW)-(p.y>this.cur.y&&p.y<this.cur.y+CH?0:0));return true}return false}
   pup(){this.dragC=null}
   update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
-    for(const key of BB.keys){if(key>='1'&&key<='4')this.setCol(+key-1);if(key==='ArrowLeft'&&this.cur)this.setCol(this.cur.col-1);if(key==='ArrowRight'&&this.cur)this.setCol(this.cur.col+1);if(key==='ArrowDown'||key==='d')this.drop();if(key==='n')this.swap()}
+    for(const key of BB.keys){if(key>='1'&&key<=String(NB))this.setCol(+key-1);if(key==='ArrowLeft'&&this.cur)this.setCol(this.cur.col-1);if(key==='ArrowRight'&&this.cur)this.setCol(this.cur.col+1);if(key==='ArrowDown'||key==='d')this.drop();if(key==='n')this.swap()}
     this.belt+=dt*40;
     if(this.state==='intro'){this.intro(dt);if(BB.keys.includes('s'))this.skipIntro()}
     if(this.dragC&&this.cur&&BB.ptr.down){const w=R.BEATS[this.cur.k];this.setCol(Math.round((BB.ptr.x-CX0)/CW-w/2))}
-    const cu=this.cur;if(cu&&this.state==='play'){cu.x=lerp(cu.x,CX0+cu.col*CW,Math.min(1,dt*14));cu.y+=dt*(cu.fast?1500:52);if(cu.y>=ROWY){cu.y=ROWY;this.land()}}
+    const cu=this.cur;if(cu&&this.state==='play'){cu.x=lerp(cu.x,CX0+cu.col*CW,Math.min(1,dt*14));cu.y+=dt*(cu.fast?1150:44);if(cu.y>=ROWY){cu.y=ROWY;this.land()}}
     for(let i=this.bounce.length-1;i>=0;i--){const b=this.bounce[i];b.vy+=2200*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.r-=dt*5;if(b.y>H+300)this.bounce.splice(i,1)}
     // sim: steer each crate into the first slot that fits (?sim=1&auto)
     if(BB.debug&&this.o.auto&&cu&&this.state==='play'&&BB.t-cu.t>.8&&!cu.fast){let c=-1;if(this.Rd.mode==='match'){let b=0;for(const k of this.Rd.code){if(k===cu.k&&!this.cells[b]){c=b;break}b+=R.BEATS[k]}}else c=this.left()>=R.BEATS[cu.k]?this.firstFree(R.BEATS[cu.k]):-1;
@@ -153,22 +155,22 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(this.state==='end')this.drawEnd();
     if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
   drawBelt(){// ambient: little parcels ride the painted back conveyor (only where the chute doesn't cover it)
-    if(BB.phone&&!BB.q)return;const y=388;for(let i=0;i<6;i++){const x=((this.belt+i*330)%1980)-60;if(x>CX0-60&&x<CX0+4*CW+60)continue;BB.rrect(x,y-46,64,44,6,BB.lg(y-46,y,['#d79a5a','#a86a34']),'#5a3a1a',2);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(x+28,y-46,8,44)}}
+    if(BB.phone&&!BB.q)return;const y=388;for(let i=0;i<6;i++){const x=((this.belt+i*330)%1980)-60;if(x>CX0-60&&x<CX0+NB*CW+60)continue;BB.rrect(x,y-46,64,44,6,BB.lg(y-46,y,['#d79a5a','#a86a34']),'#5a3a1a',2);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(x+28,y-46,8,44)}}
   drawPallet(){const t=BB.t,out=this.state==='ship'?ease.inOut(clamp((t-this.st-.8)/1.6,0,1))*1300:0,inn=this.palletIn?(1-ease.out(clamp((t-this.palletIn)/.6,0,1)))*-900:0;
     ctx.save();ctx.translate(out+inn,0);
     // wooden pallet
-    const y=ROWY+CH;for(let i=0;i<4;i++)BB.rrect(CX0+4+i*CW,y-4,CW-8,16,4,BB.lg(y-4,y+12,['#d6b07a','#9a6e3a']),'#5a3a1a',2);
+    const y=ROWY+CH;for(let i=0;i<NB;i++)BB.rrect(CX0+4+i*CW,y-4,CW-8,16,4,BB.lg(y-4,y+12,['#d6b07a','#9a6e3a']),'#5a3a1a',2);
     // placed crates
     const blink=this.blink&&t-this.blink<1.2&&Math.sin((t-this.blink)*18)>0;
-    for(let c=0;c<4;c++)if(!this.cells[c]){BB.rrect(CX0+c*CW+8,ROWY+6,CW-16,CH-12,12,blink?'rgba(255,224,102,.35)':'rgba(255,255,255,.05)',blink?COL.yellow:'rgba(255,255,255,.18)',3);BB.text(String(c+1),CX0+c*CW+CW/2,ROWY+CH/2,52,blink?COL.yellow:'rgba(255,255,255,.18)',{font:'Rammetto One'})}
+    for(let c=0;c<NB;c++)if(!this.cells[c]){BB.rrect(CX0+c*CW+8,ROWY+6,CW-16,CH-12,12,blink?'rgba(255,224,102,.35)':'rgba(255,255,255,.05)',blink?COL.yellow:'rgba(255,255,255,.18)',3);BB.text(String(c+1),CX0+c*CW+CW/2,ROWY+CH/2,52,blink?COL.yellow:'rgba(255,255,255,.18)',{font:'Rammetto One'})}
     for(const p of this.placed){const w=R.BEATS[p.k],sq=Math.max(0,1-(t-p.t)/.25)*.12;ctx.save();ctx.translate(CX0+p.col*CW+w*CW/2,ROWY+CH);ctx.scale(1+sq,1-sq);R.crateDraw(p.k,-w*CW/2+6,-CH,w*CW-12,CH);ctx.restore()}
     // lock clamps + green light sweep
-    if(this.state==='lock'||this.state==='clap'||this.state==='ship'){const k=ease.back(clamp((t-(this.st||t))/.3,0,1));for(const x of [CX0-26,CX0+4*CW+26]){BB.rrect(x-18,ROWY+10,36,CH-20,8,BB.lg(ROWY,ROWY+CH,['#ffe680','#c8961a']),COL.ink,3)}
-      if(this.state==='lock'){const sw=(t-this.st)/1.2;for(let c=0;c<4;c++){const l=clamp(1-Math.abs(sw*4-c-.5),0,1);if(l>0&&BB.q)BB.glow(CX0+c*CW+CW/2,ROWY+CH/2,120,'rgba(110,230,120,A)',l*.5)}}
-      if(this.state==='ship'){BB.rrect(CX0+20,ROWY-26,4*CW-40,30,8,'#e8e2cd',COL.ink,3);BB.text('SEALED',W/2,ROWY-11,24,'#c0392b')}}
+    if(this.state==='lock'||this.state==='clap'||this.state==='ship'){const k=ease.back(clamp((t-(this.st||t))/.3,0,1));for(const x of [CX0-26,CX0+NB*CW+26]){BB.rrect(x-18,ROWY+10,36,CH-20,8,BB.lg(ROWY,ROWY+CH,['#ffe680','#c8961a']),COL.ink,3)}
+      if(this.state==='lock'){const sw=(t-this.st)/1.2;for(let c=0;c<NB;c++){const l=clamp(1-Math.abs(sw*NB-c-.5),0,1);if(l>0&&BB.q)BB.glow(CX0+c*CW+CW/2,ROWY+CH/2,120,'rgba(110,230,120,A)',l*.5)}}
+      if(this.state==='ship'){BB.rrect(CX0+20,ROWY-26,NB*CW-40,30,8,'#e8e2cd',COL.ink,3);BB.text('SEALED',W/2,ROWY-11,24,'#c0392b')}}
     ctx.restore()}
   drawChuteContents(){const cu=this.cur,t=BB.t;if(!cu||this.state!=='play')return;const w=R.BEATS[cu.k],cw=w*CW-12;
-    ctx.save();ctx.beginPath();ctx.rect(CX0,CTOP-20,4*CW,ROWY+CH-CTOP+20);ctx.clip();
+    ctx.save();ctx.beginPath();ctx.rect(CX0,CTOP-20,NB*CW,ROWY+CH-CTOP+20);ctx.clip();
     // ghost on the pallet + guide line
     let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;const gx=CX0+cu.col*CW+6;
     BB.rrect(gx,ROWY+6,cw,CH-12,12,fit?'rgba(110,230,120,.18)':'rgba(230,80,70,.22)',fit?'rgba(110,230,120,.8)':'#e65046',3);
@@ -176,7 +178,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     const wob=Math.sin(t*3)*.02;ctx.save();ctx.translate(cu.x+6+cw/2,cu.y+CH/2);ctx.rotate(wob);R.crateDraw(cu.k,-cw/2,-CH/2,cw,CH);ctx.restore();
     ctx.restore();
     // column tap targets (big, Smartboard friendly)
-    for(let c=0;c<4;c++){const on=c>=cu.col&&c<cu.col+w;BB.rrect(CX0+c*CW+8,CTOP-44,CW-16,34,10,on?COL.yellow:'rgba(255,255,255,.12)',on?COL.ink:null,2);BB.text(String(c+1),CX0+c*CW+CW/2,CTOP-27,26,on?COL.ink:'#fff')}}
+    for(let c=0;c<NB;c++){const on=c>=cu.col&&c<cu.col+w;BB.rrect(CX0+c*CW+8,CTOP-44,CW-16,34,10,on?COL.yellow:'rgba(255,255,255,.12)',on?COL.ink:null,2);BB.text(String(c+1),CX0+c*CW+CW/2,CTOP-27,26,on?COL.ink:'#fff')}}
   drawNext(){const t=BB.t;BB.panel(NEXTP.x,NEXTP.y,NEXTP.w,NEXTP.h,30);BB.well(NEXTP.x+16,NEXTP.y+16,NEXTP.w-32,NEXTP.h-32,22);BB.text('NEXT',NEXTP.x+NEXTP.w/2,NEXTP.y+52,40,COL.yellow,{font:'Rammetto One',stroke:6});
     const sw=this.swapT&&t-this.swapT<.3?1+.15*Math.sin((t-this.swapT)/.3*Math.PI):1;
     this.q.slice(0,3).forEach((k,i)=>{const w=R.BEATS[k],cw=Math.min(260,w*62+20),h=i?64:84,s=i?1:sw;ctx.save();ctx.translate(NEXTP.x+NEXTP.w/2,NEXTP.y+140+i*104);ctx.scale(s,s);ctx.globalAlpha=i?.75:1;R.crateDraw(k,-cw/2,-h/2,cw,h,{tag:i===0});ctx.restore();
@@ -188,13 +190,13 @@ class PackingRoom{constructor(o={}){this.o=o}
   drawOrder(){const Rd=this.Rd;if(!Rd)return;const x=50,y=300,w=520,h=300;ctx.save();ctx.translate(x,y);ctx.rotate(-.02);
     BB.rrect(4,10,w,h,10,'rgba(0,0,0,.3)');BB.rrect(0,0,w,h,10,'#fffdf3','#8a806b',3);BB.rrect(0,0,w,50,10,'#e65046');ctx.fillStyle='#e65046';ctx.fillRect(0,28,w,22);
     BB.text('ORDER #'+(this.ri+1),w/2,26,28,'#fff',{stroke:3});BB.text(Rd.txt,w/2,80,Rd.txt.length>30?22:26,'#5a5040',{maxW:w-30});
-    if(Rd.mode==='match'){let b=0;const cw=(w-40)/4;for(const k of Rd.code){const n=R.BEATS[k],xx=20+b*cw,ww=n*cw;const done=this.cells[b]===k;ctx.strokeStyle=done?'#3fb45a':'rgba(0,0,0,.18)';ctx.lineWidth=done?4:2;ctx.strokeRect(xx+3,110,ww-6,140);
-        R.glyph(k,xx+ww/2,215,k==='s'?9:11,COL.ink);BB.text(R.SAY[k],xx+ww/2,270,18,'#5a5040');b+=n}}
-    else{BB.text(Rd.mode==='limited'?'Every crate must fit!':'Any crates that add up to 4',w/2,150,26,'#5a5040');for(let i=0;i<4;i++){BB.rrect(30+i*118,190,104,60,10,this.cells[i]?'#9ff09a':'#eee8d6','#8a806b',2);BB.text(this.cells[i]?'\u2713':String(i+1),82+i*118,221,30,'#5a5040')}}
+    if(Rd.mode==='match'){let b=0;const cw=(w-40)/NB;for(const k of Rd.code){const n=R.BEATS[k],xx=20+b*cw,ww=n*cw;const done=this.cells[b]===k;ctx.strokeStyle=done?'#3fb45a':'rgba(0,0,0,.18)';ctx.lineWidth=done?4:2;ctx.strokeRect(xx+3,110,ww-6,140);
+        R.glyph(k,xx+ww/2,215,(k==='s'?9:11)*(NB>4?.75:1),COL.ink);BB.text(R.SAY[k],xx+ww/2,270,NB>6?13:18,'#5a5040',{maxW:ww-4});b+=n}}
+    else{BB.text(Rd.mode==='limited'?'Every crate must fit!':'Any crates that add up to '+NB,w/2,150,26,'#5a5040');const bw=(w-60)/NB;for(let i=0;i<NB;i++){BB.rrect(30+i*bw,190,bw-14,60,10,this.cells[i]?'#9ff09a':'#eee8d6','#8a806b',2);BB.text(this.cells[i]?'\u2713':String(i+1),30+i*bw+(bw-14)/2,221,30,'#5a5040')}}
     if(this.ri===2&&BB.t-this.palletIn<3){ctx.globalAlpha=1-(BB.t-this.palletIn)/3;BB.text('TORN BY STATIC JR. ... fixed!',w/2,h-18,20,'#c0392b')}
     ctx.restore()}
   capPos(){return this.state==='clap'&&this.cb?{y:250,maxW:1140}:{y:H-114,maxW:1140}}
-  drawHUD(){const t=BB.t;BB.panel(40,24,560,130,30);BB.text('ORDERS PACKED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.packed} of 6`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+  drawHUD(){const t=BB.t;BB.panel(40,24,560,130,30);BB.text('ORDERS PACKED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.packed} of ${ROUNDS.length}`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
     for(let i=0;i<6;i++)BB.rrect(330+i*42,60,32,52,9,i<this.packed?BB.lg(60,112,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
     BB.pauseBtn(()=>this.pause());
     if(this.state==='intro')BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});
