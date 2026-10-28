@@ -54,26 +54,26 @@ BB.wholeNote=(x,y,s,o={})=>{ctx.save();ctx.translate(x,y);ctx.rotate(o.rot||0);
 // green beat-light pills. lit: per-pill brightness 0..1, marks: per-pill clap star
 BB.beatPills=(cx,y,lit,o={})=>{const n=lit.length,pw=o.pw||120,gap=o.gap||30,ph=50,tot=n*pw+(n-1)*gap;
   const wob=o.wobble||0;
-  BB.rrect(cx-tot/2-30,y-50,tot+60,100,30,'rgba(20,40,38,.94)',COL.teal2,5);
+  BB.rrect(cx-tot/2-28,y-40,tot+56,100,30,'rgba(0,0,0,.25)');BB.well(cx-tot/2-30,y-50,tot+60,100,30);
   for(let i=0;i<n;i++){const x=cx-tot/2+i*(pw+gap)+Math.sin(BB.t*20+i*2)*wob*14,yy=y-ph/2+Math.cos(BB.t*17+i)*wob*10,l=lit[i];
     if(l>.01){ctx.save();ctx.globalAlpha=l*.85;BB.glow(x+pw/2,y,90,'rgba(110,230,120,A)',.7);ctx.restore()}
     const g=Math.round(40+l*70),gg=Math.round(60+l*170),bb=Math.round(60+l*60);
-    BB.rrect(x,yy,pw,ph,12,`rgb(${g},${gg},${bb})`,'#fff',3);
+    BB.rrect(x,yy,pw,ph,14,BB.lg(yy,yy+ph,[`rgb(${g+40},${Math.min(255,gg+40)},${bb+30})`,`rgb(${g},${gg},${bb})`,`rgb(${g*.7|0},${gg*.75|0},${bb*.75|0})`]),'rgba(235,245,240,.85)',3);ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.roundRect(x+8,yy+5,pw-16,12,6);ctx.fill();
     if(o.marks&&o.marks[i]){const m=o.marks[i];BB.star(x+pw/2,yy+ph/2,16*BB.ease.back(Math.min(1,m)),COL.yellow,BB.t)}}};
 // mic meter with soft/loud bands and a sensitivity +/- pair
-BB.micMeter=(x,y,o={})=>{const m=BB.mic;BB.rrect(x,y,330,110,26,'rgba(20,40,38,.94)',COL.teal2,5);
+BB.micMeter=(x,y,o={})=>{const m=BB.mic;BB.rrect(x+2,y+8,330,110,26,'rgba(0,0,0,.25)');BB.well(x,y,330,110,26);
   BB.text('MIC',x+50,y+40,32,COL.yellow,{stroke:4});
   BB.text(m.ok?'ON':({denied:'BLOCKED',nodevice:'NONE',lost:'LOST',error:'ERROR'}[m.state]||'OFF'),x+50,y+78,m.ok?22:16,m.ok?COL.green:'#ff9c8a');
   const n=10,lvl=m.level;for(let i=0;i<n;i++){const on=i<lvl*n,bx=x+95+i*20;let c=on?(i<4?'#6ee678':i<7?'#ffe066':'#ff7b5c'):'#3c5050';
     if(o.band==='soft'&&i>=4)c=on?'#ff7b5c':'#2a3a3a';
     if(o.band==='loud'&&i<6)c=on?'#8aa':'#2a3a3a';
-    ctx.fillStyle=c;ctx.fillRect(bx,y+22+(9-i)*3,14,64-(9-i)*3)}
+    const by=y+22+(9-i)*3,bh=64-(9-i)*3;BB.rrect(bx,by,14,bh,4,c);if(on){ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(bx+2,by+2,4,bh-4)}}
   if(o.band){const bx0=x+95+(o.band==='soft'?0:6*20),bw=(o.band==='soft'?4:4)*20-6;BB.rrect(bx0-3,y+14,bw+6,80,6,null,o.band==='soft'?'#b6f0ff':'#ffd23c',3)}};
 BB.sensButtons=(x,y)=>{const m=BB.mic;
   BB.button(x,y,90,90,'−',{size:50,id:'sens-',onClick:()=>m.sensIdx=Math.max(0,m.sensIdx-1)});
   BB.button(x+110,y,90,90,'+',{size:50,id:'sens+',onClick:()=>m.sensIdx=Math.min(5,m.sensIdx+1)})};
-BB.pauseBtn=(onClick,x=W/2-90,y=24)=>{BB.button(x,y,180,110,'PAUSE',{style:'teal',size:34,id:'pause',onClick,
-  icon:(ix,iy)=>{ctx.fillStyle=COL.yellow;ctx.fillRect(ix-16,iy-16,10,32);ctx.fillRect(ix,iy-16,10,32)}})};
+BB.pauseBtn=(onClick,x=W/2-110,y=24)=>{BB.button(x,y,220,110,'PAUSE',{style:'teal',size:34,id:'pause',onClick,labelDx:24,
+  icon:(ix,iy)=>{ix=x+52;ctx.fillStyle=COL.yellow;ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const bx of[ix-14,ix+4]){ctx.fillRect(bx,iy-17,11,34);ctx.strokeRect(bx,iy-17,11,34)}}})};
 BB.overrideBtn=(onClick,o={})=>{const x=W-370,y=H-150;BB.button(x,y,340,125,'MANUAL',{style:'red',size:40,sub:'OVERRIDE',id:'override',onClick,pop:o.pop})};
 BB.captionBox=()=>{const c=BB.caption;if(!c||BB.t>c.until)return;const k=Math.min(1,(BB.t-c.start)*6);
   const fs=38,w=Math.min(1150,BB.measure(c.txt,fs)+200),x=W/2-w/2,y=H-300;
@@ -101,4 +101,22 @@ let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)
 BB.titleCard=(txt,sub,k)=>{if(k<=0||k>=1)return;const a=k<.15?k/.15:k>.85?(1-k)/.15:1;ctx.save();ctx.globalAlpha=a;
   const s=.8+.2*BB.ease.back(Math.min(1,k*4));ctx.translate(W/2,H/2-60);ctx.scale(s,s);BB.panel(-520,-130,1040,260,40);
   BB.text(txt,0,-30,84,'#fff',{font:'Rammetto One',stroke:9});BB.text(sub,0,58,40,COL.yellow,{stroke:5});ctx.restore()};
+})();
+// ===== v2 painted props: grounded, tinted, clamped to their tunnel box =====
+(()=>{const ctx=BB.ctx;BB.V2={};
+BB.loadV2=()=>Promise.all([['rock','png'],['crystal','png'],['cart','png'],['elev','png'],['smash','png'],['bin','png'],['rubble','png'],['wh','jpg'],['tun0','jpg'],['tun1','jpg'],['tun2','jpg'],['tun3','jpg'],['tun4','jpg'],['pipe','png'],['funnel','png'],['title_bg','jpg'],['map_bg','jpg'],['mic','png'],['lock','png'],['earth','jpg'],['shaft','jpg']].map(([n,e])=>new Promise(r=>{const i=new Image();i.onload=()=>{BB.V2[n]=i;r()};i.onerror=()=>r();i.src='assets/v2/'+n+'.'+e+'?v='+(BB.VERSION||'')})));
+const tcache={};
+// cached copy of a prop with a top-down rim light + ambient tint baked in (no per-frame compositing cost)
+BB.tinted=(name,rim,amb,ambA=.18)=>{const key=name+rim+amb+ambA;if(tcache[key])return tcache[key];const im=BB.V2[name];if(!im)return null;
+  const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const g=c.getContext('2d');g.drawImage(im,0,0);g.globalCompositeOperation='source-atop';
+  if(amb){g.globalAlpha=ambA;g.fillStyle=amb;g.fillRect(0,0,c.width,c.height);g.globalAlpha=1}
+  if(rim){const gr=g.createLinearGradient(0,0,0,c.height*.55);gr.addColorStop(0,rim);gr.addColorStop(1,'rgba(0,0,0,0)');g.globalAlpha=.35;g.fillStyle=gr;g.fillRect(0,0,c.width,c.height);g.globalAlpha=1}
+  return tcache[key]=c};
+BB.contactShadow=(x,y,rw,a=.45)=>{ctx.save();ctx.translate(x,y);ctx.scale(1,.16);const g=ctx.createRadialGradient(0,0,0,0,0,rw);g.addColorStop(0,`rgba(10,5,2,${a})`);g.addColorStop(.6,`rgba(10,5,2,${a*.5})`);g.addColorStop(1,'rgba(10,5,2,0)');ctx.fillStyle=g;ctx.fillRect(-rw,-rw,2*rw,2*rw);ctx.restore()};
+// draw a prop standing on `base`; o.box={x0,x1,y0} keeps it fully inside its tunnel
+BB.prop=(name,x,base,h,o={})=>{const im=BB.V2[name];if(!im)return;let hh=h;const ar=im.width/im.height;
+  if(o.box){hh=Math.min(hh,base-o.box.y0);hh=Math.min(hh,(o.box.x1-o.box.x0)/ar);const w=hh*ar;x=Math.max(o.box.x0+w/2,Math.min(o.box.x1-w/2,x))}
+  const w=hh*ar,src=(o.rim||o.amb)?BB.tinted(name,o.rim,o.amb,o.ambA):im;
+  if(o.shadow!==false)BB.contactShadow(x,base,w*.55,o.shadowA??.45);
+  ctx.save();ctx.translate(x,base);if(o.rot)ctx.rotate(o.rot);if(o.flip)ctx.scale(-1,1);ctx.globalAlpha=o.alpha??1;ctx.drawImage(src,-w/2,-hh+(o.sink||0),w,hh);ctx.restore();return {x,w,h:hh}};
 })();
