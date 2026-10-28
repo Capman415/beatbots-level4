@@ -67,7 +67,7 @@ const howTo={title:'NOTE MINE: dig up the whole notes!',
     if(k)BB.text('CLAP!',0,-60,30,COL.yellow,{stroke:4});ctx.restore()}};
 // ---- rock drawing ----
 function rockPts(r,seed){let s=seed*9301+49297;const rnd=()=>((s=(s*9301+49297)%233280)/233280);const p=[];for(let i=0;i<12;i++){const a=i*Math.PI/6;p.push([r*(1+(rnd()-.5)*.27)*Math.cos(a),r*.85*(1+(rnd()-.5)*.27)*Math.sin(a)])}return p}
-// v12.5: jagged branching fractures from the impact point (upper-left face); each hit grows them
+// v12.6: jagged branching fractures from the impact point (upper-left face); each hit grows them
 const crackPaths=[];{let s=7;const rnd=()=>((s=(s*9301+49297)%233280)/233280);const O=[-.18,-.2];
   const grow=(x,y,a,len,depth,pts0)=>{const pts=pts0||[[x,y]];let L=0;while(L<len){const st=.07+rnd()*.06;a+=(rnd()-.5)*.9;x+=Math.cos(a)*st;y+=Math.sin(a)*st;L+=st;pts.push([x,y]);
       if(depth<2&&rnd()<.28){crackPaths.push({pts:grow(x,y,a+(rnd()<.5?-1:1)*(.6+rnd()*.5),len*.45,depth+1),d:depth+1,at:L/len})}}return pts};
@@ -92,7 +92,7 @@ function drawRock(x,y,r,kind,stage,shake,wob,o={}){const k=o.k,L=k!=null?LIGHT[k
   ctx.restore();ctx.restore()}
 function drawCart(x,base,n){// painted cart, sized to sit inside the elevator cage
   // v12.2: a real heap - rows narrow toward the top, varied tilt, bottom row half hidden by the cart sides
-  // v12.5: a heaped mound that clearly overflows the rim (cart drawn after = rim in front)
+  // v12.6: a heaped mound that clearly overflows the rim (cart drawn after = rim in front)
   const P=[[-52,-118,-.25],[0,-122,.12],[52,-117,.3],[-26,-146,-.08],[28,-148,.22],[-64,-136,.4],[64,-137,-.35],[0,-172,.05],[-38,-166,-.3],[38,-168,.28],[-14,-192,.18],[18,-194,-.2]];
   const m=Math.min(n+(n>0?2:0),P.length);for(let i=0;i<m;i++){const[dx,dy,r]=P[i];ctx.save();ctx.translate(x+dx,base+dy);ctx.rotate(r);BB.R.tile('w',-40,-46,80,56,{shadow:i>=3});ctx.restore()}
   BB.prop('cart',x,base,150,{shadowA:.35})}
@@ -133,7 +133,7 @@ class MineRoom{
   // -------- rock flow --------
   beginRock(first){const R=ROCKS[this.rockI];this.R=R;this.stage=0;this.state='drop';this.st=BB.t;this.rockY=-400;this.marks=[0,0,0,0];this.missVO=false;
     const newFloor=first||ROCKS[this.rockI-1]&&ROCKS[this.rockI-1].f!==R.f;
-    if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4){this.startCave()}// v12.5: no loudness check here - the cave-in uses the levels from mic setup
+    if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4){this.startCave()}// v12.6: no loudness check here - the cave-in uses the levels from mic setup
       this.voEnd=BB.t+9;setTimeout(()=>{if(BB.scene===this)this.voEnd=BB.t+BB.say(FLOORS[R.f].vo)},R.f===4?3000:first?2200:300)}
     else this.voEnd=BB.t+.5;
     if(R.bonus&&!newFloor){this.voEnd=BB.t+.5;BB.caption={txt:'BONUS! Andante + forte: slow and LOUD!',who:'sprocket',until:BB.t+3.5,start:BB.t}}}
@@ -184,7 +184,7 @@ class MineRoom{
       if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;continue}// wait for the beat window to close, then ask: was that the whole group?
       this.hit(bi)}}
   gated(){return BB.mic.ok&&window.GroupGate&&!BB.debug}
-  hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;// v12.5 cave-in (fast + piano): a soft, purely tonal tink so it can't mask the next whisper clap
+  hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;// v12.6 cave-in (fast + piano): a soft, purely tonal tink so it can't mask the next whisper clap
     if(d==='p'&&b.spb<.5)BB.sfx.tink(undefined,.3,true);else BB.sfx.tink();if(d==='f'){BB.sfx.boom();BB.shake(5)}
       BB.burst(ROCK_X-140,rail(this.R.f)-170,12,{world:1,cols:['#ffe066','#fff','#ffb040'],speed:600,size:12})}
   resolveGroup(){const b=this.beat,G=window.GroupGate;if(!b||!G)return;const now=BB.ac.currentTime-.02;
@@ -199,9 +199,9 @@ class MineRoom{
         this.wob=1;BB.sfx.wobble();this.shrugT=BB.t;BB.burst(ROCK_X,rail(this.R.f)-60,10,{world:1,col:'#c8b49a',kind:'dust',size:18,g:-60,speed:160});
         if(!this.missVO&&n<2){this.missVO=true;BB.say('keepgoing')}}}}
   crack(){const R=this.R;this.stage+=R.bonus?2:1;BB.sfx.crack();BB.shake(4);this.shk=1;
-    {const ix=ROCK_X-30,iy=rail(R.f)-170,lq=!BB.q;BB.burst(ix,iy,lq?8:18,{world:1,cols:['#a08c78','#6e5a4a','#cbb79c'],speed:520,size:10,kind:'dot'});if(!lq)BB.burst(ix,iy,10,{world:1,cols:['rgba(210,190,160,.5)'],speed:160,size:22,kind:'dot',g:-40})}// v12.5 chips + dust at the impact point
+    {const ix=ROCK_X-30,iy=rail(R.f)-170,lq=!BB.q;BB.burst(ix,iy,lq?8:18,{world:1,cols:['#a08c78','#6e5a4a','#cbb79c'],speed:520,size:10,kind:'dot'});if(!lq)BB.burst(ix,iy,10,{world:1,cols:['rgba(210,190,160,.5)'],speed:160,size:22,kind:'dot',g:-40})}// v12.6 chips + dust at the impact point
     if(this.stage>=NEED)this.popNote()}
-  popNote(){const R=this.R;BB.burst(ROCK_X,rail(R.f)-140,BB.q?14:6,{world:1,cols:['#8c7764','#5e4c3e','#a8957f'],speed:700,size:30,kind:'dot',g:900});// v12.5 chunks split off on the final break
+  popNote(){const R=this.R;BB.burst(ROCK_X,rail(R.f)-140,BB.q?14:6,{world:1,cols:['#8c7764','#5e4c3e','#a8957f'],speed:700,size:30,kind:'dot',g:900});// v12.6 chunks split off on the final break
     this.state='pop';this.st=BB.t;this.beat=null;BB.sfx.chime();BB.sfx.pop();BB.shake(6);
     BB.burst(ROCK_X,rail(R.f)-150,40,{world:1,cols:['#ffe066','#fff','#6ee678'],speed:800,size:14,kind:'star',g:500});
     this.halves={t:BB.t};this.flying.push({t0:BB.t,x0:ROCK_X,y0:rail(R.f)-150,x1:PIPE_X,y1:rail(R.f)-120,gold:!!R.bonus,f:R.f});
@@ -336,7 +336,7 @@ class MineRoom{
     if(this.jr.vis&&(this.jr.mode==='dive'))BB.staticJr(this.jr.x,this.jr.y,110,{noShadow:1,rot:this.jr.rot,glitch:.6});
     // warehouse floor slab (with the NOTE MINE hatch)
     if(vy0<GY+60){ctx.fillStyle=BB.lg(GY,GY+50,['#a89a86','#7e7262','#4a3f35']);ctx.fillRect(vx0,GY,SHAFT[0]-vx0,46);ctx.fillRect(SHAFT[1],GY,vx1-SHAFT[1],46);ctx.fillStyle='rgba(255,240,210,.35)';ctx.fillRect(vx0,GY,SHAFT[0]-vx0,3);ctx.fillRect(SHAFT[1],GY,vx1-SHAFT[1],3);ctx.fillStyle=BB.lg(GY+46,GY+80,['rgba(10,5,2,.55)','rgba(10,5,2,0)']);ctx.fillRect(vx0,GY+46,vx1-vx0,34);
-      // v12.5: riveted floor plates
+      // v12.6: riveted floor plates
       ctx.strokeStyle='rgba(30,22,16,.45)';ctx.lineWidth=2;for(let x=Math.floor(vx0/160)*160;x<vx1;x+=160){if(x>SHAFT[0]-4&&x<SHAFT[1]+4)continue;ctx.beginPath();ctx.moveTo(x,GY+4);ctx.lineTo(x,GY+44);ctx.stroke();if(BB.q){BB.rivet(x+10,GY+12,3);BB.rivet(x+10,GY+36,3);BB.rivet(x-10,GY+12,3);BB.rivet(x-10,GY+36,3)}}
       const hd=ease.out(this.hatch),HW=HATCH[1]-HATCH[0];
       if(hd>.02){// dark shaft with depth under the open trapdoor
@@ -354,7 +354,7 @@ class MineRoom{
   drawWarehouse(vx0,vx1){const t=BB.t;const wh=BB.V2.wh;
     if(wh){const s=GY/946,tw=wh.width*s,th=wh.height*s;for(let i=Math.floor(vx0/tw);i*tw<vx1;i++){ctx.save();ctx.translate(i*tw+(i%2?tw:0),0);if(i%2)ctx.scale(-1,1);ctx.drawImage(wh,0,0,tw,th);ctx.restore()}}
     // conveyor
-    // v12.5 conveyor: riveted mint/cream enamel frame, chrome trim + rollers, marquee bulbs, rubber belt
+    // v12.6 conveyor: riveted mint/cream enamel frame, chrome trim + rollers, marquee bulbs, rubber belt
     BB.contactShadow(710,GY,720,.35);
     for(let x=80;x<1380;x+=140){const lg=ctx.createLinearGradient(x-8,0,x+8,0);lg.addColorStop(0,'#5d6866');lg.addColorStop(.4,'#eef3f1');lg.addColorStop(1,'#4a5452');ctx.fillStyle=lg;ctx.fillRect(x-7,840,14,GY-840);ctx.strokeStyle=COL.ink;ctx.lineWidth=2.5;ctx.strokeRect(x-7,840,14,GY-840)}// chrome legs
     BB.bevel(40,770,1340,70,24,['#e8faf3','#a6e0cf','#5fae99']);
@@ -366,7 +366,7 @@ class MineRoom{
     // WAREHOUSE banner
     BB.plaque(1305,588,320,76,'RHYTHM WAREHOUSE',28,'#28403c',{font:'Rammetto One',r:18});
     // NOTE MINE sign over hatch
-    {const nx=(HATCH[0]+HATCH[1])/2;BB.plaque(nx,452,250,80,'NOTE MINE',32,'#b5482a',{font:'Rammetto One',r:18});BB.text('▼',nx,508,30,COL.yellow,{stroke:5})}// v12.5: centred over the hatch// v12.2: moved clear of the lift post
+    {const nx=(HATCH[0]+HATCH[1])/2;BB.plaque(nx,452,250,80,'NOTE MINE',32,'#b5482a',{font:'Rammetto One',r:18});BB.text('▼',nx,508,30,COL.yellow,{stroke:5})}// v12.6: centred over the hatch// v12.2: moved clear of the lift post
     // WHOLE NOTES bin
     const bx=BIN_X;
     for(let i=0;i<Math.min(this.binCount,10);i++)BB.solidWhole(bx-60+(i%4)*40,GY-160-Math.floor(i/4)*24+(i%2)*6,24,{rot:(i%3-1)*.3});
@@ -377,7 +377,7 @@ class MineRoom{
     const mx=SMASH_X;BB.prop('smash',mx,GY+6,420,{shadowA:.4});
     {const py=GY-498;BB.plaque(mx,py+31,230,66,'SMASH-O-MATIC',24,'#b5482a',{font:'Rammetto One',r:16,cols:['#fdf8ea','#ecdcb8','#caa77a']})}
     // elevator call button
-    const pressed=this.btnPress&&BB.t-this.btnPress<.4;BB.contactShadow(BTN_X,GY,70,.4);{const g=ctx.createLinearGradient(BTN_X-26,0,BTN_X+26,0);g.addColorStop(0,'#5c6866');g.addColorStop(.3,'#f1f5f4');g.addColorStop(.55,'#a6b2b0');g.addColorStop(1,'#3f4a48');BB.rrect(BTN_X-46,GY-14,92,14,6,BB.lg(GY-14,GY,['#cfeee4','#7fb0a4']),COL.ink,3);BB.rrect(BTN_X-26,GY-140,52,128,8,g,COL.ink,4);for(const ry of[GY-120,GY-40])for(const rx of[BTN_X-15,BTN_X+15])BB.rivet(rx,ry,3.5);BB.bevel(BTN_X-44,GY-152,88,24,10,['#e8faf3','#a6e0cf','#5fae99']);}// v12.5 mint/cream enamel + chrome pedestal
+    const pressed=this.btnPress&&BB.t-this.btnPress<.4;BB.contactShadow(BTN_X,GY,70,.4);{const g=ctx.createLinearGradient(BTN_X-26,0,BTN_X+26,0);g.addColorStop(0,'#5c6866');g.addColorStop(.3,'#f1f5f4');g.addColorStop(.55,'#a6b2b0');g.addColorStop(1,'#3f4a48');BB.rrect(BTN_X-46,GY-14,92,14,6,BB.lg(GY-14,GY,['#cfeee4','#7fb0a4']),COL.ink,3);BB.rrect(BTN_X-26,GY-140,52,128,8,g,COL.ink,4);for(const ry of[GY-120,GY-40])for(const rx of[BTN_X-15,BTN_X+15])BB.rivet(rx,ry,3.5);BB.bevel(BTN_X-44,GY-152,88,24,10,['#e8faf3','#a6e0cf','#5fae99']);}// v12.6 mint/cream enamel + chrome pedestal
     const pz=pressed?8:0;ctx.fillStyle=BB.lg(GY-170+pz,GY-140,['#ff8a7a','#e65046','#a82e26']);ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(BTN_X,GY-156+pz,40,16,0,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.ellipse(BTN_X-10,GY-160+pz,14,5,0,0,7);ctx.fill();
     // Sprocket in the warehouse
     const talk=BB.isTalking('sprocket'),ch=this.sprCheer;

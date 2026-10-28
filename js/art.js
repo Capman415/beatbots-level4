@@ -5,7 +5,7 @@
 const P=(w,h,u,v)=>[-w/2+u*w,-h+v*h];const LQ=()=>BB.q===0;
 const INK=()=>COL.ink;
 // retro gear: bronze teeth + spokes + hub, ink outline
-// v12.5: crisp gear: even trapezoid teeth, true centre (no squash -> no wobble), uniform line weight, clean hub
+// v12.6: crisp gear: even trapezoid teeth, true centre (no squash -> no wobble), uniform line weight, clean hub
 const gear=(r,teeth,a)=>{ctx.save();ctx.rotate(a);const lw=Math.max(2.5,r*.07);ctx.lineWidth=lw;ctx.lineJoin='round';ctx.strokeStyle=INK();
   const ro=r,ri=r*.8,st=Math.PI*2/teeth;ctx.beginPath();for(let i=0;i<teeth;i++){const c=i*st;ctx.lineTo(Math.cos(c-st*.32)*ri,Math.sin(c-st*.32)*ri);ctx.lineTo(Math.cos(c-st*.18)*ro,Math.sin(c-st*.18)*ro);ctx.lineTo(Math.cos(c+st*.18)*ro,Math.sin(c+st*.18)*ro);ctx.lineTo(Math.cos(c+st*.32)*ri,Math.sin(c+st*.32)*ri)}ctx.closePath();
   ctx.restore();ctx.save();const g=ctx.createRadialGradient(-r*.35,-r*.35,r*.1,0,0,r*1.05);g.addColorStop(0,'#f2d48e');g.addColorStop(.6,'#c9973f');g.addColorStop(1,'#8a5c22');ctx.fillStyle=g;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=INK();ctx.stroke();ctx.restore();
@@ -32,7 +32,7 @@ const PARTS=BB.PARTS={
       ctx.fillStyle='#ffe066';ctx.beginPath();ctx.moveTo(nx-w*.07,ny);ctx.quadraticCurveTo(nx-w*.05,ny+L*.4,nx,ny+L*.62);ctx.quadraticCurveTo(nx+w*.05,ny+L*.4,nx+w*.07,ny);ctx.closePath();ctx.fill()},
     post:(w,h)=>{const[x,y]=P(w,h,.5,.04);twinkle(x,y,w*.12,0)}},
   sprocket:{// Sprocket: antenna with spinning ring + blinking bulb, turning dials, blinking belly light
-    pre:(w,h)=>{const t=BB.t,[x,y]=P(w,h,.55,.15),L=h*.11,lq=LQ(),lw=Math.max(3,h*.009);// v12.5: classic ball-tipped antenna; a level ring orbits it in 3D (fixed ellipse, spin shown by its studs)
+    pre:(w,h)=>{const t=BB.t,[x,y]=P(w,h,.55,.15),L=h*.11,lq=LQ(),lw=Math.max(3,h*.009);// v12.6: classic ball-tipped antenna; a level ring orbits it in 3D (fixed ellipse, spin shown by its studs)
       const rx=h*.05,ry=h*.016,ry0=y-L*.5,sp=t*(lq?1.5:3);
       const ringHalf=(front)=>{ctx.lineWidth=lw+3;ctx.strokeStyle=INK();ctx.beginPath();ctx.ellipse(x,ry0,rx,ry,0,front?0:Math.PI,front?Math.PI:Math.PI*2);ctx.stroke();ctx.lineWidth=lw;ctx.strokeStyle=front?'#eef3f1':'#9aa6a4';ctx.stroke();
         for(let i=0;i<6;i++){const a=sp+i*Math.PI/3,sn=Math.sin(a);if(front!==(sn>0))continue;ctx.fillStyle=front?'#ffd75a':'#a8892e';ctx.beginPath();ctx.arc(x+Math.cos(a)*rx,ry0+sn*ry,lw*.7,0,7);ctx.fill()}};
@@ -70,7 +70,7 @@ BB.rocketBot=(x,ground,h,o={})=>{const t=BB.t,lift=h*.32+Math.sin(t*2.2)*h*.035,
 // beat-synced squash: phase 0..1 within the beat -> squash amount
 BB.bounce=(ph,amt=.06)=>{const k=Math.exp(-ph*7);return amt*k*Math.cos(ph*9)};
 // Sorter Bot with a hard hat and pickaxe. swing: 0 = raised, 1 = striking
-/* v12.5d: CGI-matched tools - volumetric gradients, speculars, rim light, AO at the grip, waxed-wood handle, bevelled chrome head; hard hat in matching enamel */
+/* v12.6d: CGI-matched tools - volumetric gradients, speculars, rim light, AO at the grip, waxed-wood handle, bevelled chrome head; hard hat in matching enamel */
 const chromeX=(x0,x1,a=1)=>{const G=ctx.createLinearGradient(x0,0,x1,0);G.addColorStop(0,`rgba(58,64,70,${a})`);G.addColorStop(.18,`rgba(150,160,168,${a})`);G.addColorStop(.32,`rgba(250,252,253,${a})`);G.addColorStop(.48,`rgba(170,180,188,${a})`);G.addColorStop(.7,`rgba(96,104,112,${a})`);G.addColorStop(.88,`rgba(196,206,214,${a})`);G.addColorStop(1,`rgba(70,76,84,${a})`);return G};
 BB.pickbot=(x,base,h,swing,o={})=>{const sq=o.squash||0;
   ctx.save();ctx.translate(x,base);
@@ -105,12 +105,12 @@ BB.pickbot=(x,base,h,swing,o={})=>{const sq=o.squash||0;
   {const r=Math.max(2,h*.013),cx=0,cy=hy-h*.035,G=ctx.createRadialGradient(cx-r*.4,cy-r*.4,0,cx,cy,r);G.addColorStop(0,'#ffffff');G.addColorStop(.5,'#9aa5ad');G.addColorStop(1,'#2e3439');ctx.fillStyle=G;ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill()}}
   ctx.restore();
   ctx.restore();
-  /* v12.5e: hard hat sits ON the bucket rim, covering the open lid; no added height */
+  /* v12.6e: hard hat sits ON the bucket rim, covering the open lid; no added height */
   BB.sprite('sorter',x,base,h,{squash:sq})};
-/* v12.5b Static Jr. (option A): rusty orange TV bot drawn in code, cached per size */
+/* v12.6b Static Jr. (option A): rusty orange TV bot drawn in code, cached per size */
 const jrC={};
 function jrCanvas(h){const key=Math.round(h);if(jrC[key])return jrC[key];const S=h<160?3:2,H=h*S,Wd=H*1.08,P=Math.ceil(H*.03),c=document.createElement('canvas');c.width=Math.ceil(Wd+P*2);c.height=Math.ceil(H+P*2);const g=c.getContext('2d');g.translate(P,P);
-  /* v12.5d: volumetric render - soft gradients, AO, rim light, rust chips, dents, seams, rivets, glossy cracked visor */
+  /* v12.6d: volumetric render - soft gradients, AO, rim light, rust chips, dents, seams, rivets, glossy cracked visor */
   let sd=11;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;
   const LG=(x0,y0,x1,y1,a)=>{const G=g.createLinearGradient(x0,y0,x1,y1);a.forEach((v,i)=>G.addColorStop(Array.isArray(v)?v[0]:i/(a.length-1),Array.isArray(v)?v[1]:v));return G};
   const RG=(x,y,r0,x1,y1,r1,a)=>{const G=g.createRadialGradient(x,y,r0,x1,y1,r1);a.forEach((v,i)=>G.addColorStop(i/(a.length-1),v));return G};
@@ -190,14 +190,14 @@ function jrCanvas(h){const key=Math.round(h);if(jrC[key])return jrC[key];const S
   for(const [rx,ry] of[[hx+H*.03,hy+H*.03],[hx+hw-H*.03,hy+H*.03],[hx+H*.03,hy+hh-H*.03],[hx+hw-H*.03,hy+hh-H*.03],[hx+hw*.5,hy+H*.022]])rivet(rx,ry,H*.01);
   return jrC[key]={c,w:Wd/S,h:H/S,pad:P/S}}
 // Static Jr.: rusty TV bot, cracked cyan visor, rusty boots.
-/* v12.5d: option A render cut into a clean sprite (head+torso+arms); legs/boots/antennas stay procedural for the gait. ?jr=code forces the code-drawn body */
+/* v12.6d: option A render cut into a clean sprite (head+torso+arms); legs/boots/antennas stay procedural for the gait. ?jr=code forces the code-drawn body */
 const jrSp={};function jrSprite(h){const I=IMG.jr_a;if(!I||/jr=code/.test(location.search))return null;const k=Math.round(h);if(jrSp[k])return jrSp[k];
   const S=2,H=Math.round(h*S),W=Math.round(H*I.width/I.height),P=2,c=document.createElement('canvas');c.width=W+P*2;c.height=H+P*2;const g=c.getContext('2d');g.imageSmoothingQuality='high';g.drawImage(I,P,P,W,H);return jrSp[k]={c,w:W/S,h:H/S,pad:P/S,sprite:1}}
 BB.staticJr=(x,base,h,o={})=>{const J=jrSprite(h*1.2925)||jrCanvas(h),im=J.c;if(J.sprite)h=J.h;const SPR=!!J.sprite;const t=BB.t,w=J.w,legH=SPR?h*.195:h*.3,run=o.run||0;
   ctx.save();ctx.translate(x,base);
   const lift=o.lift||0;if(!o.noShadow){const k=1/(1+lift/60);ctx.fillStyle=`rgba(0,0,0,${.28*k})`;ctx.beginPath();ctx.ellipse(0,lift,w*.4*k,10*k,0,0,7);ctx.fill()}
   ctx.rotate(o.rot||0);if(o.flip)ctx.scale(-1,1);
-  /* v12.5c gait: planted foot moves back at ground speed (no slide), swing foot arcs forward; knees bend; body bobs */
+  /* v12.6c gait: planted foot moves back at ground speed (no slide), swing foot arcs forward; knees bend; body bobs */
   const spd=o.spd||450,fq=Math.min(11,Math.max(3.5,spd/(4*h*.16))),A=Math.min(h*.26,spd/(4*fq))*run,cyc=t*fq;
   const bob=run?-Math.abs(Math.sin(cyc*Math.PI*2))*h*.035*run:0,hipY=-legH+bob,LL=legH*.56;
   for(const lx of [-.2,.2]){const c=((cyc+(lx>0?.5:0))%1+1)%1;let fx=w*lx*.8,fy=0;
@@ -228,7 +228,7 @@ BB.staticJr=(x,base,h,o={})=>{const J=jrSprite(h*1.2925)||jrCanvas(h),im=J.c;if(
     BB.solidWhole(w*.02,-h*.48,h*.17,{rot:-.4+Math.sin(t*12)*.1})}
   if(o.dizzy){for(let i=0;i<3;i++){const a=t*4+i*2.1;BB.star(Math.cos(a)*w*.45,-h*1.08+Math.sin(a)*12,12,COL.yellow,a)}}
   ctx.restore()};
-/* v12.5c solid 3D whole note (same object as the room tiles); s = horizontal radius */
+/* v12.6c solid 3D whole note (same object as the room tiles); s = horizontal radius */
 BB.solidWhole=(x,y,s,o={})=>{const R=BB.R;if(!R||!R.note3d)return BB.wholeNote(x,y,s,o);const n=s/1.25,hh=n/.2,ww=n*2.9,sp=R.note3d('w',ww,hh);
   ctx.save();ctx.translate(x,y);ctx.rotate(o.rot||0);if(o.glow)BB.glow(0,0,s*2.2,'rgba(255,245,190,A)',o.glow);
   const cw=sp.c.width/sp.sc,ch=sp.c.height/sp.sc;ctx.drawImage(sp.c,-cw/2,-sp.gy,cw,ch);ctx.restore()};
@@ -313,7 +313,7 @@ BB.prop=(name,x,base,h,o={})=>{const im=BB.V2[name];if(!im)return;let hh=h;const
   if(o.shadow!==false)BB.contactShadow(x,base,w*.55,o.shadowA??.45);
   ctx.save();ctx.translate(x,base);if(o.rot)ctx.rotate(o.rot);if(o.flip)ctx.scale(-1,1);ctx.globalAlpha=o.alpha??1;ctx.drawImage(src,-w/2,-hh+(o.sink||0),w,hh);ctx.restore();return {x,w,h:hh}};
 })();
-// ---- v12.5 start-of-game soft/loud clap check (mic setup only): explain -> 4-beat count-in -> 8 soft claps ->
+// ---- v12.6 start-of-game soft/loud clap check (mic setup only): explain -> 4-beat count-in -> 8 soft claps ->
 // explain -> 4-beat count-in -> 8 loud claps, at 100 BPM. Count-ins are ignored; median of heard claps -> GroupGate.calLoud.
 BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['lc_intro',"Let's teach my ears your claps! First, we'll clap softly, piano, for eight beats. Then loudly, forte, for eight beats.",'sprocket'],

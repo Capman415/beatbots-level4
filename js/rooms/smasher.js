@@ -120,9 +120,9 @@ class SmasherRoom{constructor(o={}){this.o=o}
   chant(){const t=BB.ac.currentTime+.3,spb=60/84;BB.say('sm_echo',{overlap:true});for(let r=0;r<2;r++)for(let i=0;i<4;i++)BB.sfx.block(t+1.2+r*spb*2+i*spb/4,.8)}
   sweep(){if(!this.crumbs.length)return;BB.sfx.sweep();this.sweepT=BB.t;this.fly.push({k:'s',x0:PX,y0:ANVIL-30,x1:BX[3],y1:BASE-60,t0:BB.t+.4,d:.6,arc:200,end:()=>{this.inv.s++;BB.sfx.ting()}})}
   // v12.2: 1960s retro-robot bell (mint dome, orange plunger, cream bolted base, indicator light)
-  // v12.5: CGI desk bell - chrome dome (env reflections, specular, warm rim light), beveled mint enamel base with chrome band + rivets, shaded 3D plunger, flash on hit
+  // v12.6: CGI desk bell - chrome dome (env reflections, specular, warm rim light), beveled mint enamel base with chrome band + rivets, shaded 3D plunger, flash on hit
   drawBell(bx,by,ready,t){const pt=this.ringT&&t>=this.ringT?t-this.ringT:9,press=pt<.25?Math.sin(pt/.25*Math.PI):0,wob=pt<1.2?Math.sin(pt*30)*.035*(1-pt/1.2):0,fl=pt<.6?1-pt/.6:0,hq=!(BB.phone&&!BB.q),INK=COL.ink,E=(x,y,rx,ry,a0=0,a1=7,ccw)=>ctx.ellipse(x,y,rx,ry,0,a0,a1,ccw);
-    /* v12.5: matte aged brass counter bell (ref: Victorian brass counter bell). Soft broad highlights, no gloss hotspots. */
+    /* v12.6: matte aged brass counter bell (ref: Victorian brass counter bell). Soft broad highlights, no gloss hotspots. */
     const hg=(x0,x1,st)=>{const g=ctx.createLinearGradient(x0,0,x1,0);st.forEach((c,i)=>g.addColorStop(i/(st.length-1),c));return g};
     const BR=['#6a4c22','#94723a','#c49d58','#dcb872','#caa45e','#ab8648','#8a6834','#563e1a'];
     const vshade=(y0,y1,a,b)=>{const v=ctx.createLinearGradient(0,y0,0,y1);v.addColorStop(0,a);v.addColorStop(1,b);return v};
@@ -257,7 +257,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     if(this.state==='order'&&this.oi===0&&BB.t-this.cardT<2.6)BB.titleCard('ROOM 2: NOTE SMASHER','Static Jr. broke the notes. Smash them into orders!',(BB.t-this.cardT)/2.6);
     if(this.state==='end')this.drawEnd();
     if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
-  drawCartNotes(){const t=BB.t,V=BB.V2||{};/* v12.5: heaped mound of whole-note tiles, cart front rim redrawn on top */
+  drawCartNotes(){const t=BB.t,V=BB.V2||{};/* v12.6: heaped mound of whole-note tiles, cart front rim redrawn on top */
     const P=[[-120,-196,-.25],[-60,-200,.12],[0,-198,-.1],[60,-200,.3],[120,-195,-.2],[-90,-226,-.08],[-30,-230,.18],[30,-229,-.22],[90,-225,.15],[-58,-258,.2],[0,-262,-.15],[58,-257,.1],[-28,-290,.05],[28,-292,-.1]];
     P.forEach(([dx,dy,r],i)=>{ctx.save();ctx.translate(CART.x+dx,CART.base+dy-(i>6?Math.abs(Math.sin(t*1.2+i))*2:0));ctx.rotate(r);BB.solidWhole(0,0,27,{});ctx.restore()});
     if(V.cart){ctx.save();ctx.beginPath();ctx.rect(CART.x-200,CART.base-190,400,194);ctx.clip();ctx.drawImage(V.cart,CART.x-190,CART.base-225,380,225);ctx.restore()}
@@ -266,7 +266,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     if(this.sel==='w')this.selRing(CART.x,CART.base-120,210)}
   // per-basket pile slots (stable jitter, so notes don't reshuffle); remembers counts to animate adds and lifts
   pileFor(k,n){const P=this.piles=this.piles||{},t=BB.t;let p=P[k];if(!p)p=P[k]={items:[]};
-    const SL=[[-14,-82,-.12],[18,-81,.14],[2,-89,-.03],[-24,-79,-.2]];// v12.5: raised so note heads clear the front rim
+    const SL=[[-14,-82,-.12],[18,-81,.14],[2,-89,-.03],[-24,-79,-.2]];// v12.6: raised so note heads clear the front rim
     while(p.items.length<n){const j=p.items.length,sl=SL[j%4];p.items.push({x:sl[0],y:sl[1],r:sl[2],add:p.init?t:0})}
     while(p.items.length>n){const it=p.items.pop();/* the fly-out animation carries the picked note */}
     p.init=1;return p.items}
@@ -315,7 +315,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     ctx.restore();
     // ticket
     if(O&&this.state!=='end'){const tx=WIN.x+232,ty=WIN.y+30,tw=300,th=204,k=ease.back(clamp((t-this.cust.in-.6)/.4,0,1));ctx.save();ctx.translate(tx+tw/2,ty);ctx.scale(k,k);ctx.rotate(Math.sin(t*1.3)*.01);
-      ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetX=6;ctx.shadowOffsetY=12;BB.rrect(-tw/2,0,tw,th,10,BB.lg(0,th,['#fffaf0','#f1e8d2','#ddd0b2']));ctx.restore();R.paper(-tw/2,0,tw,th);BB.rrect(-tw/2,0,tw,th,10,null,'rgba(110,95,70,.6)',2);/* v12.5: header printed on the paper (red ink + rules), not a separate bar */ctx.fillStyle='rgba(200,60,48,.85)';ctx.fillRect(-tw/2+10,39,tw-20,2.5);ctx.fillRect(-tw/2+10,44,tw-20,1);
+      ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetX=6;ctx.shadowOffsetY=12;BB.rrect(-tw/2,0,tw,th,10,BB.lg(0,th,['#fffaf0','#f1e8d2','#ddd0b2']));ctx.restore();R.paper(-tw/2,0,tw,th);BB.rrect(-tw/2,0,tw,th,10,null,'rgba(110,95,70,.6)',2);/* v12.6: header printed on the paper (red ink + rules), not a separate bar */ctx.fillStyle='rgba(200,60,48,.85)';ctx.fillRect(-tw/2+10,39,tw-20,2.5);ctx.fillRect(-tw/2+10,44,tw-20,1);
       BB.text('ORDER #'+(this.oi+1)+(O.rush?'  RUSH!':''),0,22,26,'#c23a2e',{font:'Rammetto One'});
       let b=0;for(const kk of O.seq){const n=R.BEATS[kk],cw=(tw-20)/4,x=-tw/2+10+b*cw,w=n*cw;ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;ctx.strokeRect(x+2,52,w-4,116);
         R.tile(kk,x+2,62,w-4,92,{gs:kk==='s'?1.35:1});BB.text(R.SAY[kk],x+w/2,186,kk==='s'?16:19,'#5a5040');b+=n}
@@ -323,11 +323,11 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
       ctx.restore();
       if(O.rush&&this.rushT&&this.state==='order'){const f=clamp(1-(t-this.rushT)/50,0,1);BB.rrect(tx,ty+th+12,tw,20,10,'#233','#fff',2);BB.rrect(tx,ty+th+12,tw*f,20,10,f>.3?COL.yellow:'#ffb08a');if(f===0)BB.text('take your time!',tx+tw/2,ty+th+52,24,'#fff',{stroke:4})}}
     // bell
-    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-118,by=WIN.y+WIN.h-64;/* v12.5: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
+    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-118,by=WIN.y+WIN.h-64;/* v12.6: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
     this.drawBell(bx,by,ready,t);
     BB.plaque(bx-150,by+12,110,32,'RING!',22,ready?'#b5482a':'#28403c',{font:'Rammetto One',noRivet:1});
     BB.button(bx-180,by-110,260,140,'',{id:'bell',style:'none',onClick:()=>this.ring()})}
-  // v12.5: big retro SMASH-O-MATIC marquee: chrome + enamel bevels, chasing bulbs, gear + lightning accents, flash on each smash
+  // v12.6: big retro SMASH-O-MATIC marquee: chrome + enamel bevels, chasing bulbs, gear + lightning accents, flash on each smash
   drawMarquee(){const t=BB.t,cx=PX,cy=252,w=470,h=128,x=cx-w/2,y=cy-h/2,fx=this.smashFx?Math.max(0,1-(t-this.smashFx)/.5):0,fl=BB.q?(Math.random()<.02?.6:1):1;
     // gears behind the corners
     for(const [gx,sd] of[[x+12,1],[x+w-12,-1]]){ctx.save();ctx.translate(gx,cy+6);ctx.rotate(t*.6*sd+fx*2*sd);ctx.fillStyle=BB.lg(-44,44,['#e6eceb','#7d8987','#3b4544']);ctx.strokeStyle='#1e2b29';ctx.lineWidth=3;ctx.beginPath();

@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v12.5';
+BB.VERSION='v12.6';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -43,7 +43,7 @@ BB.button=(x,y,w,h,label,o={})=>{
   ctx.save();ctx.translate(cx,cy);ctx.scale(s*(pressed?.95:1),s*(pressed?.95:1));ctx.translate(-cx,-cy);
   ctx.globalAlpha=o.disabled?.45:1;const st=o.style||'cream';
   BB.rrect(x+4,y+8,w,h,o.r||28,'rgba(0,0,0,.35)');
-  if(st!=='flat'){BB.rrect(x-4,y-4,w+8,h+8,(o.r||28)+4,BB.lg(y-4,y+h+4,['#f4f7f6','#9aa6a4','#e2e8e6','#6c7775']),'rgba(20,30,30,.7)',2)}// v12.5 chrome bezel
+  if(st!=='flat'){BB.rrect(x-4,y-4,w+8,h+8,(o.r||28)+4,BB.lg(y-4,y+h+4,['#f4f7f6','#9aa6a4','#e2e8e6','#6c7775']),'rgba(20,30,30,.7)',2)}// v12.6 chrome bezel
   const R=o.r||28,sheen=()=>{ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(R,h/2));ctx.clip();BB.rrect(x+10,y+6,w-20,h*.4,Math.max(4,R-10),BB.lg(y,y+h*.45,['rgba(255,255,255,.38)','rgba(255,255,255,.04)']));ctx.restore()};
   if(st==='cream'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#fbf6e6','#e8e2cd','#cbc2a8']),'#8a806b',5);sheen();}
   else if(st==='green'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#6fd884','#3fb45a','#2a8a42']),'#1d5a2c',6);sheen();}
@@ -72,7 +72,7 @@ BB.text=(t,x,y,s,fill,o={})=>{ctx.font=`${s}px '${o.font||'Lilita One'}'`;ctx.te
 // teal+cream panel (same as l2lib_v4.panel / mockups)
 // clay-look panel: soft two-step shadow, lit cream rim, deep teal well with inner shadow + top sheen
 BB.lg=(y0,y1,stops)=>{const g=ctx.createLinearGradient(0,y0,0,y1);stops.forEach((c,i)=>g.addColorStop(i/(stops.length-1),c));return g};
-// v12.5: shaded, beveled enamel plaque with a chrome rim, rivets and soft inner/outer shading (matches the robots + CGI rooms)
+// v12.6: shaded, beveled enamel plaque with a chrome rim, rivets and soft inner/outer shading (matches the robots + CGI rooms)
 BB.bevel=(x,y,w,h,r,cols=['#fdf8ea','#e9e2cc','#c9bfa3'])=>{ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=22;ctx.shadowOffsetY=10;
   BB.rrect(x-4,y-4,w+8,h+8,r+4,BB.lg(y-4,y+h+4,['#f4f7f6','#9aa6a4','#e2e8e6','#6c7775']));ctx.restore();// chrome rim
   BB.rrect(x-4,y-4,w+8,h+8,r+4,null,'rgba(20,30,30,.75)',2.5);

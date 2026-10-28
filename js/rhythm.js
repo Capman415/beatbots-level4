@@ -7,7 +7,7 @@ R.BEATS={w:4,h:2,q:1,e:1,s:1,r:1};
 R.NAME={w:'WHOLE',h:'HALF',q:'TA',e:'TI-TI',s:'TIKA-TIKA',r:'REST'};
 R.SAY={w:'ta-a-a-a',h:'ta-a',q:'ta',e:'ti-ti',s:'tika-tika',r:'(rest)'};
 // v12.2: sheet-music ink look (matches the order ticket): black notation with a soft graphite bevel; colour only on UI
-const INK=['#5a5a68','#1a1a22','#040406'];/* v12.5: glossy black CGI solid */R.COLS={w:INK,h:INK,q:INK,e:INK,s:INK,r:['#7d8c8a','#55625f','#323b39']};
+const INK=['#5a5a68','#1a1a22','#040406'];/* v12.6: glossy black CGI solid */R.COLS={w:INK,h:INK,q:INK,e:INK,s:INK,r:['#7d8c8a','#55625f','#323b39']};
 R.SUB={w:[0],h:[0],q:[0],e:[0,.5],s:[0,.25,.5,.75],r:[]};
 // sounds of a sequence, in beats from the start of the measure
 R.sounds=seq=>{const o=[];let b=0;seq.forEach((k,i)=>{for(const f of R.SUB[k])o.push({b:b+f,i,k,f});b+=R.BEATS[k]});return o};
@@ -40,7 +40,7 @@ R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'
   else R.glyph(k,gx,gy,s,'#000',mg);
   const c=R.COLS[k],out=document.createElement('canvas');out.width=cw;out.height=ch;const g=out.getContext('2d');
   const ink=tint(m,()=>'#141419'),deep=tint(m,()=>c[2]),face=tint(m,(gg)=>{const L=gg.createLinearGradient(0,PAD,0,ch-PAD);L.addColorStop(0,c[0]);L.addColorStop(.55,c[1]);L.addColorStop(1,c[2]);return L});
-  /* v12.5b: solid 3D note object - extruded thickness, bevelled edges, shaded head, cylinder-lit stems, rim light */
+  /* v12.6b: solid 3D note object - extruded thickness, bevelled edges, shaded head, cylinder-lit stems, rim light */
   const d=Math.max(3,s*.3),ex=d*.55;
   const edge=(dx,dy,fill)=>{const e=document.createElement('canvas');e.width=cw;e.height=ch;const eg=e.getContext('2d');eg.drawImage(m,0,0);eg.globalCompositeOperation='destination-out';eg.drawImage(m,dx,dy);return tint(e,fill)};
   /* extrusion: side walls lit from above (lighter near the face) */
@@ -65,13 +65,13 @@ R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'
   const spt=tint(sp,()=>'rgba(255,255,255,.55)');g.drawImage(spt,0,0);
   /* head specular dot */
   if(k!=='r'){const G=g.createRadialGradient(hx+s*.15,hy+s*.2,0,hx+s*.15,hy+s*.2,s*.45);G.addColorStop(0,'rgba(255,255,255,.75)');G.addColorStop(1,'rgba(255,255,255,0)');g.save();g.globalCompositeOperation='source-atop';g.fillStyle=G;g.fillRect(0,0,cw,ch);g.restore()}
-  /* v12.5: shape-true soft shadow = blurred silhouette (shadowBlur trick works on Safari too) */
+  /* v12.6: shape-true soft shadow = blurred silhouette (shadowBlur trick works on Safari too) */
   const sh=document.createElement('canvas');sh.width=cw;sh.height=ch;{const hg=sh.getContext('2d');hg.shadowColor='rgba(0,0,0,.5)';hg.shadowBlur=Math.max(4,s*.35);hg.shadowOffsetX=cw*4;hg.drawImage(m,-cw*4,0)}
   return n3c[key]={c:out,sh,sc,PAD,s:s/sc,gy:gy/sc}};
 // a note object standing in a w x h box (bottom of box = the surface it rests on)
 R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
   // label = cream name tag on the surface UNDER the note (never on the stem); the note shrinks to make room
-  const fs=o.label?Math.max(14,Math.min(21,h*.16)):0,tagH=o.label?fs+10:0,pad=o.label?Math.max(6,h*.07):0;if(o.label)h-=tagH+pad*2;// v12.5: even gap note|tag|box bottom
+  const fs=o.label?Math.max(14,Math.min(21,h*.16)):0,tagH=o.label?fs+10:0,pad=o.label?Math.max(6,h*.07):0;if(o.label)h-=tagH+pad*2;// v12.6: even gap note|tag|box bottom
   if(o.shadow!==false){const sw=Math.min(w*.46,R.noteSize(k,w,h)*(k==='s'?4.6:k==='e'?3.4:1.8));const gr=ctx.createRadialGradient(x+w/2,y+h,0,x+w/2,y+h,sw);gr.addColorStop(0,'rgba(0,0,0,.42)');gr.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=gr;ctx.save();ctx.translate(x+w/2,y+h);ctx.scale(1,.22);ctx.translate(-x-w/2,-y-h);ctx.beginPath();ctx.arc(x+w/2,y+h,sw,0,7);ctx.fill();ctx.restore()}
   if(o.glyph!==false){const sp=R.note3d(k,w,h,o);if(o.shadow!==false&&!(BB.phone&&!BB.q)){/* lamp upper-left: shadow falls right & down, flattened onto the surface */const ox=sp.s*.35,oy=sp.s*.18;ctx.save();ctx.globalAlpha*=.75;const pv=y-sp.PAD/sp.sc+sp.gy+sp.s*.7;ctx.translate(x+w/2,pv);ctx.transform(1,0,-.35,.45,0,0);ctx.translate(-x-w/2,-pv);ctx.drawImage(sp.sh,x-sp.PAD/sp.sc+ox,y-sp.PAD/sp.sc+oy,sp.c.width/sp.sc,sp.c.height/sp.sc);ctx.restore()}ctx.drawImage(sp.c,x-sp.PAD/sp.sc,y-sp.PAD/sp.sc,sp.c.width/sp.sc,sp.c.height/sp.sc)}
@@ -145,10 +145,10 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     // beat dots under the pills
     if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*150+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
 R.ClapBack=ClapBack;
-// v12.5: paper fibre texture (cached pattern) for tickets
+// v12.6: paper fibre texture (cached pattern) for tickets
 let paperPat=null;R.paper=(x,y,w,h)=>{if(!paperPat){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');for(let i=0;i<1400;i++){const v=Math.random();g.fillStyle=v<.5?`rgba(120,95,60,${Math.random()*.06})`:`rgba(255,255,255,${Math.random()*.12})`;g.fillRect(Math.random()*128,Math.random()*128,1+Math.random()*3,1)}paperPat=ctx.createPattern(c,'repeat')}
   ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.clip();ctx.fillStyle=paperPat;ctx.fillRect(x,y,w,h);const e=ctx.createRadialGradient(x+w/2,y+h/2,Math.min(w,h)*.3,x+w/2,y+h/2,Math.max(w,h)*.75);e.addColorStop(0,'rgba(120,90,40,0)');e.addColorStop(1,'rgba(120,90,40,.18)');ctx.fillStyle=e;ctx.fillRect(x,y,w,h);ctx.restore()};
-// v12.5: unmistakable "YOUR TURN" cue (Smartboard-readable): retro ding-ding, full-width pulsing banner, green listening border, robots pointing at the class
+// v12.6: unmistakable "YOUR TURN" cue (Smartboard-readable): retro ding-ding, full-width pulsing banner, green listening border, robots pointing at the class
 R.turnCue=t=>{const s=BB.sfx;if(s.ding){s.ding(t);s.ding(t+.22)}};
 R.yourTurn=(ph,rb,py)=>{const t=BB.t,pu=.5+.5*Math.sin(t*Math.PI*2*1.4),cl=ph==='clap';
   // green border glow while listening

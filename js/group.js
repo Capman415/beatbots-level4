@@ -6,7 +6,7 @@
 (function(root){
 const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   W0:-.12,W1:.16,
-  // v12.5: lat = speaker->mic->kids round-trip delay beyond what the windows were tuned for (set from the mic-setup
+  // v12.6: lat = speaker->mic->kids round-trip delay beyond what the windows were tuned for (set from the mic-setup
   // beep test). Kids clap to the beat they HEAR, so every window is centred on beat+lat. At fast tempos kids also
   // drag a little, so the late side of the window is wider than the early side.
   lat:0,LAT_BASE:.04,setLat(measured){this.lat=measured==null?0:Math.min(.18,Math.max(0,measured-this.LAT_BASE))},
@@ -18,7 +18,7 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   K_GROUP:.15,          // ... and this fraction of the learned/calibrated group level
   MIN_DUR:.035,PW:.5,        // burst must stay above 1/4 of its peak this long (group claps smear)
   // clap onset rule (shared with engine.js): relative jump over an adaptive noise floor, low absolute minimum so soft claps count
-  ONSET_K:2.2,ONSET_ADD:.0015,ONSET_MIN:.003,ONSET_JUMP:1.3,ONSET_JUMP_FS:1.05,// v12.5: cave-in (fast + piano) - whisper claps ride on the previous clap's tail, so only demand a small rise
+  ONSET_K:2.2,ONSET_ADD:.0015,ONSET_MIN:.003,ONSET_JUMP:1.3,ONSET_JUMP_FS:1.05,// v12.6: cave-in (fast + piano) - whisper claps ride on the previous clap's tail, so only demand a small rise
   
   // meter scale (shared by the mic meter, onsets and the room's p/f checks)
   // v12.2 loudness: dB scale relative to THIS mic's clap range (raw Chromebook/phone mics put even soft claps near
@@ -36,7 +36,7 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   CAL_F:.3,calOk(){const L=this.loud;return L.calLo!=null&&L.calHi!=null&&L.calHi-L.calLo>4},
   calLoud(softRms,loudRms){this.loud.calLo=softRms?this.dB(softRms):null;this.loud.calHi=loudRms?this.dB(loudRms):null},
   lvl(rms,sens){const d=this.dB(rms)-this.centre(sens);return Math.min(1,Math.max(0,d>=0?.5+d/20:.5+d/60))},
-  // v12.5 forte: firm, confident claps count. With the soft/loud check: anything past 45% of the way from the
+  // v12.6 forte: firm, confident claps count. With the soft/loud check: anything past 45% of the way from the
   // soft level to the loud level (just below the midpoint). Without it: ~4 dB over the class's normal clap.
   FORTE_F:.45,FORTE_LVL:.7,isLoud(rms,sens){const L=this.loud;if(this.calOk())return this.dB(rms)>=L.calLo+this.FORTE_F*(L.calHi-L.calLo);return this.lvl(rms,sens)>=this.FORTE_LVL},
   SOFT_BAR:.1,SOFT_MAX:.65,LOUD_MIN:.8,// SOFT_BAR = first green meter segment lit
@@ -66,8 +66,8 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   // beat tolerance and stray test scale with tempo: at Allegro (145 bpm, 0.41 s/beat) a slightly late GROUP clap
   // must never be mistaken for a lone stray, or it teaches the gate that the group is 'single-kid' loud.
   tol(spb){return Math.min(.17,spb*.36)},
-  isStray(dt,spb){let d=(dt-this.lat)%spb;if(d<0)d+=spb;return d>=this.late(spb)+.05&&d<=spb-this.early(spb)-.05},// v12.5: measured from the PREVIOUS beat, so a dragging group clap is never a 'stray'
-  stray(t){const m=this.measure(t-.03,t+.1);if(m.E<=0)return;if(this.groupN>=2&&m.E>this.group*.35)return;// v12.5: a dragging GROUP clap (big energy) is not a stray kid - don't let it raise the bar
+  isStray(dt,spb){let d=(dt-this.lat)%spb;if(d<0)d+=spb;return d>=this.late(spb)+.05&&d<=spb-this.early(spb)-.05},// v12.6: measured from the PREVIOUS beat, so a dragging group clap is never a 'stray'
+  stray(t){const m=this.measure(t-.03,t+.1);if(m.E<=0)return;if(this.groupN>=2&&m.E>this.group*.35)return;// v12.6: a dragging GROUP clap (big energy) is not a stray kid - don't let it raise the bar
     this.single=this.singleN?Math.max(this.single*.9+m.E*.1,Math.min(this.single,m.E)):m.E;this.singleN++},
   calibrate(Es){Es=Es.filter(x=>x>0).sort((a,b)=>a-b);if(Es.length>=2)this.cal=Es[Es.length>>1];return this.cal}};
 root.GroupGate=G;if(typeof module!=='undefined')module.exports=G})(typeof window!=='undefined'?window:globalThis);
