@@ -50,14 +50,16 @@ R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'
   g.save();g.globalCompositeOperation='source-atop';g.drawImage(hl,-s*.06,-s*.08);g.restore();
   const sp=document.createElement('canvas');sp.width=cw;sp.height=ch;const sg=sp.getContext('2d');sg.drawImage(m,0,0);sg.globalCompositeOperation='destination-out';sg.drawImage(m,s*.09,s*.12);
   const spt=tint(sp,()=>'rgba(255,255,255,.7)');g.drawImage(spt,0,0);
-  return n3c[key]={c:out,sc,PAD,gy:gy/sc}};
+  /* v12.5: shape-true soft shadow = blurred silhouette (shadowBlur trick works on Safari too) */
+  const sh=document.createElement('canvas');sh.width=cw;sh.height=ch;{const hg=sh.getContext('2d');hg.shadowColor='rgba(0,0,0,.5)';hg.shadowBlur=Math.max(4,s*.35);hg.shadowOffsetX=cw*4;hg.drawImage(m,-cw*4,0)}
+  return n3c[key]={c:out,sh,sc,PAD,s:s/sc,gy:gy/sc}};
 // a note object standing in a w x h box (bottom of box = the surface it rests on)
 R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
   // label = cream name tag on the surface UNDER the note (never on the stem); the note shrinks to make room
   const fs=o.label?Math.max(14,Math.min(21,h*.16)):0,tagH=o.label?fs+10:0,pad=o.label?Math.max(6,h*.07):0;if(o.label)h-=tagH+pad*2;// v12.5: even gap note|tag|box bottom
   if(o.shadow!==false){const sw=Math.min(w*.46,R.noteSize(k,w,h)*(k==='s'?4.6:k==='e'?3.4:1.8));const gr=ctx.createRadialGradient(x+w/2,y+h,0,x+w/2,y+h,sw);gr.addColorStop(0,'rgba(0,0,0,.42)');gr.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=gr;ctx.save();ctx.translate(x+w/2,y+h);ctx.scale(1,.22);ctx.translate(-x-w/2,-y-h);ctx.beginPath();ctx.arc(x+w/2,y+h,sw,0,7);ctx.fill();ctx.restore()}
-  if(o.glyph!==false){const sp=R.note3d(k,w,h,o);ctx.drawImage(sp.c,x-sp.PAD/sp.sc,y-sp.PAD/sp.sc,sp.c.width/sp.sc,sp.c.height/sp.sc)}
+  if(o.glyph!==false){const sp=R.note3d(k,w,h,o);if(o.shadow!==false&&!(BB.phone&&!BB.q)){/* lamp upper-left: shadow falls right & down, flattened onto the surface */const ox=sp.s*.35,oy=sp.s*.18;ctx.save();ctx.globalAlpha*=.75;const pv=y-sp.PAD/sp.sc+sp.gy+sp.s*.7;ctx.translate(x+w/2,pv);ctx.transform(1,0,-.35,.45,0,0);ctx.translate(-x-w/2,-pv);ctx.drawImage(sp.sh,x-sp.PAD/sp.sc+ox,y-sp.PAD/sp.sc+oy,sp.c.width/sp.sc,sp.c.height/sp.sc);ctx.restore()}ctx.drawImage(sp.c,x-sp.PAD/sp.sc,y-sp.PAD/sp.sc,sp.c.width/sp.sc,sp.c.height/sp.sc)}
   if(o.label){const tw=Math.min(w-8,BB.measure(R.NAME[k],fs)+18),ty=y+h+pad;BB.rrect(x+w/2-tw/2+2,ty+3,tw,tagH,7,'rgba(0,0,0,.3)');BB.rrect(x+w/2-tw/2,ty,tw,tagH,7,BB.lg(ty,ty+tagH,['#fbf6e6','#ddd3b8']),'rgba(25,25,31,.8)',2);BB.text(R.NAME[k],x+w/2,ty+tagH/2+1,fs,COL.ink,{maxW:tw-8})}
   if(o.beats){BB.text(String(R.BEATS[k]),x+w-18,y+h-18,22,'#fff',{stroke:4})}
   ctx.restore()};
