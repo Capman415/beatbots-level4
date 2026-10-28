@@ -338,9 +338,9 @@ class MineRoom{
     for(let x=80;x<1380;x+=140){ctx.fillStyle=BB.lg(818,858,['#9aa0a6','#4a4f55']);ctx.beginPath();ctx.arc(x,838,18,0,7);ctx.fill();ctx.fillStyle='#ffd23c';ctx.beginPath();ctx.arc(x,838,6,0,7);ctx.fill();ctx.fillStyle='#3a332e';ctx.fillRect(x-5,852,10,GY-852)}
     // wall gears + blinking lights
     // WAREHOUSE banner
-    BB.panel(1150,540,310,96,18);BB.text('RHYTHM WAREHOUSE',1305,590,26,'#fff',{stroke:4});
+    BB.plaque(1305,588,320,76,'RHYTHM WAREHOUSE',28,'#28403c',{font:'Rammetto One',r:18});
     // NOTE MINE sign over hatch
-    BB.panel(SHAFT[1]+18,440,225,104,18);BB.text('NOTE MINE ←',SHAFT[1]+130,496,30,COL.yellow,{stroke:4});// v12.2: moved clear of the lift post
+    {const nx=(HATCH[0]+HATCH[1])/2;BB.plaque(nx,488,250,80,'NOTE MINE',32,'#b5482a',{font:'Rammetto One',r:18});BB.text('▼',nx,546,30,COL.yellow,{stroke:5})}// v12.5: centred over the hatch// v12.2: moved clear of the lift post
     // WHOLE NOTES bin
     const bx=BIN_X;
     for(let i=0;i<Math.min(this.binCount,10);i++)BB.wholeNote(bx-60+(i%4)*40,GY-160-Math.floor(i/4)*24+(i%2)*6,24,{rot:(i%3-1)*.3});
@@ -349,12 +349,9 @@ class MineRoom{
     if(this.binCount===0){ctx.fillStyle='#e8e4d8';for(let i=0;i<9;i++){ctx.beginPath();ctx.arc(bx-110+i*28,GY-6-(i%3)*5,4+(i%2)*3,0,7);ctx.fill()}}
     // SMASH-O-MATIC 4000 (idle) beside the shaft
     const mx=SMASH_X;BB.prop('smash',mx,GY+6,420,{shadowA:.4});
-    {// wall plaque, narrower than the machine body, bolted to the wall with a soft cast shadow
-      const pw=210,ph=62,py=GY-498;BB.rrect(mx-pw/2+6,py+8,pw,ph,12,'rgba(40,15,5,.35)');BB.rrect(mx-pw/2,py,pw,ph,12,BB.lg(py,py+ph,['#d9734a','#c85a32','#9c4224']),COL.ink,4);
-      ctx.fillStyle='rgba(255,255,255,.22)';ctx.fillRect(mx-pw/2+10,py+5,pw-20,8);for(const bx of[mx-pw/2+12,mx+pw/2-12]){ctx.fillStyle='#e8d8b0';ctx.beginPath();ctx.arc(bx,py+ph/2,4,0,7);ctx.fill()}
-      BB.text('SMASH-O-MATIC',mx,py+24,22,'#fff',{stroke:4,maxW:pw-40});BB.text('4000',mx,py+47,18,COL.yellow,{stroke:3})}
+    {const py=GY-498;BB.plaque(mx,py+31,230,66,'SMASH-O-MATIC',24,'#b5482a',{font:'Rammetto One',r:16,cols:['#fdf8ea','#ecdcb8','#caa77a']})}
     // elevator call button
-    const pressed=this.btnPress&&BB.t-this.btnPress<.4;BB.contactShadow(BTN_X,GY,70,.4);{const g=ctx.createLinearGradient(BTN_X-24,0,BTN_X+24,0);g.addColorStop(0,'#3e6e72');g.addColorStop(.4,'#7fb0b2');g.addColorStop(1,'#2a4c50');ctx.fillStyle=g;BB.rrect(BTN_X-24,GY-140,48,140,8,g,COL.ink,4);BB.rrect(BTN_X-40,GY-150,80,20,8,'#c85a32',COL.ink,4)}
+    const pressed=this.btnPress&&BB.t-this.btnPress<.4;BB.contactShadow(BTN_X,GY,70,.4);{const g=ctx.createLinearGradient(BTN_X-26,0,BTN_X+26,0);g.addColorStop(0,'#5c6866');g.addColorStop(.3,'#f1f5f4');g.addColorStop(.55,'#a6b2b0');g.addColorStop(1,'#3f4a48');BB.rrect(BTN_X-46,GY-14,92,14,6,BB.lg(GY-14,GY,['#cfeee4','#7fb0a4']),COL.ink,3);BB.rrect(BTN_X-26,GY-140,52,128,8,g,COL.ink,4);for(const ry of[GY-120,GY-40])for(const rx of[BTN_X-15,BTN_X+15])BB.rivet(rx,ry,3.5);BB.bevel(BTN_X-44,GY-152,88,24,10,['#e8faf3','#a6e0cf','#5fae99']);}// v12.5 mint/cream enamel + chrome pedestal
     const pz=pressed?8:0;ctx.fillStyle=BB.lg(GY-170+pz,GY-140,['#ff8a7a','#e65046','#a82e26']);ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(BTN_X,GY-156+pz,40,16,0,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.ellipse(BTN_X-10,GY-160+pz,14,5,0,0,7);ctx.fill();
     // Sprocket in the warehouse
     const talk=BB.isTalking('sprocket'),ch=this.sprCheer;
