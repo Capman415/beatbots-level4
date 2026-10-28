@@ -135,13 +135,23 @@ function jrCanvas(h){const key=Math.round(h);if(jrC[key])return jrC[key];const S
 // Static Jr.: rusty TV bot, cracked cyan visor, rusty boots.
 BB.staticJr=(x,base,h,o={})=>{const J=jrCanvas(h),im=J.c;const t=BB.t,w=J.w,legH=h*.3,run=o.run||0;
   ctx.save();ctx.translate(x,base);
-  ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,0,w*.4,10,0,0,7);ctx.fill();
+  const lift=o.lift||0;if(!o.noShadow){const k=1/(1+lift/60);ctx.fillStyle=`rgba(0,0,0,${.28*k})`;ctx.beginPath();ctx.ellipse(0,lift,w*.4*k,10*k,0,0,7);ctx.fill()}
   ctx.rotate(o.rot||0);if(o.flip)ctx.scale(-1,1);
-  for(const lx of [-.2,.2]){const ph=run?Math.sin(t*28+(lx>0?Math.PI:0))*run:0;
-    const fx=w*lx+ph*h*.18,fy=-(ph>0?ph*h*.08:0);
-    ctx.strokeStyle='#4a4f55';ctx.lineWidth=Math.max(5,h*.07);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(w*lx*.8,-legH);ctx.lineTo(fx,fy-h*.06);ctx.stroke();
-    ctx.fillStyle=BB.lg(fy-h*.12,fy,['#e08850','#a8501f','#6e3010']);ctx.strokeStyle='#2a160c';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(fx+h*.03,fy-h*.06,h*.11,h*.065,0,0,7);ctx.fill();ctx.stroke()}
-  const by=-legH-h,sq=o.squash||0;ctx.translate(0,-legH);ctx.scale(1+sq,1-sq);
+  /* v12.5c gait: planted foot moves back at ground speed (no slide), swing foot arcs forward; knees bend; body bobs */
+  const spd=o.spd||450,fq=Math.min(11,Math.max(3.5,spd/(4*h*.16))),A=Math.min(h*.26,spd/(4*fq))*run,cyc=t*fq;
+  const bob=run?-Math.abs(Math.sin(cyc*Math.PI*2))*h*.035*run:0,hipY=-legH+bob,LL=legH*.56;
+  for(const lx of [-.2,.2]){const c=((cyc+(lx>0?.5:0))%1+1)%1;let fx=w*lx*.8,fy=0;
+    if(run){if(c<.5){fx+=A-2*A*(c/.5)}else{const u=(c-.5)/.5;fx+=-A+2*A*(u*u*(3-2*u));fy=-Math.sin(Math.PI*u)*h*.12*run}}
+    const hx=w*lx*.8,ax=fx,ay=fy-h*.06,dx=ax-hx,dy=ay-hipY,d=Math.hypot(dx,dy),bend=Math.sqrt(Math.max(0,LL*LL-d*d/4));
+    const kx=(hx+ax)/2+(-dy/d)*bend*-1,ky=(hipY+ay)/2+(dx/d)*bend*-1;
+    const sa=o.noShadow||lift?0:Math.max(0,1+fy/(h*.15));if(sa)ctx.fillStyle=`rgba(0,0,0,${.25*sa})`;if(sa){ctx.beginPath();ctx.ellipse(fx+h*.03,0,h*.1*(.6+.4*sa),h*.025,0,0,7);ctx.fill()}
+    ctx.strokeStyle='#2a2d33';ctx.lineWidth=Math.max(6,h*.08);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(hx,hipY);ctx.lineTo(kx,ky);ctx.lineTo(ax,ay);ctx.stroke();
+    ctx.strokeStyle='#5a6068';ctx.lineWidth=Math.max(3,h*.045);ctx.stroke();
+    ctx.fillStyle='#6a7078';ctx.beginPath();ctx.arc(kx,ky,Math.max(3,h*.035),0,7);ctx.fill();
+    const tilt=fy<0?-.25*run:0;ctx.save();ctx.translate(fx+h*.03,fy-h*.06);ctx.rotate(tilt);
+    ctx.fillStyle=BB.lg(-h*.06,h*.06,['#e08850','#a8501f','#6e3010']);ctx.strokeStyle='#2a160c';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,h*.11,h*.065,0,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#3a2414';ctx.fillRect(-h*.1,h*.035,h*.2,h*.025);ctx.restore()}
+  const by=-legH-h,sq=o.squash||0;ctx.translate(0,hipY);ctx.scale(1+sq,1-sq);
   {// v12.4 Jr rabbit-ear antennas with sparks
     const lq=BB.q===0;for(const s of[-1,1]){const a=s*(.45+Math.sin(t*2+s)*.08),L=h*.5,bx=s*w*.12,tx=bx+Math.sin(a)*L,ty=-h-Math.cos(a)*L;
       ctx.strokeStyle='#282c36';ctx.lineWidth=Math.max(3,h*.03);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(bx,-h*.9);ctx.lineTo(tx,ty);ctx.stroke();
@@ -153,9 +163,13 @@ BB.staticJr=(x,base,h,o={})=>{const J=jrCanvas(h),im=J.c;const t=BB.t,w=J.w,legH
   if(o.stuffed){// cheeks stuffed + whole note sticking out
     ctx.fillStyle='rgba(255,140,150,.95)';ctx.strokeStyle=COL.ink;ctx.lineWidth=3;
     for(const s of[-1,1]){ctx.beginPath();ctx.ellipse(s*w*.46,-h*.62,w*.1,h*.14,0,0,7);ctx.fill();ctx.stroke()}
-    BB.wholeNote(w*.02,-h*.48,h*.17,{rot:-.4+Math.sin(t*12)*.1})}
+    BB.solidWhole(w*.02,-h*.48,h*.17,{rot:-.4+Math.sin(t*12)*.1})}
   if(o.dizzy){for(let i=0;i<3;i++){const a=t*4+i*2.1;BB.star(Math.cos(a)*w*.45,-h*1.08+Math.sin(a)*12,12,COL.yellow,a)}}
   ctx.restore()};
+/* v12.5c solid 3D whole note (same object as the room tiles); s = horizontal radius */
+BB.solidWhole=(x,y,s,o={})=>{const R=BB.R;if(!R||!R.note3d)return BB.wholeNote(x,y,s,o);const n=s/1.25,hh=n/.2,ww=n*2.9,sp=R.note3d('w',ww,hh);
+  ctx.save();ctx.translate(x,y);ctx.rotate(o.rot||0);if(o.glow)BB.glow(0,0,s*2.2,'rgba(255,245,190,A)',o.glow);
+  const cw=sp.c.width/sp.sc,ch=sp.c.height/sp.sc;ctx.drawImage(sp.c,-cw/2,-sp.gy,cw,ch);ctx.restore()};
 // a whole note (notation style: dark oval ring with a tilted open centre, white outline so it reads on dark panels)
 BB.wholeNote=(x,y,s,o={})=>{ctx.save();ctx.translate(x,y);ctx.rotate(o.rot||0);
   if(o.glow)BB.glow(0,0,s*2.2,'rgba(255,245,190,A)',o.glow);

@@ -37,7 +37,7 @@ class TitleScene{enter(){this.t0=BB.t}
     const b=Math.sin(BB.t*4);
     BB.contactShadow(380,1010,190,.5);BB.sprite('sprocket',380,1010,430,{squash:b*.02,shadow:false});
     BB.contactShadow(1560,1010,160,.5);BB.sprite('sorter',1560,1010,360,{squash:-b*.02,shadow:false});
-    BB.staticJr(1330+Math.sin(BB.t*1.3)*60,1040,110,{run:.5,glitch:Math.sin(BB.t*2)>.95?1:0,rot:Math.sin(BB.t*8)*.08});
+    BB.staticJr(1330+Math.sin(BB.t*1.3)*60,1040,110,{spd:80,flip:Math.cos(BB.t*1.3)<0,run:.5,glitch:Math.sin(BB.t*2)>.95?1:0,rot:Math.sin(BB.t*8)*.08});
     BB.button(W/2-260,640,520,170,'START',{style:'green',size:80,id:'start',pop:1+Math.sin(BB.t*3)*.03,onClick:()=>this.start()});
     BB.rrect(W/2-560,1018,1120,50,25,'rgba(15,25,24,.7)');BB.text('Best on a big screen. Tap full screen (top right) for the whole board.',W/2,1045,28,'#fff',{stroke:4})}}
 // ---- Mic setup ----

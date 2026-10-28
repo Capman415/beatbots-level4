@@ -143,9 +143,9 @@ class PackingRoom{constructor(o={}){this.o=o}
     R.lampGlow([[348,140],[562,175],[955,175],[1340,175],[1585,140]],t);
     this.drawBelt();this.drawPallet();this.drawChuteContents();this.drawOrder();this.drawNext();
     BB.contactShadow(1790,905,110,.5);BB.sprite('sprocket',1790,905,280,{squash:BB.isTalking('sprocket')?Math.sin(t*18)*.015:Math.sin(t*2)*.006});
-    if(this.jr)BB.staticJr(this.jr.x,FLOOR,120,{run:1});
+    if(this.jr)BB.staticJr(this.jr.x,FLOOR,120,{run:1,spd:712});
     if(this.wreck)for(const c of this.wreck){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.r);R.crateDraw(c.k,-60,-50,120,100,{tag:false});ctx.restore()}
-    if(this.prank&&this.prank.ph!=='done'){const p=this.prank;BB.staticJr(p.x,NEXTP.y-10,110,{run:p.ph==='in'||p.ph==='run'?1:0,dizzy:p.ph==='hit',glitch:p.ph==='hit'?.6:0,flip:1});if(p.ph==='wait')R.bubble(p.x,NEXTP.y-230,'wrong fit! hee hee')}
+    if(this.prank&&this.prank.ph!=='done'){const p=this.prank;BB.staticJr(p.x,NEXTP.y-10,110,{run:p.ph==='in'||p.ph==='run'?1:0,dizzy:p.ph==='hit',glitch:p.ph==='hit'?.6:0,spd:p.ph==='run'?1000:600,flip:p.ph!=='run'});if(p.ph==='wait')R.bubble(p.x,NEXTP.y-230,'wrong fit! hee hee')}
     if(this.jrCrate){const j=this.jrCrate,k=clamp((t-j.t)/.5,0,1);if(t-j.t<1.4){const p=this.prank,x=lerp(j.x0,p?p.x:W,k),y=lerp(j.y0,NEXTP.y-80,k)-Math.sin(k*Math.PI)*220;ctx.save();ctx.translate(x,y);ctx.rotate(k*6);R.crateDraw('w',-90,-30,180,60,{tag:false});ctx.restore()}}
     for(const b of this.bounce){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.r);R.crateDraw(b.k,0,-CH/2,R.BEATS[b.k]*CW-12,CH);ctx.restore()}
     if(this.boinkT&&t-this.boinkT<1.3){const k=ease.back(clamp((t-this.boinkT)/.3,0,1));BB.text('BOINK!',CX0-150,ROWY-180,80*k,'#e65046',{font:'Rammetto One',stroke:8});const b=this.bounce[this.bounce.length-1];if(b&&b.why)R.bubble(CX0-170,ROWY-300,b.why,COL.ink)}

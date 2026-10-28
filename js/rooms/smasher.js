@@ -244,8 +244,8 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#2a3a38';ctx.fillRect(0,0,W,H)}
     R.lampGlow([[312,170],[520,215],[1393,215],[1628,170]],t);
     this.drawCartNotes();this.drawBaskets();this.drawLifts();this.drawPress();this.drawMarquee();this.drawWindow();this.drawTray();
-    if(this.jr)BB.staticJr(this.jr.x,FLOOR-(this.jr.hop||0),130,{run:this.jr.run,glitch:this.jr.hop?.6:0});
-    if(this.prank&&this.prank.ph!=='done'){const p=this.prank;const gi=p.ph==='in'?1-clamp((t-p.t)/1,0,1):0;BB.staticJr(p.x,FLOOR,90,{run:p.ph==='run'?1:0,dizzy:p.ph==='hit',rot:p.ph==='hit'?Math.sin(t*10)*.15:0,glitch:p.ph==='hit'?.7:gi});
+    if(this.jr)BB.staticJr(this.jr.x,FLOOR-(this.jr.hop||0),130,{lift:this.jr.hop||0,spd:1400,run:this.jr.run,glitch:this.jr.hop?.6:0});
+    if(this.prank&&this.prank.ph!=='done'){const p=this.prank;const gi=p.ph==='in'?1-clamp((t-p.t)/1,0,1):0;BB.staticJr(p.x,FLOOR,90,{spd:1100,run:p.ph==='run'?1:0,dizzy:p.ph==='hit',rot:p.ph==='hit'?Math.sin(t*10)*.15:0,glitch:p.ph==='hit'?.7:gi});
       if(p.ph==='wait')R.bubble(p.x-60,FLOOR-210,'I mixed it up! hee hee')}
     for(const f of this.fly)this.drawFly(f);
     if(this.drag&&Math.hypot(BB.ptr.x-this.drag.x0,BB.ptr.y-this.drag.y0)>30&&(this.drag.k==='w'||this.inv[this.drag.k])){ctx.save();ctx.globalAlpha=.9;R.tile(this.drag.k,BB.ptr.x-60,BB.ptr.y-42,120,84,{label:true});ctx.restore()}
@@ -259,7 +259,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
   drawCartNotes(){const t=BB.t,V=BB.V2||{};/* v12.5: heaped mound of whole-note tiles, cart front rim redrawn on top */
     const P=[[-120,-196,-.25],[-60,-200,.12],[0,-198,-.1],[60,-200,.3],[120,-195,-.2],[-90,-226,-.08],[-30,-230,.18],[30,-229,-.22],[90,-225,.15],[-58,-258,.2],[0,-262,-.15],[58,-257,.1],[-28,-290,.05],[28,-292,-.1]];
-    P.forEach(([dx,dy,r],i)=>{ctx.save();ctx.translate(CART.x+dx,CART.base+dy-(i>6?Math.abs(Math.sin(t*1.2+i))*2:0));ctx.rotate(r);BB.wholeNote(0,0,27,{});ctx.restore()});
+    P.forEach(([dx,dy,r],i)=>{ctx.save();ctx.translate(CART.x+dx,CART.base+dy-(i>6?Math.abs(Math.sin(t*1.2+i))*2:0));ctx.rotate(r);BB.solidWhole(0,0,27,{});ctx.restore()});
     if(V.cart){ctx.save();ctx.beginPath();ctx.rect(CART.x-200,CART.base-190,400,194);ctx.clip();ctx.drawImage(V.cart,CART.x-190,CART.base-225,380,225);ctx.restore()}
 
     BB.plaque(CART.x,CART.base-345,240,46,'WHOLE NOTES',26);

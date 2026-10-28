@@ -333,7 +333,7 @@ class MineRoom{
      if(g>.9){ctx.fillStyle=COL.yellow;ctx.beginPath();ctx.arc(x0+2,(yt+yb)/2,7,0,7);ctx.fill();ctx.strokeStyle='#19191f';ctx.lineWidth=2;ctx.stroke()}
      ctx.restore()}
     // Static Jr. diving
-    if(this.jr.vis&&(this.jr.mode==='dive'))BB.staticJr(this.jr.x,this.jr.y,110,{rot:this.jr.rot,glitch:.6});
+    if(this.jr.vis&&(this.jr.mode==='dive'))BB.staticJr(this.jr.x,this.jr.y,110,{noShadow:1,rot:this.jr.rot,glitch:.6});
     // warehouse floor slab (with the NOTE MINE hatch)
     if(vy0<GY+60){ctx.fillStyle=BB.lg(GY,GY+50,['#a89a86','#7e7262','#4a3f35']);ctx.fillRect(vx0,GY,SHAFT[0]-vx0,46);ctx.fillRect(SHAFT[1],GY,vx1-SHAFT[1],46);ctx.fillStyle='rgba(255,240,210,.35)';ctx.fillRect(vx0,GY,SHAFT[0]-vx0,3);ctx.fillRect(SHAFT[1],GY,vx1-SHAFT[1],3);ctx.fillStyle=BB.lg(GY+46,GY+80,['rgba(10,5,2,.55)','rgba(10,5,2,0)']);ctx.fillRect(vx0,GY+46,vx1-vx0,34);
       // v12.5: riveted floor plates
@@ -369,7 +369,7 @@ class MineRoom{
     {const nx=(HATCH[0]+HATCH[1])/2;BB.plaque(nx,452,250,80,'NOTE MINE',32,'#b5482a',{font:'Rammetto One',r:18});BB.text('▼',nx,508,30,COL.yellow,{stroke:5})}// v12.5: centred over the hatch// v12.2: moved clear of the lift post
     // WHOLE NOTES bin
     const bx=BIN_X;
-    for(let i=0;i<Math.min(this.binCount,10);i++)BB.wholeNote(bx-60+(i%4)*40,GY-160-Math.floor(i/4)*24+(i%2)*6,24,{rot:(i%3-1)*.3});
+    for(let i=0;i<Math.min(this.binCount,10);i++)BB.solidWhole(bx-60+(i%4)*40,GY-160-Math.floor(i/4)*24+(i%2)*6,24,{rot:(i%3-1)*.3});
     BB.prop('bin',bx,GY+4,170,{shadowA:.4});
     BB.rrect(bx-85,GY-108,170,42,10,BB.lg(GY-108,GY-66,['#fbf6e6','#ddd5bd']),'#8a806b',3);BB.text('WHOLE NOTES',bx,GY-86,20,'#28403c');
     if(this.binCount===0){ctx.fillStyle='#e8e4d8';for(let i=0;i<9;i++){ctx.beginPath();ctx.arc(bx-110+i*28,GY-6-(i%3)*5,4+(i%2)*3,0,7);ctx.fill()}}
@@ -384,7 +384,7 @@ class MineRoom{
     BB.sprite('sprocket',SPR_X,GY,400,{squash:(talk?Math.sin(t*16)*.02:0)+(ch>0?Math.abs(Math.sin(t*8))*.04:0),rot:ch<0?Math.sin(t*20)*.03:0});}
   drawJrWarehouse(){const j=this.jr,m=j.mode,t=BB.t;const glitch=m==='giggle'?(Math.sin(t*30)>.3?1:0):0;
     const sq=m==='munch'?Math.abs(Math.sin(t*12))*.06:m==='burp'?.08*Math.exp(-(t-this.burpT)*4):0;
-    BB.staticJr(j.x,j.y,110,{stuffed:m==='munch',squash:sq,glitch,run:m==='run'?1:0,rot:m==='giggle'?Math.sin(t*25)*.08:0});
+    BB.staticJr(j.x,j.y,110,{spd:520,stuffed:m==='munch',squash:sq,glitch,run:m==='run'?1:0,rot:m==='giggle'?Math.sin(t*25)*.08:0});
     if(m==='munch'&&Math.random()<.2)BB.burst(j.x+30,j.y-110,1,{world:1,cols:['#f6eed6','#e8dcb8','#3a3226'],kind:'dot',size:6,g:900,speed:150,a0:-2.2,spread:1.2});
     if(m==='burp'&&t-this.burpT<1.6){const k=(t-this.burpT)/1.6;ctx.save();ctx.globalAlpha=1-k;ctx.font="70px 'Lilita One'";ctx.fillStyle='#fff';ctx.strokeStyle=COL.ink;ctx.lineWidth=5;ctx.textAlign='center';
       ctx.strokeText('♪',j.x+20+Math.sin(k*8)*20,j.y-180-k*120);ctx.fillText('♪',j.x+20+Math.sin(k*8)*20,j.y-180-k*120);BB.text('BURP!',j.x-90,j.y-200,40,COL.yellow,{stroke:6});ctx.restore()}}
@@ -432,7 +432,7 @@ class MineRoom{
     // Static Jr. prank on this floor
     if(this.prank&&active&&this.prank.ph!=='done'){const p=this.prank,yb=y+150;BB.rrect(2960,yb+18,260,16,8,'rgba(20,8,2,.35)');BB.rrect(2960,yb,260,24,10,BB.lg(yb,yb+24,['#b07a48','#7a4e2c','#4e2f18']),'#2e1a0c',3);ctx.fillStyle='rgba(255,230,190,.3)';ctx.fillRect(2970,yb+3,240,3);ctx.fillStyle='#3a2414';for(const bx of[2980,3200]){ctx.beginPath();ctx.arc(bx,yb+12,4,0,7);ctx.fill()}
       {const jy=p.ph==='bonk'?rail(k):yb;BB.contactShadow(p.x,jy,60,.45);if(p.ph==='throw'&&Math.sin(BB.t*20)>.6){ctx.save();ctx.globalCompositeOperation='lighter';BB.glow(p.x,jy-60,110,'rgba(120,200,255,A)',.35);ctx.restore()}}
-      const bonk=p.ph==='bonk';BB.staticJr(p.x,bonk?yb+Math.min(1,(BB.t-p.t3)*3)*(rail(k)-yb):yb,95,{run:p.ph==='in'||p.ph==='out'?1:0,glitch:p.ph==='throw'&&Math.sin(BB.t*20)>.6?1:0,dizzy:bonk,rot:bonk?.6:0,flip:p.ph==='out'});
+      const bonk=p.ph==='bonk';BB.staticJr(p.x,bonk?yb+Math.min(1,(BB.t-p.t3)*3)*(rail(k)-yb):yb,95,{run:p.ph==='in'||p.ph==='out'?1:0,glitch:p.ph==='throw'&&Math.sin(BB.t*20)>.6?1:0,dizzy:bonk,rot:bonk?.6:0,spd:p.ph==='out'?900:500,flip:p.ph==='in'});
       if(p.ph==='throw')this.bubble(p.x-330,yb-190,'hee hee! pebbles!',k);if(bonk)this.bubble(p.x-170,yb-150,'oof!',k)}
     // lantern light over everything in this tunnel (ties the cut-out characters into the painting) + slight depth haze
     if(active&&!BB.phone){ctx.save();ctx.beginPath();ctx.rect(2200,y,1140,420);ctx.clip();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=.3*l;ctx.fillStyle=L.amb;ctx.fillRect(2200,y,1140,420);ctx.restore()}
