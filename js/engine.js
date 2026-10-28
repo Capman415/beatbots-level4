@@ -161,7 +161,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   if(rms>thr&&rms>mic.prev*1.35&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
     const chk=selfCheck(tNow);let ok=true;
     if(chk==='hard')ok=false;
-    else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.3&&e>nonTonalFloor*6}// clap = mostly broadband energy
+    else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.6&&e>nonTonalFloor*6}// clap = mostly broadband energy
     if(mic.calib)mic.calib.push(tNow);
     if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'']);
     if(ok){mic.onsets.push({t:tNow,lvl});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
