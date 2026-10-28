@@ -58,9 +58,9 @@ class PackingRoom{constructor(o={}){this.o=o}
     // rivets
     g.fillStyle='#4d585a';for(let y=CTOP-40;y<ROWY+CH+30;y+=70){for(const x of [CX0-16,CX0+4*CW+16]){g.beginPath();g.arc(x,y,5,0,7);g.fill()}}
     // yellow header
-    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.moveTo(CX0-90,CTOP-118+10);g.lineTo(CX0+4*CW+90,CTOP-118+10);g.lineTo(CX0+4*CW+30,CTOP-48+10);g.lineTo(CX0-30,CTOP-48+10);g.fill();
-    const hg=g.createLinearGradient(0,CTOP-118,0,CTOP-48);hg.addColorStop(0,'#ffe680');hg.addColorStop(1,'#e8b830');g.fillStyle=hg;g.beginPath();g.moveTo(CX0-90,CTOP-118);g.lineTo(CX0+4*CW+90,CTOP-118);g.lineTo(CX0+4*CW+30,CTOP-48);g.lineTo(CX0-30,CTOP-48);g.closePath();g.fill();g.strokeStyle='#19191f';g.lineWidth=4;g.stroke();
-    g.font="34px 'Rammetto One'";g.fillStyle='#3a2a10';g.fillText('DROP CHUTE',W/2,CTOP-82);
+    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.moveTo(CX0-90,CTOP-102+10);g.lineTo(CX0+4*CW+90,CTOP-102+10);g.lineTo(CX0+4*CW+30,CTOP-48+10);g.lineTo(CX0-30,CTOP-48+10);g.fill();
+    const hg=g.createLinearGradient(0,CTOP-102,0,CTOP-48);hg.addColorStop(0,'#ffe680');hg.addColorStop(1,'#e8b830');g.fillStyle=hg;g.beginPath();g.moveTo(CX0-90,CTOP-102);g.lineTo(CX0+4*CW+90,CTOP-102);g.lineTo(CX0+4*CW+30,CTOP-48);g.lineTo(CX0-30,CTOP-48);g.closePath();g.fill();g.strokeStyle='#19191f';g.lineWidth=4;g.stroke();
+    g.font="30px 'Rammetto One'";g.fillStyle='#3a2a10';g.fillText('DROP CHUTE',W/2,CTOP-73);
     // steel stand under the chute down to the floor
     for(const x of [CX0-10,CX0+4*CW-40]){const lg=g.createLinearGradient(x,0,x+50,0);lg.addColorStop(0,'#5d696b');lg.addColorStop(.5,'#aab4b5');lg.addColorStop(1,'#4d585a');g.fillStyle=lg;g.fillRect(x,ROWY+CH+40,50,FLOOR-ROWY-CH-30)}
     g.fillStyle='#6a7678';g.fillRect(CX0-10,ROWY+CH+120,4*CW+20,26);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(CX0-10,ROWY+CH+146,4*CW+20,8);
@@ -193,6 +193,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     else{BB.text(Rd.mode==='limited'?'Every crate must fit!':'Any crates that add up to 4',w/2,150,26,'#5a5040');for(let i=0;i<4;i++){BB.rrect(30+i*118,190,104,60,10,this.cells[i]?'#9ff09a':'#eee8d6','#8a806b',2);BB.text(this.cells[i]?'\u2713':String(i+1),82+i*118,221,30,'#5a5040')}}
     if(this.ri===2&&BB.t-this.palletIn<3){ctx.globalAlpha=1-(BB.t-this.palletIn)/3;BB.text('TORN BY STATIC JR. ... fixed!',w/2,h-18,20,'#c0392b')}
     ctx.restore()}
+  capPos(){return this.state==='clap'&&this.cb?{y:250,maxW:1140}:{y:H-114,maxW:1140}}
   drawHUD(){const t=BB.t;BB.panel(40,24,560,130,30);BB.text('ORDERS PACKED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.packed} of 6`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
     for(let i=0;i<6;i++)BB.rrect(330+i*42,60,32,52,9,i<this.packed?BB.lg(60,112,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
     BB.pauseBtn(()=>this.pause());

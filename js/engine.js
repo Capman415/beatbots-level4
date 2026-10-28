@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v11';
+BB.VERSION='v11.1';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;

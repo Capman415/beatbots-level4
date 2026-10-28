@@ -76,7 +76,7 @@ BB.pauseBtn=(onClick,x=W/2-110,y=24)=>{BB.button(x,y,220,110,'PAUSE',{style:'tea
   icon:(ix,iy)=>{ix=x+52;ctx.fillStyle=COL.yellow;ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const bx of[ix-14,ix+4]){ctx.fillRect(bx,iy-17,11,34);ctx.strokeRect(bx,iy-17,11,34)}}})};
 BB.overrideBtn=(onClick,o={})=>{const x=W-370,y=H-150;BB.button(x,y,340,125,'MANUAL',{style:'red',size:40,sub:'OVERRIDE',id:'override',onClick,pop:o.pop})};
 BB.captionBox=()=>{const c=BB.caption;if(!c||BB.t>c.until)return;const k=Math.min(1,(BB.t-c.start)*6);
-  const fs=38,w=Math.min(1150,BB.measure(c.txt,fs)+200),x=W/2-w/2,y=H-300;
+  const cp=(BB.scene&&BB.scene.capPos&&BB.scene.capPos())||{};const fs=38,w=Math.min(cp.maxW||1150,BB.measure(c.txt,fs)+200),x=(cp.cx||W/2)-w/2,y=cp.y!=null?cp.y:H-300;
   ctx.save();ctx.globalAlpha=k;ctx.translate(0,(1-k)*30);
   BB.rrect(x+4,y+8,w,96,48,'rgba(0,0,0,.3)');BB.rrect(x,y,w,96,48,'#fff',COL.ink,5);
   const face=c.who==='jr'?'tinytv':'sprocket';const im=BB.IMG[face];
