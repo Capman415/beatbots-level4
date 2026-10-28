@@ -109,10 +109,10 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     for(let i=0;i<this.n;i++){this.lit[i]=Math.max(0,this.lit[i]-dt*2.5);if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5)}
     const ons=BB.mic.take(),C=T0+(this.L+4)*spb;const G=window.GroupGate,gated=BB.mic.ok&&G&&!BB.debug;
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;let best=-1,bd=1;
-      for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),tol=Math.min(.13,gapB*spb*.48),d=Math.abs(o.t-te);if(d<tol&&d<bd){bd=d;best=i}}
+      for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),lat=G?G.lat||0:0,dd=o.t-lat-te,tol=dd<0?Math.min(.12,gapB*spb*.3):Math.min(.17,gapB*spb*.45),d=Math.abs(dd);if(d<tol&&d<bd){bd=d;best=i}}
       if(best<0){if(gated&&o.t>C)G.stray(o.t);continue}
       const s=this.snd[best];if(gated&&!o.sim&&s.f===0){this.got[best]=2;this.pend.push(best)}else this.hit(best)}
-    if(gated)this.pend=this.pend.filter(i=>{const te=C+this.snd[i].b*spb;if(ac.currentTime-.02<te+G.W1+.02)return true;const m=G.judge(te);if(m.ok)this.hit(i);else{this.got[i]=0;this.few=BB.t}return false});
+    if(gated)this.pend=this.pend.filter(i=>{const te=C+this.snd[i].b*spb;if(ac.currentTime-.02<te+G.lat+Math.max(G.W1,G.win(spb)[1])+.02)return true;const m=G.judge(te,false,spb);if(m.ok)this.hit(i);else{this.got[i]=0;this.few=BB.t}return false});
     if(!this.done&&ac.currentTime>C+this.L*spb+.25){this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;this.score=sc;this.onDone&&this.onDone(sc)}}
   hit(i){this.got[i]=1;this.marks[i]=.01;BB.sfx.tink(undefined,.6)}
   override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}

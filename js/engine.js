@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v12.4';
+BB.VERSION='v12.5';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -101,7 +101,7 @@ const now=()=>ac.currentTime;
 BB.sfx={
   click:(t=now())=>{osc('square',900,t,.05,.08,600)},
   tick:(t=now(),acc=false,v=1)=>{osc('sine',acc?1320:880,t,.06,.18*v)},// pure tone so the mic can tell it apart from claps,
-  tink:(t=now(),v=1)=>{osc('triangle',2200,t,.18,.22*v);osc('sine',3300,t,.12,.1*v);noise(t,.04,.15*v,'bandpass',4000,3)},
+  tink:(t=now(),v=1,quiet)=>{osc('triangle',2200,t,.18,.22*v);osc('sine',3300,t,.12,.1*v);if(!quiet)noise(t,.04,.15*v,'bandpass',4000,3)},// quiet: no noise burst (cave-in whisper claps)
   crack:(t=now())=>{noise(t,.25,.5,'lowpass',2500,1,300);osc('square',140,t,.12,.15,60)},
   rumble:(t=now(),d=1.2)=>{noise(t,d,.35,'lowpass',180,1,60)},
   chime:(t=now())=>{[523,659,784,1046].forEach((f,i)=>osc('sine',f,t+i*.07,1.2,.14));},
@@ -174,12 +174,13 @@ function selfCheck(T){const L=micLat();let tonal=null;
 BB.selfWins=selfWins;
 mic.update=dt=>{if(!mic.ok||BB.paused)return;
   const r=MicCore.read();const rms=r.rms;mic.rms=rms;mic.raw=rms;mic.max=r.max;const sens=sensSteps[mic.sensIdx];
-  const lvl=window.GroupGate?GroupGate.lvl(rms,sens):clamp(Math.sqrt(rms*sens*6),0,1);// same scale as the meter and the soft-clap thresholdmic.level=Math.max(lvl,mic.level-dt*1.8);
+  const lvl=window.GroupGate?GroupGate.lvl(rms,sens):clamp(Math.sqrt(rms*sens*6),0,1);// same scale as the meter and the soft-clap threshold
+  mic.level=Math.max(lvl,mic.level-dt*1.8);
   const tNow=ac.currentTime-.02;
   if(window.GroupGate){GroupGate.push(tNow,GroupGate.hf(MicCore.buf),dt);GroupGate.sensMul=sens}// group-clap gate log
   const softOn=BB.softClap&&BB.t-BB.softClap<.5;const thr=window.GroupGate?GroupGate.onsetThr(mic.floor,sens,softOn):Math.max(mic.floor*2.2+.0015,.003)/sens;mic.thr=thr;// shared rule (group.js)
   const allFreqs=[880,1320];const nt=nonTonalEnergy(allFreqs);
-  if(rms>thr&&rms>mic.prev*(window.GroupGate?GroupGate.ONSET_JUMP:1.3)&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
+  if(rms>thr&&rms>mic.prev*(window.GroupGate?(softOn&&BB.fastSoft&&BB.t-BB.fastSoft<.5?GroupGate.ONSET_JUMP_FS:GroupGate.ONSET_JUMP):1.3)&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
     const chk=selfCheck(tNow);let ok=true;
     if(chk==='hard')ok=false;
     else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.6&&e>nonTonalFloor*6}// clap = mostly broadband energy

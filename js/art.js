@@ -185,31 +185,49 @@ BB.prop=(name,x,base,h,o={})=>{const im=BB.V2[name];if(!im)return;let hh=h;const
   if(o.shadow!==false)BB.contactShadow(x,base,w*.55,o.shadowA??.45);
   ctx.save();ctx.translate(x,base);if(o.rot)ctx.rotate(o.rot);if(o.flip)ctx.scale(-1,1);ctx.globalAlpha=o.alpha??1;ctx.drawImage(src,-w/2,-hh+(o.sink||0),w,hh);ctx.restore();return {x,w,h:hh}};
 })();
-// ---- v12.3 soft/loud clap check: 3-4 soft claps, then 3-4 loud claps -> GroupGate.calLoud (forte vs normal) ----
+// ---- v12.5 start-of-game soft/loud clap check (mic setup only): explain -> 4-beat count-in -> 8 soft claps ->
+// explain -> 4-beat count-in -> 8 loud claps, at 100 BPM. Count-ins are ignored; median of heard claps -> GroupGate.calLoud.
 BB.VO_LINES=(BB.VO_LINES||[]).concat([
- ['lc_soft',"Loudness check! Clap softly, like a whisper.",'sprocket'],
- ['lc_loud',"Now clap loudly! Big, strong claps!",'sprocket'],
+ ['lc_intro',"Let's teach my ears your claps! First, we'll clap softly, piano, for eight beats. Then loudly, forte, for eight beats.",'sprocket'],
+ ['lc_soft',"Soft claps, piano. Watch the lights. Get ready!",'sprocket'],
+ ['lc_mid',"Nice and soft! Now loud claps, forte! Big and strong. Get ready!",'sprocket'],
  ['lc_done',"Got it! Now I know soft from loud.",'sprocket'],
- ['lc_again',"Hmm. Make the loud claps much louder than the soft ones.",'sprocket']]);
-BB.LoudCal=class{constructor(onDone){this.onDone=onDone;this.soft=[];this.loud=[];this.go('soft')}
-  go(ph){this.ph=ph;this.t0=BB.t;this.last=0;BB.mic.take();if(ph==='soft')BB.say('lc_soft');else if(ph==='loud')BB.say('lc_loud')}
+ ['lc_again',"Hmm. Let's try that again. Make the loud claps much louder than the soft ones.",'sprocket']]);
+BB.LoudCal=class{constructor(onDone){this.onDone=onDone;this.SPB=.6;this.soft=[];this.loud=[];this.ph='intro';this.t0=BB.t;this.wait=BB.say('lc_intro')+.4;BB.mic.take()}
   get busy(){return this.ph!=='gone'}
-  update(){const t=BB.t,G=window.GroupGate;if(this.ph==='gone')return;BB.dynMode=t;// don't teach the normal-clap scale
-    if(this.ph==='soft')BB.softClap=t;
-    const os=BB.mic.take();if(this.ph==='soft'||this.ph==='loud'){const a=this[this.ph];
-      if(t-this.t0>.6)for(const o of os)if(o.rms&&t-this.last>.15&&a.length<4){a.push(o.rms);this.last=t;this.pop=t}
-      const el=t-this.t0;if((a.length>=4&&t-this.last>.5)||el>7){if(this.ph==='soft')this.go('loud');else this.finish()}}
-    else if(this.ph==='done'&&t-this.t0>2.4){this.ph='gone';this.onDone&&this.onDone(this.ok)}}
+  prep(kind){this.kind=kind;this[kind]=[];this.got=[];this.ph='prep';this.t0=BB.t;this.wait=BB.say(kind==='soft'?'lc_soft':'lc_mid')+.3;BB.mic.take()}
+  run(){const ac=BB.ac,S=this.SPB,tA=ac.currentTime+.35;this.tA=tA;this.ph='run';BB.mic.take();
+    for(let i=0;i<12;i++)BB.sfx.tick(tA+i*S,i===0||i===4||i===8,i<4?1:(this.kind==='soft'?.6:1))}
+  beatIdx(){return(BB.ac.currentTime-this.tA)/this.SPB}
+  update(){const t=BB.t;if(this.ph==='gone')return;BB.dynMode=t;// don't teach the normal-clap scale
+    if(this.kind==='soft'&&this.ph==='run')BB.softClap=t;
+    const os=BB.mic.take();
+    if(this.ph==='intro'&&t-this.t0>this.wait)this.prep('soft');
+    else if(this.ph==='prep'&&t-this.t0>this.wait)this.run();
+    else if(this.ph==='run'){const a=this[this.kind],S=this.SPB,lat=BB.mic.lat!=null?BB.mic.lat:.06;
+      for(const o of os){if(!o.rms)continue;const x=(o.t-lat-this.tA)/S,i=Math.round(x),d=(x-i)*S;// beats 0-3 = count-in (ignored)
+        if(i>=4&&i<12&&d>-.16&&d<.26&&!this.got[i]){this.got[i]=1;a.push(o.rms);this.pop=t}}
+      if(this.beatIdx()>11.9){if(this.kind==='soft')this.prep('loud');else this.finish()}}
+    else if(this.ph==='done'&&this.ok&&t-this.t0>2.6){this.ph='gone';this.onDone&&this.onDone(true)}}
   finish(){const G=window.GroupGate,med=a=>{const b=[...a].sort((x,y)=>x-y);return b[b.length>>1]};
-    this.ok=false;if(G&&this.soft.length>=2&&this.loud.length>=2){const s=med(this.soft),l=med(this.loud);if(20*Math.log10(l/s)>4){G.calLoud(s,l);this.ok=G.calOk()}}
+    this.ok=false;if(G&&this.soft.length>=3&&this.loud.length>=3){const s=med(this.soft),l=med(this.loud);if(20*Math.log10(l/s)>4){G.calLoud(s,l);this.ok=G.calOk()}}
     this.ph='done';this.t0=BB.t;BB.say(this.ok?'lc_done':'lc_again');if(this.ok)BB.sfx.ding()}
-  skip(){if(this.ph==='gone')return;this.ph='gone';this.onDone&&this.onDone(false)}
-  draw(cx,cy){if(this.ph==='gone')return;const t=BB.t,COL=BB.COL,ctx=BB.ctx,pw=760,ph=300,x=cx-pw/2,y=cy-ph/2;
-    BB.panel(x,y,pw,ph,34);BB.text('LOUDNESS CHECK',cx,y+50,40,COL.yellow,{font:'Rammetto One',stroke:6});
-    const soft=this.ph==='soft',done=this.ph==='done';
-    BB.text(done?(this.ok?'Got it! Soft and loud saved.':'Hmm, try louder loud claps next time.'):soft?'Clap SOFTLY  (piano)':'Clap LOUDLY!  (forte)',cx,y+118,done?36:soft?40:50,done?(this.ok?COL.green:'#ff9c8a'):'#fff',{stroke:5,maxW:pw-60});
-    const a=soft?this.soft:this.loud;if(!done)for(let i=0;i<4;i++){const on=i<a.length,px=cx-135+i*90,pop=on&&i===a.length-1&&this.pop?Math.max(0,1-(t-this.pop)/.3):0;
-      ctx.fillStyle=on?(soft?'#9ad8ff':'#ff8a5a'):'rgba(255,255,255,.15)';ctx.beginPath();ctx.arc(px,y+190,(soft?20:30)*(1+pop*.4),0,7);ctx.fill();if(on){ctx.strokeStyle=COL.ink;ctx.lineWidth=3;ctx.stroke()}}
-    else{const sl=this.soft.length,ll=this.loud.length;BB.text(`soft claps: ${sl}   loud claps: ${ll}`,cx,y+190,28,'#cfe',{})}
-    if(!done)BB.button(x+pw-170,y+ph-74,150,56,'Skip',{size:28,id:'lcskip',onClick:()=>this.skip()});
-    BB.text(done?'':soft?'tiny, quiet claps':'big, strong claps',cx-60,y+ph-46,26,'rgba(255,255,255,.7)')}};
+  retry(){this.prep('soft')}
+  skip(){if(this.ph==='gone')return;this.ph='gone';this.onDone&&this.onDone(false)}// defaults: adaptive scale from normal claps
+  draw(cx,cy){if(this.ph==='gone')return;const t=BB.t,COL=BB.COL,ctx=BB.ctx,pw=980,ph=440,x=cx-pw/2,y=cy-ph/2;
+    BB.panel(x,y,pw,ph,34);BB.text('CLAP CHECK',cx,y+54,42,COL.yellow,{font:'Rammetto One',stroke:6});
+    const soft=this.kind!=='loud',done=this.ph==='done';
+    if(this.ph==='intro'){BB.text('Teach Sprocket your claps!',cx,y+130,44,'#fff',{stroke:5});
+      BB.text('8 SOFT claps (piano), then 8 LOUD claps (forte)',cx,y+200,32,'#cfe',{stroke:4,maxW:pw-80})}
+    else if(done){BB.text(this.ok?'Got it! Soft and loud saved.':'Hmm, the loud claps need to be much louder.',cx,y+130,38,this.ok?COL.green:'#ff9c8a',{stroke:5,maxW:pw-60});
+      BB.text(`soft claps heard: ${this.soft.length}   loud claps heard: ${this.loud.length}`,cx,y+200,30,'#cfe',{});
+      if(!this.ok){BB.button(cx-260,y+ph-130,240,80,'TRY AGAIN',{style:'green',size:34,id:'lcretry',onClick:()=>this.retry()});
+        BB.button(cx+20,y+ph-130,240,80,'Skip',{size:34,id:'lcskip2',onClick:()=>this.skip()})}}
+    else{BB.text(soft?'Clap SOFTLY  (piano)':'Clap LOUDLY!  (forte)',cx,y+120,soft?44:52,soft?'#b6f0ff':'#ffb36b',{stroke:5});
+      const bi=this.ph==='run'?this.beatIdx():-1,lit=[];for(let i=0;i<8;i++){const k=bi-(i+4);lit.push(k>=-.05&&k<.5?1-k:(this.got[i+4]?.35:0))}
+      if(bi>=-.2&&bi<4){const n=Math.min(3,Math.max(0,Math.floor(bi+.05)));const ph2=bi-Math.floor(bi);BB.text(['1','2','3','4'][n],cx,y+235,90*(1+Math.max(0,.25-ph2)),COL.yellow,{font:'Rammetto One',stroke:8})}
+      else if(this.ph==='prep')BB.text('get ready...',cx,y+225,40,'rgba(255,255,255,.8)',{})
+      else BB.beatPills(cx,y+235,lit,{pw:70,gap:18});
+      const a=this[this.kind]||[];BB.text(`${soft?'soft':'loud'} claps: ${a.length} / 8`,cx-170,y+ph-50,34,a.length&&this.pop&&t-this.pop<.3?COL.green:'#fff',{stroke:4});
+      BB.micMeter(cx-10,y+ph-118,{band:soft?'soft':'loud'});
+      BB.button(x+pw-170,y+ph-80,150,60,'Skip',{size:28,id:'lcskip',onClick:()=>this.skip()})}}};

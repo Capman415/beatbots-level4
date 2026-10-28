@@ -125,7 +125,7 @@ class MineRoom{
   // -------- rock flow --------
   beginRock(first){const R=ROCKS[this.rockI];this.R=R;this.stage=0;this.state='drop';this.st=BB.t;this.rockY=-400;this.marks=[0,0,0,0];this.missVO=false;
     const newFloor=first||ROCKS[this.rockI-1]&&ROCKS[this.rockI-1].f!==R.f;
-    if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4){this.startCave();if(!(BB.debug&&this.o&&this.o.auto))this.lcWant=1}
+    if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4){this.startCave()}// v12.5: no loudness check here - the cave-in uses the levels from mic setup
       this.voEnd=BB.t+9;setTimeout(()=>{if(BB.scene===this)this.voEnd=BB.t+BB.say(FLOORS[R.f].vo)},R.f===4?3000:first?2200:300)}
     else this.voEnd=BB.t+.5;
     if(R.bonus&&!newFloor){this.voEnd=BB.t+.5;BB.caption={txt:'BONUS! Andante + forte: slow and LOUD!',who:'sprocket',until:BB.t+3.5,start:BB.t}}}
@@ -164,26 +164,27 @@ class MineRoom{
     while(b.t0+b.next*b.spb<ahead){const t=b.t0+b.next*b.spb;BB.sfx.tick(t,b.next%4===0,this.R.dyn==='p'?.6:1);
       if(BB.debug&&b.next>=4&&Math.random()<.92){const lvl=this.R.dyn==='p'?.45:this.R.dyn==='f'?.9:.7;setTimeout(()=>BB.simClap(t+(Math.random()-.5)*.08,lvl),Math.max(0,(t-BB.ac.currentTime)*1000+30))}
       b.next++}}
-  handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||this.state!=='dig')return;if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p')BB.softClap=BB.t;
+  handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||this.state!=='dig')return;if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p'){BB.softClap=BB.t;if(b.spb<.5)BB.fastSoft=BB.t}
     const G=window.GroupGate,tol=G?G.tol(b.spb):Math.min(.17,b.spb*.4);
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;// ignore our own voice lines
-      const bi=Math.round((o.t-b.t0)/b.spb),dt=o.t-(b.t0+bi*b.spb);
-      if(bi>=4&&Math.abs(dt)>tol){if(this.gated()&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
-      if(bi<4||Math.abs(dt)>tol||b.hits[bi]||(b.pend&&b.pend[bi]))continue;
+      const bi=Math.round((o.t-b.t0-(G?G.lat:0))/b.spb),dt=o.t-(b.t0+bi*b.spb),inT=G?G.inTol(dt,b.spb):Math.abs(dt)<=tol;
+      if(bi>=4&&!inT){if(this.gated()&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
+      if(bi<4||!inT||b.hits[bi]||(b.pend&&b.pend[bi]))continue;
       const d=this.R.dyn;
       if(d==='p'&&o.lvl>SOFT_MAX){this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
-      if(d==='f'&&o.lvl<LOUD_MIN){this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
+      if(d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN)){this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
       if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;continue}// wait for the beat window to close, then ask: was that the whole group?
       this.hit(bi)}}
   gated(){return BB.mic.ok&&window.GroupGate&&!BB.debug}
-  hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;BB.sfx.tink();if(d==='f'){BB.sfx.boom();BB.shake(5)}
+  hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;// v12.5 cave-in (fast + piano): a soft, purely tonal tink so it can't mask the next whisper clap
+    if(d==='p'&&b.spb<.5)BB.sfx.tink(undefined,.3,true);else BB.sfx.tink();if(d==='f'){BB.sfx.boom();BB.shake(5)}
       BB.burst(ROCK_X-140,rail(this.R.f)-170,12,{world:1,cols:['#ffe066','#fff','#ffb040'],speed:600,size:12})}
   resolveGroup(){const b=this.beat,G=window.GroupGate;if(!b||!G)return;const now=BB.ac.currentTime-.02;
     if(b.strays)b.strays=b.strays.filter(t=>{if(now<t+.12)return true;G.stray(t);return false});
-    if(b.pend)for(const k in b.pend){const bi=+k,tc=b.t0+bi*b.spb;if(now<tc+G.W1+.02)continue;delete b.pend[k];
+    if(b.pend)for(const k in b.pend){const bi=+k,tc=b.t0+bi*b.spb;if(now<tc+G.lat+Math.max(G.W1,G.win(b.spb)[1])+.02)continue;delete b.pend[k];
       const m=G.judge(tc,this.R.dyn==='p',b.spb);if(m.ok&&this.state==='dig')this.hit(bi);else this.fewHands=BB.t}}
   evalMeasures(){const b=this.beat;if(this.state!=='dig')return;const tol=window.GroupGate?GroupGate.tol(b.spb):.17;
-    this.resolveGroup();while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+Math.max(tol,.2)+.03){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
+    this.resolveGroup();while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+Math.max(tol,.2)+.03+(window.GroupGate?GroupGate.lat+.03:0)){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
       b.evalM++;this.marks=[0,0,0,0];
       if(n>=3)this.crack();
       else{const talking=BB.talking&&BB.t<BB.talking.until;if(talking&&!BB.debug)continue;

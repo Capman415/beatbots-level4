@@ -48,7 +48,9 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
       // latency calibration: play 4 beeps, measure when the mic hears each one
       const t=BB.ac.currentTime+.3,times=[0,1,2,3].map(i=>t+i*.5);BB.mic.calib=[];times.forEach((x,i)=>BB.sfx.tick(x,i===0));
       setTimeout(()=>{const c=BB.mic.calib;BB.mic.calib=null;const d=[];for(const x of times){const h=c.find(y=>y>x-.02&&y<x+.4);if(h!=null)d.push(h-x)}
-        if(d.length>=2){d.sort((a,b)=>a-b);BB.mic.lat=Math.max(0,d[d.length>>1])}BB.mic.onsets=[];this.state='on'},2600)}
+        if(d.length>=2){d.sort((a,b)=>a-b);BB.mic.lat=Math.max(0,d[d.length>>1])}if(window.GroupGate)GroupGate.setLat(BB.mic.lat);BB.mic.onsets=[];this.state='on';
+        // v12.5: the soft/loud check runs ONCE here, before the game (cave-in, piano and forte all use it; Skip = defaults)
+        if(!(window.GroupGate&&GroupGate.calOk()))setTimeout(()=>{if(BB.scene===this)this.loudCal()},1800)},2600)}
     else this.state='denied'}
 
   groupCal(){if(this.state!=='on'||!window.GroupGate)return;this.state='gcal';this.gIdx=-1;
