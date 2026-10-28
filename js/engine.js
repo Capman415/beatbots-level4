@@ -1,0 +1,155 @@
+// Beat Bots Level 4 engine: canvas scaling, input, audio (Web Audio), mic, UI widgets, particles.
+'use strict';
+const W=1920,H=1080;
+const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
+let SC=1,OX=0,OY=0;
+function resize(){const dpr=Math.min(2,window.devicePixelRatio||1),vw=innerWidth,vh=innerHeight;
+  SC=Math.min(vw/W,vh/H);OX=(vw-W*SC)/2;OY=(vh-H*SC)/2;
+  cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);cv.style.width=vw+'px';cv.style.height=vh+'px';BB.dpr=dpr;}
+addEventListener('resize',resize);resize();
+// ---------- helpers ----------
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
+const ease={out:t=>1-Math.pow(1-t,3),inOut:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,
+  back:t=>{const c=1.70158;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)},
+  elastic:t=>t===0||t===1?t:Math.pow(2,-10*t)*Math.sin((t*10-.75)*2*Math.PI/3)+1};
+Object.assign(BB,{clamp,lerp,ease});
+const COL=BB.COL={ink:'#19191f',cream:'#e8e2cd',creamEdge:'#968c78',teal:'#142826',teal2:'#50aaa0',
+  green:'rgb(110,230,120)',greenOff:'#283c3c',yellow:'#ffe066',red:'#e65046',white:'#fff'};
+// ---------- images ----------
+const IMG=BB.IMG={};
+BB.loadImages=names=>Promise.all(names.map(n=>new Promise(r=>{const i=new Image();i.onload=()=>{IMG[n]=i;r()};i.onerror=()=>r();i.src='assets/'+n+'.png'})));
+// ---------- input ----------
+const ptr={x:0,y:0,down:false,clicks:[]};BB.ptr=ptr;
+function toLogical(e){return{x:(e.clientX-OX)/SC,y:(e.clientY-OY)/SC}}
+cv.addEventListener('pointerdown',e=>{e.preventDefault();const p=toLogical(e);ptr.x=p.x;ptr.y=p.y;ptr.down=true;ptr.clicks.push(p);BB.unlockAudio();});
+cv.addEventListener('pointermove',e=>{const p=toLogical(e);ptr.x=p.x;ptr.y=p.y});
+addEventListener('pointerup',()=>ptr.down=false);
+const keys=[];addEventListener('keydown',e=>keys.push(e.key));BB.keys=keys;
+// ---------- UI buttons (immediate mode) ----------
+// A button only fires if a click lands inside it. Buttons are drawn big for small hands.
+let hits=[];
+BB.button=(x,y,w,h,label,o={})=>{
+  const hover=!o.disabled&&ptr.x>x&&ptr.x<x+w&&ptr.y>y&&ptr.y<y+h;
+  const pressed=hover&&ptr.down;
+  const s=o.pop?o.pop:1, cx=x+w/2,cy=y+h/2;
+  ctx.save();ctx.translate(cx,cy);ctx.scale(s*(pressed?.95:1),s*(pressed?.95:1));ctx.translate(-cx,-cy);
+  ctx.globalAlpha=o.disabled?.45:1;
+  const st=o.style||'cream';
+  BB.rrect(x+4,y+8,w,h,o.r||28,'rgba(0,0,0,.35)');
+  if(st==='cream'){BB.rrect(x,y,w,h,o.r||28,COL.cream,COL.creamEdge,5);}
+  else if(st==='green'){BB.rrect(x,y,w,h,o.r||28,'#3fb45a','#1d5a2c',6);BB.rrect(x+8,y+6,w-16,h*.38,(o.r||28)-8,'rgba(255,255,255,.18)');}
+  else if(st==='red'){BB.rrect(x,y,w,h,o.r||28,'#d9483f','#6b1d18',6);BB.rrect(x+8,y+6,w-16,h*.38,(o.r||28)-8,'rgba(255,255,255,.16)');}
+  else if(st==='teal'){BB.rrect(x,y,w,h,o.r||28,COL.cream,COL.creamEdge,5);BB.rrect(x+12,y+12,w-24,h-24,(o.r||28)-10,COL.teal,COL.teal2,5);}
+  const fs=o.size||40;
+  BB.text(label,cx+(o.icon?fs*.55:0),cy+(o.sub?-fs*.3:2),fs,st==='cream'?'#28403c':'#fff',{font:o.font||'Lilita One',stroke:st==='cream'?0:5});
+  if(o.sub)BB.text(o.sub,cx,cy+fs*.6,fs*.5,st==='cream'?'#28403c':COL.yellow,{stroke:st==='cream'?0:4});
+  if(o.icon)o.icon(cx-BB.measure(label,fs)/2-fs*.2,cy);
+  ctx.restore();
+  if(!o.disabled)hits.push({x,y,w,h,id:o.id||label,cb:o.onClick});
+};
+function dispatchClicks(){const cl=ptr.clicks;ptr.clicks=[];
+  for(const c of cl){for(let i=hits.length-1;i>=0;i--){const b=hits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();break}}}}
+// ---------- drawing helpers ----------
+BB.rrect=(x,y,w,h,r,fill,stroke,lw)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.lineWidth=lw||3;ctx.strokeStyle=stroke;ctx.stroke()}};
+BB.measure=(t,s,f='Lilita One')=>{ctx.font=`${s}px '${f}'`;return ctx.measureText(t).width};
+BB.text=(t,x,y,s,fill,o={})=>{ctx.font=`${s}px '${o.font||'Lilita One'}'`;ctx.textAlign=o.align||'center';ctx.textBaseline='middle';
+  if(o.maxW){const m=ctx.measureText(t).width;if(m>o.maxW){s=s*o.maxW/m;ctx.font=`${s}px '${o.font||'Lilita One'}'`}}
+  if(o.stroke){ctx.lineJoin='round';ctx.lineWidth=o.stroke;ctx.strokeStyle=o.strokeCol||'#000';ctx.strokeText(t,x,y)}
+  ctx.fillStyle=fill;ctx.fillText(t,x,y)};
+// teal+cream panel (same as l2lib_v4.panel / mockups)
+BB.panel=(x,y,w,h,r=30)=>{BB.rrect(x+5,y+9,w,h,r,'rgba(0,0,0,.3)');BB.rrect(x,y,w,h,r,COL.cream,COL.creamEdge,4);BB.rrect(x+18,y+16,w-36,h-32,r-8,COL.teal,COL.teal2,5)};
+BB.glow=(x,y,r,col,a=1)=>{const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col.replace('A',a));g.addColorStop(1,col.replace('A',0));ctx.fillStyle=g;ctx.fillRect(x-r,y-r,2*r,2*r)};
+// ---------- particles + shake ----------
+const parts=[];BB.parts=parts;
+BB.burst=(x,y,n,o={})=>{for(let i=0;i<n;i++){const a=(o.a0??0)+(o.spread??Math.PI*2)*Math.random(),sp=(o.speed||400)*(.4+Math.random()*.8);
+  parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(o.up||0),life:o.life||.8,age:0,size:(o.size||10)*(.6+Math.random()*.8),col:o.cols?o.cols[i%o.cols.length]:(o.col||'#ffe066'),g:o.g??900,kind:o.kind||'spark',rot:Math.random()*6})}};
+BB.updParts=dt=>{for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.age+=dt;if(p.age>p.life){parts.splice(i,1);continue}p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=1-dt*(p.kind==='dust'?3:.5);p.rot+=dt*5}};
+BB.drawParts=()=>{for(const p of parts){const k=1-p.age/p.life;ctx.globalAlpha=Math.min(1,k*1.5);ctx.fillStyle=p.col;
+  if(p.kind==='spark'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.atan2(p.vy,p.vx));ctx.fillRect(-p.size,-p.size*.2,p.size*2,p.size*.4);ctx.restore()}
+  else if(p.kind==='star'){BB.star(p.x,p.y,p.size*k+2,p.col,p.rot)}
+  else{ctx.beginPath();ctx.arc(p.x,p.y,p.size*(p.kind==='dust'?(1.5-k*.5):k),0,7);ctx.fill()}}ctx.globalAlpha=1};
+BB.star=(x,y,r,col,rot=0)=>{ctx.beginPath();for(let i=0;i<10;i++){const a=rot+i*Math.PI/5,rr=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}ctx.closePath();ctx.fillStyle=col;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=COL.ink;ctx.stroke()};
+let shakeAmt=0;BB.shake=a=>shakeAmt=Math.min(6,Math.max(shakeAmt,a));// capped at 6px per design doc
+// ---------- audio ----------
+const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC({latencyHint:'interactive'});BB.ac=ac;
+const master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);
+const sfxBus=ac.createGain();sfxBus.connect(master);const voBus=ac.createGain();voBus.gain.value=1.1;voBus.connect(master);
+BB.unlockAudio=()=>{if(ac.state==='suspended'&&!BB.paused)ac.resume()};
+const noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);{const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
+function osc(type,f,t,dur,peak,f2,dest=sfxBus){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);env(g,t,.004,peak,dur);o.connect(g).connect(dest);o.start(t);o.stop(t+dur+.05)}
+function noise(t,dur,peak,ftype,f,q=1,f2){const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=noiseBuf;fl.type=ftype;fl.frequency.setValueAtTime(f,t);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+dur);fl.Q.value=q;env(g,t,.003,peak,dur);s.connect(fl).connect(g).connect(sfxBus);s.start(t,Math.random()*.5);s.stop(t+dur+.05)}
+const now=()=>ac.currentTime;
+BB.sfx={
+  click:(t=now())=>{osc('square',900,t,.05,.08,600)},
+  tick:(t=now(),acc=false,v=1)=>{osc('sine',acc?1320:880,t,.06,.18*v);noise(t,.03,.12*v,'highpass',5000)},
+  tink:(t=now(),v=1)=>{osc('triangle',2200,t,.18,.22*v);osc('sine',3300,t,.12,.1*v);noise(t,.04,.15*v,'bandpass',4000,3)},
+  crack:(t=now())=>{noise(t,.25,.5,'lowpass',2500,1,300);osc('square',140,t,.12,.15,60)},
+  rumble:(t=now(),d=1.2)=>{noise(t,d,.35,'lowpass',180,1,60)},
+  chime:(t=now())=>{[523,659,784,1046].forEach((f,i)=>osc('sine',f,t+i*.07,1.2,.14));},
+  ding:(t=now())=>{osc('sine',1568,t,.6,.2);osc('sine',2093,t+.06,.6,.15)},
+  boom:(t=now())=>{osc('sine',120,t,.5,.6,40);noise(t,.4,.4,'lowpass',800,1,80)},
+  shhh:(t=now())=>{noise(t,.9,.18,'highpass',3000)},
+  burp:(t=now())=>{osc('sawtooth',110,t,.45,.25,70);noise(t,.4,.1,'lowpass',400)},
+  whoosh:(t=now(),d=.6)=>{noise(t,d,.3,'bandpass',300,2,3000)},
+  bonk:(t=now())=>{osc('square',600,t,.15,.18,150);osc('sine',300,t,.2,.25,120)},
+  pebble:(t=now())=>{osc('triangle',1200+Math.random()*600,t,.06,.12);},
+  clunk:(t=now())=>{noise(t,.18,.4,'lowpass',600);osc('square',90,t,.15,.2,50)},
+  alarm:(t=now())=>{for(let i=0;i<3;i++)osc('sawtooth',500,t+i*.4,.35,.12,900)},
+  pop:(t=now())=>{osc('sine',400,t,.12,.25,1400)},
+  wobble:(t=now())=>{osc('sine',300,t,.3,.15,180);noise(t,.3,.12,'lowpass',500)},
+  glitch:(t=now())=>{for(let i=0;i<5;i++)osc('square',200+Math.random()*1500,t+i*.04,.04,.06)},
+  fanfare:(t=now())=>{[[523,0],[659,.15],[784,.3],[1046,.45],[784,.7],[1046,.85]].forEach(([f,d])=>{osc('square',f,t+d,.25,.08);osc('triangle',f,t+d,.3,.15)})},
+  motor:(t=now(),d=2)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';o.frequency.value=55;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.06,t+.2);g.gain.setValueAtTime(.06,t+d-.3);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(sfxBus);o.start(t);o.stop(t+d+.1)},
+};
+// voice lines (Piper, Sprocket voice from the video pipeline). Caption shown while playing.
+const VO={};BB.voText={};BB.caption=null;
+BB.loadVO=async list=>{await Promise.all(list.map(async([k,txt,who])=>{BB.voText[k]={txt,who};try{const r=await fetch('vo/'+k+'.mp3');VO[k]=await ac.decodeAudioData(await r.arrayBuffer())}catch(e){}}))};
+let voSrc=null;
+BB.say=(k,o={})=>{const info=BB.voText[k]||{txt:k,who:'sprocket'};const b=VO[k];
+  if(voSrc&&!o.overlap){try{voSrc.stop()}catch(e){}}
+  const dur=b?b.duration:Math.max(1.6,info.txt.length*.06);
+  if(b){const s=ac.createBufferSource();s.buffer=b;s.connect(voBus);s.start();if(!o.overlap)voSrc=s}
+  if(!o.nocap)BB.caption={txt:info.txt,who:info.who,until:BB.t+dur+.4,start:BB.t};
+  BB.talking={who:info.who,until:BB.t+dur};return dur};
+BB.isTalking=w=>BB.talking&&BB.talking.who===w&&BB.t<BB.talking.until;
+// ---------- microphone: RMS meter + clap onset detection ----------
+const mic=BB.mic={ok:false,state:'off',rms:0,level:0,peak:0,floor:.005,sens:1,onsets:[],lastOn:-1,tickLevel:0,hold:0};
+const sensSteps=[.5,.7,1,1.4,2,2.8];mic.sensIdx=2;
+BB.startMic=async()=>{try{mic.state='asking';
+  const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  const src=ac.createMediaStreamSource(st);const an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0;src.connect(an);
+  mic.an=an;mic.buf=new Float32Array(an.fftSize);mic.ok=true;mic.state='on';return true}catch(e){mic.state='denied';return false}};
+// Called every frame. Onset = sharp energy jump above an adaptive noise floor, 120 ms refractory.
+mic.update=dt=>{if(!mic.ok||BB.paused)return;mic.an.getFloatTimeDomainData(mic.buf);
+  // look at the newest ~20 ms in 5 ms slices to timestamp the clap more precisely
+  const b=mic.buf,N=b.length,sr=ac.sampleRate,sl=Math.round(sr*.005);let best=0,bestI=0,sum=0;
+  for(let s=N-sl*4;s<N;s+=sl){let e=0;for(let i=s;i<s+sl;i++)e+=b[i]*b[i];e=Math.sqrt(e/sl);if(e>best){best=e;bestI=s}}
+  for(let i=N-1024;i<N;i++)sum+=b[i]*b[i];const rms=Math.sqrt(sum/1024);
+  mic.rms=rms;mic.raw=best;const sens=sensSteps[mic.sensIdx];
+  const lvl=clamp(Math.sqrt(best*sens*6),0,1);// perceptual 0..1 meter
+  mic.level=Math.max(lvl,mic.level-dt*1.8);
+  const tNow=ac.currentTime-(N-bestI)/sr-(ac.baseLatency||0);
+  const thr=Math.max(mic.floor*4,.02/sens,mic.tickLevel*1.5);
+  if(best>thr&&best>mic.prev*1.6&&tNow-mic.lastOn>.12){mic.lastOn=tNow;mic.onsets.push({t:tNow,lvl:lvl});mic.peak=lvl;mic.hold=.6}
+  else if(best<thr)mic.floor=lerp(mic.floor,best,dt*.8);
+  mic.prev=Math.max(best,(mic.prev||0)*.6);mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
+mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
+// Simulated class (debug ?sim=1): claps on the beat with the requested loudness.
+BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl});mic.level=lvl;mic.peak=lvl;mic.hold=.4};
+// ---------- main loop ----------
+BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.scene=s;parts.length=0;s.enter&&s.enter()};
+let last=performance.now();
+function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
+  if(!BB.paused){BB.t+=dt;BB.updParts(dt);mic.update(dt)}
+  hits=[];
+  ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.setTransform(SC*BB.dpr,0,0,SC*BB.dpr,OX*BB.dpr,OY*BB.dpr);ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
+  shakeAmt*=Math.pow(.02,dt);const sx=(Math.random()-.5)*2*shakeAmt,sy=(Math.random()-.5)*2*shakeAmt;
+  BB.shakeXY=[sx,sy];
+  if(BB.scene){if(!BB.paused)BB.scene.update(dt);BB.scene.draw(ctx)}
+  ctx.restore();
+  dispatchClicks();keys.length=0;
+  requestAnimationFrame(frame)}
+BB.start=()=>requestAnimationFrame(frame);
