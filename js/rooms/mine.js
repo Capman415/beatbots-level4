@@ -41,7 +41,7 @@ const ROCKS=[
 const TBOX=k=>({x0:1480,x1:3320,y0:top(k)+34,y1:rail(k)});
 const LIGHT=[{rim:'#ffd08a',amb:'#ff9a40',haze:'60,34,18'},{rim:'#ffc070',amb:'#ff8030',haze:'64,32,16'},{rim:'#bfe6ff',amb:'#6a8cff',haze:'24,26,60'},{rim:'#ffb060',amb:'#ff6a30',haze:'66,28,14'},{rim:'#ffa070',amb:'#d05030',haze:'58,24,16'}];
 const NEED=4;// steady measures per whole note (bonus rocks need 2)
-const SOFT_MAX=.62,LOUD_MIN=.7;
+const SOFT_MAX=window.GroupGate?GroupGate.SOFT_MAX:.62,LOUD_MIN=window.GroupGate?GroupGate.LOUD_MIN:.7;
 // dirt pattern
 let dirtPat=null;function dirt(){if(dirtPat)return dirtPat;const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
   g.fillStyle='#78503a';g.fillRect(0,0,256,256);let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
@@ -84,7 +84,9 @@ function drawRock(x,y,r,kind,stage,shake,wob,o={}){const k=o.k,L=k!=null?LIGHT[k
   if(stage>=3){ctx.globalAlpha=.6+.4*Math.sin(BB.t*20);ctx.strokeStyle='#fff3b0';ctx.lineWidth=3;for(let i=0;i<4;i++){const p=crackPaths[i];ctx.beginPath();p.forEach(q=>ctx.lineTo(q[0]*r*1.05,q[1]*r*1.05-r*.05));ctx.stroke()}}
   ctx.restore();ctx.restore()}
 function drawCart(x,base,n){// painted cart, sized to sit inside the elevator cage
-  for(let i=Math.min(n,8)-1;i>=0;i--)BB.wholeNote(x-75+(i%4)*50+(i>=4?25:0),base-150-(i>=4?20:0),22,{rot:(i%3-1)*.2});
+  // v12.2: a real heap - rows narrow toward the top, varied tilt, bottom row half hidden by the cart sides
+  const P=[[-48,-132,-.25],[0,-136,.12],[48,-131,.3],[-24,-152,-.08],[26,-154,.22],[-60,-146,.4],[58,-147,-.35],[0,-172,.05],[-34,-168,-.3],[34,-170,.28]];
+  const m=Math.min(n,P.length);for(let i=0;i<m;i++){const[dx,dy,r]=P[i];ctx.save();ctx.translate(x+dx,base+dy);ctx.rotate(r);BB.R.tile('w',-34,-40,68,48,{shadow:i>=3});ctx.restore()}
   BB.prop('cart',x,base,150,{shadowA:.35})}
 // ---- the room ----
 class MineRoom{
@@ -162,11 +164,11 @@ class MineRoom{
     while(b.t0+b.next*b.spb<ahead){const t=b.t0+b.next*b.spb;BB.sfx.tick(t,b.next%4===0,this.R.dyn==='p'?.6:1);
       if(BB.debug&&b.next>=4&&Math.random()<.92){const lvl=this.R.dyn==='p'?.45:this.R.dyn==='f'?.9:.7;setTimeout(()=>BB.simClap(t+(Math.random()-.5)*.08,lvl),Math.max(0,(t-BB.ac.currentTime)*1000+30))}
       b.next++}}
-  handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||this.state!=='dig')return;
-    const tol=Math.min(.17,b.spb*.32);
+  handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||this.state!=='dig')return;if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p')BB.softClap=BB.t;
+    const G=window.GroupGate,tol=G?G.tol(b.spb):Math.min(.17,b.spb*.4);
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;// ignore our own voice lines
       const bi=Math.round((o.t-b.t0)/b.spb),dt=o.t-(b.t0+bi*b.spb);
-      if(bi>=4&&Math.abs(dt)>tol){if(this.gated())(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
+      if(bi>=4&&Math.abs(dt)>tol){if(this.gated()&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
       if(bi<4||Math.abs(dt)>tol||b.hits[bi]||(b.pend&&b.pend[bi]))continue;
       const d=this.R.dyn;
       if(d==='p'&&o.lvl>SOFT_MAX){this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
@@ -179,8 +181,8 @@ class MineRoom{
   resolveGroup(){const b=this.beat,G=window.GroupGate;if(!b||!G)return;const now=BB.ac.currentTime-.02;
     if(b.strays)b.strays=b.strays.filter(t=>{if(now<t+.12)return true;G.stray(t);return false});
     if(b.pend)for(const k in b.pend){const bi=+k,tc=b.t0+bi*b.spb;if(now<tc+G.W1+.02)continue;delete b.pend[k];
-      const m=G.judge(tc);if(m.ok&&this.state==='dig')this.hit(bi);else this.fewHands=BB.t}}
-  evalMeasures(){const b=this.beat;if(this.state!=='dig')return;const tol=Math.min(.17,b.spb*.32);
+      const m=G.judge(tc,this.R.dyn==='p',b.spb);if(m.ok&&this.state==='dig')this.hit(bi);else this.fewHands=BB.t}}
+  evalMeasures(){const b=this.beat;if(this.state!=='dig')return;const tol=window.GroupGate?GroupGate.tol(b.spb):.17;
     this.resolveGroup();while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+Math.max(tol,.2)+.03){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
       b.evalM++;this.marks=[0,0,0,0];
       if(n>=3)this.crack();
@@ -207,7 +209,8 @@ class MineRoom{
     if(this.state==='intro'){this.intro(t-this.introT0,dt);if(BB.keys.includes('s'))this.skipIntro()}
     if(this.introT0===undefined)this.introT0=t;
     this.wob=Math.max(0,this.wob-dt*1.5);this.shk=Math.max(0,this.shk-dt*3);for(let i=0;i<4;i++)if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5);
-    if(this.botWalk!==undefined){const k=clamp((t-this.botWalk)/1.4,0,1);this.botX=lerp(1960,BOT_X,ease.inOut(k))}
+    if(this.botWalk!==undefined&&!this.botRoll)this.rollBot(1960,BOT_X,1.4,t);this.botWalk=undefined;
+    if(this.botRoll){const r=this.botRoll,k=clamp((t-r.t)/r.dur,0,1);this.botX=lerp(r.from,r.to,ease.inOut(k));r.k=k;if(k>=1)this.botRoll=null}
     if(this.state==='drop'){const k=clamp((t-this.st)/.9,0,1);this.rockY=lerp(-400,0,ease.out(k));if(k>=1&&!this.landed){this.landed=1;BB.sfx.clunk();BB.shake(4)}
       if(k>=1&&t>this.voEnd){this.landed=0;this.state='count';this.startBeat()}}
     if(this.beat){this.scheduleTicks();if(this.state==='count'&&this.beatNow()>=3.6)this.state='dig';this.handleOnsets();this.evalMeasures()}
@@ -216,9 +219,11 @@ class MineRoom{
     if(this.state==='pop'&&t-this.st>2.4){this.rockI++;if(this.rockI>=ROCKS.length)this.finish();else this.beginRock(false)}
     // elevator travel between floors
     if(this.R&&this.state!=='intro'&&this.state!=='end'){const ty=rail(this.R.f);if(Math.abs(this.elevY-ty)>1){
-        if(!this.moving){this.moving=1;BB.sfx.motor(BB.ac.currentTime,1.8);this.botOnElev=true;this.botWalk=undefined;this.botX=1960}
+        if(!this.moving){if(this.botRoll)return this.updTail(dt);if(Math.abs(this.botX-1960)>2){this.rollBot(this.botX,1960,1.1);return this.updTail(dt)}this.moving=1;BB.sfx.motor(BB.ac.currentTime,1.8);this.botOnElev=true}
         this.elevY=Math.min(ty,this.elevY+dt*340);this.cam.y=Math.min(camY(this.R.f),this.elevY-140);if(this.state==='drop')this.st=t;}
-      else if(this.moving){this.moving=0;this.botOnElev=false;this.botWalk=t;this.cam.y=camY(this.R.f)}}
+      else if(this.moving){this.moving=0;this.botOnElev=false;this.rollBot(1960,BOT_X,1.4);this.cam.y=camY(this.R.f)}}
+    this.updTail(dt)}
+  updTail(dt){const t=BB.t;
     // flying notes -> pipe -> bin
     for(let i=this.flying.length-1;i>=0;i--){const n=this.flying[i];if(t-n.t0>1.1){this.flying.splice(i,1);this.pipeNotes.push({y:n.y1,gold:n.gold});
       if(!n.gold)this.count++;BB.sfx.ding();this.meterPop=t}}
@@ -237,14 +242,23 @@ class MineRoom{
     if(p.ph==='out'){p.x+=dt*900;if(p.x>3500)p.ph='done'}
     if(this.pebbles)for(const q of this.pebbles){q.vy+=1600*dt;q.y+=q.vy*dt;q.x+=q.vx*dt;if(q.y>H-70&&q.vy>0){q.vy*=-.4;q.y=H-70}}
     if(this.pebbles)this.pebbles=this.pebbles.filter(q=>Math.abs(q.vy)>40||q.y<H-75)}
-  finish(){this.state='end';this.st=BB.t;this.botOnElev=true;this.botX=1960;BB.sfx.motor(BB.ac.currentTime,4);this.endSaid=0}
+  rollBot(from,to,dur,t=BB.t){this.botRoll={from,to,dur,t,k:0};BB.sfx.motor&&BB.sfx.motor(BB.ac.currentTime,dur*.6)}
+  botRolling(){return !!this.botRoll}
+  // in the shaft (on the lift) the bot is drawn with the cage; size eases 300 -> 250 as it rolls in so it fits the car
+  botOnLift(){return this.botX<SHAFT[1]-10||(this.state==='end'&&this.endRide>=1)}
+  drawBot(y,sw,o={}){const k=clamp((BOT_X-this.botX)/(BOT_X-1960),0,1),sz=lerp(300,250,ease.inOut(k)),r=this.botRoll;
+    const bob=r&&r.k<1?Math.abs(Math.sin(r.k*Math.PI*6))*6:0;BB.contactShadow(this.botX,y,sz*.42,.35);
+    BB.pickbot(this.botX,y-bob,sz,r&&r.k<1?.25:sw,r&&r.k<1?{squash:bob*.006}:o)}
+  finish(){this.state='end';this.st=BB.t;this.botOnElev=true;this.rollBot(this.botX,1960,1.1);this.endSaid=0;this.endRide=0}
   updEnd(dt){const t=BB.t-this.st,c=this.cam;
-    if(t<.8){this.botOnElev=true}
-    this.elevY=lerp(rail(4),GY,ease.inOut(clamp((t-.5)/4,0,1)));
-    c.z=lerp(1,.62,ease.inOut(clamp(t/1.5,0,1)));if(t>4)c.z=lerp(.62,1,ease.inOut(clamp((t-4)/1.5,0,1)));
-    c.y=t<4.5?this.elevY-60:lerp(GY-60,540,ease.inOut(clamp((t-4.5)/1.2,0,1)));c.x=2400;
-    if(t>4.6&&!this.endSaid){this.endSaid=1;BB.say('complete');BB.sfx.fanfare();this.sprCheer=1;BB.burst(W/2,300,60,{cols:['#ffe066','#6ee678','#fff','#e65046','#5ac8fa'],kind:'star',size:16,speed:900,g:600,life:2})}
-    if(t>5.6&&!this.saved){this.saved=1;if(!BB.save.done.includes('mine')){BB.save.done.push('mine');localStorage.setItem('bb4',JSON.stringify(BB.save))}}}
+    // v12.2: Sorter Bot rolls onto the lift, rides it up to the surface, then rolls off onto the warehouse floor
+    const E0=1.2;if(t>E0&&!this.endRide){this.endRide=1;BB.sfx.motor(BB.ac.currentTime,4)}
+    if(t>E0+4.1&&this.endRide===1){this.endRide=2;this.rollBot(1960,2330,1.2)}
+    this.elevY=lerp(rail(4),GY,ease.inOut(clamp((t-E0)/4,0,1)));
+    c.z=lerp(1,.62,ease.inOut(clamp(t/1.5,0,1)));if(t>4.8)c.z=lerp(.62,1,ease.inOut(clamp((t-4.8)/1.5,0,1)));
+    c.y=t<5.2?this.elevY-60:lerp(GY-60,540,ease.inOut(clamp((t-5.2)/1.2,0,1)));c.x=2400;
+    if(t>5.6&&!this.endSaid){this.endSaid=1;BB.say('complete');BB.sfx.fanfare();this.sprCheer=1;BB.burst(W/2,300,60,{cols:['#ffe066','#6ee678','#fff','#e65046','#5ac8fa'],kind:'star',size:16,speed:900,g:600,life:2})}
+    if(t>6.6&&!this.saved){this.saved=1;if(!BB.save.done.includes('mine')){BB.save.done.push('mine');localStorage.setItem('bb4',JSON.stringify(BB.save))}}}
   // ================= drawing =================
   draw(){const c=this.cam,[sx,sy]=BB.shakeXY;ctx.save();ctx.translate(W/2+sx,H/2+sy);ctx.scale(c.z,c.z);ctx.translate(-c.x,-c.y);
     this.drawWorld();BB.drawParts(1);ctx.restore();
@@ -294,7 +308,7 @@ class MineRoom{
     // elevator lift: platform top lands exactly on ey
     BB.prop('elev',1940,ey+56,336,{shadow:false});
     drawCart(CART_X+10,ey,this.count);
-    if(this.botOnElev)BB.pickbot(this.botX,ey,240,.2+.1*Math.sin(t*3));
+    if(this.botOnLift()){const end=this.state==='end'&&this.botX>SHAFT[1]-10;this.drawBot(end?GY:ey,end?.3+.05*Math.sin(t*3):.2+.1*Math.sin(t*3))}
     // Static Jr. diving
     if(this.jr.vis&&(this.jr.mode==='dive'))BB.staticJr(this.jr.x,this.jr.y,110,{rot:this.jr.rot,glitch:.6});
     // warehouse floor slab (with the NOTE MINE hatch)
@@ -312,7 +326,7 @@ class MineRoom{
     // WAREHOUSE banner
     BB.panel(1150,540,310,96,18);BB.text('RHYTHM WAREHOUSE',1305,590,26,'#fff',{stroke:4});
     // NOTE MINE sign over hatch
-    BB.panel(HATCH[0]-25,630,225,104,18);BB.text('NOTE MINE ↓',(HATCH[0]+HATCH[1])/2,686,30,COL.yellow,{stroke:4});
+    BB.panel(SHAFT[1]+18,440,225,104,18);BB.text('NOTE MINE ←',SHAFT[1]+130,496,30,COL.yellow,{stroke:4});// v12.2: moved clear of the lift post
     // WHOLE NOTES bin
     const bx=BIN_X;
     for(let i=0;i<Math.min(this.binCount,10);i++)BB.wholeNote(bx-60+(i%4)*40,GY-160-Math.floor(i/4)*24+(i%2)*6,24,{rot:(i%3-1)*.3});
@@ -362,8 +376,8 @@ class MineRoom{
       if(this.R&&this.R.icons&&active){BB.sprite(this.R.icons[0],3060,rail(k),170,{squash:b});BB.sprite(this.R.icons[1],3230,rail(k),200,{squash:b})}}
     // Sorter Bot + rock on the active floor
     if(active||(this.R&&k===this.R.f)){
-      if(!this.botOnElev){const ph2=this.beat?((this.beatNow()%1)+1)%1:.5;let sw=this.beat?(ph2<.12?1:ph2<.8?1-ease.out((ph2-.12)/.68):ease.inOut((ph2-.8)/.2)):.3+.05*Math.sin(t*3);
-        const shrug=this.shrugT&&t-this.shrugT<.8;BB.pickbot(this.botX,rail(k),300,sw,{squash:this.beat?BB.bounce(ph2,.06):0});
+      if(!this.botOnLift()&&this.state!=='end'){const ph2=this.beat?((this.beatNow()%1)+1)%1:.5;let sw=this.beat?(ph2<.12?1:ph2<.8?1-ease.out((ph2-.12)/.68):ease.inOut((ph2-.8)/.2)):.3+.05*Math.sin(t*3);
+        const shrug=this.shrugT&&t-this.shrugT<.8;this.drawBot(rail(k),sw,{squash:this.beat?BB.bounce(ph2,.06):0});
         if(shrug)this.bubble(this.botX+70,rail(k)-420,'¯\\_(ツ)_/¯',k)}
       if(this.state!=='pop'&&this.state!=='end'&&this.state!=='intro'){const R=this.R,r=R.kind==='boulder'?170:R.kind==='crystal'?135:150;
         const beatShk=this.beat&&this.state!=='drop'?Math.max(0,1-((this.beatNow()%1)+1)%1*6)*2:0;
@@ -428,7 +442,7 @@ class MineRoom{
     BB.micMeter(40,H-150,{band:R.dyn==='p'?'soft':R.dyn==='f'?'loud':null});
     BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&BB.t-this.ovPop<.3?1.08:1})}
   drawIntroHUD(){BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});BB.pauseBtn(()=>this.pause())}
-  drawEnd(){const t=BB.t-this.st;if(t<5.2)return;const k=ease.back(clamp((t-5.2)/.6,0,1));
+  drawEnd(){const t=BB.t-this.st;if(t<7.4)return;const k=ease.back(clamp((t-7.4)/.6,0,1));// after Sorter Bot rolls off at the surface
     ctx.save();ctx.translate(W/2,330);ctx.scale(k,k);BB.panel(-560,-250,1120,500,44);
     BB.text('ROOM 1 COMPLETE!',0,-160,72,'#fff',{font:'Rammetto One',stroke:9});
     for(let i=0;i<8;i++)BB.wholeNote(-280+i*80,-60,30,{fill:'#6ee678',glow:.4,rot:Math.sin(BB.t*3+i)*.2});

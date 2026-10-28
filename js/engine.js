@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v12.1';
+BB.VERSION='v12.2';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -165,15 +165,19 @@ function nonTonalEnergy(freqs){const an=MicCore.an;if(!an)return 0;if(!fbin||fbi
     if(freqs&&freqs.some(b=>{for(let k=1;k<=5;k++)if(Math.abs(f-b*k)<90)return true;return false}))continue;e+=pw}
   nonTonalEnergy.frac=tot>0?e/tot:0;return e}
 function selfCheck(T){const L=micLat();let tonal=null;
-  for(const w of selfWins){if(T>=w.t+L-.04&&T<=w.e+L+.12){if(!w.freqs)return'hard';(tonal=tonal||[]).push(...w.freqs)}}
+  for(const w of selfWins){if(T<w.t+L-.04)continue;
+    // v12.2: a noise sound (tink/boom after a hit) hard-blocks only its ATTACK, not its whole decaying tail - the long
+    // boom tail used to swallow the next beats in forte (and the next beat at Allegro). The onset jump rule handles tails.
+    if(!w.freqs){if(T<=Math.min(w.e,w.t+.06)+L+.05)return'hard';continue}
+    if(T<=w.e+L+.06)(tonal=tonal||[]).push(...w.freqs)}
   return tonal}
 BB.selfWins=selfWins;
 mic.update=dt=>{if(!mic.ok||BB.paused)return;
   const r=MicCore.read();const rms=r.rms;mic.rms=rms;mic.raw=rms;mic.max=r.max;const sens=sensSteps[mic.sensIdx];
-  const lvl=clamp(Math.sqrt(rms*sens*6),0,1);mic.level=Math.max(lvl,mic.level-dt*1.8);
+  const lvl=window.GroupGate?GroupGate.lvl(rms,sens):clamp(Math.sqrt(rms*sens*6),0,1);// same scale as the meter and the soft-clap thresholdmic.level=Math.max(lvl,mic.level-dt*1.8);
   const tNow=ac.currentTime-.02;
   if(window.GroupGate){GroupGate.push(tNow,GroupGate.hf(MicCore.buf),dt);GroupGate.sensMul=sens}// group-clap gate log
-  const thr=window.GroupGate?GroupGate.onsetThr(mic.floor,sens):Math.max(mic.floor*2.2+.0015,.003)/sens;mic.thr=thr;// shared rule (group.js)
+  const softOn=BB.softClap&&BB.t-BB.softClap<.5;const thr=window.GroupGate?GroupGate.onsetThr(mic.floor,sens,softOn):Math.max(mic.floor*2.2+.0015,.003)/sens;mic.thr=thr;// shared rule (group.js)
   const allFreqs=[880,1320];const nt=nonTonalEnergy(allFreqs);
   if(rms>thr&&rms>mic.prev*(window.GroupGate?GroupGate.ONSET_JUMP:1.3)&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
     const chk=selfCheck(tNow);let ok=true;
@@ -181,7 +185,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
     else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.6&&e>nonTonalFloor*6}// clap = mostly broadband energy
     if(mic.calib)mic.calib.push(tNow);
     if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'']);
-    if(ok){mic.onsets.push({t:tNow,lvl});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
+    if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;mic.onsets.push({t:tNow,lvl:lv,rms});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
   else if(rms<thr)mic.floor=lerp(mic.floor,Math.min(rms,.05),dt*.8);
   if(rms<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(rms,(mic.prev||0)*.6);mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
 mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};

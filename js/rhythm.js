@@ -6,7 +6,8 @@ const R=BB.R={};
 R.BEATS={w:4,h:2,q:1,e:1,s:1,r:1};
 R.NAME={w:'WHOLE',h:'HALF',q:'TA',e:'TI-TI',s:'TIKA-TIKA',r:'REST'};
 R.SAY={w:'ta-a-a-a',h:'ta-a',q:'ta',e:'ti-ti',s:'tika-tika',r:'(rest)'};
-R.COLS={w:['#f39a5c','#e0703a','#a84a22'],h:['#ffd36b','#f2b23a','#b97e16'],q:['#8fd0ff','#5aa8e6','#2f6fa8'],e:['#9ff09a','#5ccf62','#2f8f3a'],s:['#d8a6ff','#a96ef0','#6b3ab0'],r:['#7d8c8a','#55625f','#323b39']};
+// v12.2: sheet-music ink look (matches the order ticket): black notation with a soft graphite bevel; colour only on UI
+const INK=['#4a4a55','#1e1e26','#08080c'];R.COLS={w:INK,h:INK,q:INK,e:INK,s:INK,r:['#7d8c8a','#55625f','#323b39']};
 R.SUB={w:[0],h:[0],q:[0],e:[0,.5],s:[0,.25,.5,.75],r:[]};
 // sounds of a sequence, in beats from the start of the measure
 R.sounds=seq=>{const o=[];let b=0;seq.forEach((k,i)=>{for(const f of R.SUB[k])o.push({b:b+f,i,k,f});b+=R.BEATS[k]});return o};
@@ -40,15 +41,15 @@ R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'
   const c=R.COLS[k],out=document.createElement('canvas');out.width=cw;out.height=ch;const g=out.getContext('2d');
   const ink=tint(m,()=>'#141419'),deep=tint(m,()=>c[2]),face=tint(m,(gg)=>{const L=gg.createLinearGradient(0,PAD,0,ch-PAD);L.addColorStop(0,c[0]);L.addColorStop(.55,c[1]);L.addColorStop(1,c[2]);return L});
   const d=Math.max(2,s*.16);// extrusion depth
-  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.drawImage(ink,Math.cos(a)*s*.11+d*.6,Math.sin(a)*s*.11+d)}// ink rim around the back
-  for(let i=Math.ceil(d);i>0;i--)g.drawImage(deep,i*.6,i);
-  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.drawImage(ink,Math.cos(a)*s*.07,Math.sin(a)*s*.07)}
+  const paper=tint(m,()=>'rgba(250,244,226,.95)');for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.drawImage(paper,Math.cos(a)*s*.13+d*.6,Math.sin(a)*s*.13+d)}// thin cream paper rim keeps ink notes readable on dark wood
+  const deep2=tint(m,()=>'#000');for(let i=Math.ceil(d);i>0;i--)g.drawImage(deep2,i*.6,i);
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.drawImage(paper,Math.cos(a)*s*.07,Math.sin(a)*s*.07)}
   g.drawImage(face,0,0);
   // light: soft top-left bevel highlight + specular streak, clipped to the face
-  const hl=tint(m,(gg)=>{const L=gg.createLinearGradient(0,0,cw*.3,ch);L.addColorStop(0,'rgba(255,255,255,.55)');L.addColorStop(.45,'rgba(255,255,255,0)');return L});
+  const hl=tint(m,(gg)=>{const L=gg.createLinearGradient(0,0,cw*.3,ch);L.addColorStop(0,'rgba(255,255,255,.32)');L.addColorStop(.45,'rgba(255,255,255,0)');return L});
   g.save();g.globalCompositeOperation='source-atop';g.drawImage(hl,-s*.06,-s*.08);g.restore();
   const sp=document.createElement('canvas');sp.width=cw;sp.height=ch;const sg=sp.getContext('2d');sg.drawImage(m,0,0);sg.globalCompositeOperation='destination-out';sg.drawImage(m,s*.09,s*.12);
-  const spt=tint(sp,()=>'rgba(255,255,255,.7)');g.drawImage(spt,0,0);
+  const spt=tint(sp,()=>'rgba(255,255,255,.45)');g.drawImage(spt,0,0);
   return n3c[key]={c:out,sc,PAD,gy:gy/sc}};
 // a note object standing in a w x h box (bottom of box = the surface it rests on)
 R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
@@ -99,14 +100,14 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     this.base=this.cnt?4:0;// optional count-in measure
     BB.mic.take();}
   beatNow(){return(ac.currentTime-this.t0)/this.spb}
-  phase(){const b=this.beatNow()-this.base;return b<0?'count':b<4?'listen':b<8?'clap':'end'}
+  phase(){const b=this.beatNow()-this.base;return b<0?'count':b<4?'listen':b<8?'ready':b<12?'clap':'end'}// v12.2: 4-beat count-in between listen and clap
   update(dt){const ahead=ac.currentTime+.12,spb=this.spb,T0=this.t0+this.base*spb;
-    while(this.t0+this.next*spb<ahead&&this.next<this.base+8){const t=this.t0+this.next*spb;BB.sfx.tick(t,this.next%4===0,.8);this.next++}
+    while(this.t0+this.next*spb<ahead&&this.next<this.base+12){const t=this.t0+this.next*spb,rd=this.next>=this.base+4&&this.next<this.base+8;BB.sfx.tick(t,this.next%4===0||rd,rd?1:.8);this.next++}
     // machine plays the rhythm in measure "listen"
     if(!this.sched){this.sched=1;this.snd.forEach((s,i)=>{const t=T0+s.b*spb;BB.sfx.block(t);setTimeout(()=>{this.lit[i]=1;this.voice(s)},Math.max(0,(t-ac.currentTime)*1000))});
-      if(BB.debug)this.snd.forEach((s,i)=>{if(Math.random()<.93){const t=T0+(4+s.b)*spb+(Math.random()-.5)*.05;setTimeout(()=>BB.simClap(t,.7),Math.max(0,(t-ac.currentTime)*1000+30))}})}
+      if(BB.debug)this.snd.forEach((s,i)=>{if(Math.random()<.93){const t=T0+(8+s.b)*spb+(Math.random()-.5)*.05;setTimeout(()=>BB.simClap(t,.7),Math.max(0,(t-ac.currentTime)*1000+30))}})}
     for(let i=0;i<this.n;i++){this.lit[i]=Math.max(0,this.lit[i]-dt*2.5);if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5)}
-    const ons=BB.mic.take(),C=T0+4*spb;const G=window.GroupGate,gated=BB.mic.ok&&G&&!BB.debug;
+    const ons=BB.mic.take(),C=T0+8*spb;const G=window.GroupGate,gated=BB.mic.ok&&G&&!BB.debug;
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;let best=-1,bd=1;
       for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),tol=Math.min(.13,gapB*spb*.48),d=Math.abs(o.t-te);if(d<tol&&d<bd){bd=d;best=i}}
       if(best<0){if(gated&&o.t>C)G.stray(o.t);continue}
@@ -115,14 +116,14 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     if(!this.done&&ac.currentTime>C+4*spb+.25){this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;this.score=sc;this.onDone&&this.onDone(sc)}}
   hit(i){this.got[i]=1;this.marks[i]=.01;BB.sfx.tink(undefined,.6)}
   override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}
-  cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-4;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
+  cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-8;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
   draw(cx,y){const ph=this.phase();R.pills(cx,y,this.seq,{lit:this.lit,marks:this.marks,cur:this.cursor(),words:true});
     const bn=this.beatNow();let msg='';
     if(ph==='count'){const n=4-Math.floor(bn);msg=n>0?'Listen... '+n:'';}
-    else if(ph==='listen')msg='MY TURN: listen!';else if(ph==='clap')msg='YOUR TURN: clap it!';
-    if(msg)BB.text(msg,cx,y-125,40,ph==='clap'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
+    else if(ph==='listen')msg='MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-4)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
+    if(msg)BB.text(msg,cx,y-125,ph==='ready'?56:40,ph==='clap'||msg==='GO!'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
     // beat dots under the pills
-    if(ph!=='end'&&bn>=0){const tot=4*150+3*24,bi=Math.floor(bn)%4;for(let i=0;i<4;i++){ctx.fillStyle=i===bi?COL.yellow:'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*174,y+62,i===bi?9:6,0,7);ctx.fill()}}}}
+    if(ph!=='end'&&bn>=0){const tot=4*150+3*24,bi=Math.floor(bn)%4,rd=ph==='ready';for(let i=0;i<4;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*174,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*174,y+62,40,'rgba(110,230,120,A)',.5)}}}}
 R.ClapBack=ClapBack;
 // ---------- shared room bits ----------
 // bake a static layer once (background + anything that never moves). Phones bake at half size.
