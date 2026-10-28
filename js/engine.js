@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v9';
+BB.VERSION='v10';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -169,6 +169,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   const r=MicCore.read();const rms=r.rms;mic.rms=rms;mic.raw=rms;mic.max=r.max;const sens=sensSteps[mic.sensIdx];
   const lvl=clamp(Math.sqrt(rms*sens*6),0,1);mic.level=Math.max(lvl,mic.level-dt*1.8);
   const tNow=ac.currentTime-.02;
+  if(window.GroupGate){GroupGate.push(tNow,GroupGate.hf(MicCore.buf),dt);GroupGate.sensMul=sens}// group-clap gate log
   const thr=Math.max(mic.floor*2.5+.004,.008/sens);mic.thr=thr;// same rule as mic-test.html
   const allFreqs=[880,1320];const nt=nonTonalEnergy(allFreqs);
   if(rms>thr&&rms>mic.prev*1.35&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
@@ -182,7 +183,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   if(rms<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(rms,(mic.prev||0)*.6);mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
 mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 // Simulated class (debug ?sim=1): claps on the beat with the requested loudness.
-BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl});mic.level=lvl;mic.peak=lvl;mic.hold=.4};
+BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl,sim:1});mic.level=lvl;mic.peak=lvl;mic.hold=.4};
 // ---------- main loop ----------
 BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.scene=s;parts.length=0;s.enter&&s.enter()};
 let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0,perfGood=0;

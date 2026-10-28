@@ -51,6 +51,11 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
         if(d.length>=2){d.sort((a,b)=>a-b);BB.mic.lat=Math.max(0,d[d.length>>1])}BB.mic.onsets=[];this.state='on'},2600)}
     else this.state='denied'}
 
+  groupCal(){if(this.state!=='on'||!window.GroupGate)return;this.state='gcal';this.gIdx=-1;
+    const t=BB.ac.currentTime+1.2,times=[0,1,2,3].map(i=>t+i*.75);this.gTimes=times;times.forEach((x,i)=>BB.sfx.tick(x,i===0));
+    times.forEach((x,i)=>setTimeout(()=>this.gIdx=i,(x-BB.ac.currentTime)*1000));
+    setTimeout(()=>{const Es=times.map(x=>GroupGate.measure(x+GroupGate.W0,x+GroupGate.W1).E);const c=GroupGate.calibrate(Es);
+      this.gRes=Es.filter(e=>e>0).length>=2?'Got it! I know how loud your class is.':'Hmm, I barely heard you. Try again or skip.';BB.mic.onsets=[];this.state='on'},(times[3]+.6-BB.ac.currentTime)*1000)}
   draw(){menuBg('title_bg',.25);BB.panel(260,120,1400,800,44);
     BB.text('MICROPHONE CHECK',W/2,215,64,'#fff',{font:'Rammetto One',stroke:8});
     BB.contactShadow(450,880,150,.45);BB.sprite('sprocket',450,880,400,{squash:BB.isTalking('sprocket')?Math.sin(BB.t*18)*.015:0});
@@ -67,10 +72,12 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
       if(BB.mic.err)BB.text(BB.mic.err,W/2+300,560,26,'#ff9c8a',{maxW:600});BB.button(W/2+90,860,500,80,'TRY MIC AGAIN',{size:34,id:'retry',onClick:()=>{this.state='ask';this.turnOn()}});
       BB.text('Use the big MANUAL OVERRIDE button',W/2+300,395,32,COL.yellow,{maxW:560});BB.text('when the class gets it right.',W/2+300,440,32,COL.yellow,{maxW:560});
       BB.button(W/2+90,700,500,140,'CONTINUE',{style:'green',size:56,id:'cont',onClick:()=>BB.go(new MapScene())})}
+    else if(st==='gcal'){BB.text('Everyone clap with the beeps!',W/2+300,360,44,'#fff',{maxW:620});BB.text(this.gIdx>=0?['1','2','3','4'][this.gIdx]:'Ready...',W/2+300,470,90,COL.yellow,{font:'Rammetto One',stroke:8})}
     else{BB.text('Clap once to test!',W/2+300,340,48,'#fff');
       const f=this.flash&&BB.t-this.flash<.4;BB.text(this.heard?`Heard ${this.heard} clap${this.heard>1?'s':''}!`:'...',W/2+300,410,40,f?COL.green:COL.yellow);
       BB.micMeter(W/2+130,470);BB.text('Sensitivity',W/2+215,620,28,'#fff');BB.sensButtons(W/2+115,640);
-      BB.button(W/2+350,600,330,140,'CONTINUE',{style:'green',size:48,id:'cont',onClick:()=>BB.go(new MapScene())})}
+      BB.button(W/2+350,600,330,140,'CONTINUE',{style:'green',size:48,id:'cont',onClick:()=>BB.go(new MapScene())})
+      BB.button(W/2+90,770,560,80,'Class clap check (optional)',{size:32,id:'gcal',onClick:()=>this.groupCal()});if(this.gRes)BB.text(this.gRes,W/2+370,880,26,COL.green,{maxW:620})}
     BB.captionBox()}}
 // ---- Room map ----
 class MapScene{constructor(justDone){this.justDone=justDone}

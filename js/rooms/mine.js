@@ -165,14 +165,23 @@ class MineRoom{
   handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||this.state!=='dig')return;
     const tol=Math.min(.17,b.spb*.32);
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;// ignore our own voice lines
-      const bi=Math.round((o.t-b.t0)/b.spb),dt=o.t-(b.t0+bi*b.spb);if(bi<4||Math.abs(dt)>tol||b.hits[bi])continue;
+      const bi=Math.round((o.t-b.t0)/b.spb),dt=o.t-(b.t0+bi*b.spb);
+      if(bi>=4&&Math.abs(dt)>tol){if(this.gated())(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
+      if(bi<4||Math.abs(dt)>tol||b.hits[bi]||(b.pend&&b.pend[bi]))continue;
       const d=this.R.dyn;
       if(d==='p'&&o.lvl>SOFT_MAX){this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
       if(d==='f'&&o.lvl<LOUD_MIN){this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
-      b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;BB.sfx.tink();if(d==='f'){BB.sfx.boom();BB.shake(5)}
-      BB.burst(ROCK_X-140,rail(this.R.f)-170,12,{cols:['#ffe066','#fff','#ffb040'],speed:600,size:12})}}
+      if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;continue}// wait for the beat window to close, then ask: was that the whole group?
+      this.hit(bi)}}
+  gated(){return BB.mic.ok&&window.GroupGate&&!BB.debug}
+  hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;BB.sfx.tink();if(d==='f'){BB.sfx.boom();BB.shake(5)}
+      BB.burst(ROCK_X-140,rail(this.R.f)-170,12,{cols:['#ffe066','#fff','#ffb040'],speed:600,size:12})}
+  resolveGroup(){const b=this.beat,G=window.GroupGate;if(!b||!G)return;const now=BB.ac.currentTime-.02;
+    if(b.strays)b.strays=b.strays.filter(t=>{if(now<t+.12)return true;G.stray(t);return false});
+    if(b.pend)for(const k in b.pend){const bi=+k,tc=b.t0+bi*b.spb;if(now<tc+G.W1+.02)continue;delete b.pend[k];
+      const m=G.judge(tc);if(m.ok&&this.state==='dig')this.hit(bi);else this.fewHands=BB.t}}
   evalMeasures(){const b=this.beat;if(this.state!=='dig')return;const tol=Math.min(.17,b.spb*.32);
-    while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+tol+.02){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
+    this.resolveGroup();while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+Math.max(tol,.2)+.03){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
       b.evalM++;this.marks=[0,0,0,0];
       if(n>=3)this.crack();
       else{const talking=BB.talking&&BB.t<BB.talking.until;if(talking&&!BB.debug)continue;
@@ -344,6 +353,7 @@ class MineRoom{
     if(k===1)BB.sprite('rocket',LEAD_X,rail(k)-20-Math.sin(t*6)*10,240,{squash:b,rot:-.15});
     if(k===2){BB.sprite('whisper',LEAD_X,rail(k),260,{squash:b});if(active&&this.tooLoud&&t-this.tooLoud<1.2)this.bubble(LEAD_X-260,rail(k)-330,'shhh... softer!',k)}
     if(k===3){BB.sprite('boom',LEAD_X,rail(k),270,{squash:b*1.5});if(active&&this.tooSoft&&t-this.tooSoft<1.2)this.bubble(LEAD_X-280,rail(k)-330,'LOUDER! BOOM!',k)}
+    if(active&&k<4&&this.fewHands&&t-this.fewHands<1.2&&!(this.tooSoft&&t-this.tooSoft<1.2)&&!(this.tooLoud&&t-this.tooLoud<1.2))this.bubble(LEAD_X-280,rail(k)-330,'Everyone together!',k);
     if(k===4){this.drawCave(4);// cave-in pile + rubble
       BB.prop('rubble',3170,rail(k)+8,150,{box:B,rim:L.rim,amb:L.amb,ambA:.2})
       if(this.R&&this.R.icons&&active){BB.sprite(this.R.icons[0],3060,rail(k),170,{squash:b});BB.sprite(this.R.icons[1],3230,rail(k),200,{squash:b})}}
