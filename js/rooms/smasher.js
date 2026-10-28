@@ -257,8 +257,12 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     if(this.state==='order'&&this.oi===0&&BB.t-this.cardT<2.6)BB.titleCard('ROOM 2: NOTE SMASHER','Static Jr. broke the notes. Smash them into orders!',(BB.t-this.cardT)/2.6);
     if(this.state==='end')this.drawEnd();
     if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
-  drawCartNotes(){const t=BB.t;for(let i=0;i<4;i++)BB.wholeNote(CART.x-110+i*72,CART.base-205-Math.abs(Math.sin(t*1.2+i))*4,26,{rot:-.2+i*.15});
-    BB.rrect(CART.x-120,CART.base-300,240,52,20,BB.lg(CART.base-300,CART.base-248,['#fbf6e6','#d8d0b8']),'#8a806b',4);BB.text('WHOLE NOTES',CART.x,CART.base-273,28,'#28403c');
+  drawCartNotes(){const t=BB.t,V=BB.V2||{};/* v12.5: heaped mound of whole-note tiles, cart front rim redrawn on top */
+    const P=[[-120,-196,-.25],[-60,-200,.12],[0,-198,-.1],[60,-200,.3],[120,-195,-.2],[-90,-226,-.08],[-30,-230,.18],[30,-229,-.22],[90,-225,.15],[-58,-258,.2],[0,-262,-.15],[58,-257,.1],[-28,-290,.05],[28,-292,-.1]];
+    P.forEach(([dx,dy,r],i)=>{ctx.save();ctx.translate(CART.x+dx,CART.base+dy-(i>6?Math.abs(Math.sin(t*1.2+i))*2:0));ctx.rotate(r);BB.wholeNote(0,0,27,{});ctx.restore()});
+    if(V.cart){ctx.save();ctx.beginPath();ctx.rect(CART.x-200,CART.base-190,400,194);ctx.clip();ctx.drawImage(V.cart,CART.x-190,CART.base-225,380,225);ctx.restore()}
+
+    BB.plaque(CART.x,CART.base-345,240,46,'WHOLE NOTES',26);
     if(this.sel==='w')this.selRing(CART.x,CART.base-120,210)}
   // per-basket pile slots (stable jitter, so notes don't reshuffle); remembers counts to animate adds and lifts
   pileFor(k,n){const P=this.piles=this.piles||{},t=BB.t;let p=P[k];if(!p)p=P[k]={items:[]};
@@ -310,18 +314,18 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
       if(mood==='huh')BB.text('?',c.x+70,yy-h-10,60,COL.yellow,{font:'Rammetto One',stroke:6})}
     ctx.restore();
     // ticket
-    if(O&&this.state!=='end'){const tx=WIN.x+255,ty=WIN.y+30,tw=300,th=204,k=ease.back(clamp((t-this.cust.in-.6)/.4,0,1));ctx.save();ctx.translate(tx+tw/2,ty);ctx.scale(k,k);ctx.rotate(Math.sin(t*1.3)*.01);
-      ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetX=6;ctx.shadowOffsetY=12;BB.rrect(-tw/2,0,tw,th,10,BB.lg(0,th,['#fffaf0','#f1e8d2','#ddd0b2']));ctx.restore();R.paper(-tw/2,0,tw,th);BB.rrect(-tw/2,0,tw,th,10,null,'rgba(110,95,70,.6)',2);BB.rrect(-tw/2,0,tw,44,10,'#e65046');ctx.fillStyle='#e65046';ctx.fillRect(-tw/2,24,tw,20);
-      BB.text('ORDER #'+(this.oi+1)+(O.rush?'  RUSH!':''),0,23,24,'#fff',{stroke:3});
+    if(O&&this.state!=='end'){const tx=WIN.x+232,ty=WIN.y+30,tw=300,th=204,k=ease.back(clamp((t-this.cust.in-.6)/.4,0,1));ctx.save();ctx.translate(tx+tw/2,ty);ctx.scale(k,k);ctx.rotate(Math.sin(t*1.3)*.01);
+      ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetX=6;ctx.shadowOffsetY=12;BB.rrect(-tw/2,0,tw,th,10,BB.lg(0,th,['#fffaf0','#f1e8d2','#ddd0b2']));ctx.restore();R.paper(-tw/2,0,tw,th);BB.rrect(-tw/2,0,tw,th,10,null,'rgba(110,95,70,.6)',2);/* v12.5: header printed on the paper (red ink + rules), not a separate bar */ctx.fillStyle='rgba(200,60,48,.85)';ctx.fillRect(-tw/2+10,39,tw-20,2.5);ctx.fillRect(-tw/2+10,44,tw-20,1);
+      BB.text('ORDER #'+(this.oi+1)+(O.rush?'  RUSH!':''),0,22,26,'#c23a2e',{font:'Rammetto One'});
       let b=0;for(const kk of O.seq){const n=R.BEATS[kk],cw=(tw-20)/4,x=-tw/2+10+b*cw,w=n*cw;ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;ctx.strokeRect(x+2,52,w-4,116);
         R.tile(kk,x+2,62,w-4,92,{gs:kk==='s'?1.35:1});BB.text(R.SAY[kk],x+w/2,186,kk==='s'?16:19,'#5a5040');b+=n}
       {const lg=ctx.createRadialGradient(-tw*.2,-30,10,-tw*.2,-30,tw);lg.addColorStop(0,'rgba(255,236,180,.22)');lg.addColorStop(1,'rgba(255,236,180,0)');ctx.fillStyle=lg;ctx.beginPath();ctx.roundRect(-tw/2,0,tw,th,10);ctx.fill()}// lamp light
       ctx.restore();
       if(O.rush&&this.rushT&&this.state==='order'){const f=clamp(1-(t-this.rushT)/50,0,1);BB.rrect(tx,ty+th+12,tw,20,10,'#233','#fff',2);BB.rrect(tx,ty+th+12,tw*f,20,10,f>.3?COL.yellow:'#ffb08a');if(f===0)BB.text('take your time!',tx+tw/2,ty+th+52,24,'#fff',{stroke:4})}}
     // bell
-    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-118,by=WIN.y+WIN.h-80;/* v12.5: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
+    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-118,by=WIN.y+WIN.h-64;/* v12.5: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
     this.drawBell(bx,by,ready,t);
-    BB.plaque(bx-150,by-6,110,32,'RING!',22,ready?'#b5482a':'#28403c',{font:'Rammetto One',noRivet:1});
+    BB.plaque(bx-150,by+12,110,32,'RING!',22,ready?'#b5482a':'#28403c',{font:'Rammetto One',noRivet:1});
     BB.button(bx-180,by-110,260,140,'',{id:'bell',style:'none',onClick:()=>this.ring()})}
   // v12.5: big retro SMASH-O-MATIC marquee: chrome + enamel bevels, chasing bulbs, gear + lightning accents, flash on each smash
   drawMarquee(){const t=BB.t,cx=PX,cy=252,w=470,h=128,x=cx-w/2,y=cy-h/2,fx=this.smashFx?Math.max(0,1-(t-this.smashFx)/.5):0,fl=BB.q?(Math.random()<.02?.6:1):1;
@@ -339,7 +343,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     ctx.save();ctx.globalAlpha=fl;BB.text('SMASH-O-MATIC',cx,cy-5,40*(1+.06*fx),fx>0?'#fffbe0':'#ffe066',{font:'Rammetto One',stroke:7,maxW:w-130});ctx.restore();
     BB.plaque(cx,y+h-6,120,30,'4000',22,'#b5482a',{font:'Rammetto One',noRivet:1})}
   drawTray(){const t=BB.t;const off=(this.trayOut||0)*700;ctx.save();ctx.translate(off,0);BB.panel(TRAY.x,TRAY.y,TRAY.w,TRAY.h,30);
-    BB.plaque(TRAY.x+TRAY.w/2,TRAY.y+52,190,26,'ORDER TRAY',18);/* inside the inner border */
+    BB.plaque(TRAY.x+TRAY.w/2,TRAY.y+44,190,24,'ORDER TRAY',17);/* inside the inner border */
     for(let b=0;b<4;b++){const x=this.slotX(b);BB.rrect(x,TRAY.y+68,120,120,18,BB.lg(TRAY.y+68,TRAY.y+188,['#fbf6e6','#e6dcc2']),'rgba(25,25,31,.55)',3);{ctx.font="54px 'Rammetto One'";ctx.textAlign='center';ctx.textBaseline='alphabetic';const m=ctx.measureText(String(b+1)),gx=(m.actualBoundingBoxLeft-m.actualBoundingBoxRight)/2;ctx.fillStyle='rgba(40,64,60,.13)';ctx.fillText(String(b+1),x+60+gx,TRAY.y+128+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2)}/* glyph-true centre */}
     let b=0;this.tray.forEach((it,i)=>{const n=it.k==='x'?1:R.BEATS[it.k],x=this.slotX(b),w=this.slotW(n);
       if(!it.pending){if(it.k==='x'){BB.rrect(x,TRAY.y+68,w,120,18,'#333','#e65046',4);for(let j=0;j<40;j++){ctx.fillStyle=`rgba(255,255,255,${Math.random()*.8})`;ctx.fillRect(x+6+Math.random()*(w-16),TRAY.y+74+Math.random()*106,8,4)}BB.text('???',x+w/2,TRAY.y+128,36,'#ff9c8a',{stroke:4})}
