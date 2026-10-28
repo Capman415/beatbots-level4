@@ -3,12 +3,16 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v7';
+BB.VERSION='v8';
 let SC=1,OX=0,OY=0;
-function resize(){const dpr=Math.min(2,window.devicePixelRatio||1),vw=innerWidth,vh=innerHeight;
+// Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
+BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
+BB.q=1;// 1 = full extras, 0 = phone low mode
+function resize(){const vw=innerWidth,vh=innerHeight;let dpr=Math.min(2,window.devicePixelRatio||1);
+  if(BB.phone){const cap=BB.q?1280:960;dpr=Math.min(dpr,cap/Math.max(vw,vh*16/9))}
   SC=Math.min(vw/W,vh/H);OX=(vw-W*SC)/2;OY=(vh-H*SC)/2;
   cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);cv.style.width=vw+'px';cv.style.height=vh+'px';BB.dpr=dpr;}
-addEventListener('resize',resize);resize();
+addEventListener('resize',resize);resize();BB.resize=resize;
 // ---------- helpers ----------
 const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
 const ease={out:t=>1-Math.pow(1-t,3),inOut:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,
@@ -73,7 +77,7 @@ BB.well=(x,y,w,h,r)=>{BB.rrect(x,y,w,h,r,BB.lg(y,y+h,['#0e1f1d','#173230','#1130
 BB.glow=(x,y,r,col,a=1)=>{const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col.replace('A',a));g.addColorStop(1,col.replace('A',0));ctx.fillStyle=g;ctx.fillRect(x-r,y-r,2*r,2*r)};
 // ---------- particles + shake ----------
 const parts=[];BB.parts=parts;
-BB.burst=(x,y,n,o={})=>{for(let i=0;i<n;i++){const a=(o.a0??0)+(o.spread??Math.PI*2)*Math.random(),sp=(o.speed||400)*(.4+Math.random()*.8);
+BB.burst=(x,y,n,o={})=>{if(BB.phone){n=Math.ceil(n*(BB.q?.7:.4));if(parts.length>(BB.q?140:70))return}for(let i=0;i<n;i++){const a=(o.a0??0)+(o.spread??Math.PI*2)*Math.random(),sp=(o.speed||400)*(.4+Math.random()*.8);
   parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(o.up||0),life:o.life||.8,age:0,size:(o.size||10)*(.6+Math.random()*.8),col:o.cols?o.cols[i%o.cols.length]:(o.col||'#ffe066'),g:o.g??900,kind:o.kind||'spark',rot:Math.random()*6})}};
 BB.updParts=dt=>{for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.age+=dt;if(p.age>p.life){parts.splice(i,1);continue}p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=1-dt*(p.kind==='dust'?3:.5);p.rot+=dt*5}};
 BB.drawParts=()=>{for(const p of parts){const k=1-p.age/p.life;ctx.globalAlpha=Math.min(1,k*1.5);ctx.fillStyle=p.col;
@@ -180,8 +184,9 @@ mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl});mic.level=lvl;mic.peak=lvl;mic.hold=.4};
 // ---------- main loop ----------
 BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.scene=s;parts.length=0;s.enter&&s.enter()};
-let last=performance.now();
+let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0;
 function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
+  if(BB.phone&&BB.q){perfN++;perfS+=ts-last0;if(perfS>=1000){if(perfS/perfN>20&&++perfBad>=2){BB.q=0;resize()}else if(perfS/perfN<=20)perfBad=0;perfN=perfS=0}}last0=ts;
   if(!BB.paused){BB.t+=dt;BB.updParts(dt);mic.update(dt)}
   hits=[];
   ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,cv.width,cv.height);

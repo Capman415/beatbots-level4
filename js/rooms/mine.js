@@ -1,6 +1,6 @@
 // Room 1: NOTE MINE (style C, cutaway shaft). Static Jr. ate the whole notes; the class digs 8 back up by keeping a steady beat.
 'use strict';
-(()=>{const ctx=BB.ctx,COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB;
+(()=>{let ctx=BB.ctx;const COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB;
 BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['oh_no',"Oh no! The whole note bin is empty!",'sprocket'],
  ['ate_all',"He ate ALL the whole notes! Rhythm Engineers, to the mine!",'sprocket'],
@@ -47,7 +47,11 @@ let dirtPat=null;function dirt(){if(dirtPat)return dirtPat;const c=document.crea
   g.fillStyle='#78503a';g.fillRect(0,0,256,256);let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
   for(let i=0;i<70;i++){g.fillStyle=['#6a4532','#86593f','#5f3e2c','#8d6447'][i%4];g.beginPath();g.ellipse(r()*256,r()*256,4+r()*16,3+r()*8,r()*3,0,7);g.fill()}
   return dirtPat=ctx.createPattern(c,'repeat')}
-let ePat=null;function earthPat(){if(ePat)return ePat;const e=BB.V2.earth;if(!e)return dirt();return ePat=ctx.createPattern(e,'repeat')}
+let ePat=null,shaftC=null;const litCache={};
+function litC(k,amb){if(litCache[k])return litCache[k];const im=BB.V2['tun'+k];if(!im)return null;const c=document.createElement('canvas');c.width=1140;c.height=420;const g=c.getContext('2d');g.drawImage(im,-740,0,1880,420);g.globalCompositeOperation='soft-light';g.globalAlpha=.3;g.fillStyle=amb;g.fillRect(0,0,1140,420);return litCache[k]=c}function earthPat(){if(ePat)return ePat;const e=BB.V2.earth;if(!e)return dirt();
+  const D=rail(4)+200-GY+2000,c=document.createElement('canvas');c.width=e.width;c.height=D;const g=c.getContext('2d');g.fillStyle=g.createPattern(e,'repeat');g.translate(0,-GY);g.fillRect(0,GY,e.width,D);
+  const gr=g.createLinearGradient(0,GY,0,rail(4)+200);gr.addColorStop(0,'rgba(20,10,5,.15)');gr.addColorStop(1,'rgba(10,5,3,.55)');g.fillStyle=gr;g.fillRect(0,GY,e.width,D);
+  const p=ctx.createPattern(c,'repeat-x');p.setTransform(new DOMMatrix([1,0,0,1,0,GY]));return ePat=p}
 const howTo={title:'NOTE MINE: dig up the whole notes!',
   steps:['Watch the green beat lights.','Clap ONE clap on every light.','4 steady beats = 1 whole note!','Piano = soft claps. Forte = loud claps.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
   words:'"ta - a - a - a" (one whole note = 4 beats)   andante = walking speed,  allegro = fast',
@@ -116,10 +120,31 @@ class MineRoom{
   // -------- rock flow --------
   beginRock(first){const R=ROCKS[this.rockI];this.R=R;this.stage=0;this.state='drop';this.st=BB.t;this.rockY=-400;this.marks=[0,0,0,0];this.missVO=false;
     const newFloor=first||ROCKS[this.rockI-1]&&ROCKS[this.rockI-1].f!==R.f;
-    if(newFloor){this.cardT=BB.t;if(R.f===4){BB.sfx.rumble(BB.ac.currentTime,2);BB.shake(6);this.caveT=BB.t}
-      setTimeout(()=>{if(BB.scene===this)this.voEnd=BB.t+BB.say(FLOORS[R.f].vo)},first?2200:300)}
+    if(newFloor){this.cardT=BB.t;if(R.f===4)this.startCave();
+      this.voEnd=BB.t+9;setTimeout(()=>{if(BB.scene===this)this.voEnd=BB.t+BB.say(FLOORS[R.f].vo)},R.f===4?3000:first?2200:300)}
     else this.voEnd=BB.t+.5;
     if(R.bonus&&!newFloor){this.voEnd=BB.t+.5;BB.caption={txt:'BONUS! Andante + forte: slow and LOUD!',who:'sprocket',until:BB.t+3.5,start:BB.t}}}
+  // ---- cave-in event: painted rocks crash down and pile up in the tunnel; clearing both bonus rocks digs it out ----
+  startCave(){this.caveT=BB.t;this.caveCleared=0;this.caveDust=[];BB.sfx.rumble(BB.ac.currentTime,2.6);BB.shake(8);
+    const y=top(4);this.caveRocks=[[2560,.15,95,.4],[3240,.3,120,-.6],[2700,.45,80,1.2],[3080,.55,140,.2],[2930,.7,105,-1],[3300,.85,90,.9],[2620,1.0,70,-.3],[3150,1.15,85,.7]]
+      .map(([x,d,h,r])=>({x,d,h,r,y0:y+20,landed:0}));
+    BB.caption={txt:'Cave-in! Clear it with rhythm!',who:'sprocket',until:BB.t+2.8,start:BB.t}}
+  updCave(){if(!this.caveRocks)return;const t=BB.t-this.caveT;
+    for(const r of this.caveRocks){if(!r.landed&&t>r.d+.55){r.landed=1;BB.shake(4);BB.sfx.clunk();this.caveDust.push({x:r.x,y:rail(4)-10,t:BB.t,r:r.h*1.3},{x:r.x+r.h*.6,y:rail(4)-30,t:BB.t+.08,r:r.h},{x:r.x-r.h*.6,y:rail(4)-20,t:BB.t+.12,r:r.h*.9})}}
+    this.caveDust=this.caveDust.filter(d=>BB.t-d.t<1.6)}
+  drawCave(k){if(k!==4||!this.caveRocks)return;const t=BB.t-this.caveT,y=top(4),L=LIGHT[4],B=TBOX(4),keep=1-(this.caveCleared||0)/2;
+    ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();
+    // ceiling crack + trickling grit while it falls
+    if(t<1.8){ctx.globalAlpha=1-t/1.8;ctx.strokeStyle='rgba(20,10,4,.8)';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(2540,y+40);ctx.lineTo(2700,y+62);ctx.lineTo(2820,y+48);ctx.lineTo(3000,y+70);ctx.lineTo(3180,y+52);ctx.lineTo(3320,y+66);ctx.stroke();ctx.globalAlpha=1}
+    const cl=this.caveClearT?clamp((BB.t-this.caveClearT)/.8,0,1):0;
+    this.caveRocks.forEach((r,i)=>{if(i>=Math.ceil(this.caveRocks.length*keep)&&!(cl<1&&i<Math.ceil(this.caveRocks.length*(keep+.5))))return;
+      const ft=clamp((t-r.d)/.55,0,1),yy=lerp(r.y0+r.h,rail(4)+8,ft*ft);if(t<r.d)return;
+      const leaving=i>=Math.ceil(this.caveRocks.length*keep);const a=leaving?1-cl:1;if(a<=0)return;
+      if(ft>=1)BB.contactShadow(r.x,rail(4)+6,r.h*.6,.45*a);
+      ctx.globalAlpha=a;BB.prop('rock',r.x,yy-(leaving?cl*60:0),r.h,{box:B,rim:L.rim,amb:L.amb,ambA:.22,shadow:false,rot:r.r*(1-ft*.6)});ctx.globalAlpha=1});
+    for(const d of this.caveDust){const dt=BB.t-d.t;if(dt<0)continue;const k2=dt/1.6,rr=d.r*(.5+k2*1.2);const g=ctx.createRadialGradient(d.x,d.y-rr*.3,0,d.x,d.y-rr*.3,rr);
+      g.addColorStop(0,`rgba(214,180,140,${.55*(1-k2)})`);g.addColorStop(.6,`rgba(170,130,95,${.3*(1-k2)})`);g.addColorStop(1,'rgba(150,110,80,0)');ctx.fillStyle=g;ctx.fillRect(d.x-rr,d.y-rr*1.3,rr*2,rr*2)}
+    ctx.restore()}
   startBeat(){const R=this.R,spb=60/R.bpm,t0=BB.ac.currentTime+.25;
     this.beat={spb,t0,next:0,evalM:1,hits:{},sim:0};// measure 0 = count-in, scoring starts measure 1
     if(!this.said.ready){this.said.ready=1;BB.say('ready')}}
@@ -150,7 +175,10 @@ class MineRoom{
   popNote(){const R=this.R;this.state='pop';this.st=BB.t;this.beat=null;BB.sfx.chime();BB.sfx.pop();BB.shake(6);
     BB.burst(ROCK_X,rail(R.f)-150,40,{cols:['#ffe066','#fff','#6ee678'],speed:800,size:14,kind:'star',g:500});
     this.halves={t:BB.t};this.flying.push({t0:BB.t,x0:ROCK_X,y0:rail(R.f)-150,x1:PIPE_X,y1:rail(R.f)-120,gold:!!R.bonus,f:R.f});
-    if(this.rockI===0)setTimeout(()=>BB.scene===this&&BB.say('got_note'),500)}
+    if(this.rockI===0)setTimeout(()=>BB.scene===this&&BB.say('got_note'),500);
+    if(R.f===4&&this.caveRocks){this.caveCleared=(this.caveCleared||0)+1;this.caveClearT=BB.t;
+      if(this.caveCleared>=2&&!this.chipFly){const c=this.cam;this.chipFly={t:BB.t+.3,x0:(ROCK_X-c.x)*c.z+W/2,y0:(rail(4)-160-c.y)*c.z+H/2};
+        BB.caption={txt:'Cave-in cleared! You earned a Level 4 Beat Chip piece!',who:'sprocket',until:BB.t+3,start:BB.t}}}}
   manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;
     if(this.state==='dig'||this.state==='count'){this.marks=[1,1,1,1];if(this.state==='count'){this.state='dig';this.beat.evalM=Math.max(1,Math.ceil(this.beatNow()/4))}
       this.beat.evalM=Math.max(this.beat.evalM,Math.ceil(this.beatNow()/4));this.crack()}}
@@ -166,6 +194,7 @@ class MineRoom{
       if(k>=1&&t>this.voEnd){this.landed=0;this.state='count';this.startBeat()}}
     if(this.beat){this.scheduleTicks();if(this.state==='count'&&this.beatNow()>=3.6)this.state='dig';this.handleOnsets();this.evalMeasures()}
     else BB.mic.take();
+    this.updCave();if(this.chipFly&&!this.chipFly.done&&BB.t-this.chipFly.t>1.4){this.chipFly.done=1;this.chip=1;this.chipPop=BB.t;BB.sfx.ding();BB.sfx.chime()}
     if(this.state==='pop'&&t-this.st>2.4){this.rockI++;if(this.rockI>=ROCKS.length)this.finish();else this.beginRock(false)}
     // elevator travel between floors
     if(this.R&&this.state!=='intro'&&this.state!=='end'){const ty=rail(this.R.f);if(Math.abs(this.elevY-ty)>1){
@@ -202,10 +231,10 @@ class MineRoom{
   draw(){const c=this.cam,[sx,sy]=BB.shakeXY;ctx.save();ctx.translate(W/2+sx,H/2+sy);ctx.scale(c.z,c.z);ctx.translate(-c.x,-c.y);
     this.drawWorld();ctx.restore();
     // screen-space ambient dust in the mine
-    if(c.y>GY){ctx.fillStyle='rgba(255,240,200,.35)';for(const d of this.dust){ctx.beginPath();ctx.arc(d.x,d.y,d.s,0,7);ctx.fill()}}
+    if(c.y>GY&&BB.q){ctx.fillStyle='rgba(255,240,200,.35)';for(const d of this.dust){ctx.beginPath();ctx.arc(d.x,d.y,d.s,0,7);ctx.fill()}}
     BB.drawParts();
     if(this.state==='intro')this.drawIntroHUD();else if(this.state!=='end')this.drawHUD();
-    BB.captionBox();
+    BB.captionBox();if(this.state!=='intro')this.drawChipFly();
     if(this.R&&BB.t-this.cardT<2.4&&this.state!=='end'){const F=FLOORS[this.R.f];BB.titleCard(this.rockI===0?'ROOM 1: NOTE MINE':F.name,this.rockI===0?'Static Jr. ate the whole notes. Dig them back up!':F.mean,(BB.t-this.cardT)/2.4)}
     if(this.state==='end')this.drawEnd();
     if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
@@ -213,18 +242,32 @@ class MineRoom{
     // sky + warehouse interior
     if(vy0<GY){const g=ctx.createLinearGradient(0,0,0,GY);g.addColorStop(0,'#9ccfe6');g.addColorStop(1,'#c7e3ee');ctx.fillStyle=g;ctx.fillRect(vx0,Math.min(vy0,0),vx1-vx0,GY-Math.min(vy0,0));
       this.drawWarehouse(vx0,vx1)}
-    // dirt
-    ctx.fillStyle=earthPat();ctx.fillRect(vx0,GY,vx1-vx0,Math.max(0,vy1-GY));
-    {const g=ctx.createLinearGradient(0,GY,0,rail(4)+200);g.addColorStop(0,'rgba(20,10,5,.15)');g.addColorStop(1,'rgba(10,5,3,.55)');ctx.fillStyle=g;ctx.fillRect(vx0,GY,vx1-vx0,Math.max(0,vy1-GY))}
-    // tunnels
+    // ---- static mine layer (earth + tunnel backdrops + shaft wall) is pre-composited into an offscreen canvas while the camera is still
+    const key=[c.x,c.y,c.z,...this.lit].map(v=>v.toFixed(3)).join()+(vy0<GY?'w':'')+BB.dpr+ctx.canvas.width;
+    if(vy1>GY&&key===this._sk&&BB.statCache!==false){if(this._skB!==key){this._skB=key;this.buildStatic(vx0,vx1,vy0,vy1)}
+      const [sx,sy]=BB.shakeXY,M=ctx.getTransform(),k0=M.a/this.cam.z;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(this._sc,sx*k0-this._sxy[0]*k0,sy*k0-this._sxy[1]*k0);ctx.restore();this._stat=1}else this._stat=0;
+    this._sk=key;
+    if(!this._stat)this.drawStatic(vx0,vx1,vy0,vy1);
     for(let k=0;k<5;k++){const y=top(k);if(y>vy1||y+420<vy0)continue;this.drawTunnel(k)}
-    // pipe from mine to the WHOLE NOTES bin
     this.drawPipe();
-    // shaft + elevator (shaft wall is a painted texture; the elevator is a separate painted prop)
     const sh=BB.V2.shaft,sx0=SHAFT[0],sw=SHAFT[1]-SHAFT[0],sb=rail(4)+60;
-    if(sh){const th=sh.height*sw/sh.width;ctx.save();ctx.beginPath();ctx.rect(sx0,GY,sw,sb-GY);ctx.clip();for(let y=GY;y<sb;y+=th)ctx.drawImage(sh,sx0,y,sw,th);ctx.fillStyle='rgba(12,7,4,.35)';ctx.fillRect(sx0,GY,sw,sb-GY);ctx.restore()}
+    if(sh&&!this._stat)this.drawShaftWall(vx0,vx1,vy0,vy1);
+    this.drawRest(vx0,vx1,vy0,vy1)}
+  buildStatic(vx0,vx1,vy0,vy1){if(!this._sc)this._sc=document.createElement('canvas');const c=this._sc;c.width=ctx.canvas.width;c.height=ctx.canvas.height;
+    const g=c.getContext('2d'),m=ctx.getTransform(),[sx,sy]=BB.shakeXY;this._sxy=[sx,sy];const old=ctx;BB.ctx=ctx=g;
+    // same transform as the live frame minus the shake offset (the blit adds it back)
+    g.setTransform(m);g.beginPath();g.rect(-1e5,GY,2e5,1e5);g.clip();
+    this.drawStatic(vx0,vx1,vy0,vy1,true);this.drawShaftWall(vx0,vx1,vy0,vy1);BB.ctx=ctx=old}
+  drawStatic(vx0,vx1,vy0,vy1){
+    ctx.fillStyle=earthPat();ctx.fillRect(vx0,GY,vx1-vx0,Math.max(0,vy1-GY));
+    if(!BB.V2.earth){const g=ctx.createLinearGradient(0,GY,0,rail(4)+200);g.addColorStop(0,'rgba(20,10,5,.15)');g.addColorStop(1,'rgba(10,5,3,.55)');ctx.fillStyle=g;ctx.fillRect(vx0,GY,vx1-vx0,Math.max(0,vy1-GY))}
+    for(let k=0;k<5;k++){const y=top(k);if(y>vy1||y+420<vy0)continue;this.tunnelBg(k)}}
+  drawShaftWall(vx0,vx1,vy0,vy1){const sh=BB.V2.shaft,sx0=SHAFT[0],sw=SHAFT[1]-SHAFT[0],sb=rail(4)+60;
+    if(sh){if(!shaftC){shaftC=document.createElement('canvas');shaftC.width=sw;shaftC.height=sb-GY;const g=shaftC.getContext('2d'),th=sh.height*sw/sh.width;for(let y=0;y<sb-GY;y+=th)g.drawImage(sh,0,y,sw,th);g.fillStyle='rgba(12,7,4,.35)';g.fillRect(0,0,sw,sb-GY);for(let k=0;k<5;k++){const y0=top(k)+40-GY;g.fillStyle='rgba(18,10,6,.55)';g.fillRect(0,y0,sw,rail(k)+GY-GY-top(k)-40+6)}}
+      const v0=Math.max(GY,vy0),v1=Math.min(sb,vy1);if(v1>v0)ctx.drawImage(shaftC,0,v0-GY,sw,v1-v0,sx0,v0,sw,v1-v0)}}
+  drawRest(vx0,vx1,vy0,vy1){const c=this.cam,t=BB.t,sh=BB.V2.shaft,sx0=SHAFT[0],sw=SHAFT[1]-SHAFT[0],sb=rail(4)+60;
     for(let k=0;k<5;k++){const y0=top(k)+40;// open doorway where each tunnel meets the shaft
-      ctx.save();ctx.beginPath();ctx.rect(sx0,y0,sw,rail(k)-y0+6);ctx.clip();ctx.fillStyle='rgba(18,10,6,.55)';ctx.fillRect(sx0,y0,sw,rail(k)-y0+6);
+      ctx.save();ctx.beginPath();ctx.rect(sx0,y0,sw,rail(k)-y0+6);ctx.clip();if(!sh){ctx.fillStyle='rgba(18,10,6,.55)';ctx.fillRect(sx0,y0,sw,rail(k)-y0+6)}
       BB.glow((SHAFT[0]+SHAFT[1])/2,rail(k)-120,320,'rgba('+(k===2?'150,200,255':'255,190,110')+',A)',.18*this.lit[k]);ctx.restore();
       ctx.fillStyle='#6b4428';ctx.fillRect(sx0-6,y0-22,sw+12,22);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx0-6,y0,sw+12,6);
       const l=this.lit[k];ctx.fillStyle=l>.5?(Math.sin(t*3+k)>0?'#6ee678':'#3c8a48'):'#333';ctx.beginPath();ctx.arc(sx0+24,y0-11,7,0,7);ctx.arc(SHAFT[1]-24,y0-11,7,0,7);ctx.fill()}
@@ -273,16 +316,17 @@ class MineRoom{
     if(m==='munch'&&Math.random()<.2)BB.burst(j.x+30,j.y-110,1,{col:'#fff',kind:'dot',size:5,g:900,speed:150,a0:-1.5,spread:1});
     if(m==='burp'&&t-this.burpT<1.6){const k=(t-this.burpT)/1.6;ctx.save();ctx.globalAlpha=1-k;ctx.font="70px 'Lilita One'";ctx.fillStyle='#fff';ctx.strokeStyle=COL.ink;ctx.lineWidth=5;ctx.textAlign='center';
       ctx.strokeText('♪',j.x+20+Math.sin(k*8)*20,j.y-180-k*120);ctx.fillText('♪',j.x+20+Math.sin(k*8)*20,j.y-180-k*120);BB.text('BURP!',j.x-90,j.y-200,40,COL.yellow,{stroke:6});ctx.restore()}}
+  // static tunnel backdrop (cacheable): painted panorama, darkness until powered, edge vignette
+  tunnelBg(k){const y=top(k),l=this.lit[k],F=FLOORS[k];ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();
+    const im=BB.V2['tun'+k];if(im)ctx.drawImage(im,1460,y,1880,420);else BB.rrect(1460,y,1880,420,70,F.col);
+    if(l<1){ctx.fillStyle=`rgba(10,6,4,${.78*(1-l)})`;ctx.fillRect(1460,y,1880,420)}
+    ctx.lineWidth=40;ctx.strokeStyle='rgba(15,8,4,.35)';ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.stroke();ctx.restore()}
   drawTunnel(k){const y=top(k),l=this.lit[k],F=FLOORS[k],t=BB.t,active=this.R&&this.R.f===k,L=LIGHT[k],B=TBOX(k);this._bub=[];
     ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();
-    const im=BB.V2['tun'+k];// one unique painted panorama per floor (haze/vignette baked in)
-    if(im)ctx.drawImage(im,1460,y,1880,420);else BB.rrect(1460,y,1880,420,70,F.col);
+    if(!this._stat)this.tunnelBg(k);
+    if(active&&BB.phone&&BB.q&&l>0){const lc=litC(k,L.amb);if(lc){ctx.globalAlpha=l;ctx.drawImage(lc,2200,y);ctx.globalAlpha=1}}// phone: pre-baked lantern light (no per-frame blend)
     if(k===1&&active&&this.beat){ctx.save();ctx.beginPath();ctx.rect(1460,y,1880,420);ctx.clip();ctx.lineCap='round';for(let i=0;i<12;i++){const sx=3400-((t*1600+i*397)%2000),sy=y+50+(i*71)%300,len=120+(i%4)*40,g=ctx.createLinearGradient(sx,0,sx+len,0);g.addColorStop(0,'rgba(255,220,160,.32)');g.addColorStop(1,'rgba(255,220,160,0)');ctx.strokeStyle=g;ctx.lineWidth=3+(i%3)*2;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+len,sy);ctx.stroke()}ctx.restore()}
-    // darkness until the tunnel powers on
-    if(l<1){ctx.fillStyle=`rgba(10,6,4,${.78*(1-l)})`;ctx.fillRect(1460,y,1880,420)}
     ctx.restore();
-    // inner edge vignette so the tunnel reads as cut into the earth
-    ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();ctx.lineWidth=40;ctx.strokeStyle='rgba(15,8,4,.35)';ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.stroke();ctx.restore();
     // painted tempo word on the tunnel wall
     BB.text(F.name,2330,y+48,34,COL.yellow,{font:'Rammetto One',align:'left',stroke:5});
     // leader robot for this floor
@@ -291,7 +335,7 @@ class MineRoom{
     if(k===1)BB.sprite('rocket',LEAD_X,rail(k)-20-Math.sin(t*6)*10,240,{squash:b,rot:-.15});
     if(k===2){BB.sprite('whisper',LEAD_X,rail(k),260,{squash:b});if(active&&this.tooLoud&&t-this.tooLoud<1.2)this.bubble(LEAD_X-260,rail(k)-330,'shhh... softer!',k)}
     if(k===3){BB.sprite('boom',LEAD_X,rail(k),270,{squash:b*1.5});if(active&&this.tooSoft&&t-this.tooSoft<1.2)this.bubble(LEAD_X-280,rail(k)-330,'LOUDER! BOOM!',k)}
-    if(k===4){// cave-in rubble
+    if(k===4){this.drawCave(4);// cave-in pile + rubble
       BB.prop('rubble',3170,rail(k)+8,150,{box:B,rim:L.rim,amb:L.amb,ambA:.2})
       if(this.R&&this.R.icons&&active){BB.sprite(this.R.icons[0],3060,rail(k),170,{squash:b});BB.sprite(this.R.icons[1],3230,rail(k),200,{squash:b})}}
     // Sorter Bot + rock on the active floor
@@ -305,9 +349,10 @@ class MineRoom{
         if(ry>y-r*2){ctx.save();ctx.beginPath();ctx.rect(1460,y,1880,440);ctx.clip();drawRock(ROCK_X,ry,r,R.kind,this.stage,beatShk+this.shk*10,this.wob,{mixed:R.bonus,k,shadow:this.rockY>-20});ctx.restore()}
         if(R.bonus)BB.text('BONUS',ROCK_X,Math.max(y+60,rail(k)-r*1.9+this.rockY),36,COL.yellow,{stroke:6,font:'Rammetto One'})}
       if(this.state==='pop'){const tt=BB.t-this.st,R=this.R,r=150;// halves fly apart
+        ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();
         for(const s of[-1,1]){ctx.save();ctx.translate(ROCK_X+s*tt*500,rail(k)-120+tt*tt*900-tt*400);ctx.rotate(s*tt*4);ctx.globalAlpha=clamp(1-tt,0,1);
           ctx.beginPath();ctx.rect(s>0?0:-400,-400,400,800);ctx.clip();BB.prop(R.kind==='crystal'?'crystal':'rock',0,r*.8,r*1.6,{shadow:false,rim:L.rim,amb:L.amb});ctx.restore()}
-        if(tt<.4){ctx.save();ctx.globalAlpha=1-tt/.4;ctx.fillStyle='#fff8d0';ctx.beginPath();ctx.arc(ROCK_X,rail(k)-130,200*tt/.4+40,0,7);ctx.fill();ctx.restore()}}}
+        if(tt<.4){ctx.save();ctx.globalAlpha=1-tt/.4;ctx.fillStyle='#fff8d0';ctx.beginPath();ctx.arc(ROCK_X,rail(k)-130,200*tt/.4+40,0,7);ctx.fill();ctx.restore()}ctx.restore()}}
     // flying notes for this floor (arc from rock to pipe hopper)
     for(const n of this.flying){if(n.f!==k)continue;const tt=clamp((BB.t-n.t0)/1.1,0,1),e=ease.inOut(tt);const x=lerp(n.x0,n.x1,e),base=lerp(n.y0,n.y1,e),arc=Math.max(0,Math.min(320,base-(y+90))),yy=base-Math.sin(tt*Math.PI)*arc;
       BB.wholeNote(x,yy,46*(1+.3*Math.sin(tt*Math.PI)),{glow:.8,fill:n.gold?'#ffe066':'#fff',rot:tt*6})}
@@ -317,7 +362,7 @@ class MineRoom{
       const bonk=p.ph==='bonk';BB.staticJr(p.x,bonk?yb+Math.min(1,(BB.t-p.t3)*3)*(rail(k)-yb):yb,95,{run:p.ph==='in'||p.ph==='out'?1:0,glitch:p.ph==='throw'&&Math.sin(BB.t*20)>.6?1:0,dizzy:bonk,rot:bonk?.6:0,flip:p.ph==='out'});
       if(p.ph==='throw')this.bubble(p.x-330,yb-190,'hee hee! pebbles!',k);if(bonk)this.bubble(p.x-170,yb-150,'oof!',k)}
     // lantern light over everything in this tunnel (ties the cut-out characters into the painting) + slight depth haze
-    if(active){ctx.save();ctx.beginPath();ctx.rect(2200,y,1140,420);ctx.clip();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=.3*l;ctx.fillStyle=L.amb;ctx.fillRect(2200,y,1140,420);ctx.restore()}
+    if(active&&!BB.phone){ctx.save();ctx.beginPath();ctx.rect(2200,y,1140,420);ctx.clip();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=.3*l;ctx.fillStyle=L.amb;ctx.fillRect(2200,y,1140,420);ctx.restore()}
     for(const b of this._bub)this.bubble(b[0],b[1],b[2],b[3],true);this._bub=null}
   bubble(x,y,txt,k,now){if(k!=null&&this._bub&&!now){this._bub.push([x,y,txt,k,1]);return}const w=BB.measure(txt,34)+50;
     if(k!=null){const B=TBOX(k);x=clamp(x,B.x0+10,B.x1-w-10);y=clamp(y,top(k)+14,rail(k)-80)}
@@ -328,9 +373,16 @@ class MineRoom{
     for(let k=0;k<5;k++){const hy=rail(k)-120,L=LIGHT[k];BB.prop('funnel',x,hy+70,150,{shadow:false,rim:L.rim,amb:L.amb,ambA:.12})}
     for(const p of this.pipeNotes){BB.glow(x,p.y,60,'rgba(255,240,170,A)',.9);BB.wholeNote(x,p.y,20,{fill:p.gold?'#ffe066':'#fff'})}}
   // -------- HUD --------
+  drawChipFly(){const f=this.chipFly;if(!f||f.done)return;const tt=clamp((BB.t-f.t)/1.1,0,1);if(BB.t<f.t){}const e=ease.inOut(tt),im=BB.V2.chip;if(!im)return;
+    const x=lerp(f.x0,762,e),y=lerp(f.y0,83,e)-Math.sin(tt*Math.PI)*160,h=lerp(150,78,e)*(BB.t<f.t?ease.back(clamp(1-(f.t-BB.t)/.3,0,1)):1),w=im.width*h/im.height;
+    BB.glow(x,y,h*1.1,'rgba(255,225,130,A)',.55);ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(tt*Math.PI)*.5);ctx.drawImage(im,-w/2,-h/2,w,h);ctx.restore();
+    if(Math.random()<.5)BB.burst(x,y,1,{cols:['#ffe066','#fff'],kind:'star',size:8,g:200,speed:120,life:.5})}
   drawHUD(){const R=this.R||ROCKS[0],F=FLOORS[R.f];
     // cart meter: WHOLE NOTES n of 8
     const mp=this.meterPop&&BB.t-this.meterPop<.5?1+.12*Math.sin((BB.t-this.meterPop)*Math.PI*2):1;
+    {const cp=this.chipPop&&BB.t-this.chipPop<.6?1+.15*Math.sin((BB.t-this.chipPop)/.6*Math.PI):1,im=BB.V2.chip;ctx.save();ctx.translate(762,89);ctx.scale(cp,cp);BB.panel(-64,-65,128,130,28);
+      if(im){const h=78,w=im.width*h/im.height;if(this.chip){BB.glow(0,0,70,'rgba(255,220,120,A)',.35+.1*Math.sin(BB.t*3));ctx.drawImage(im,-w/2,-h/2-6,w,h)}else{ctx.globalAlpha=.22;ctx.drawImage(im,-w/2,-h/2-6,w,h);ctx.globalAlpha=1}}
+      BB.text('BEAT CHIP',0,48,17,this.chip?COL.yellow:'#8fb5ad',{stroke:3});ctx.restore()}
     ctx.save();ctx.translate(40,24);ctx.scale(mp,mp);BB.panel(0,0,640,130,30);
     BB.text('WHOLE NOTES',40,52,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.count} of 8`,40,92,28,'#fff',{align:'left',font:'Rammetto One',stroke:4});
     for(let i=0;i<8;i++){const on=i<this.count;BB.wholeNote(300+i*40,72,15,{fill:on?'#6ee678':'#2d4744',ring:on?COL.ink:'#22383a'})}
@@ -359,6 +411,7 @@ class MineRoom{
     BB.text('ROOM 1 COMPLETE!',0,-160,72,'#fff',{font:'Rammetto One',stroke:9});
     for(let i=0;i<8;i++)BB.wholeNote(-280+i*80,-60,30,{fill:'#6ee678',glow:.4,rot:Math.sin(BB.t*3+i)*.2});
     BB.text('8 whole notes are back in the bin!',0,20,40,COL.yellow,{stroke:5});
+    if(this.chip&&BB.V2.chip){const im=BB.V2.chip,h=110,w=im.width*h/im.height;BB.glow(440,40,90,'rgba(255,220,120,A)',.4);ctx.drawImage(im,440-w/2,30-h/2,w,h);BB.text('+ BEAT CHIP piece',440,110,24,COL.yellow,{stroke:4})}
     BB.text('Next: the NOTE SMASHER (coming soon)',0,80,36,'#fff',{stroke:5});ctx.restore();
     if(t>6){BB.button(W/2-520,620,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('mine')});
       BB.button(W/2+40,620,480,130,'PLAY AGAIN',{size:50,id:'again',onClick:()=>BB.go(new MineRoom())})}}

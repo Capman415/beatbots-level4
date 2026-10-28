@@ -104,7 +104,7 @@ BB.titleCard=(txt,sub,k)=>{if(k<=0||k>=1)return;const a=k<.15?k/.15:k>.85?(1-k)/
 })();
 // ===== v2 painted props: grounded, tinted, clamped to their tunnel box =====
 (()=>{const ctx=BB.ctx;BB.V2={};
-BB.loadV2=()=>Promise.all([['rock','png'],['crystal','png'],['cart','png'],['elev','png'],['smash','png'],['bin','png'],['rubble','png'],['wh','jpg'],['tun0','jpg'],['tun1','jpg'],['tun2','jpg'],['tun3','jpg'],['tun4','jpg'],['pipe','png'],['funnel','png'],['title_bg','jpg'],['map_bg','jpg'],['mic','png'],['lock','png'],['earth','jpg'],['shaft','jpg']].map(([n,e])=>new Promise(r=>{const i=new Image();i.onload=()=>{BB.V2[n]=i;r()};i.onerror=()=>r();i.src='assets/v2/'+n+'.'+e+'?v='+(BB.VERSION||'')})));
+BB.loadV2=()=>Promise.all([['rock','png'],['crystal','png'],['cart','png'],['elev','png'],['smash','png'],['bin','png'],['rubble','png'],['wh','jpg'],['tun0','jpg'],['tun1','jpg'],['tun2','jpg'],['tun3','jpg'],['tun4','jpg'],['pipe','png'],['funnel','png'],['title_bg','jpg'],['map_bg','jpg'],['mic','png'],['lock','png'],['chip','png'],['earth','jpg'],['shaft','jpg']].map(([n,e])=>new Promise(r=>{const i=new Image();i.onload=()=>{BB.V2[n]=i;r()};i.onerror=()=>r();i.src='assets/v2/'+n+'.'+e+'?v='+(BB.VERSION||'')})));
 const tcache={};
 // cached copy of a prop with a top-down rim light + ambient tint baked in (no per-frame compositing cost)
 BB.tinted=(name,rim,amb,ambA=.18)=>{const key=name+rim+amb+ambA;if(tcache[key])return tcache[key];const im=BB.V2[name];if(!im)return null;

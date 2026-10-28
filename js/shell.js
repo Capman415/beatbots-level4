@@ -15,12 +15,14 @@ const persist=()=>localStorage.setItem('bb4',JSON.stringify(save));
 BB.unlocked=i=>i===0||save.done.includes(BB.ROOMS[i-1].id);
 BB.roomDone=id=>{if(!save.done.includes(id))save.done.push(id);persist();BB.go(new MapScene(id))};
 // ---- shared warehouse backdrop for menus ----
-function menuBg(which='title_bg',dim=.0){const im=BB.V2[which];
-  if(im)ctx.drawImage(im,0,0,W,H);else{ctx.fillStyle='#c86a32';ctx.fillRect(0,0,W,H)}
-  // soft vignette + slow floating dust so the painted room feels alive (cheap: one gradient + a few dots)
-  const g=ctx.createRadialGradient(W/2,H*.45,H*.35,W/2,H*.5,H*1.05);g.addColorStop(0,'rgba(20,10,4,0)');g.addColorStop(1,'rgba(20,10,4,.55)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  if(dim){ctx.fillStyle=`rgba(15,10,6,${dim})`;ctx.fillRect(0,0,W,H)}
-  ctx.fillStyle='rgba(255,235,190,.35)';for(let i=0;i<18;i++){const x=(i*397+BB.t*(8+i%5*3))%W,y=(i*211+Math.sin(BB.t*.5+i)*30)%(H*.8);ctx.beginPath();ctx.arc(x,y,1.5+(i%3),0,7);ctx.fill()}}
+const bgCache={};
+function menuBg(which='title_bg',dim=.0){const im=BB.V2[which],key=which+dim;
+  // painted backdrop + vignette + dim baked once into one offscreen image (same pixels, one draw per frame)
+  if(im&&!bgCache[key]){const c=document.createElement('canvas');c.width=W;c.height=H;const g2=c.getContext('2d');g2.drawImage(im,0,0,W,H);
+    const g=g2.createRadialGradient(W/2,H*.45,H*.35,W/2,H*.5,H*1.05);g.addColorStop(0,'rgba(20,10,4,0)');g.addColorStop(1,'rgba(20,10,4,.55)');g2.fillStyle=g;g2.fillRect(0,0,W,H);
+    if(dim){g2.fillStyle=`rgba(15,10,6,${dim})`;g2.fillRect(0,0,W,H)}bgCache[key]=c}
+  if(im)ctx.drawImage(bgCache[key],0,0);else{ctx.fillStyle='#c86a32';ctx.fillRect(0,0,W,H)}
+  ctx.fillStyle='rgba(255,235,190,.35)';if(BB.q)for(let i=0;i<18;i++){const x=(i*397+BB.t*(8+i%5*3))%W,y=(i*211+Math.sin(BB.t*.5+i)*30)%(H*.8);ctx.beginPath();ctx.arc(x,y,1.5+(i%3),0,7);ctx.fill()}}
 BB.gear=(x,y,r,a,col)=>{ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle=col;ctx.beginPath();
   for(let i=0;i<12;i++){const a0=i*Math.PI/6;ctx.lineTo(Math.cos(a0-.12)*r*1.18,Math.sin(a0-.12)*r*1.18);ctx.lineTo(Math.cos(a0+.12)*r*1.18,Math.sin(a0+.12)*r*1.18);ctx.lineTo(Math.cos(a0+.3)*r,Math.sin(a0+.3)*r);ctx.lineTo(Math.cos(a0+Math.PI/6-.3)*r,Math.sin(a0+Math.PI/6-.3)*r)}
   ctx.closePath();ctx.fill();ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(0,0,r*.35,0,7);ctx.fill();ctx.restore()};
