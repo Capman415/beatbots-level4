@@ -136,7 +136,7 @@ class MapScene{constructor(justDone){this.justDone=justDone}
       drawBay(i,cx,BT,BB2,BW,un,ready);
       ctx.restore();
       // name plate on the floor in front of the bay
-      BB.panel(cx-165,778,330,128,24);BB.text('ROOM '+(i+1),cx,814,24,COL.yellow,{stroke:4});BB.text(r.name,cx,849,29,'#fff',{font:'Rammetto One',stroke:5,maxW:270});BB.text(r.sub,cx,881,21,'#bfe3dc',{maxW:270});
+      BB.panel(cx-165,778,330,128,24);BB.text('ROOM '+(i+1),cx,814,24,COL.yellow,{stroke:4});BB.text(r.name,cx,849,27,'#fff',{font:'Rammetto One',stroke:5,maxW:230});BB.text(r.sub,cx,881,21,'#bfe3dc',{maxW:270});
       if(done)BB.star(cx+118,820,15,COL.yellow,0);
       if(un)BB.button(cx-120,930,240,80,done?'PLAY AGAIN':ready?'PLAY':'PEEK',{style:ready?'green':'cream',size:34,id:'room'+i,onClick:()=>this.open(i)});
       else BB.button(cx-120,930,240,80,'LOCKED',{size:34,id:'room'+i,onClick:()=>this.open(i)});
