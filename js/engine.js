@@ -22,7 +22,7 @@ BB.loadImages=names=>Promise.all(names.map(n=>new Promise(r=>{const i=new Image(
 // ---------- input ----------
 const ptr={x:0,y:0,down:false,clicks:[]};BB.ptr=ptr;
 function toLogical(e){return{x:(e.clientX-OX)/SC,y:(e.clientY-OY)/SC}}
-cv.addEventListener('pointerdown',e=>{e.preventDefault();const p=toLogical(e);ptr.x=p.x;ptr.y=p.y;ptr.down=true;ptr.clicks.push(p);BB.unlockAudio();});
+cv.addEventListener('pointerdown',e=>{e.preventDefault();const p=toLogical(e);ptr.x=p.x;ptr.y=p.y;ptr.down=true;BB.unlockAudio();clickAt(p);});
 cv.addEventListener('pointermove',e=>{const p=toLogical(e);ptr.x=p.x;ptr.y=p.y});
 addEventListener('pointerup',()=>ptr.down=false);
 const keys=[];addEventListener('keydown',e=>keys.push(e.key));BB.keys=keys;
@@ -48,8 +48,10 @@ BB.button=(x,y,w,h,label,o={})=>{
   ctx.restore();
   if(!o.disabled)hits.push({x,y,w,h,id:o.id||label,cb:o.onClick});
 };
-function dispatchClicks(){const cl=ptr.clicks;ptr.clicks=[];
-  for(const c of cl){for(let i=hits.length-1;i>=0;i--){const b=hits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();break}}}}
+// Clicks run right inside the tap event (a real user gesture) so the mic prompt and audio resume are allowed.
+let lastHits=[];
+function clickAt(c){for(let i=lastHits.length-1;i>=0;i--){const b=lastHits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();break}}}
+function dispatchClicks(){lastHits=hits}
 // ---------- drawing helpers ----------
 BB.rrect=(x,y,w,h,r,fill,stroke,lw)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.lineWidth=lw||3;ctx.strokeStyle=stroke;ctx.stroke()}};
 BB.measure=(t,s,f='Lilita One')=>{ctx.font=`${s}px '${f}'`;return ctx.measureText(t).width};
@@ -75,7 +77,7 @@ let shakeAmt=0;BB.shake=a=>shakeAmt=Math.min(6,Math.max(shakeAmt,a));// capped a
 const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC({latencyHint:'interactive'});BB.ac=ac;
 const master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);
 const sfxBus=ac.createGain();sfxBus.connect(master);const voBus=ac.createGain();voBus.gain.value=1.1;voBus.connect(master);
-BB.unlockAudio=()=>{if(ac.state==='suspended'&&!BB.paused)ac.resume()};
+BB.unlockAudio=()=>{if(ac.state!=='running'&&!BB.paused)ac.resume().catch(()=>{})};
 const noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);{const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
 function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
 function osc(type,f,t,dur,peak,f2,dest=sfxBus){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);env(g,t,.004,peak,dur);o.connect(g).connect(dest);o.start(t);o.stop(t+dur+.05)}
@@ -117,10 +119,27 @@ BB.isTalking=w=>BB.talking&&BB.talking.who===w&&BB.t<BB.talking.until;
 // ---------- microphone: RMS meter + clap onset detection ----------
 const mic=BB.mic={ok:false,state:'off',rms:0,level:0,peak:0,floor:.005,sens:1,onsets:[],lastOn:-1,tickLevel:0,hold:0};
 const sensSteps=[.5,.7,1,1.4,2,2.8];mic.sensIdx=2;
-BB.startMic=async()=>{try{mic.state='asking';
-  const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-  const src=ac.createMediaStreamSource(st);const an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0;src.connect(an);
-  mic.an=an;mic.buf=new Float32Array(an.fftSize);mic.ok=true;mic.state='on';return true}catch(e){mic.state='denied';return false}};
+BB.startMic=async()=>{mic.state='asking';mic.err='';
+  try{ac.resume().catch(()=>{});
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoSupport'};
+    let st;try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}
+    catch(e){if(e&&(e.name==='OverconstrainedError'||e.name==='TypeError'))st=await navigator.mediaDevices.getUserMedia({audio:true});else throw e}
+    if(mic.stream)mic.stream.getTracks().forEach(t=>t.stop());
+    // keep every node referenced on BB.mic so Chrome never garbage-collects the mic graph
+    const src=ac.createMediaStreamSource(st);const an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0;src.connect(an);
+    const sink=ac.createGain();sink.gain.value=0;an.connect(sink);sink.connect(ac.destination);// silent pull keeps the graph running
+    mic.stream=st;mic.src=src;mic.an=an;mic.sink=sink;mic.buf=new Float32Array(an.fftSize);mic.floor=.003;mic.prev=0;
+    const tr=st.getAudioTracks()[0];if(tr)tr.onended=()=>{mic.ok=false;mic.state='lost';mic.err='Microphone disconnected. Tap MIC SETUP to turn it back on.'};
+    await ac.resume().catch(()=>{});mic.ok=true;mic.state='on';return true}
+  catch(e){const n=e&&e.name;mic.ok=false;
+    mic.state=(n==='NotFoundError'||n==='DevicesNotFoundError')?'nodevice':(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError')?'denied':'error';
+    mic.err=mic.state==='denied'?'Mic permission is blocked. Click the mic/lock icon in the address bar, choose Allow, then reload.':
+      mic.state==='nodevice'?'No microphone found. Plug one in or check Chromebook sound settings, then try again.':
+      mic.state==='error'&&n==='NoSupport'?'This browser cannot use the mic here.':'The mic could not start ('+(n||'unknown')+'). Close other apps using the mic and try again.';
+    return false}};
+// mic health: after resume / tab return, make sure the audio clock runs again
+BB.ensureMic=()=>{if(ac.state!=='running')ac.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!BB.paused)BB.ensureMic()});
 // Called every frame. Onset = sharp energy jump above an adaptive noise floor, 120 ms refractory.
 mic.update=dt=>{if(!mic.ok||BB.paused)return;mic.an.getFloatTimeDomainData(mic.buf);
   // look at the newest ~20 ms in 5 ms slices to timestamp the clap more precisely
@@ -131,9 +150,10 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;mic.an.getFloatTimeDomainData(mic.b
   const lvl=clamp(Math.sqrt(best*sens*6),0,1);// perceptual 0..1 meter
   mic.level=Math.max(lvl,mic.level-dt*1.8);
   const tNow=ac.currentTime-(N-bestI)/sr-(ac.baseLatency||0);
-  const thr=Math.max(mic.floor*4,.02/sens,mic.tickLevel*1.5);
-  if(best>thr&&best>mic.prev*1.6&&tNow-mic.lastOn>.12){mic.lastOn=tNow;mic.onsets.push({t:tNow,lvl:lvl});mic.peak=lvl;mic.hold=.6}
-  else if(best<thr)mic.floor=lerp(mic.floor,best,dt*.8);
+  // adaptive: noise floor + margin, scaled by sensitivity; own click-track bleed is capped so it can never mute real claps
+  const thr=Math.max(mic.floor*2.5+.004,.008/sens,Math.min(mic.tickLevel,.05)*1.2);mic.thr=thr;
+  if(best>thr&&best>mic.prev*1.35&&tNow-mic.lastOn>.12){mic.lastOn=tNow;mic.onsets.push({t:tNow,lvl:lvl});mic.peak=lvl;mic.hold=.6}
+  else if(best<thr)mic.floor=lerp(mic.floor,Math.min(best,.05),dt*.8);
   mic.prev=Math.max(best,(mic.prev||0)*.6);mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
 mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 // Simulated class (debug ?sim=1): claps on the beat with the requested loudness.

@@ -155,7 +155,7 @@ class MineRoom{
     if(this.state==='dig'||this.state==='count'){this.marks=[1,1,1,1];if(this.state==='count'){this.state='dig';this.beat.evalM=Math.max(1,Math.ceil(this.beatNow()/4))}
       this.beat.evalM=Math.max(this.beat.evalM,Math.ceil(this.beatNow()/4));this.crack()}}
   pause(){BB.paused=true;BB.ac.suspend()}
-  resume(){BB.paused=false;BB.mic.onsets=[];BB.ac.resume()}
+  resume(){BB.paused=false;BB.ensureMic()}
   update(dt){const t=BB.t;
     if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
     if(this.state==='intro'){this.intro(t-this.introT0,dt);if(BB.keys.includes('s'))this.skipIntro()}

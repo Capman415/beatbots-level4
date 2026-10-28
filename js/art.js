@@ -63,7 +63,7 @@ BB.beatPills=(cx,y,lit,o={})=>{const n=lit.length,pw=o.pw||120,gap=o.gap||30,ph=
 // mic meter with soft/loud bands and a sensitivity +/- pair
 BB.micMeter=(x,y,o={})=>{const m=BB.mic;BB.rrect(x,y,330,110,26,'rgba(20,40,38,.94)',COL.teal2,5);
   BB.text('MIC',x+50,y+40,32,COL.yellow,{stroke:4});
-  BB.text(m.ok?'ON':(m.state==='denied'?'OFF':'—'),x+50,y+78,22,m.ok?COL.green:'#ccc');
+  BB.text(m.ok?'ON':({denied:'BLOCKED',nodevice:'NONE',lost:'LOST',error:'ERROR'}[m.state]||'OFF'),x+50,y+78,m.ok?22:16,m.ok?COL.green:'#ff9c8a');
   const n=10,lvl=m.level;for(let i=0;i<n;i++){const on=i<lvl*n,bx=x+95+i*20;let c=on?(i<4?'#6ee678':i<7?'#ffe066':'#ff7b5c'):'#3c5050';
     if(o.band==='soft'&&i>=4)c=on?'#ff7b5c':'#2a3a3a';
     if(o.band==='loud'&&i<6)c=on?'#8aa':'#2a3a3a';

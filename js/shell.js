@@ -43,9 +43,10 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
   async turnOn(){this.state='asking';const ok=await BB.startMic();
     if(ok){this.state='calib';// measure how loud our own click track is in the mic so it is not mistaken for claps
       let mx=0;const t=BB.ac.currentTime+.2;for(let i=0;i<4;i++)BB.sfx.tick(t+i*.4,i===0);
-      const iv=setInterval(()=>mx=Math.max(mx,BB.mic.raw||0),20);
+      const iv=setInterval(()=>mx=Math.max(mx,BB.mic.raw||0),20);// capped later in engine
       setTimeout(()=>{clearInterval(iv);BB.mic.tickLevel=mx;BB.mic.onsets=[];this.state='on'},2000)}
     else this.state='denied'}
+
   draw(){menuBg();BB.panel(260,120,1400,800,44);
     BB.text('MICROPHONE CHECK',W/2,215,64,'#fff',{font:'Rammetto One',stroke:8});
     BB.sprite('sprocket',450,880,400,{squash:BB.isTalking('sprocket')?Math.sin(BB.t*18)*.015:0});
@@ -60,6 +61,7 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
       BB.button(W/2+90,815,500,80,'Play without mic',{size:34,id:'nomic',onClick:()=>BB.go(new MapScene())})}
     else if(st==='calib'){BB.text('Shh... checking the room',W/2+300,360,44,'#fff');BB.text('(listening to our own beat clicks)',W/2+300,420,30,COL.yellow)}
     else if(st==='denied'){BB.text('No microphone? No problem!',W/2+300,330,42,'#fff',{maxW:560});
+      if(BB.mic.err)BB.text(BB.mic.err,W/2+300,560,26,'#ff9c8a',{maxW:600});BB.button(W/2+90,860,500,80,'TRY MIC AGAIN',{size:34,id:'retry',onClick:()=>{this.state='ask';this.turnOn()}});
       BB.text('Use the big MANUAL OVERRIDE button',W/2+300,395,32,COL.yellow,{maxW:560});BB.text('when the class gets it right.',W/2+300,440,32,COL.yellow,{maxW:560});
       BB.button(W/2+90,700,500,140,'CONTINUE',{style:'green',size:56,id:'cont',onClick:()=>BB.go(new MapScene())})}
     else{BB.text('Clap once to test!',W/2+300,340,48,'#fff');
