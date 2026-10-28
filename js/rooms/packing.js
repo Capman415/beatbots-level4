@@ -56,7 +56,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     const fr=g.createLinearGradient(CX0-30,0,CX0+NB*CW+30,0);fr.addColorStop(0,'#7c8a8c');fr.addColorStop(.5,'#c9d2d3');fr.addColorStop(1,'#6a7678');g.fillStyle=fr;g.fillRect(CX0-30,CTOP-60,NB*CW+60,ROWY+CH+40-CTOP+60);
     const ig=g.createLinearGradient(0,CTOP,0,ROWY+CH);ig.addColorStop(0,'#16282a');ig.addColorStop(1,'#20393a');g.fillStyle=ig;g.fillRect(CX0,CTOP-10,NB*CW,ROWY+CH+10-CTOP+10);
     for(let i=1;i<NB;i++){g.fillStyle='rgba(160,210,200,.16)';g.fillRect(CX0+i*CW-2,CTOP-10,4,ROWY-CTOP+10)}
-    g.font=(NB>6?48:64)+"px 'Rammetto One'";g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(180,230,220,.14)';for(let i=0;i<NB;i++)g.fillText(String(i+1),CX0+i*CW+CW/2,CTOP+40);
+    g.font=(NB>6?48:64)+"px 'Rammetto One'";g.textAlign='center';g.textBaseline='alphabetic';g.fillStyle='rgba(180,230,220,.14)';for(let i=0;i<NB;i++){const m=g.measureText(String(i+1));g.fillText(String(i+1),CX0+i*CW+CW/2+(m.actualBoundingBoxLeft-m.actualBoundingBoxRight)/2,CTOP+40+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2)}
     // rivets
     g.fillStyle='#4d585a';for(let y=CTOP-40;y<ROWY+CH+30;y+=70){for(const x of [CX0-16,CX0+NB*CW+16]){g.beginPath();g.arc(x,y,5,0,7);g.fill()}}
     // yellow header
@@ -162,7 +162,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     const y=ROWY+CH;for(let i=0;i<NB;i++)BB.rrect(CX0+4+i*CW,y-4,CW-8,16,4,BB.lg(y-4,y+12,['#d6b07a','#9a6e3a']),'#5a3a1a',2);
     // placed crates
     const blink=this.blink&&t-this.blink<1.2&&Math.sin((t-this.blink)*18)>0;
-    for(let c=0;c<NB;c++)if(!this.cells[c]){BB.rrect(CX0+c*CW+8,ROWY+6,CW-16,CH-12,12,blink?'rgba(255,224,102,.35)':'rgba(255,255,255,.05)',blink?COL.yellow:'rgba(255,255,255,.18)',3);BB.text(String(c+1),CX0+c*CW+CW/2,ROWY+CH/2,52,blink?COL.yellow:'rgba(255,255,255,.18)',{font:'Rammetto One'})}
+    for(let c=0;c<NB;c++)if(!this.cells[c]){BB.rrect(CX0+c*CW+8,ROWY+6,CW-16,CH-12,12,blink?'rgba(255,224,102,.35)':'rgba(255,255,255,.05)',blink?COL.yellow:'rgba(255,255,255,.18)',3);BB.ctext(String(c+1),CX0+c*CW+CW/2,ROWY+CH/2,52,blink?COL.yellow:'rgba(255,255,255,.18)')}
     for(const p of this.placed){const w=R.BEATS[p.k],sq=Math.max(0,1-(t-p.t)/.25)*.12;ctx.save();ctx.translate(CX0+p.col*CW+w*CW/2,ROWY+CH);ctx.scale(1+sq,1-sq);R.crateDraw(p.k,-w*CW/2+6,-CH,w*CW-12,CH);ctx.restore()}
     // lock clamps + green light sweep
     if(this.state==='lock'||this.state==='clap'||this.state==='ship'){const k=ease.back(clamp((t-(this.st||t))/.3,0,1));for(const x of [CX0-26,CX0+NB*CW+26]){BB.rrect(x-18,ROWY+10,36,CH-20,8,BB.lg(ROWY,ROWY+CH,['#ffe680','#c8961a']),COL.ink,3)}
@@ -192,7 +192,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     BB.text('ORDER #'+(this.ri+1),w/2,26,28,'#fff',{stroke:3});BB.text(Rd.txt,w/2,80,Rd.txt.length>30?22:26,'#5a5040',{maxW:w-30});
     if(Rd.mode==='match'){let b=0;const cw=(w-40)/NB;for(const k of Rd.code){const n=R.BEATS[k],xx=20+b*cw,ww=n*cw;const done=this.cells[b]===k;ctx.strokeStyle=done?'#3fb45a':'rgba(0,0,0,.18)';ctx.lineWidth=done?4:2;ctx.strokeRect(xx+3,110,ww-6,140);
         R.glyph(k,xx+ww/2,215,(k==='s'?9:11)*(NB>4?.75:1),COL.ink);BB.text(R.SAY[k],xx+ww/2,270,NB>6?13:18,'#5a5040',{maxW:ww-4});b+=n}}
-    else{BB.text(Rd.mode==='limited'?'Every crate must fit!':'Any crates that add up to '+NB,w/2,150,26,'#5a5040');const bw=(w-60)/NB;for(let i=0;i<NB;i++){BB.rrect(30+i*bw,190,bw-14,60,10,this.cells[i]?'#9ff09a':'#eee8d6','#8a806b',2);BB.text(this.cells[i]?'\u2713':String(i+1),30+i*bw+(bw-14)/2,221,30,'#5a5040')}}
+    else{BB.text(Rd.mode==='limited'?'Every crate must fit!':'Any crates that add up to '+NB,w/2,150,26,'#5a5040');const bw=(w-60)/NB;for(let i=0;i<NB;i++){BB.rrect(30+i*bw,190,bw-14,60,10,this.cells[i]?'#9ff09a':'#eee8d6','#8a806b',2);BB.ctext(this.cells[i]?'\u2713':String(i+1),30+i*bw+(bw-14)/2,220,30,'#5a5040','Lilita One')}}
     if(this.ri===2&&BB.t-this.palletIn<3){ctx.globalAlpha=1-(BB.t-this.palletIn)/3;BB.text('TORN BY STATIC JR. ... fixed!',w/2,h-18,20,'#c0392b')}
     ctx.restore()}
   capPos(){return this.state==='clap'&&this.cb?{y:250,maxW:1140}:{y:H-114,maxW:1140}}

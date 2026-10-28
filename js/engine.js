@@ -63,6 +63,8 @@ function dispatchClicks(){lastHits=hits}
 // ---------- drawing helpers ----------
 BB.rrect=(x,y,w,h,r,fill,stroke,lw)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.lineWidth=lw||3;ctx.strokeStyle=stroke;ctx.stroke()}};
 BB.measure=(t,s,f='Lilita One')=>{ctx.font=`${s}px '${f}'`;return ctx.measureText(t).width};
+/* glyph-true centred number/label: centres the ink box, not the font em box */
+BB.ctext=(t,x,y,s,fill,font='Rammetto One')=>{ctx.font=`${s}px '${font}'`;ctx.textAlign='center';ctx.textBaseline='alphabetic';const m=ctx.measureText(t);ctx.fillStyle=fill;ctx.fillText(t,x+(m.actualBoundingBoxLeft-m.actualBoundingBoxRight)/2,y+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2)};
 BB.text=(t,x,y,s,fill,o={})=>{ctx.font=`${s}px '${o.font||'Lilita One'}'`;ctx.textAlign=o.align||'center';ctx.textBaseline='middle';
   if(o.maxW){const m=ctx.measureText(t).width;if(m>o.maxW){s=s*o.maxW/m;ctx.font=`${s}px '${o.font||'Lilita One'}'`}}
   if(o.stroke){ctx.lineJoin='round';ctx.lineWidth=o.stroke;ctx.strokeStyle=o.strokeCol||'#000';ctx.strokeText(t,x,y)}
