@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v5';
+BB.VERSION='v6';
 let SC=1,OX=0,OY=0;
 function resize(){const dpr=Math.min(2,window.devicePixelRatio||1),vw=innerWidth,vh=innerHeight;
   SC=Math.min(vw/W,vh/H);OX=(vw-W*SC)/2;OY=(vh-H*SC)/2;
@@ -76,17 +76,17 @@ BB.star=(x,y,r,col,rot=0)=>{ctx.beginPath();for(let i=0;i<10;i++){const a=rot+i*
 let shakeAmt=0;BB.shake=a=>shakeAmt=Math.min(6,Math.max(shakeAmt,a));// capped at 6px per design doc
 // ---------- audio ----------
 const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC({latencyHint:'interactive'});BB.ac=ac;
-const master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);
+const master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);BB.outBus=master;
 const sfxBus=ac.createGain();sfxBus.connect(master);const voBus=ac.createGain();voBus.gain.value=1.1;voBus.connect(master);
 BB.unlockAudio=()=>{if(ac.state!=='running'&&!BB.paused)ac.resume().catch(()=>{})};
 const noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);{const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
 function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
-function osc(type,f,t,dur,peak,f2,dest=sfxBus){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);env(g,t,.004,peak,dur);o.connect(g).connect(dest);o.start(t);o.stop(t+dur+.05)}
-function noise(t,dur,peak,ftype,f,q=1,f2){const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=noiseBuf;fl.type=ftype;fl.frequency.setValueAtTime(f,t);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+dur);fl.Q.value=q;env(g,t,.003,peak,dur);s.connect(fl).connect(g).connect(sfxBus);s.start(t,Math.random()*.5);s.stop(t+dur+.05)}
+function osc(type,f,t,dur,peak,f2,dest=sfxBus){BB.selfSound(t,dur,(type==='sine'||type==='triangle')&&!f2?[f]:null);const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);env(g,t,.004,peak,dur);o.connect(g).connect(dest);o.start(t);o.stop(t+dur+.05)}
+function noise(t,dur,peak,ftype,f,q=1,f2){BB.selfSound(t,dur,null);const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=noiseBuf;fl.type=ftype;fl.frequency.setValueAtTime(f,t);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+dur);fl.Q.value=q;env(g,t,.003,peak,dur);s.connect(fl).connect(g).connect(sfxBus);s.start(t,Math.random()*.5);s.stop(t+dur+.05)}
 const now=()=>ac.currentTime;
 BB.sfx={
   click:(t=now())=>{osc('square',900,t,.05,.08,600)},
-  tick:(t=now(),acc=false,v=1)=>{osc('sine',acc?1320:880,t,.06,.18*v);noise(t,.03,.12*v,'highpass',5000)},
+  tick:(t=now(),acc=false,v=1)=>{osc('sine',acc?1320:880,t,.06,.18*v)},// pure tone so the mic can tell it apart from claps,
   tink:(t=now(),v=1)=>{osc('triangle',2200,t,.18,.22*v);osc('sine',3300,t,.12,.1*v);noise(t,.04,.15*v,'bandpass',4000,3)},
   crack:(t=now())=>{noise(t,.25,.5,'lowpass',2500,1,300);osc('square',140,t,.12,.15,60)},
   rumble:(t=now(),d=1.2)=>{noise(t,d,.35,'lowpass',180,1,60)},
@@ -136,14 +136,37 @@ BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic
 BB.ensureMic=()=>{if(ac.state!=='running')ac.resume().catch(()=>{});if(MicCore.ctx&&MicCore.ctx.state!=='running')MicCore.ctx.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!BB.paused)BB.ensureMic()});
 // Called every frame. Onset = sharp energy jump above an adaptive noise floor, 120 ms refractory.
+// ---------- self-sound rejection ----------
+// Every sound the game makes is logged with its time. Onsets heard while a noisy/harmonic effect plays are ignored.
+// Onsets during a pure-tone beep only count if the mic hears broadband (clap-like) energy away from the beep pitches.
+const selfWins=[];BB.selfSound=(t,dur,freqs)=>{selfWins.push({t,e:t+dur,freqs});if(selfWins.length>200)selfWins.splice(0,selfWins.length-200)};
+mic.lat=null;// measured speaker->mic delay (s); null = not calibrated yet
+function micLat(){return mic.lat!=null?mic.lat:(ac.outputLatency||ac.baseLatency||.02)+((MicCore.ctx&&MicCore.ctx.baseLatency)||.01)+.03}
+let fbin=null,nonTonalFloor=1e-9;
+function nonTonalEnergy(freqs){const an=MicCore.an;if(!an)return 0;if(!fbin||fbin.length!==an.frequencyBinCount)fbin=new Float32Array(an.frequencyBinCount);
+  an.getFloatFrequencyData(fbin);const hz=MicCore.ctx.sampleRate/an.fftSize;let e=0,tot=0;
+  for(let i=Math.floor(300/hz);i<Math.min(fbin.length,Math.floor(9000/hz));i++){const f=i*hz,pw=Math.pow(10,fbin[i]/10);tot+=pw;
+    if(freqs&&freqs.some(b=>{for(let k=1;k<=5;k++)if(Math.abs(f-b*k)<90)return true;return false}))continue;e+=pw}
+  nonTonalEnergy.frac=tot>0?e/tot:0;return e}
+function selfCheck(T){const L=micLat();let tonal=null;
+  for(const w of selfWins){if(T>=w.t+L-.04&&T<=w.e+L+.12){if(!w.freqs)return'hard';(tonal=tonal||[]).push(...w.freqs)}}
+  return tonal}
+BB.selfWins=selfWins;
 mic.update=dt=>{if(!mic.ok||BB.paused)return;
   const r=MicCore.read();const rms=r.rms;mic.rms=rms;mic.raw=rms;mic.max=r.max;const sens=sensSteps[mic.sensIdx];
   const lvl=clamp(Math.sqrt(rms*sens*6),0,1);mic.level=Math.max(lvl,mic.level-dt*1.8);
   const tNow=ac.currentTime-.02;
   const thr=Math.max(mic.floor*2.5+.004,.008/sens);mic.thr=thr;// same rule as mic-test.html
-  if(rms>thr&&rms>mic.prev*1.35&&tNow-mic.lastOn>.12){mic.lastOn=tNow;mic.onsets.push({t:tNow,lvl});mic.peak=lvl;mic.hold=.6}
+  const allFreqs=[880,1320];const nt=nonTonalEnergy(allFreqs);
+  if(rms>thr&&rms>mic.prev*1.35&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
+    const chk=selfCheck(tNow);let ok=true;
+    if(chk==='hard')ok=false;
+    else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.3&&e>nonTonalFloor*6}// clap = mostly broadband energy
+    if(mic.calib)mic.calib.push(tNow);
+    if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'']);
+    if(ok){mic.onsets.push({t:tNow,lvl});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
   else if(rms<thr)mic.floor=lerp(mic.floor,Math.min(rms,.05),dt*.8);
-  mic.prev=Math.max(rms,(mic.prev||0)*.6);mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
+  if(rms<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(rms,(mic.prev||0)*.6);mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
 mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 // Simulated class (debug ?sim=1): claps on the beat with the requested loudness.
 BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl});mic.level=lvl;mic.peak=lvl;mic.hold=.4};

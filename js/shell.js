@@ -42,9 +42,10 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
   update(dt){const o=BB.mic.take();if(o.length){this.heard+=o.length;this.flash=BB.t;BB.burst(W/2,560,18,{cols:['#ffe066','#6ee678','#fff'],kind:'star',size:14,g:300})}}
   async turnOn(){this.state='asking';const ok=await BB.startMic();
     if(ok){this.state='calib';// measure how loud our own click track is in the mic so it is not mistaken for claps
-      let mx=0;const t=BB.ac.currentTime+.2;for(let i=0;i<4;i++)BB.sfx.tick(t+i*.4,i===0);
-      const iv=setInterval(()=>mx=Math.max(mx,BB.mic.raw||0),20);// capped later in engine
-      setTimeout(()=>{clearInterval(iv);BB.mic.tickLevel=mx;BB.mic.onsets=[];this.state='on'},2000)}
+      // latency calibration: play 4 beeps, measure when the mic hears each one
+      const t=BB.ac.currentTime+.3,times=[0,1,2,3].map(i=>t+i*.5);BB.mic.calib=[];times.forEach((x,i)=>BB.sfx.tick(x,i===0));
+      setTimeout(()=>{const c=BB.mic.calib;BB.mic.calib=null;const d=[];for(const x of times){const h=c.find(y=>y>x-.02&&y<x+.4);if(h!=null)d.push(h-x)}
+        if(d.length>=2){d.sort((a,b)=>a-b);BB.mic.lat=Math.max(0,d[d.length>>1])}BB.mic.onsets=[];this.state='on'},2600)}
     else this.state='denied'}
 
   draw(){menuBg();BB.panel(260,120,1400,800,44);
