@@ -1,6 +1,6 @@
 // Shared rhythm toolkit for rooms 2-3: note glyphs, glossy note tiles, segmented beat pills, extra sfx, and the clap-back game.
 'use strict';
-(()=>{const ctx=BB.ctx,COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB;
+(()=>{let ctx=BB.ctx;BB._sw.push(g=>ctx=g);const COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB;
 const R=BB.R={};
 // note kinds: w whole(4) h half(2) q ta(1) e ti-ti(1) s tika-tika(1) r rest(1)
 R.BEATS={w:4,h:2,q:1,e:1,s:1,r:1};

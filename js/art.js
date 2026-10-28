@@ -1,6 +1,6 @@
 // Shared Beat Bots art + HUD pieces (match the video style: cream/teal panels, green beat pills, Lilita/Rammetto).
 'use strict';
-(()=>{const ctx=BB.ctx,COL=BB.COL,IMG=BB.IMG,W=BB.W,H=BB.H;
+(()=>{let ctx=BB.ctx;BB._sw.push(g=>ctx=g);const COL=BB.COL,IMG=BB.IMG,W=BB.W,H=BB.H;
 // v12.4 moving parts: drawn in the sprite's own box (origin bottom-centre, image spans -w/2..w/2, -h..0) so squash/rot carry them.
 const P=(w,h,u,v)=>[-w/2+u*w,-h+v*h];const LQ=()=>BB.q===0;
 const INK=()=>COL.ink;
@@ -296,7 +296,7 @@ BB.titleCard=(txt,sub,k)=>{if(k<=0||k>=1)return;const a=k<.15?k/.15:k>.85?(1-k)/
   BB.text(txt,0,-30,84,'#fff',{font:'Rammetto One',stroke:9,maxW:832});BB.text(sub,0,58,40,COL.yellow,{stroke:5,maxW:900});ctx.restore()};
 })();
 // ===== v2 painted props: grounded, tinted, clamped to their tunnel box =====
-(()=>{const ctx=BB.ctx;BB.V2={};
+(()=>{let ctx=BB.ctx;BB._sw.push(g=>ctx=g);BB.V2={};
 BB.loadV2=()=>Promise.all([['rock','png'],['crystal','png'],['cart','png'],['elev','png'],['smash','png'],['bin','png'],['rubble','png'],['wh','jpg'],['tun0','jpg'],['tun1','jpg'],['tun2','jpg'],['tun3','jpg'],['tun4','jpg'],['pipe','png'],['funnel','png'],['title_bg','jpg'],['map_bg','jpg'],['hub_bg','jpg'],['conveyor','png'],['redbtn','png'],['smash_blur','jpg'],['pack_blur','jpg'],['logo','png'],['mic','png'],['lock','png'],['chip','png'],['earth','jpg'],['shaft','jpg']].map(([n,e])=>new Promise(r=>{const i=new Image();i.onload=()=>{BB.V2[n]=i;(i.decode?i.decode().catch(()=>{}):Promise.resolve()).then(r)};i.onerror=()=>r();i.src='assets/v2/'+n+'.'+e+'?v='+(BB.VERSION||'')})));
 const tcache={};
 // cached copy of a prop with a top-down rim light + ambient tint baked in (no per-frame compositing cost)

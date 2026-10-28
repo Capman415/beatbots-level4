@@ -2,15 +2,17 @@
 'use strict';
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
-const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v12.7';
+const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
+// v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
+BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
+BB.VERSION='v12.8';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
 BB.q=BB.phone?0:1;BB.qUp=0;// phones start in light mode and step up only if they prove fast (avoids a mid-scene resize hitch on slow phones)
 // 1 = full extras, 0 = phone low mode
 function resize(){const vw=innerWidth,vh=innerHeight;let dpr=Math.min(2,window.devicePixelRatio||1);
-  if(BB.phone){const cap=BB.q?1280:960;dpr=Math.min(dpr,cap/Math.max(vw,vh*16/9))}
+  if(BB.phone){const cap=BB.q?1280:880;/* v12.8: phone light mode renders at <=880 px wide */dpr=Math.min(dpr,cap/Math.max(vw,vh*16/9))}
   SC=Math.min(vw/W,vh/H);OX=(vw-W*SC)/2;OY=(vh-H*SC)/2;
   cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);cv.style.width=vw+'px';cv.style.height=vh+'px';BB.dpr=dpr;}
 addEventListener('resize',resize);resize();BB.resize=resize;
@@ -169,24 +171,10 @@ BB.sfx={
 // ---------- v12.7 background groove: quiet, beat-locked, no clap-like transients ----------
 // Only soft, rounded low tones (< 300 Hz, 25 ms+ attacks): the clap detector's broadband test ignores everything under 300 Hz,
 // and there is no noise/hat/snare at all. Ducks under any voice line. Locks to the room's beat clock via sync(t0,spb).
-const grooveBus=ac.createGain();grooveBus.gain.value=0;const gLP=ac.createBiquadFilter();gLP.type='lowpass';gLP.frequency.value=420;grooveBus.connect(gLP).connect(master);
-const G2={on:false,t0:0,spb:.6,next:0,timer:null,vol:.55,
-  CH:[[110,138.6,164.8],[98,123.5,146.8],[87.3,110,130.8],[98,123.5,146.8]],BASS:[55,49,43.65,49],
-  note(f,t,d,peak,type='sine',att=.03){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(peak,t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g).connect(grooveBus);o.start(t);o.stop(t+d+.05)},
-  beat(k,t){const bar=Math.floor(k/4)%4,b=((k%4)+4)%4,spb=this.spb;
-    this.note(this.BASS[bar]*(b===2?1.5:1),t,spb*.9,b===0?.5:.32,'sine',.03);// soft round bass on every beat
-    if(b===0)for(const f of this.CH[bar])this.note(f,t,spb*3.8,.07,'triangle',.25);// slow pad swell per bar
-    if(b===1||b===3)this.note(this.CH[bar][2]*2,t+spb*.5,spb*.4,.05,'sine',.04)},// gentle off-beat 'bloop' (< 340 Hz, lowpassed)
-  tick(){if(!this.on)return;const ahead=ac.currentTime+.2;let k=Math.ceil((ac.currentTime-this.t0)/this.spb-.001);if(this.next>k)k=this.next;
-    while(this.t0+k*this.spb<ahead){this.beat(k,this.t0+k*this.spb);k++}this.next=k;
-    const talk=BB.talking&&BB.t<BB.talking.until+.2,v=BB.paused?0:talk?this.vol*.25:this.vol;grooveBus.gain.setTargetAtTime(v,ac.currentTime,.12)},
-  start(bpm=100){this.on=true;this.spb=60/bpm;this.t0=ac.currentTime+.1;this.next=0;if(!this.timer)this.timer=setInterval(()=>this.tick(),50)},
-  sync(t0,spb){if(!this.on)return;const k=Math.ceil((ac.currentTime+.2-t0)/spb);this.t0=t0;this.spb=spb;this.next=k},// re-phase onto a room's beat clock (tempo changes follow)
-  stop(){this.on=false;grooveBus.gain.setTargetAtTime(0,ac.currentTime,.15)}};
-BB.groove=G2;
+// v12.8: the groove moved to js/groove.js (BB.makeGroove; per-room styles, phone-lite graph).
 // ---------- v12.7 room-complete celebration: Level 1 video fanfare + confetti waves + Static Jr. dashes off to the next room ----------
 let fanBuf=null;fetch('assets/fanfare.mp3').then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).then(b=>fanBuf=b).catch(()=>{});
-BB.celebrate=(o={})=>{G2.stop();BB.selfSound(ac.currentTime,8.6,null);
+BB.celebrate=(o={})=>{BB.groove&&BB.groove.stop();BB.selfSound(ac.currentTime,8.6,null);
   if(fanBuf){const s=ac.createBufferSource(),g=ac.createGain();g.gain.value=.8;s.buffer=fanBuf;s.connect(g).connect(sfxBus);s.start()}else BB.sfx.fanfare();
   BB.cele={t:BB.t,next:o.next||''}};
 BB.drawCelebrate=()=>{const c=BB.cele;if(!c)return;const t=BB.t-c.t;if(t>9){BB.cele=null;return}

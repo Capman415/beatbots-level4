@@ -1,6 +1,6 @@
 // Room 1: NOTE MINE (style C, cutaway shaft). Static Jr. ate the whole notes; the class digs 8 back up by keeping a steady beat.
 'use strict';
-(()=>{let ctx=BB.ctx;const COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB;
+(()=>{let ctx=BB.ctx;BB._sw.push(g=>ctx=g);const COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB;
 BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['oh_no',"Oh no! The whole note bin is empty!",'sprocket'],
  ['ate_all',"He ate ALL the whole notes! Rhythm Engineers, to the mine!",'sprocket'],
@@ -99,7 +99,7 @@ function drawCart(x,base,n){// painted cart, sized to sit inside the elevator ca
 // ---- the room ----
 class MineRoom{
   constructor(o={}){this.o=o}
-  enter(){BB.groove.start(96);Object.assign(this,{cam:{x:960,y:540,z:1},count:0,binCount:0,lit:[0,0,0,0,0],pipeGlow:0,elevY:GY,botX:1960,botOnElev:true,
+  enter(){BB.groove.start(96,'mine');Object.assign(this,{cam:{x:960,y:540,z:1},count:0,binCount:0,lit:[0,0,0,0,0],pipeGlow:0,elevY:GY,botX:1960,botOnElev:true,
     jr:{x:1650,y:GY,vis:true,mode:'munch'},rockI:0,state:'intro',st:0,beat:null,flying:[],pipeNotes:[],stage:0,wob:0,shk:0,
     hatch:0,btnPress:0,sprCheer:0,said:{},prank:null,cardT:-9,lastOverride:-9,doneT:0,marks:[0,0,0,0],dust:[]});this.introT0=BB.t;
     for(let i=0;i<40;i++)this.dust.push({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:5+Math.random()*12});
@@ -288,6 +288,11 @@ class MineRoom{
     if(vy0<GY){const g=ctx.createLinearGradient(0,0,0,GY);g.addColorStop(0,'#9ccfe6');g.addColorStop(1,'#c7e3ee');ctx.fillStyle=g;ctx.fillRect(vx0,Math.min(vy0,0),vx1-vx0,GY-Math.min(vy0,0));
       this.drawWarehouse(vx0,vx1)}
     // ---- static mine layer (earth + tunnel backdrops + shaft wall) is pre-composited into an offscreen canvas while the camera is still
+    // v12.8 phones: earth, tunnel backdrops (fully lit) and shaft wall come from one baked world-space layer; tunnel darkness is a live overlay
+    this._ug=0;if(BB.phone&&!BB.q&&vy1>GY&&BB.V2.shaft){const U=this.ugBake();if(U){this._ug=1;this._stat=0;const S=U.S,y0=Math.max(GY,vy0),y1=Math.min(U.Y1,vy1),x0=Math.max(U.XA,vx0),x1=Math.min(U.X1,vx1);
+      if(y1>y0&&x1>x0)ctx.drawImage(U.c,(x0-U.XA)*S,(y0-GY)*S,(x1-x0)*S,(y1-y0)*S,x0,y0,x1-x0,y1-y0);
+      for(let k=0;k<5;k++){const y=top(k),l=this.lit[k];if(y>vy1||y+420<vy0||l>=1)continue;ctx.fillStyle=`rgba(10,6,4,${.78*(1-l)})`;ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.fill()}
+      for(let k=0;k<5;k++){const y=top(k);if(y>vy1||y+420<vy0)continue;this.drawTunnel(k)}this.drawPipe();this.drawRest(vx0,vx1,vy0,vy1);return}}
     const key=[c.x,c.y,c.z,...this.lit].map(v=>v.toFixed(3)).join()+(this.pileSettled()?'p'+this.caveCleared:'')+(vy0<GY?'w':'')+BB.dpr+ctx.canvas.width;
     if(vy1>GY&&key===this._sk&&BB.statCache!==false){this._built=0;if(this._skB!==key){this._skB=key;this.buildStatic(vx0,vx1,vy0,vy1)}
       if(!this._built){const [sx,sy]=BB.shakeXY,M=ctx.getTransform(),k0=M.a/this.cam.z;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(this._sc,sx*k0-this._sxy[0]*k0,sy*k0-this._sxy[1]*k0);ctx.restore()}this._stat=1}else this._stat=0;
@@ -298,6 +303,8 @@ class MineRoom{
     const sh=BB.V2.shaft,sx0=SHAFT[0],sw=SHAFT[1]-SHAFT[0],sb=rail(4)+60;
     if(sh&&!this._stat)this.drawShaftWall(vx0,vx1,vy0,vy1);
     this.drawRest(vx0,vx1,vy0,vy1)}
+  ugBake(){if(this._U)return this._U;const S=.42,XA=-2400,X1=6400,Y1=rail(4)+300,c=document.createElement('canvas');c.width=Math.ceil((X1-XA)*S);c.height=Math.ceil((Y1-GY)*S);const g=c.getContext('2d');g.scale(S,S);g.translate(-XA,-GY);
+    const lit=this.lit;this.lit=[1,1,1,1,1];BB.withCtx(g,()=>{this.drawStatic(XA,X1,GY,Y1);this.drawShaftWall(XA,X1,GY,Y1)});this.lit=lit;this._U={c,S,XA,X1,Y1};return this._U}
   buildStatic(vx0,vx1,vy0,vy1){if(!this._sc)this._sc=document.createElement('canvas');const c=this._sc,cv=ctx.canvas;c.width=cv.width;c.height=cv.height;
     // draw the static layers straight onto the frame (so shared helpers work), then copy the below-ground band into the cache
     const m=ctx.getTransform();this._sxy=BB.shakeXY.slice();
@@ -313,7 +320,7 @@ class MineRoom{
   drawRest(vx0,vx1,vy0,vy1){const c=this.cam,t=BB.t,sh=BB.V2.shaft,sx0=SHAFT[0],sw=SHAFT[1]-SHAFT[0],sb=rail(4)+60;
     for(let k=0;k<5;k++){const y0=top(k)+40;// open doorway where each tunnel meets the shaft
       ctx.save();ctx.beginPath();ctx.rect(sx0,y0,sw,rail(k)-y0+6);ctx.clip();if(!sh){ctx.fillStyle='rgba(18,10,6,.55)';ctx.fillRect(sx0,y0,sw,rail(k)-y0+6)}
-      BB.glow((SHAFT[0]+SHAFT[1])/2,rail(k)-120,320,'rgba('+(k===2?'150,200,255':'255,190,110')+',A)',.18*this.lit[k]);ctx.restore();
+      if(!(BB.phone&&!BB.q))BB.glow((SHAFT[0]+SHAFT[1])/2,rail(k)-120,320,'rgba('+(k===2?'150,200,255':'255,190,110')+',A)',.18*this.lit[k]);ctx.restore();
       ctx.fillStyle='#6b4428';ctx.fillRect(sx0-6,y0-22,sw+12,22);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx0-6,y0,sw+12,6);
       const l=this.lit[k];ctx.fillStyle=l>.5?(Math.sin(t*3+k)>0?'#6ee678':'#3c8a48'):'#333';ctx.beginPath();ctx.arc(sx0+24,y0-11,7,0,7);ctx.arc(SHAFT[1]-24,y0-11,7,0,7);ctx.fill()}
     // cables
@@ -351,32 +358,35 @@ class MineRoom{
         ctx.restore()}}
     if(this.jr.vis&&this.jr.mode!=='dive')this.drawJrWarehouse();
   }
-  drawWarehouse(vx0,vx1){const t=BB.t;const wh=BB.V2.wh;
+  // v12.8: phones (low quality) draw the static warehouse (wall tiles, conveyor render, signs, Smash-O-Matic prop) from one baked,
+  // reduced-resolution layer; only the belt cleats, bulbs, bin notes, button and Sprocket are drawn per frame. Desktop unchanged.
+  whStatic(vx0,vx1){const t=BB.t;const wh=BB.V2.wh;
     if(wh){const s=GY/946,tw=wh.width*s,th=wh.height*s;for(let i=Math.floor(vx0/tw);i*tw<vx1;i++){ctx.save();ctx.translate(i*tw+(i%2?tw:0),0);if(i%2)ctx.scale(-1,1);ctx.drawImage(wh,0,0,tw,th);ctx.restore()}}
-    // conveyor
-    // v12.6 conveyor: riveted mint/cream enamel frame, chrome trim + rollers, marquee bulbs, rubber belt
     BB.contactShadow(710,GY,720,.35);
-    // v12.7: 3D-rendered conveyor (cut-out render), belt cleats / roller spokes / marquee bulbs animated on top in code
-    {const im=BB.V2.conveyor;if(im){const sx=1340/im.width,sy=sx*.8,X0=40,Y0=767,P=(px,py)=>[X0+px*sx,Y0+py*sy];
-      ctx.save();ctx.beginPath();ctx.rect(0,0,1500,GY+2);ctx.clip();ctx.drawImage(im,X0,Y0,im.width*sx,im.height*sy);ctx.restore();
-      const [bx0,by0]=P(40,5),[bx1,by1]=P(1165,27);ctx.save();ctx.beginPath();ctx.rect(bx0,by0,bx1-bx0,by1-by0);ctx.clip();ctx.fillStyle='rgba(120,110,100,.35)';for(let x=-60;x<bx1-bx0+60;x+=46){const xx=bx0+((x+t*80)%(bx1-bx0+46));ctx.fillRect(xx,by0,6,by1-by0)}ctx.restore();
-      for(const px of[42,1157]){const [rx,ry]=P(px,75);ctx.save();ctx.translate(rx,ry);ctx.scale(1,.8);ctx.rotate(t*2.4);ctx.strokeStyle='rgba(40,45,45,.7)';ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.rotate(Math.PI/3);ctx.beginPath();ctx.moveTo(-14,0);ctx.lineTo(14,0);ctx.stroke()}ctx.restore()}
-      for(let k=0;k<11;k++){const [lx,ly]=P(137+92*k,70),on=(k+Math.floor(t*5))%3===0;if(on){if(BB.q)BB.glow(lx,ly,26,'rgba(255,214,90,A)',.7);ctx.fillStyle='rgba(255,250,215,.9)';ctx.beginPath();ctx.arc(lx,ly,8,0,7);ctx.fill()}else{ctx.fillStyle='rgba(60,40,10,.35)';ctx.beginPath();ctx.arc(lx,ly,9,0,7);ctx.fill()}}}}
-    // wall gears + blinking lights
+    {const im=BB.V2.conveyor;if(im){const sx=1340/im.width,sy=sx*.8,X0=40,Y0=767;ctx.save();ctx.beginPath();ctx.rect(0,0,1500,GY+2);ctx.clip();ctx.drawImage(im,X0,Y0,im.width*sx,im.height*sy);ctx.restore()}}
     // WAREHOUSE banner
     BB.plaque(1305,588,320,76,'RHYTHM WAREHOUSE',28,'#28403c',{font:'Rammetto One',r:18});
     // NOTE MINE sign over hatch
     {const nx=(HATCH[0]+HATCH[1])/2;BB.plaque(nx,452,250,80,'NOTE MINE',32,'#b5482a',{font:'Rammetto One',r:18});BB.text('▼',nx,508,30,COL.yellow,{stroke:5})}// v12.6: centred over the hatch// v12.2: moved clear of the lift post
+    const mx=SMASH_X;BB.prop('smash',mx,GY+6,420,{shadowA:.4});
+    {const py=GY-498;BB.plaque(mx,py+31,230,66,'SMASH-O-MATIC',24,'#b5482a',{font:'Rammetto One',r:16,cols:['#fdf8ea','#ecdcb8','#caa77a']})}
+}
+  whBake(){const V=BB.V2;if(!V.wh||!V.conveyor)return null;if(this._wh)return this._wh;const S=.42,XA=-2400,X1=6400,Y1=GY+40,c=document.createElement('canvas');c.width=Math.ceil((X1-XA)*S);c.height=Math.ceil(Y1*S);
+    const g=c.getContext('2d');g.scale(S,S);g.translate(-XA,0);BB.withCtx(g,()=>this.whStatic(XA,X1));this._wh={c,XA,X1,Y1};return this._wh}
+  drawWarehouse(vx0,vx1){const t=BB.t;const lq=BB.phone&&!BB.q,bk=lq?this.whBake():null,baked=!!bk;
+    if(baked)ctx.drawImage(bk.c,bk.XA,0,bk.X1-bk.XA,bk.Y1);else this.whStatic(vx0,vx1);
+    {const im=BB.V2.conveyor;if(im){const sx=1340/im.width,sy=sx*.8,X0=40,Y0=767,P=(px,py)=>[X0+px*sx,Y0+py*sy];
+      if(!baked){ctx.save();ctx.beginPath();ctx.rect(0,0,1500,GY+2);ctx.clip();ctx.drawImage(im,X0,Y0,im.width*sx,im.height*sy);ctx.restore();}
+      const [bx0,by0]=P(40,5),[bx1,by1]=P(1165,27);ctx.save();ctx.beginPath();ctx.rect(bx0,by0,bx1-bx0,by1-by0);ctx.clip();ctx.fillStyle='rgba(120,110,100,.35)';for(let x=-60;x<bx1-bx0+60;x+=46){const xx=bx0+((x+t*80)%(bx1-bx0+46));ctx.fillRect(xx,by0,6,by1-by0)}ctx.restore();
+      if(!baked)for(const px of[42,1157]){const [rx,ry]=P(px,75);ctx.save();ctx.translate(rx,ry);ctx.scale(1,.8);ctx.rotate(t*2.4);ctx.strokeStyle='rgba(40,45,45,.7)';ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.rotate(Math.PI/3);ctx.beginPath();ctx.moveTo(-14,0);ctx.lineTo(14,0);ctx.stroke()}ctx.restore()}
+      for(let k=0;k<11;k++){const [lx,ly]=P(137+92*k,70),on=(k+Math.floor(t*5))%3===0;if(on){if(BB.q)BB.glow(lx,ly,26,'rgba(255,214,90,A)',.7);ctx.fillStyle='rgba(255,250,215,.9)';ctx.beginPath();ctx.arc(lx,ly,8,0,7);ctx.fill()}else{ctx.fillStyle='rgba(60,40,10,.35)';ctx.beginPath();ctx.arc(lx,ly,9,0,7);ctx.fill()}}}}
     // WHOLE NOTES bin
     const bx=BIN_X;
     for(let i=0;i<Math.min(this.binCount,10);i++)BB.solidWhole(bx-60+(i%4)*40,GY-160-Math.floor(i/4)*24+(i%2)*6,24,{rot:(i%3-1)*.3});
     BB.prop('bin',bx,GY+4,170,{shadowA:.4});
     BB.rrect(bx-85,GY-108,170,42,10,BB.lg(GY-108,GY-66,['#fbf6e6','#ddd5bd']),'#8a806b',3);BB.text('WHOLE NOTES',bx,GY-86,20,'#28403c');
     if(this.binCount===0){ctx.fillStyle='#e8e4d8';for(let i=0;i<9;i++){ctx.beginPath();ctx.arc(bx-110+i*28,GY-6-(i%3)*5,4+(i%2)*3,0,7);ctx.fill()}}
-    // SMASH-O-MATIC 4000 (idle) beside the shaft
-    const mx=SMASH_X;BB.prop('smash',mx,GY+6,420,{shadowA:.4});
-    {const py=GY-498;BB.plaque(mx,py+31,230,66,'SMASH-O-MATIC',24,'#b5482a',{font:'Rammetto One',r:16,cols:['#fdf8ea','#ecdcb8','#caa77a']})}
-    // elevator call button
+    // elevator call button    // elevator call button
     // v12.7: 3D-rendered call button (cut-out render); the red cap is re-drawn from the render and sinks when pressed
     {const pressed=this.btnPress&&BB.t-this.btnPress<.4,im=BB.V2.redbtn;BB.contactShadow(BTN_X,GY,70,.45);
      if(im){const h=215,s2=h/im.height,w=im.width*s2,x0=BTN_X-w/2,y0=GY-h,capH=im.height*.17,pz=pressed?6:0;
@@ -400,7 +410,7 @@ class MineRoom{
     ctx.lineWidth=40;ctx.strokeStyle='rgba(15,8,4,.35)';ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.stroke();ctx.restore()}
   drawTunnel(k){const y=top(k),l=this.lit[k],F=FLOORS[k],t=BB.t,active=this.R&&this.R.f===k,L=LIGHT[k],B=TBOX(k);this._bub=[];
     ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();
-    if(!this._stat)this.tunnelBg(k);
+    if(!this._stat&&!this._ug)this.tunnelBg(k);
     if(active&&BB.phone&&BB.q&&l>0){const lc=litC(k,L.amb);if(lc){ctx.globalAlpha=l;ctx.drawImage(lc,2200,y);ctx.globalAlpha=1}}// phone: pre-baked lantern light (no per-frame blend)
     if(k===1&&active&&this.beat){ctx.save();ctx.beginPath();ctx.rect(1460,y,1880,420);ctx.clip();ctx.lineCap='round';for(let i=0;i<12;i++){const sx=3400-((t*1600+i*397)%2000),sy=y+50+(i*71)%300,len=120+(i%4)*40,g=ctx.createLinearGradient(sx,0,sx+len,0);g.addColorStop(0,'rgba(255,220,160,.32)');g.addColorStop(1,'rgba(255,220,160,0)');ctx.strokeStyle=g;ctx.lineWidth=3+(i%3)*2;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+len,sy);ctx.stroke()}ctx.restore()}
     ctx.restore();

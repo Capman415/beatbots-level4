@@ -45,7 +45,7 @@ R.crateDraw=(k,x,y,w,h,o={})=>{const im=BB.V2.crate,c=R.COLS[k];ctx.save();ctx.g
   if(o.tag!==false&&w>60){const fs=w<120?14:18,tw=Math.min(w-16,BB.measure(R.NAME[k],fs)+18),tx=w<120?x+w/2-tw/2:x+12;BB.rrect(tx,y-12,tw,28,8,'#fbf6e6',COL.ink,2);BB.text(R.NAME[k],tx+tw/2,y+3,fs,COL.ink,{maxW:tw-8})}
   BB.text(String(R.BEATS[k]),x+w-22,y+h-20,24,'#fff',{stroke:4});ctx.restore()};
 class PackingRoom{constructor(o={}){this.o=o}
-  enter(){BB.groove.start(100);this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
+  enter(){BB.groove.start(100,'pack');this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
     this.state='load';R.loadImgs([['pack_bg','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.beginRound();else this.startIntro()});BB.mic.take()}
   exit(){BB.paused=false}
   bake(){const s=BB.phone&&!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
