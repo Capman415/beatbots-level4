@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v3';
+BB.VERSION='v4';
 let SC=1,OX=0,OY=0;
 function resize(){const dpr=Math.min(2,window.devicePixelRatio||1),vw=innerWidth,vh=innerHeight;
   SC=Math.min(vw/W,vh/H);OX=(vw-W*SC)/2;OY=(vh-H*SC)/2;
@@ -23,7 +23,7 @@ BB.loadImages=names=>Promise.all(names.map(n=>new Promise(r=>{const i=new Image(
 // ---------- input ----------
 const ptr={x:0,y:0,down:false,clicks:[]};BB.ptr=ptr;
 function toLogical(e){return{x:(e.clientX-OX)/SC,y:(e.clientY-OY)/SC}}
-cv.addEventListener('pointerdown',e=>{e.preventDefault();const p=toLogical(e);ptr.x=p.x;ptr.y=p.y;ptr.down=true;BB.unlockAudio();clickAt(p);});
+cv.addEventListener('pointerdown',e=>{e.preventDefault();const p=toLogical(e);ptr.x=p.x;ptr.y=p.y;ptr.down=true;BB.unlockAudio();if(mic.state==='off'&&!BB.noAutoMic)BB.startMic();clickAt(p);});
 cv.addEventListener('pointermove',e=>{const p=toLogical(e);ptr.x=p.x;ptr.y=p.y});
 addEventListener('pointerup',()=>ptr.down=false);
 const keys=[];addEventListener('keydown',e=>keys.push(e.key));BB.keys=keys;
@@ -120,41 +120,38 @@ BB.isTalking=w=>BB.talking&&BB.talking.who===w&&BB.t<BB.talking.until;
 // ---------- microphone: RMS meter + clap onset detection ----------
 const mic=BB.mic={ok:false,state:'off',rms:0,level:0,peak:0,floor:.005,sens:1,onsets:[],lastOn:-1,tickLevel:0,hold:0};
 const sensSteps=[.5,.7,1,1.4,2,2.8];mic.sensIdx=2;
-BB.startMic=async()=>{mic.state='asking';mic.err='';
-  try{ac.resume().catch(()=>{});
+// Mic path mirrors mic-test.html exactly: its own AudioContext created + resumed inside the tap, raw constraints, analyser read every frame.
+BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic.err='';
+  return mic.starting=(async()=>{try{
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoSupport'};
-    let st;try{st=await navigator.mediaDevices.getUserMedia(mic.useDefault?{audio:true}:{audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}
-    catch(e){if(e&&(e.name==='OverconstrainedError'||e.name==='TypeError'))st=await navigator.mediaDevices.getUserMedia({audio:true});else throw e}
-    if(mic.stream)mic.stream.getTracks().forEach(t=>t.stop());
-    // keep every node referenced on BB.mic so Chrome never garbage-collects the mic graph
-    const src=ac.createMediaStreamSource(st);const an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0;src.connect(an);
-    const sink=ac.createGain();sink.gain.value=0;an.connect(sink);sink.connect(ac.destination);// silent pull keeps the graph running
+    if(mic.stream)mic.stream.getTracks().forEach(t=>t.stop());if(mic.ac)mic.ac.close().catch(()=>{});
+    const mac=new AC();mic.ac=mac;const rp=mac.resume().catch(()=>{});ac.resume().catch(()=>{});// created synchronously in the gesture
+    await rp;
+    const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const src=mac.createMediaStreamSource(st);const an=mac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0;src.connect(an);
+    const sink=mac.createGain();sink.gain.value=0;an.connect(sink);sink.connect(mac.destination);
     mic.stream=st;mic.track=st.getAudioTracks()[0];mic.src=src;mic.an=an;mic.sink=sink;mic.buf=new Float32Array(an.fftSize);mic.floor=.003;mic.prev=0;
-    const tr=st.getAudioTracks()[0];if(tr)tr.onended=()=>{mic.ok=false;mic.state='lost';mic.err='Microphone disconnected. Tap MIC SETUP to turn it back on.'};
-    await ac.resume().catch(()=>{});mic.ok=true;mic.state='on';
-    // silent-track guard: if raw constraints give pure zeros on this device, retry with browser defaults
-    if(!mic.defaultTried){await new Promise(r=>setTimeout(r,1200));let mx=0;const b=new Float32Array(an.fftSize);an.getFloatTimeDomainData(b);for(const v of b)mx=Math.max(mx,Math.abs(v));
-      mic.probe=mx;if(mx===0){mic.defaultTried=true;mic.useDefault=true;return BB.startMic()}}
-    return true}
+    if(mic.track)mic.track.onended=()=>{mic.ok=false;mic.state='lost';mic.err='Microphone disconnected. Tap MIC SETUP to turn it back on.'};
+    mic.ok=true;mic.state='on';return true}
   catch(e){const n=e&&e.name;mic.ok=false;
     mic.state=(n==='NotFoundError'||n==='DevicesNotFoundError')?'nodevice':(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError')?'denied':'error';
     mic.err=mic.state==='denied'?'Mic permission is blocked. Click the mic/lock icon in the address bar, choose Allow, then reload.':
       mic.state==='nodevice'?'No microphone found. Plug one in or check Chromebook sound settings, then try again.':
-      mic.state==='error'&&n==='NoSupport'?'This browser cannot use the mic here.':'The mic could not start ('+(n||'unknown')+'). Close other apps using the mic and try again.';
-    return false}};
+      n==='NoSupport'?'This browser cannot use the mic here.':'The mic could not start ('+(n||'unknown')+'). Close other apps using the mic and try again.';
+    return false}finally{mic.starting=null}})()};
 // mic health: after resume / tab return, make sure the audio clock runs again
-BB.ensureMic=()=>{if(ac.state!=='running')ac.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
+BB.ensureMic=()=>{if(ac.state!=='running')ac.resume().catch(()=>{});if(mic.ac&&mic.ac.state!=='running')mic.ac.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!BB.paused)BB.ensureMic()});
 // Called every frame. Onset = sharp energy jump above an adaptive noise floor, 120 ms refractory.
-mic.update=dt=>{if(!mic.ok||BB.paused)return;if(ac.state!=='running')ac.resume().catch(()=>{});mic.an.getFloatTimeDomainData(mic.buf);
+mic.update=dt=>{if(!mic.ok||BB.paused)return;mic.an.getFloatTimeDomainData(mic.buf);
   // look at the newest ~20 ms in 5 ms slices to timestamp the clap more precisely
-  const b=mic.buf,N=b.length,sr=ac.sampleRate,sl=Math.round(sr*.005);let best=0,bestI=0,sum=0;
+  const b=mic.buf,N=b.length,sr=mic.ac.sampleRate,sl=Math.round(sr*.005);let best=0,bestI=0,sum=0;
   for(let s=N-sl*4;s<N;s+=sl){let e=0;for(let i=s;i<s+sl;i++)e+=b[i]*b[i];e=Math.sqrt(e/sl);if(e>best){best=e;bestI=s}}
   for(let i=N-1024;i<N;i++)sum+=b[i]*b[i];const rms=Math.sqrt(sum/1024);
   mic.rms=rms;mic.raw=best;const sens=sensSteps[mic.sensIdx];
   const lvl=clamp(Math.sqrt(best*sens*6),0,1);// perceptual 0..1 meter
   mic.level=Math.max(lvl,mic.level-dt*1.8);
-  const tNow=ac.currentTime-(N-bestI)/sr-(ac.baseLatency||0);
+  const tNow=ac.currentTime-(N-bestI)/sr-(mic.ac.baseLatency||0);
   // adaptive: noise floor + margin, scaled by sensitivity; own click-track bleed is capped so it can never mute real claps
   const thr=Math.max(mic.floor*2.5+.004,.008/sens,Math.min(mic.tickLevel,.05)*1.2);mic.thr=thr;
   if(best>thr&&best>mic.prev*1.35&&tNow-mic.lastOn>.12){mic.lastOn=tNow;mic.onsets.push({t:tNow,lvl:lvl});mic.peak=lvl;mic.hold=.6}
@@ -176,7 +173,7 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   if(BB.scene){if(!BB.paused)BB.scene.update(dt);BB.scene.draw(ctx)}
   ctx.restore();
   ctx.save();ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.font='13px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillStyle='rgba(255,255,255,.55)';
-  ctx.fillText(BB.VERSION+' | audio '+ac.state+' '+ac.sampleRate+'Hz'+(mic.ok?' | mic '+(mic.track?mic.track.readyState+(mic.track.muted?' MUTED':''):'')+' lvl '+(mic.raw||0).toFixed(4)+(mic.useDefault?' (default)':''):''),cv.width/BB.dpr-6,cv.height/BB.dpr-4);ctx.restore();
+  ctx.fillText(BB.VERSION+' | audio '+ac.state+' '+ac.sampleRate+'Hz'+' | mic '+mic.state+(mic.ok?' '+(mic.track?mic.track.readyState+(mic.track.muted?' MUTED':''):'')+' lvl '+(mic.raw||0).toFixed(4)+(mic.useDefault?' (default)':''):''),cv.width/BB.dpr-6,cv.height/BB.dpr-4);ctx.restore();
   dispatchClicks();keys.length=0;
   requestAnimationFrame(frame)}
 BB.start=()=>requestAnimationFrame(frame);
