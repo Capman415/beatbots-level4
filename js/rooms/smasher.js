@@ -72,7 +72,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
     // fitted inside the cream plate (plate spans x 250..428, y 88..138 in press.png), two lines, engraved look
     {const cx=PL+339*PS,cy=PT+113*PS,pw=(428-250)*PS-14;g.textAlign='center';g.textBaseline='middle';
      const fit=(txt,px,y,col)=>{g.font=px+"px 'Rammetto One'";const m=g.measureText(txt).width,sx=Math.min(1,pw/m);g.save();g.translate(cx,y);g.scale(sx,1);
-       g.fillStyle='rgba(255,255,255,.55)';g.fillText(txt,0,1.2);g.fillStyle=col;g.fillText(txt,0,0);g.restore()};
+       g.fillStyle='rgba(255,255,255,.3)';g.fillText(txt,0,1.2);g.fillStyle=col;g.fillText(txt,0,0);g.restore()};
      fit('SMASH-O-MATIC',17,cy-9*PS,'#3a3226');fit('4000',14,cy+12*PS,'#b5482a')}
     // cart of whole notes
     R.shadow(g,CART.x,CART.base,190,.55);if(V.cart)g.drawImage(V.cart,CART.x-190,CART.base-225,380,225);

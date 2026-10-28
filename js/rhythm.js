@@ -158,7 +158,7 @@ R.yourTurn=(ph,rb,py)=>{const t=BB.t,pu=.5+.5*Math.sin(t*Math.PI*2*1.4),cl=ph===
   ctx.save();const bw=cl?26:16;ctx.lineWidth=bw;ctx.strokeStyle=cl?`rgba(110,230,120,${.55+.4*pu})`:`rgba(255,224,102,${.4+.3*pu})`;ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=40;ctx.strokeRect(bw/2,bw/2,W-bw,H-bw);ctx.restore();
   // full-width banner
   const by=118,bh=150;ctx.save();ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=30+30*pu;
-  BB.rrect(30,by-bh/2+8,W-60,bh,34,'rgba(0,0,0,.35)');BB.rrect(30,by-bh/2,W-60,bh,34,BB.lg(-bh/2,bh/2,cl?['#9ff09a','#3fae4c']:['#fff1a8','#e8b830']),'#1e2b29',8);ctx.restore();
+  BB.rrect(30,by-bh/2+8,W-60,bh,34,'rgba(0,0,0,.35)');BB.rrect(30,by-bh/2,W-60,bh,34,BB.lg(-bh/2,bh/2,cl?['#86e486','#3fae4c']:['#f6d65e','#e3b02a']/* v12.8 glare pass: even marquee fill */),'#1e2b29',8);ctx.restore();
   for(let i=0;i<14;i++){const bx=70+i*(W-140)/13,on=(Math.floor(t*6)+i)%2;ctx.fillStyle=on?'#fffbe0':'rgba(80,60,20,.5)';ctx.beginPath();ctx.arc(bx,by-bh/2+16,7,0,7);ctx.arc(bx,by+bh/2-16,7,0,7);ctx.fill()}// marquee bulbs
   const big=cl?'YOUR TURN, ENGINEERS! CLAP!':(['GET READY... 1','GET READY... 2','READY...','GO!'][Math.max(0,Math.min(3,Math.floor(rb)))]);
   BB.text(big,W/2,by+4,(cl?84:90)*(1+.04*pu),'#fffdf2',{font:'Rammetto One',stroke:12,maxW:W-420});
