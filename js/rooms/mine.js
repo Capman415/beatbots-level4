@@ -380,13 +380,13 @@ class MineRoom{
     // leader robot for this floor
     const ph=active&&this.beat?(this.beatNow()%1+1)%1:(t*1.2)%1,b=BB.bounce(ph,active?.07:.02);
     if(k===0)BB.sprite('turtle',LEAD_X,rail(k),190,{squash:b});
-    if(k===1)BB.sprite('rocket',LEAD_X,rail(k)-20-Math.sin(t*6)*10,240,{squash:b,rot:-.15});
+    if(k===1)BB.rocketBot(LEAD_X,rail(k),240,{squash:b,rot:-.1});
     if(k===2){BB.sprite('whisper',LEAD_X,rail(k),260,{squash:b});if(active&&this.tooLoud&&t-this.tooLoud<1.2)this.bubble(LEAD_X-260,rail(k)-330,'shhh... softer!',k)}
     if(k===3){BB.sprite('boom',LEAD_X,rail(k),270,{squash:b*1.5});if(active&&this.tooSoft&&t-this.tooSoft<1.2)this.bubble(LEAD_X-280,rail(k)-330,'LOUDER! BOOM!',k)}
     if(active&&k<4&&this.fewHands&&t-this.fewHands<1.2&&!(this.tooSoft&&t-this.tooSoft<1.2)&&!(this.tooLoud&&t-this.tooLoud<1.2))this.bubble(LEAD_X-280,rail(k)-330,'Everyone together!',k);
     if(k===4){this.drawCave(4);// cave-in pile + rubble
       BB.prop('rubble',3170,rail(k)+8,150,{box:B,rim:L.rim,amb:L.amb,ambA:.2})
-      if(this.R&&this.R.icons&&active){BB.sprite(this.R.icons[0],3060,rail(k),170,{squash:b});BB.sprite(this.R.icons[1],3230,rail(k),200,{squash:b})}}
+      if(this.R&&this.R.icons&&active){BB.sprite(this.R.icons[0],3060,rail(k),170,{squash:b,parts:false});BB.sprite(this.R.icons[1],3230,rail(k),200,{squash:b,parts:false})}}
     // Sorter Bot + rock on the active floor
     if(active||(this.R&&k===this.R.f)){
       if(!this.botOnLift()&&this.state!=='end'){const ph2=this.beat?((this.beatNow()%1)+1)%1:.5;let sw=this.beat?(ph2<.12?1:ph2<.8?1-ease.out((ph2-.12)/.68):ease.inOut((ph2-.8)/.2)):.3+.05*Math.sin(t*3);

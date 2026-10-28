@@ -1,11 +1,65 @@
 // Shared Beat Bots art + HUD pieces (match the video style: cream/teal panels, green beat pills, Lilita/Rammetto).
 'use strict';
 (()=>{const ctx=BB.ctx,COL=BB.COL,IMG=BB.IMG,W=BB.W,H=BB.H;
-// draw a cutout by its bottom-centre with squash/stretch
-BB.sprite=(name,x,base,h,o={})=>{const im=IMG[name];if(!im)return;const w=im.width*h/im.height;const sq=o.squash||0;
+// v12.4 moving parts: drawn in the sprite's own box (origin bottom-centre, image spans -w/2..w/2, -h..0) so squash/rot carry them.
+const P=(w,h,u,v)=>[-w/2+u*w,-h+v*h];const LQ=()=>BB.q===0;
+const INK=()=>COL.ink;
+// retro gear: bronze teeth + spokes + hub, ink outline
+const gear=(r,teeth,a,ry=1)=>{ctx.save();ctx.scale(1,ry);ctx.rotate(a);ctx.lineWidth=Math.max(2,r*.06);ctx.strokeStyle=INK();
+  ctx.beginPath();for(let i=0;i<teeth*2;i++){const a0=i*Math.PI/teeth,rr=i%2?r*.84:r;ctx.lineTo(Math.cos(a0-.12)*rr,Math.sin(a0-.12)*rr);ctx.lineTo(Math.cos(a0+.12)*rr,Math.sin(a0+.12)*rr)}ctx.closePath();
+  const g=ctx.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r);g.addColorStop(0,'#e8c27a');g.addColorStop(1,'#a8742e');ctx.fillStyle=g;ctx.fill();ctx.stroke();
+  ctx.fillStyle='#5f8f86';ctx.beginPath();ctx.arc(0,0,r*.62,0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#c4924a';for(let i=0;i<4;i++){ctx.save();ctx.rotate(i*Math.PI/2);ctx.beginPath();ctx.roundRect(-r*.09,0,r*.18,r*.66,r*.05);ctx.fill();ctx.stroke();ctx.restore()}
+  ctx.fillStyle='#e0b468';ctx.beginPath();ctx.arc(0,0,r*.2,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#7a5222';ctx.beginPath();ctx.arc(0,0,r*.07,0,7);ctx.fill();ctx.restore()};
+const twinkle=(x,y,s,ph)=>{const k=.5+.5*Math.sin(BB.t*3+ph);ctx.save();ctx.globalAlpha=.25+.35*k;BB.glow(x,y,s*2.2,'rgba(255,230,140,A)',.8);ctx.restore()};
+const PARTS=BB.PARTS={
+  turtle:{// Andante: wind-up key turns, shell gear spins (slow and steady)
+    clip:(w,h)=>{ctx.beginPath();ctx.rect(-w/2,-h,w,h);const[a,b]=P(w,h,.15,0),[c,d]=P(w,h,.66,.295);ctx.rect(c,b,a-c,d-b);ctx.clip('evenodd')},
+    post:(w,h,im)=>{const t=BB.t,sp=LQ()?.5:1;const ang=t*1.6*sp,sx=Math.cos(ang),ax=-w/2+.41*w;
+      ctx.save();ctx.translate(ax,0);ctx.scale(Math.max(.12,Math.abs(sx)),1);const su=.15,sv=0,eu=.66,ev=.295;
+      ctx.drawImage(im,su*im.width,0,(eu-su)*im.width,ev*im.height,(su-.41)*w,-h,(eu-su)*w,ev*h);
+      if(sx<0){ctx.globalAlpha=.25;ctx.fillStyle='#3a2a10';ctx.fillRect((su-.41)*w,-h,(eu-su)*w,ev*h*.48)}ctx.restore();
+      const[gx,gy]=P(w,h,.272,.53);ctx.save();ctx.translate(gx,gy);gear(w*.128,12,t*.9*sp,1.05);ctx.restore()}},
+  rocket:{// Allegro: rocket blast + billowing smoke under the nozzle
+    pre:(w,h,im,o)=>{const t=BB.t,[nx,ny]=P(w,h,.5,.9),lq=LQ(),f=o.thrust??1;
+      const n=lq?4:10;for(let i=0;i<n;i++){const life=((t*1.1+i/n)%1),sd=(i*137.5)%1,side=(i%2?1:-1);
+        const x=nx+side*life*w*(.35+.4*((i*7)%5)/5),y=ny+h*.12+life*h*.18*f,r=w*(.08+life*.22);
+        ctx.globalAlpha=(1-life)*.55;ctx.fillStyle=life<.25?'#fff4d8':'#e9e4da';ctx.strokeStyle='rgba(25,25,31,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();if(!lq)ctx.stroke()}
+      ctx.globalAlpha=1;const fl=1+.12*Math.sin(t*31)+.08*Math.sin(t*17),L=h*.24*f*fl;
+      BB.glow(nx,ny+L*.4,w*.55,'rgba(255,170,60,A)',.5);
+      ctx.lineWidth=3;ctx.strokeStyle=INK();ctx.fillStyle='#ff8a2a';ctx.beginPath();ctx.moveTo(nx-w*.13,ny);ctx.quadraticCurveTo(nx-w*.1,ny+L*.6,nx,ny+L);ctx.quadraticCurveTo(nx+w*.1,ny+L*.6,nx+w*.13,ny);ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.fillStyle='#ffe066';ctx.beginPath();ctx.moveTo(nx-w*.07,ny);ctx.quadraticCurveTo(nx-w*.05,ny+L*.4,nx,ny+L*.62);ctx.quadraticCurveTo(nx+w*.05,ny+L*.4,nx+w*.07,ny);ctx.closePath();ctx.fill()},
+    post:(w,h)=>{const[x,y]=P(w,h,.5,.04);twinkle(x,y,w*.12,0)}},
+  sprocket:{// Sprocket: antenna with spinning ring + blinking bulb, turning dials, blinking belly light
+    pre:(w,h)=>{const t=BB.t,[x,y]=P(w,h,.55,.15),L=h*.11,lq=LQ();
+      ctx.strokeStyle=INK();ctx.lineWidth=Math.max(3,h*.009);ctx.fillStyle='#b9bfc4';ctx.beginPath();ctx.roundRect(x-h*.007,y-L,h*.014,L,3);ctx.fill();ctx.stroke();
+      const sx=Math.cos(t*(lq?1.5:3));ctx.fillStyle=sx>0?'#e8e2cd':'#c9c1a8';ctx.beginPath();ctx.ellipse(x,y-L*.55,h*.045*Math.max(.15,Math.abs(sx)),h*.014,0,0,7);ctx.fill();ctx.stroke();
+      const bl=.5+.5*Math.sin(t*2.4);BB.glow(x,y-L-6,h*.05,'rgba(255,90,70,A)',.25+.45*bl);ctx.fillStyle=`rgb(${200+55*bl|0},${70+40*bl|0},60)`;ctx.beginPath();ctx.arc(x,y-L-h*.012,h*.018,0,7);ctx.fill();ctx.stroke()},
+    post:(w,h)=>{const t=BB.t;for(const[u,v,s]of[[.52,.555,1],[.51,.62,-1]]){const[x,y]=P(w,h,u,v);ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(t*1.3*s)*1.2);ctx.strokeStyle=INK();ctx.lineWidth=Math.max(2,h*.006);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-w*.022);ctx.stroke();ctx.restore()}
+      const[bx,by]=P(w,h,.57,.865),k=.5+.5*Math.sin(t*3.1);ctx.save();ctx.globalAlpha=.3+.5*k;BB.glow(bx,by,w*.06,'rgba(255,190,60,A)',.9);ctx.restore();
+      const[rx,ry]=P(w,h,.445,.645);ctx.save();ctx.globalAlpha=.6*(Math.sin(t*4.2)>.3?1:0);BB.glow(rx,ry,w*.03,'rgba(255,80,60,A)',.9);ctx.restore()}},
+  sorter:{// Sorter Bot: LED sorting bar chases, mast light blinks, star twinkles
+    post:(w,h)=>{const t=BB.t,n=8,cols=['255,90,80','255,160,70','255,220,90','150,230,110','110,220,150','90,200,255','90,170,255','120,150,255'];
+      const hd=(t*(LQ()?3:6))%(n+3);for(let i=0;i<n;i++){const d=Math.abs(i-hd);if(d>1.5)continue;const[x,y]=P(w,h,.35+i*.0443,.543);ctx.save();ctx.globalAlpha=(1-d/1.5)*.9;BB.glow(x,y,w*.06,`rgba(${cols[i]},A)`,.9);ctx.restore()}
+      const[sx,sy]=P(w,h,.8,.035);twinkle(sx,sy,w*.08,1);const[mx,my]=P(w,h,.815,.32);ctx.save();ctx.globalAlpha=Math.sin(t*2.6)>0?.8:.15;BB.glow(mx,my,w*.04,'rgba(255,90,70,A)',.9);ctx.restore()}},
+  whisper:{// Piano bot: grille lights breathe softly
+    post:(w,h)=>{const t=BB.t,k=.5+.5*Math.sin(t*1.4),[x,y]=P(w,h,.5,.24);ctx.save();ctx.globalAlpha=.25+.35*k;BB.glow(x,y,w*.55,'rgba(120,200,255,A)',.6);ctx.restore();
+      if(!LQ()){const[mx,my]=P(w,h,.38,.43);for(let i=0;i<3;i++){const life=(t*.5+i/3)%1;ctx.save();ctx.globalAlpha=(1-life)*.5;ctx.strokeStyle='#cfe8ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(mx-w*.1,my,w*(.08+life*.25),Math.PI*.75,Math.PI*1.25);ctx.stroke();ctx.restore()}}}},
+  boom:{// Forte bot: megaphone pulses sound rings, bulb flares
+    post:(w,h)=>{const t=BB.t,[x,y]=P(w,h,.12,.24),n=LQ()?2:3;for(let i=0;i<n;i++){const life=(t*1.2+i/n)%1;ctx.save();ctx.globalAlpha=(1-life)*.7;ctx.strokeStyle='#ffb347';ctx.lineWidth=Math.max(3,w*.02)*(1-life*.5);ctx.beginPath();ctx.arc(x+w*.1,y,w*(.12+life*.35),Math.PI*.72,Math.PI*1.28);ctx.stroke();ctx.restore()}
+      const[bx,by]=P(w,h,.29,.26),k=Math.pow(.5+.5*Math.sin(t*5),2);ctx.save();ctx.globalAlpha=.3+.6*k;BB.glow(bx,by,w*.16,'rgba(255,240,170,A)',.9);ctx.restore();const[sx,sy]=P(w,h,.6,.035);twinkle(sx,sy,w*.08,2)}}};
+// draw a cutout by its bottom-centre with squash/stretch (+ its moving part when big enough)
+BB.sprite=(name,x,base,h,o={})=>{const im=IMG[name];if(!im)return;const w=im.width*h/im.height;const sq=o.squash||0;const pt=o.parts!==false&&h>=150?PARTS[name]:null;
   ctx.save();ctx.translate(x,base);
   if(o.shadow!==false){ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,0,w*.38,12,0,0,7);ctx.fill()}
-  ctx.rotate(o.rot||0);ctx.scale((o.flip?-1:1)*(1+sq),1-sq);ctx.globalAlpha=o.alpha??1;ctx.drawImage(im,-w/2,-h,w,h);ctx.restore()};
+  ctx.rotate(o.rot||0);ctx.scale((o.flip?-1:1)*(1+sq),1-sq);ctx.globalAlpha=o.alpha??1;
+  if(pt&&pt.pre){ctx.save();pt.pre(w,h,im,o);ctx.restore()}
+  if(pt&&pt.clip){ctx.save();pt.clip(w,h);ctx.drawImage(im,-w/2,-h,w,h);ctx.restore()}else ctx.drawImage(im,-w/2,-h,w,h);
+  if(pt&&pt.post){ctx.save();pt.post(w,h,im,o);ctx.restore()}
+  ctx.restore()};
+// Allegro hovering on his rocket blast: ground shadow shrinks as he rises
+BB.rocketBot=(x,ground,h,o={})=>{const t=BB.t,lift=h*.32+Math.sin(t*2.2)*h*.035,sq=o.squash||0;
+  BB.contactShadow(x,ground,h*.38*(1-lift/h*.6),.45);BB.sprite('rocket',x,ground-lift,h,{squash:sq,rot:o.rot||0,shadow:false})};
 // beat-synced squash: phase 0..1 within the beat -> squash amount
 BB.bounce=(ph,amt=.06)=>{const k=Math.exp(-ph*7);return amt*k*Math.cos(ph*9)};
 // Sorter Bot with a hard hat and pickaxe. swing: 0 = raised, 1 = striking
@@ -36,6 +90,12 @@ BB.staticJr=(x,base,h,o={})=>{const im=IMG.tinytv;if(!im)return;const t=BB.t,w=i
     ctx.fillStyle='#e65046';ctx.strokeStyle='#1e1e28';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(fx+h*.04,fy-h*.06,h*.12,h*.065,0,0,7);ctx.fill();ctx.stroke();
     ctx.fillStyle='#fff';ctx.fillRect(fx-h*.06,fy-h*.05,h*.16,h*.02)}
   const by=-legH-h,sq=o.squash||0;ctx.translate(0,-legH);ctx.scale(1+sq,1-sq);
+  {// v12.4 Jr rabbit-ear antennas with sparks
+    const lq=BB.q===0;for(const s of[-1,1]){const a=s*(.45+Math.sin(t*2+s)*.08),L=h*.5,bx=s*w*.12,tx=bx+Math.sin(a)*L,ty=-h-Math.cos(a)*L;
+      ctx.strokeStyle='#282c36';ctx.lineWidth=Math.max(3,h*.035);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(bx,-h*.95);ctx.lineTo(tx,ty);ctx.stroke();
+      const sp=Math.sin(t*7+s*2)>.55;if(sp)BB.glow(tx,ty,h*.25,'rgba(140,220,255,A)',.6);
+      ctx.fillStyle=sp?'#bff0ff':'#e65046';ctx.strokeStyle='#1e1e28';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(tx,ty,h*.06,0,7);ctx.fill();ctx.stroke();
+      if(sp&&!lq){ctx.strokeStyle='#ffe066';ctx.lineWidth=2.5;for(let i=0;i<3;i++){const aa=i*2.1+t*9,r1=h*.09,r2=h*.2;ctx.beginPath();ctx.moveTo(tx+Math.cos(aa)*r1,ty+Math.sin(aa)*r1);ctx.lineTo(tx+Math.cos(aa+.3)*(r1+r2)*.6,ty+Math.sin(aa+.3)*(r1+r2)*.6);ctx.lineTo(tx+Math.cos(aa)*r2,ty+Math.sin(aa)*r2);ctx.stroke()}}}}
   if(o.glitch){for(let i=0;i<8;i++){const sy=im.height*i/8,dy=-h+h*i/8,off=(Math.random()-.5)*h*.25*o.glitch;ctx.drawImage(im,0,sy,im.width,im.height/8,-w/2+off,dy,w,h/8+1)}}
   else ctx.drawImage(im,-w/2,-h,w,h);
   if(o.stuffed){// cheeks stuffed + whole note sticking out
