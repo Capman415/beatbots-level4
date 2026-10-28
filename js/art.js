@@ -293,7 +293,7 @@ let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)
 // room title card
 BB.titleCard=(txt,sub,k)=>{if(k<=0||k>=1)return;const a=k<.15?k/.15:k>.85?(1-k)/.15:1;ctx.save();ctx.globalAlpha=a;
   const s=.8+.2*BB.ease.back(Math.min(1,k*4));ctx.translate(W/2,H/2-60);ctx.scale(s,s);BB.panel(-520,-130,1040,260,40);
-  BB.text(txt,0,-30,84,'#fff',{font:'Rammetto One',stroke:9});BB.text(sub,0,58,40,COL.yellow,{stroke:5});ctx.restore()};
+  BB.text(txt,0,-30,84,'#fff',{font:'Rammetto One',stroke:9,maxW:832});BB.text(sub,0,58,40,COL.yellow,{stroke:5,maxW:900});ctx.restore()};
 })();
 // ===== v2 painted props: grounded, tinted, clamped to their tunnel box =====
 (()=>{const ctx=BB.ctx;BB.V2={};
