@@ -234,7 +234,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     if(this.sel==='w')this.selRing(CART.x,CART.base-120,210)}
   // per-basket pile slots (stable jitter, so notes don't reshuffle); remembers counts to animate adds and lifts
   pileFor(k,n){const P=this.piles=this.piles||{},t=BB.t;let p=P[k];if(!p)p=P[k]={items:[]};
-    const SL=[[-14,-70,-.16],[18,-69,.2],[2,-78,-.04],[-24,-66,-.3]];
+    const SL=[[-14,-82,-.12],[18,-81,.14],[2,-89,-.03],[-24,-79,-.2]];// v12.5: raised so note heads clear the front rim
     while(p.items.length<n){const j=p.items.length,sl=SL[j%4];p.items.push({x:sl[0],y:sl[1],r:sl[2],add:p.init?t:0})}
     while(p.items.length>n){const it=p.items.pop();/* the fly-out animation carries the picked note */}
     p.init=1;return p.items}

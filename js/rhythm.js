@@ -101,8 +101,8 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     BB.mic.take();}
   beatNow(){return(ac.currentTime-this.t0)/this.spb}
   phase(){const b=this.beatNow()-this.base;return b<0?'count':b<this.L?'listen':b<this.L+4?'ready':b<2*this.L+4?'clap':'end'}// v12.2: 4-beat count-in between listen and clap
-  update(dt){const ahead=ac.currentTime+.12,spb=this.spb,T0=this.t0+this.base*spb;
-    while(this.t0+this.next*spb<ahead&&this.next<this.base+2*this.L+4){const t=this.t0+this.next*spb,rd=this.next>=this.base+this.L&&this.next<this.base+this.L+4;BB.sfx.tick(t,this.next%4===0||rd,rd?1:.8);this.next++}
+  update(dt){{const ph=this.phase();BB.listening=ph==='clap'?2:ph==='ready'?1:0}const ahead=ac.currentTime+.12,spb=this.spb,T0=this.t0+this.base*spb;
+    while(this.t0+this.next*spb<ahead&&this.next<this.base+2*this.L+4){const t=this.t0+this.next*spb,rd=this.next>=this.base+this.L&&this.next<this.base+this.L+4;BB.sfx.tick(t,this.next%4===0||rd,rd?1:.8);if(this.next===this.base+this.L)R.turnCue(t);this.next++}
     // machine plays the rhythm in measure "listen"
     if(!this.sched){this.sched=1;this.snd.forEach((s,i)=>{const t=T0+s.b*spb;BB.sfx.block(t);setTimeout(()=>{this.lit[i]=1;this.voice(s)},Math.max(0,(t-ac.currentTime)*1000))});
       if(BB.debug)this.snd.forEach((s,i)=>{if(Math.random()<.93){const t=T0+(this.L+4+s.b)*spb+(Math.random()-.5)*.05;setTimeout(()=>BB.simClap(t,.7),Math.max(0,(t-ac.currentTime)*1000+30))}})}
@@ -117,7 +117,10 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
   hit(i){this.got[i]=1;this.marks[i]=.01;BB.sfx.tink(undefined,.6)}
   override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}
   cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-this.L-4;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
-  draw(cx,y){const ph=this.phase();R.pills(cx,y,this.seq,{lit:this.lit,marks:this.marks,cur:this.cursor(),words:true});
+  draw(cx,y){const ph=this.phase(),yt=ph==='ready'||ph==='clap';
+    if(yt)R.yourTurn(ph,this.beatNow()-this.base-this.L,y);
+    if(yt){ctx.save();ctx.translate(cx,y);ctx.scale(1.18,1.18);ctx.translate(-cx,-y);}// bigger beat lights while it's the class's turn
+    R.pills(cx,y,this.seq,{lit:this.lit,marks:this.marks,cur:this.cursor(),words:true});if(yt)ctx.restore();
     const bn=this.beatNow();let msg='';
     if(ph==='count'){const n=4-Math.floor(bn);msg=n>0?'Listen... '+n:'';}
     else if(ph==='listen')msg='MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-this.L)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
@@ -125,6 +128,22 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     // beat dots under the pills
     if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*150+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
 R.ClapBack=ClapBack;
+// v12.5: unmistakable "YOUR TURN" cue (Smartboard-readable): retro ding-ding, full-width pulsing banner, green listening border, robots pointing at the class
+R.turnCue=t=>{const s=BB.sfx;if(s.ding){s.ding(t);s.ding(t+.22)}};
+R.yourTurn=(ph,rb,py)=>{const t=BB.t,pu=.5+.5*Math.sin(t*Math.PI*2*1.4),cl=ph==='clap';
+  // green border glow while listening
+  ctx.save();const bw=cl?26:16;ctx.lineWidth=bw;ctx.strokeStyle=cl?`rgba(110,230,120,${.55+.4*pu})`:`rgba(255,224,102,${.4+.3*pu})`;ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=40;ctx.strokeRect(bw/2,bw/2,W-bw,H-bw);ctx.restore();
+  // full-width banner
+  const by=118,bh=150;ctx.save();ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=30+30*pu;
+  BB.rrect(30,by-bh/2+8,W-60,bh,34,'rgba(0,0,0,.35)');BB.rrect(30,by-bh/2,W-60,bh,34,BB.lg(-bh/2,bh/2,cl?['#9ff09a','#3fae4c']:['#fff1a8','#e8b830']),'#1e2b29',8);ctx.restore();
+  for(let i=0;i<14;i++){const bx=70+i*(W-140)/13,on=(Math.floor(t*6)+i)%2;ctx.fillStyle=on?'#fffbe0':'rgba(80,60,20,.5)';ctx.beginPath();ctx.arc(bx,by-bh/2+16,7,0,7);ctx.arc(bx,by+bh/2-16,7,0,7);ctx.fill()}// marquee bulbs
+  const big=cl?'YOUR TURN, ENGINEERS! CLAP!':(['GET READY... 1','GET READY... 2','READY...','GO!'][Math.max(0,Math.min(3,Math.floor(rb)))]);
+  BB.text(big,W/2,by+4,(cl?84:90)*(1+.04*pu),'#fffdf2',{font:'Rammetto One',stroke:12,maxW:W-420});
+  // robots turn and point at the class
+  for(const sd of[-1,1]){const rx=W/2+sd*(W/2-130),ry=by+70;ctx.save();ctx.translate(rx,ry);ctx.scale(-sd,1);
+    if(BB.IMG&&BB.IMG.sprocket)BB.sprite('sprocket',0,0,150,{parts:false});
+    const sw=Math.sin(t*8)*.08;ctx.rotate(sw);ctx.lineCap='round';ctx.strokeStyle='#1e2b29';ctx.lineWidth=20;ctx.beginPath();ctx.moveTo(18,-70);ctx.lineTo(70,-40);ctx.stroke();ctx.strokeStyle='#cfeee4';ctx.lineWidth=12;ctx.stroke();
+    ctx.fillStyle='#e9e2c8';ctx.strokeStyle='#1e2b29';ctx.lineWidth=5;ctx.beginPath();ctx.arc(76,-36,15,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(84,-34);ctx.lineTo(106,-26);ctx.lineWidth=9;ctx.stroke();ctx.restore()}};
 // ---------- shared room bits ----------
 // bake a static layer once (background + anything that never moves). Phones bake at half size.
 R.bake=(fn)=>{const s=BB.phone&&!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const old=BB.ctx;
