@@ -462,7 +462,7 @@ class MineRoom{
     ctx.restore();
     // tempo / dynamics sign with Italian word
     const sg=R.sign||[F.name,F.mean],icons=R.icons||(F.icon?[F.icon]:[]);BB.panel(W-640,24,600,130,30);
-    icons.forEach((ic,i)=>BB.sprite(ic,W-575+i*70,140,100,{shadow:false}));
+    icons.forEach((ic,i)=>BB.sprite(ic,W-562+i*70,134,86,{shadow:false})/* inside border */);
     BB.text(sg[0],W-560+icons.length*70+(icons.length?0:-20),70,sg[0].length>10?34:46,'#fff',{align:'left',font:'Rammetto One',stroke:5,maxW:420-icons.length*70});
     BB.text(sg[1]+(R.dyn==='p'?'  (p)':R.dyn==='f'?'  (f)':'')+`  ·  ${R.bpm} bpm`,W-560+icons.length*70+(icons.length?0:-20),118,28,COL.yellow,{align:'left',stroke:4});
     BB.pauseBtn(()=>this.pause());

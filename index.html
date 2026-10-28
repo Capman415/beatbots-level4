@@ -21,4 +21,5 @@ canvas{position:absolute;left:0;top:0;touch-action:none}
 <script src="js/rooms/smasher.js?v=1793200500"></script>
 <script src="js/rooms/packing.js?v=1793200500"></script>
 <script src="js/shell.js?v=1793200500"></script>
+<script>/* v12.5: full-screen button only on the title screen, so it never sits on a room's panel border */setInterval(()=>{const b=document.getElementById('fs');if(b&&window.BB)b.style.display=(BB.scene&&BB.scene.constructor&&BB.scene.constructor.name==='TitleScene'&&!document.fullscreenElement)?'':'none'},250)</script>
 </body></html>

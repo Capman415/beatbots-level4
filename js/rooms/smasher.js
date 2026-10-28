@@ -319,9 +319,9 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
       ctx.restore();
       if(O.rush&&this.rushT&&this.state==='order'){const f=clamp(1-(t-this.rushT)/50,0,1);BB.rrect(tx,ty+th+12,tw,20,10,'#233','#fff',2);BB.rrect(tx,ty+th+12,tw*f,20,10,f>.3?COL.yellow:'#ffb08a');if(f===0)BB.text('take your time!',tx+tw/2,ty+th+52,24,'#fff',{stroke:4})}}
     // bell
-    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-112,by=WIN.y+WIN.h-42;/* v12.5: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
+    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-118,by=WIN.y+WIN.h-80;/* v12.5: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
     this.drawBell(bx,by,ready,t);
-    BB.plaque(bx-122,by-14,110,32,'RING!',22,ready?'#b5482a':'#28403c',{font:'Rammetto One',noRivet:1});
+    BB.plaque(bx-150,by-6,110,32,'RING!',22,ready?'#b5482a':'#28403c',{font:'Rammetto One',noRivet:1});
     BB.button(bx-180,by-110,260,140,'',{id:'bell',style:'none',onClick:()=>this.ring()})}
   // v12.5: big retro SMASH-O-MATIC marquee: chrome + enamel bevels, chasing bulbs, gear + lightning accents, flash on each smash
   drawMarquee(){const t=BB.t,cx=PX,cy=252,w=470,h=128,x=cx-w/2,y=cy-h/2,fx=this.smashFx?Math.max(0,1-(t-this.smashFx)/.5):0,fl=BB.q?(Math.random()<.02?.6:1):1;
@@ -339,7 +339,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     ctx.save();ctx.globalAlpha=fl;BB.text('SMASH-O-MATIC',cx,cy-5,40*(1+.06*fx),fx>0?'#fffbe0':'#ffe066',{font:'Rammetto One',stroke:7,maxW:w-130});ctx.restore();
     BB.plaque(cx,y+h-6,120,30,'4000',22,'#b5482a',{font:'Rammetto One',noRivet:1})}
   drawTray(){const t=BB.t;const off=(this.trayOut||0)*700;ctx.save();ctx.translate(off,0);BB.panel(TRAY.x,TRAY.y,TRAY.w,TRAY.h,30);
-    BB.plaque(TRAY.x+TRAY.w/2,TRAY.y+40,200,30,'ORDER TRAY',20);
+    BB.plaque(TRAY.x+TRAY.w/2,TRAY.y+52,190,26,'ORDER TRAY',18);/* inside the inner border */
     for(let b=0;b<4;b++){const x=this.slotX(b);BB.rrect(x,TRAY.y+68,120,120,18,BB.lg(TRAY.y+68,TRAY.y+188,['#fbf6e6','#e6dcc2']),'rgba(25,25,31,.55)',3);{ctx.font="54px 'Rammetto One'";ctx.textAlign='center';ctx.textBaseline='alphabetic';const m=ctx.measureText(String(b+1)),gx=(m.actualBoundingBoxLeft-m.actualBoundingBoxRight)/2;ctx.fillStyle='rgba(40,64,60,.13)';ctx.fillText(String(b+1),x+60+gx,TRAY.y+128+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2)}/* glyph-true centre */}
     let b=0;this.tray.forEach((it,i)=>{const n=it.k==='x'?1:R.BEATS[it.k],x=this.slotX(b),w=this.slotW(n);
       if(!it.pending){if(it.k==='x'){BB.rrect(x,TRAY.y+68,w,120,18,'#333','#e65046',4);for(let j=0;j<40;j++){ctx.fillStyle=`rgba(255,255,255,${Math.random()*.8})`;ctx.fillRect(x+6+Math.random()*(w-16),TRAY.y+74+Math.random()*106,8,4)}BB.text('???',x+w/2,TRAY.y+128,36,'#ff9c8a',{stroke:4})}
