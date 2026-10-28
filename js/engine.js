@@ -68,17 +68,17 @@ BB.btnText=(t,x,y,s,st,font='Lilita One',sub)=>{let k=BTN_INK[st]||BTN_INK.cream
   ctx.fillStyle=k.lo;ctx.fillText(t,x,y+Math.max(1.5,s*.05));if(k.hi){ctx.fillStyle=k.hi;ctx.fillText(t,x,y-Math.max(1,s*.03))}
   ctx.fillStyle=BB.lg(y-s*.45,y+s*.45,k.f);ctx.fillText(t,x,y)};
 // v12.7: logo-style rendered lettering (same build as the Beat Bots logo: chunky letters, copper rim, deep extrusion, glossy enamel face). Cached.
-const LT={};BB.logoText=(t,cx,cy,s,o={})=>{const key=t+s+(o.face||'')+(o.maxW||0);let c=LT[key];
+const LT={};BB.logoText=(t,cx,cy,s,o={})=>{const key=t+s+(o.face||'')+(o.maxW||0)+(o.matte?'m':'');let c=LT[key];
   if(!c){const f=`${s}px '${o.font||'Rammetto One'}'`,m=document.createElement('canvas').getContext('2d');m.font=f;let tw=m.measureText(t).width;const sc=o.maxW&&tw+s*.4>o.maxW?o.maxW/(tw+s*.4):1;
     c=document.createElement('canvas');c.width=Math.ceil((tw+s*.5)*sc);c.height=Math.ceil(s*1.75*sc);const g=c.getContext('2d');g.scale(sc,sc);g.font=f;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
-    const X=(tw+s*.5)/2,Y=s*.8,face=o.face||['#fff6b0','#ffe066','#f2b81c','#c98a0c'],rim=o.rim||['#e79a5a','#b5642a','#7a3d12'],D=Math.max(4,s*.13);
+    const X=(tw+s*.5)/2,Y=s*.8,face=o.face||(o.matte?['#ffe46a','#ffd84a','#f9cb2c','#f0b81c']:['#fff6b0','#ffe066','#f2b81c','#c98a0c']),rim=o.rim||['#e79a5a','#b5642a','#7a3d12'],D=Math.max(4,s*.13);
     g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=s*.2;g.shadowOffsetY=s*.12;g.fillStyle='#000';g.lineWidth=s*.2;g.strokeText(t,X,Y+D);g.shadowColor='transparent';
     for(let i=D;i>0;i-=1){g.strokeStyle=i>D*.6?'#4a230a':'#6b3410';g.lineWidth=s*.2;g.strokeText(t,X,Y+i)}// extrusion
     const rg=g.createLinearGradient(0,Y-s*.6,0,Y+s*.6);rim.forEach((cc,i)=>rg.addColorStop(i/(rim.length-1),cc));g.strokeStyle=rg;g.lineWidth=s*.2;g.strokeText(t,X,Y);// copper rim
-    g.strokeStyle='rgba(255,220,180,.6)';g.lineWidth=s*.04;g.strokeText(t,X,Y-s*.03);
+    g.strokeStyle=o.matte?'rgba(255,220,180,.25)':'rgba(255,220,180,.6)';g.lineWidth=s*.04;g.strokeText(t,X,Y-s*.03);
     const fg=g.createLinearGradient(0,Y-s*.45,0,Y+s*.45);face.forEach((cc,i)=>fg.addColorStop(i/(face.length-1),cc));g.fillStyle=fg;g.fillText(t,X,Y);// enamel face
     g.save();g.globalCompositeOperation='source-atop';g.fillStyle='rgba(120,70,0,.35)';g.fillText(t,X+s*.03,Y+s*.05);g.fillStyle=fg;g.fillText(t,X-s*.01,Y-s*.01);// inner bevel shade
-    const gl=g.createLinearGradient(0,Y-s*.45,0,Y);gl.addColorStop(0,'rgba(255,255,255,.75)');gl.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gl;g.fillRect(0,Y-s*.5,c.width/sc,s*.32);g.restore();
+    const gl=g.createLinearGradient(0,Y-s*.45,0,Y);gl.addColorStop(0,`rgba(255,255,255,${o.matte?.14:.75})`);gl.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gl;g.fillRect(0,Y-s*.5,c.width/sc,s*(o.matte?.18:.32));/* v12.8 matte: faint top highlight, solid readable fill */g.restore();
     c.sc=sc;LT[key]=c}
   ctx.drawImage(c,cx-c.width/2,cy-s*.8*c.sc);return c.width};
 // Clicks run right inside the tap event (a real user gesture) so the mic prompt and audio resume are allowed.
