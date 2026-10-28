@@ -206,7 +206,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
     if(this.sel==='w')this.selRing(CART.x,CART.base-120,210)}
   // per-basket pile slots (stable jitter, so notes don't reshuffle); remembers counts to animate adds and lifts
   pileFor(k,n){const P=this.piles=this.piles||{},t=BB.t;let p=P[k];if(!p)p=P[k]={items:[]};
-    const SL=[[-14,-64,-.3],[18,-63,.34],[2,-70,-.06],[-24,-60,-.55]];
+    const SL=[[-14,-70,-.16],[18,-69,.2],[2,-78,-.04],[-24,-66,-.3]];
     while(p.items.length<n){const j=p.items.length,sl=SL[j%4];p.items.push({x:sl[0],y:sl[1],r:sl[2],add:p.init?t:0})}
     while(p.items.length>n){const it=p.items.pop();/* the fly-out animation carries the picked note */}
     p.init=1;return p.items}
@@ -220,7 +220,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
       {const gr=ctx.createRadialGradient(0,-66,3,0,-66,50);gr.addColorStop(0,'rgba(20,10,4,.6)');gr.addColorStop(1,'rgba(20,10,4,0)');ctx.save();ctx.translate(0,-66);ctx.scale(1,.22);ctx.translate(0,66);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,-66,50,0,7);ctx.fill();ctx.restore()}// contact shadow inside
       for(const p of pile){const a=p.add?ease.out(clamp((t-p.add)/.3,0,1)):1;if(a<=0)continue;ctx.save();ctx.translate(p.x,p.y-(1-a)*70);ctx.rotate(p.r);ctx.globalAlpha=Math.min(1,a*2);R.tile(k,-50,-84,100,84,{gs:1,shadow:false});ctx.restore()}
       // front rim + basket front layered over the notes (clip: below the opening's centre line, outside its lower half)
-      if(V.basket){ctx.save();ctx.beginPath();ctx.rect(-bw,-70,bw*2,80);ctx.ellipse(0,-70,55,10,0,0,Math.PI*2);ctx.clip('evenodd');ctx.drawImage(V.basket,-bw/2,-bh,bw,bh);ctx.restore()}
+      if(V.basket){ctx.save();ctx.beginPath();ctx.rect(-bw,-66,bw*2,80);ctx.ellipse(0,-66,55,8,0,0,Math.PI*2);ctx.clip('evenodd');ctx.drawImage(V.basket,-bw/2,-bh,bw,bh);ctx.restore()}
       const lb=k==='r'?'REST':R.NAME[k]+' x'+n;BB.rrect(-56,-14,112,34,10,'rgba(0,0,0,.28)');BB.rrect(-56,-18,112,34,10,BB.lg(-18,16,['#fbf6e6','#d8d0b8']),'#8a806b',3);BB.text(lb,0,0,k==='s'?17:20,'#28403c',{maxW:100});
       ctx.restore();if(this.sel===k)this.selRing(x,BASE-70,90);
       if(this.empty&&this.empty.k===k&&t-this.empty.t<1.4)R.bubble(x,BASE-200,k==='h'?'smash a WHOLE':'smash '+({q:'a HALF',e:'a TA',s:'a TI-TI'}[k]),COL.ink)});
@@ -235,7 +235,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
   drawPress(){const V=BB.V2,t=BB.t;const dy=lerp(-86,0,this.ham)+(this.hamV?0:Math.sin(t*2)*2);
     // piece on the anvil
     if(this.anvil){const a=this.anvil,k=ease.back(clamp((t-a.t)/.3,0,1)),sq=this.hamV&&this.ham>.85?(this.ham-.85)*3:0;
-      ctx.save();ctx.translate(PX,ANVIL);ctx.scale(1+sq*.4,(1-sq)*k);R.tile(a.k,-80,-74,160,74,{label:true});ctx.restore();
+      ctx.save();ctx.translate(PX,ANVIL);ctx.scale(1+sq*.4,(1-sq)*k);R.tile(a.k,-80,-112,160,112,{label:true});ctx.restore();
       if(this.state==='order'&&!this.hamV&&BB.q)BB.glow(PX,ANVIL-40,160,'rgba(255,230,140,A)',.18+.08*Math.sin(t*5))}
     // rod + hammer (clipped under the collar so it slides into the machine)
     if(V.hammer){ctx.save();ctx.beginPath();ctx.rect(PL,COLLAR,PW,ANVIL-COLLAR);ctx.clip();
