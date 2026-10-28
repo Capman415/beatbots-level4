@@ -120,20 +120,48 @@ class SmasherRoom{constructor(o={}){this.o=o}
   chant(){const t=BB.ac.currentTime+.3,spb=60/84;BB.say('sm_echo',{overlap:true});for(let r=0;r<2;r++)for(let i=0;i<4;i++)BB.sfx.block(t+1.2+r*spb*2+i*spb/4,.8)}
   sweep(){if(!this.crumbs.length)return;BB.sfx.sweep();this.sweepT=BB.t;this.fly.push({k:'s',x0:PX,y0:ANVIL-30,x1:BX[3],y1:BASE-60,t0:BB.t+.4,d:.6,arc:200,end:()=>{this.inv.s++;BB.sfx.ting()}})}
   // v12.2: 1960s retro-robot bell (mint dome, orange plunger, cream bolted base, indicator light)
-  drawBell(bx,by,ready,t){const pt=this.ringT?t-this.ringT:9,press=pt<.25?Math.sin(pt/.25*Math.PI):0,wob=pt<1.2?Math.sin(pt*30)*.05*(1-pt/1.2):ready?Math.sin(t*6)*.015:0;
-    BB.contactShadow(bx,by+12,95,.4);ctx.save();ctx.translate(bx,by);if(ready&&BB.q)BB.glow(0,-34,120,'rgba(255,210,120,A)',.25+.1*Math.sin(t*5));
-    // cream base with bolts
-    BB.rrect(-80,-14,160,28,12,BB.lg(-14,14,['#fbf3dc','#e3d3ae','#b8a57e']),COL.ink,4);for(const x of[-62,-22,22,62]){ctx.fillStyle=BB.lg(-4,4,['#f4f4f4','#8a8f94']);ctx.beginPath();ctx.arc(x,0,4.5,0,7);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=1.5;ctx.stroke()}
-    const lit=pt<.6||ready&&Math.sin(t*6)>0;ctx.fillStyle=lit?'#ff7a3a':'#7a3b22';ctx.beginPath();ctx.arc(70,-22,7,0,7);ctx.fill();ctx.strokeStyle=COL.ink;ctx.lineWidth=2.5;ctx.stroke();if(lit&&BB.q)BB.glow(70,-22,26,'rgba(255,140,60,A)',.6);
-    // mint dome (rivets, chrome rim), wobbling
-    ctx.save();ctx.translate(0,-14);ctx.rotate(wob);ctx.fillStyle=BB.lg(-70,0,['#e6fff6','#9fe3cf','#4fa591']);ctx.strokeStyle=COL.ink;ctx.lineWidth=4;
-    ctx.beginPath();ctx.moveTo(-64,0);ctx.bezierCurveTo(-64,-50,-34,-70,0,-70);ctx.bezierCurveTo(34,-70,64,-50,64,0);ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.ellipse(-26,-44,14,7,-.6,0,7);ctx.fill();
-    BB.rrect(-68,-6,136,10,5,BB.lg(-6,4,['#f2f6f8','#9aa3aa']),COL.ink,2.5);
-    for(let i=0;i<7;i++){const a=Math.PI*(.12+i*.127),rx=Math.cos(a)*-52,ry=-Math.sin(a)*48+2;ctx.fillStyle='#e9fff8';ctx.beginPath();ctx.arc(rx,ry,3,0,7);ctx.fill();ctx.strokeStyle='rgba(30,80,70,.6)';ctx.lineWidth=1.2;ctx.stroke()}
-    // orange plunger
-    const py=-70+press*10;BB.rrect(-7,py-14,14,16,4,'#c9ced2',COL.ink,2.5);ctx.fillStyle=BB.lg(py-30,py-12,['#ffb070','#f07a2e','#b5521a']);ctx.beginPath();ctx.ellipse(0,py-18,20,11,0,0,7);ctx.fill();ctx.strokeStyle=COL.ink;ctx.lineWidth=3;ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,.6)';ctx.beginPath();ctx.ellipse(-7,py-22,6,3,-.3,0,7);ctx.fill();ctx.restore();ctx.restore()}
+  // v12.5: CGI desk bell - chrome dome (env reflections, specular, warm rim light), beveled mint enamel base with chrome band + rivets, shaded 3D plunger, flash on hit
+  drawBell(bx,by,ready,t){const pt=this.ringT&&t>=this.ringT?t-this.ringT:9,press=pt<.25?Math.sin(pt/.25*Math.PI):0,wob=pt<1.2?Math.sin(pt*30)*.05*(1-pt/1.2):ready?Math.sin(t*6)*.015:0,fl=pt<.5?1-pt/.5:0,hq=!(BB.phone&&!BB.q),INKC=COL.ink;
+    ctx.save();ctx.translate(bx,by);
+    // soft contact shadow
+    {const g=ctx.createRadialGradient(6,16,4,6,16,104);g.addColorStop(0,'rgba(0,0,0,.55)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.save();ctx.scale(1,.2);ctx.fillStyle=g;ctx.beginPath();ctx.arc(6,80,104,0,7);ctx.fill();ctx.restore()}
+    if((ready||fl)&&hq)BB.glow(0,-40,140,'rgba(255,210,120,A)',.18+.1*Math.sin(t*5)+.5*fl);
+    // mint enamel base: top face ellipse + beveled side
+    const bw=84,top=-16,side=22;
+    ctx.fillStyle=BB.lg(top,top+side,['#bff0e0','#7fcdb5','#3f8a77']);ctx.strokeStyle=INKC;ctx.lineWidth=3.5;
+    ctx.beginPath();ctx.ellipse(0,top+side,bw,16,0,0,Math.PI);ctx.lineTo(-bw,top);ctx.ellipse(0,top,bw,16,0,Math.PI,0,true);ctx.closePath();ctx.fill();ctx.stroke();
+    // chrome band around the side
+    {const cg=ctx.createLinearGradient(-bw,0,bw,0);cg.addColorStop(0,'#4a5452');cg.addColorStop(.18,'#f8fbfa');cg.addColorStop(.32,'#8d9997');cg.addColorStop(.55,'#e6ecea');cg.addColorStop(.8,'#5d6866');cg.addColorStop(1,'#c9d1cf');ctx.fillStyle=cg;
+     ctx.beginPath();ctx.ellipse(0,top+13,bw,16,0,0,Math.PI);ctx.lineTo(-bw,top+7);ctx.ellipse(0,top+7,bw,16,0,Math.PI,0,true);ctx.closePath();ctx.fill();ctx.lineWidth=2;ctx.stroke()}
+    for(const a of[.35,.9,1.57,2.24,2.79]){const rx=Math.cos(a)*bw*.97,ry=top+19+Math.sin(a)*14;BB.rivet(rx,ry,3)}
+    // top face with bevel highlight
+    {const tg=ctx.createRadialGradient(-30,top-8,4,0,top,bw);tg.addColorStop(0,'#f0fff8');tg.addColorStop(.6,'#a6e0cf');tg.addColorStop(1,'#5fae99');ctx.fillStyle=tg;ctx.beginPath();ctx.ellipse(0,top,bw,16,0,0,7);ctx.fill();ctx.lineWidth=3.5;ctx.stroke();
+     ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,top+1,bw-5,12,0,Math.PI*1.05,Math.PI*1.95);ctx.stroke()}
+    // indicator light (flashes when hit)
+    {const lit=fl>0||ready&&Math.sin(t*6)>0,lx=bw*.62,ly=top+side+6;if(lit&&hq)BB.glow(lx,ly,34,'rgba(255,140,60,A)',.7+.3*fl);const lg=ctx.createRadialGradient(lx-2,ly-3,1,lx,ly,8);lg.addColorStop(0,lit?'#fff2d8':'#d08a6a');lg.addColorStop(.5,lit?'#ff7a3a':'#8a3b22');lg.addColorStop(1,lit?'#b8401a':'#4a1e10');ctx.fillStyle=lg;ctx.beginPath();ctx.ellipse(lx,ly,8,5.5,0,0,7);ctx.fill();ctx.strokeStyle=INKC;ctx.lineWidth=2;ctx.stroke()}
+    // chrome dome
+    ctx.save();ctx.translate(0,top-2);ctx.rotate(wob);const R=66,H=64;
+    const dome=()=>{ctx.beginPath();ctx.moveTo(-R,0);ctx.bezierCurveTo(-R,-H*.75,-R*.55,-H,0,-H);ctx.bezierCurveTo(R*.55,-H,R,-H*.75,R,0);ctx.ellipse(0,0,R,13,0,0,Math.PI);ctx.closePath()};
+    dome();{const g=ctx.createLinearGradient(-R,0,R,0);g.addColorStop(0,'#3c4644');g.addColorStop(.12,'#9aa6a4');g.addColorStop(.3,'#ffffff');g.addColorStop(.42,'#c3cdcb');g.addColorStop(.6,'#5d6866');g.addColorStop(.78,'#a9b4b2');g.addColorStop(.92,'#e9efed');g.addColorStop(1,'#606b69');ctx.fillStyle=g}ctx.fill();
+    ctx.save();dome();ctx.clip();
+    // environment reflections: warm floor band (lower), sky/window band (upper), dark horizon
+    {const v=ctx.createLinearGradient(0,-H,0,12);v.addColorStop(0,'rgba(220,240,255,.55)');v.addColorStop(.35,'rgba(255,255,255,0)');v.addColorStop(.62,'rgba(20,30,30,.35)');v.addColorStop(.7,'rgba(20,30,30,0)');v.addColorStop(.85,'rgba(200,140,80,.35)');v.addColorStop(1,'rgba(120,70,30,.45)');ctx.fillStyle=v;ctx.fillRect(-R,-H,2*R,H+14)}
+    if(hq){ctx.fillStyle='rgba(255,236,190,.25)';ctx.fillRect(R*.35,-H*.8,8,H*.6);ctx.fillRect(R*.5,-H*.7,4,H*.5)}// reflected window mullions
+    {const rl=ctx.createLinearGradient(R*.55,0,R,0);rl.addColorStop(0,'rgba(255,214,150,0)');rl.addColorStop(1,'rgba(255,214,150,.7)');ctx.fillStyle=rl;ctx.fillRect(R*.5,-H,R*.5,H+14)}// warm rim light
+    if(fl>0){ctx.fillStyle=`rgba(255,236,180,${.22*fl})`;ctx.fillRect(-R,-H,2*R,H+14)}
+    ctx.restore();
+    dome();ctx.strokeStyle=INKC;ctx.lineWidth=3.5;ctx.stroke();
+    // strong specular
+    {const sx=-R*.38,sy=-H*.62,sg=ctx.createRadialGradient(sx,sy,0,sx,sy,22);sg.addColorStop(0,'rgba(255,255,255,1)');sg.addColorStop(.35,'rgba(255,255,255,.75)');sg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.ellipse(sx,sy,24,13,-.6,0,7);ctx.fill();
+     ctx.fillStyle='rgba(255,255,255,.95)';ctx.beginPath();ctx.ellipse(sx-2,sy-1,9,4,-.6,0,7);ctx.fill();ctx.fillStyle='rgba(255,255,255,.6)';ctx.beginPath();ctx.ellipse(-R*.72,-H*.22,3,10,-.25,0,7);ctx.fill()}
+    // chrome lip ring
+    ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,R-3,11,0,.15,Math.PI-.15);ctx.stroke();
+    // plunger: chrome stem + glossy orange cap
+    const py=-H+press*10;{const sg=ctx.createLinearGradient(-7,0,7,0);sg.addColorStop(0,'#5d6866');sg.addColorStop(.4,'#ffffff');sg.addColorStop(1,'#4a5452');ctx.fillStyle=sg;ctx.beginPath();ctx.roundRect(-7,py-16,14,18,3);ctx.fill();ctx.strokeStyle=INKC;ctx.lineWidth=2.5;ctx.stroke()}
+    ctx.fillStyle='#8a3a12';ctx.beginPath();ctx.ellipse(0,py-17,21,9,0,0,7);ctx.fill();ctx.stroke();// cap underside / thickness
+    {const cg=ctx.createRadialGradient(-7,py-28,2,0,py-22,24);cg.addColorStop(0,'#ffe2c4');cg.addColorStop(.3,'#ffa060');cg.addColorStop(.75,'#e8641e');cg.addColorStop(1,'#9a3e10');ctx.fillStyle=cg;ctx.beginPath();ctx.ellipse(0,py-22,21,12,0,0,7);ctx.fill();ctx.lineWidth=3;ctx.stroke()}
+    ctx.fillStyle='rgba(255,255,255,.85)';ctx.beginPath();ctx.ellipse(-8,py-27,6,2.6,-.3,0,7);ctx.fill();
+    ctx.restore();ctx.restore()}
   ring(){if(this.scrambled()){BB.sfx.bleep();this.busy={t:BB.t,txt:'Swap the notes back to match the ticket first!'};return}if(this.prank&&this.prank.ph==='fixed')return;if(this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending))this.ringT=BB.t;if(this.state!=='order'||R.len(this.tray)<4||this.tray.some(x=>x.pending))return;BB.sfx.bell();
     if(this.tray.some(x=>x.k==='x')){this.tossStatic(this.tray.findIndex(x=>x.k==='x'));return}
     const want=this.O.seq,got=this.tray.map(x=>x.k);

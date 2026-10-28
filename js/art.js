@@ -5,12 +5,13 @@
 const P=(w,h,u,v)=>[-w/2+u*w,-h+v*h];const LQ=()=>BB.q===0;
 const INK=()=>COL.ink;
 // retro gear: bronze teeth + spokes + hub, ink outline
-const gear=(r,teeth,a,ry=1)=>{ctx.save();ctx.scale(1,ry);ctx.rotate(a);ctx.lineWidth=Math.max(2,r*.06);ctx.strokeStyle=INK();
-  ctx.beginPath();for(let i=0;i<teeth*2;i++){const a0=i*Math.PI/teeth,rr=i%2?r*.84:r;ctx.lineTo(Math.cos(a0-.12)*rr,Math.sin(a0-.12)*rr);ctx.lineTo(Math.cos(a0+.12)*rr,Math.sin(a0+.12)*rr)}ctx.closePath();
-  const g=ctx.createRadialGradient(-r*.3,-r*.3,r*.1,0,0,r);g.addColorStop(0,'#e8c27a');g.addColorStop(1,'#a8742e');ctx.fillStyle=g;ctx.fill();ctx.stroke();
-  ctx.fillStyle='#5f8f86';ctx.beginPath();ctx.arc(0,0,r*.62,0,7);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#c4924a';for(let i=0;i<4;i++){ctx.save();ctx.rotate(i*Math.PI/2);ctx.beginPath();ctx.roundRect(-r*.09,0,r*.18,r*.66,r*.05);ctx.fill();ctx.stroke();ctx.restore()}
-  ctx.fillStyle='#e0b468';ctx.beginPath();ctx.arc(0,0,r*.2,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#7a5222';ctx.beginPath();ctx.arc(0,0,r*.07,0,7);ctx.fill();ctx.restore()};
+// v12.5: crisp gear: even trapezoid teeth, true centre (no squash -> no wobble), uniform line weight, clean hub
+const gear=(r,teeth,a)=>{ctx.save();ctx.rotate(a);const lw=Math.max(2.5,r*.07);ctx.lineWidth=lw;ctx.lineJoin='round';ctx.strokeStyle=INK();
+  const ro=r,ri=r*.8,st=Math.PI*2/teeth;ctx.beginPath();for(let i=0;i<teeth;i++){const c=i*st;ctx.lineTo(Math.cos(c-st*.32)*ri,Math.sin(c-st*.32)*ri);ctx.lineTo(Math.cos(c-st*.18)*ro,Math.sin(c-st*.18)*ro);ctx.lineTo(Math.cos(c+st*.18)*ro,Math.sin(c+st*.18)*ro);ctx.lineTo(Math.cos(c+st*.32)*ri,Math.sin(c+st*.32)*ri)}ctx.closePath();
+  ctx.restore();ctx.save();const g=ctx.createRadialGradient(-r*.35,-r*.35,r*.1,0,0,r*1.05);g.addColorStop(0,'#f2d48e');g.addColorStop(.6,'#c9973f');g.addColorStop(1,'#8a5c22');ctx.fillStyle=g;ctx.fill();ctx.lineWidth=lw;ctx.strokeStyle=INK();ctx.stroke();ctx.restore();
+  ctx.save();ctx.rotate(a);ctx.lineWidth=lw;ctx.strokeStyle=INK();ctx.fillStyle='#5f8f86';ctx.beginPath();ctx.arc(0,0,r*.6,0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#d4a656';for(let i=0;i<4;i++){ctx.save();ctx.rotate(i*Math.PI/2);ctx.beginPath();ctx.rect(-r*.08,r*.18,r*.16,r*.42);ctx.fill();ctx.stroke();ctx.restore()}
+  ctx.restore();ctx.save();const hg=ctx.createRadialGradient(-r*.07,-r*.07,0,0,0,r*.24);hg.addColorStop(0,'#fff4d0');hg.addColorStop(1,'#b8863a');ctx.fillStyle=hg;ctx.lineWidth=lw;ctx.strokeStyle=INK();ctx.beginPath();ctx.arc(0,0,r*.22,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#4a3010';ctx.beginPath();ctx.arc(0,0,r*.07,0,7);ctx.fill();ctx.restore()};
 const twinkle=(x,y,s,ph)=>{const k=.5+.5*Math.sin(BB.t*3+ph);ctx.save();ctx.globalAlpha=.25+.35*k;BB.glow(x,y,s*2.2,'rgba(255,230,140,A)',.8);ctx.restore()};
 const PARTS=BB.PARTS={
   turtle:{// Andante: wind-up key turns, shell gear spins (slow and steady)
@@ -19,7 +20,7 @@ const PARTS=BB.PARTS={
       ctx.save();ctx.translate(ax,0);ctx.scale(Math.max(.12,Math.abs(sx)),1);const su=.15,sv=0,eu=.66,ev=.295;
       ctx.drawImage(im,su*im.width,0,(eu-su)*im.width,ev*im.height,(su-.41)*w,-h,(eu-su)*w,ev*h);
       if(sx<0){ctx.globalAlpha=.25;ctx.fillStyle='#3a2a10';ctx.fillRect((su-.41)*w,-h,(eu-su)*w,ev*h*.48)}ctx.restore();
-      const[gx,gy]=P(w,h,.272,.53);ctx.save();ctx.translate(gx,gy);gear(w*.128,12,t*.9*sp,1.05);ctx.restore()}},
+      const[gx,gy]=P(w,h,.272,.53);ctx.save();ctx.translate(gx,gy);gear(w*.128,12,t*.9*sp);ctx.restore()}},
   rocket:{// Allegro: rocket blast + billowing smoke under the nozzle
     pre:(w,h,im,o)=>{const t=BB.t,[nx,ny]=P(w,h,.5,.9),lq=LQ(),f=o.thrust??1;
       const n=lq?4:10;for(let i=0;i<n;i++){const life=((t*1.1+i/n)%1),sd=(i*137.5)%1,side=(i%2?1:-1);
@@ -31,10 +32,14 @@ const PARTS=BB.PARTS={
       ctx.fillStyle='#ffe066';ctx.beginPath();ctx.moveTo(nx-w*.07,ny);ctx.quadraticCurveTo(nx-w*.05,ny+L*.4,nx,ny+L*.62);ctx.quadraticCurveTo(nx+w*.05,ny+L*.4,nx+w*.07,ny);ctx.closePath();ctx.fill()},
     post:(w,h)=>{const[x,y]=P(w,h,.5,.04);twinkle(x,y,w*.12,0)}},
   sprocket:{// Sprocket: antenna with spinning ring + blinking bulb, turning dials, blinking belly light
-    pre:(w,h)=>{const t=BB.t,[x,y]=P(w,h,.55,.15),L=h*.11,lq=LQ();
-      ctx.strokeStyle=INK();ctx.lineWidth=Math.max(3,h*.009);ctx.fillStyle='#b9bfc4';ctx.beginPath();ctx.roundRect(x-h*.007,y-L,h*.014,L,3);ctx.fill();ctx.stroke();
-      const sx=Math.cos(t*(lq?1.5:3));ctx.fillStyle=sx>0?'#e8e2cd':'#c9c1a8';ctx.beginPath();ctx.ellipse(x,y-L*.55,h*.045*Math.max(.15,Math.abs(sx)),h*.014,0,0,7);ctx.fill();ctx.stroke();
-      const bl=.5+.5*Math.sin(t*2.4);BB.glow(x,y-L-6,h*.05,'rgba(255,90,70,A)',.25+.45*bl);ctx.fillStyle=`rgb(${200+55*bl|0},${70+40*bl|0},60)`;ctx.beginPath();ctx.arc(x,y-L-h*.012,h*.018,0,7);ctx.fill();ctx.stroke()},
+    pre:(w,h)=>{const t=BB.t,[x,y]=P(w,h,.55,.15),L=h*.11,lq=LQ(),lw=Math.max(3,h*.009);// v12.5: classic ball-tipped antenna; a level ring orbits it in 3D (fixed ellipse, spin shown by its studs)
+      const rx=h*.05,ry=h*.016,ry0=y-L*.5,sp=t*(lq?1.5:3);
+      const ringHalf=(front)=>{ctx.lineWidth=lw+3;ctx.strokeStyle=INK();ctx.beginPath();ctx.ellipse(x,ry0,rx,ry,0,front?0:Math.PI,front?Math.PI:Math.PI*2);ctx.stroke();ctx.lineWidth=lw;ctx.strokeStyle=front?'#eef3f1':'#9aa6a4';ctx.stroke();
+        for(let i=0;i<6;i++){const a=sp+i*Math.PI/3,sn=Math.sin(a);if(front!==(sn>0))continue;ctx.fillStyle=front?'#ffd75a':'#a8892e';ctx.beginPath();ctx.arc(x+Math.cos(a)*rx,ry0+sn*ry,lw*.7,0,7);ctx.fill()}};
+      ringHalf(false);
+      ctx.strokeStyle=INK();ctx.lineWidth=lw;ctx.fillStyle=BB.lg(0,1,['#eef3f1','#9aa6a4']);const mg=ctx.createLinearGradient(x-h*.008,0,x+h*.008,0);mg.addColorStop(0,'#7d8987');mg.addColorStop(.4,'#f4f8f7');mg.addColorStop(1,'#6b7775');ctx.fillStyle=mg;ctx.beginPath();ctx.roundRect(x-h*.008,y-L,h*.016,L,3);ctx.fill();ctx.stroke();
+      ringHalf(true);
+      const bl=.5+.5*Math.sin(t*2.4),br=h*.02,by=y-L-br*.7;BB.glow(x,by,h*.05,'rgba(255,90,70,A)',.25+.45*bl);const bg=ctx.createRadialGradient(x-br*.35,by-br*.35,br*.1,x,by,br);bg.addColorStop(0,'#ffe0d8');bg.addColorStop(.35,`rgb(${220+35*bl|0},${80+40*bl|0},64)`);bg.addColorStop(1,'#8a2018');ctx.fillStyle=bg;ctx.beginPath();ctx.arc(x,by,br,0,7);ctx.fill();ctx.stroke()},
     post:(w,h)=>{const t=BB.t;for(const[u,v,s]of[[.52,.555,1],[.51,.62,-1]]){const[x,y]=P(w,h,u,v);ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(t*1.3*s)*1.2);ctx.strokeStyle=INK();ctx.lineWidth=Math.max(2,h*.006);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-w*.022);ctx.stroke();ctx.restore()}
       const[bx,by]=P(w,h,.57,.865),k=.5+.5*Math.sin(t*3.1);ctx.save();ctx.globalAlpha=.3+.5*k;BB.glow(bx,by,w*.06,'rgba(255,190,60,A)',.9);ctx.restore();
       const[rx,ry]=P(w,h,.445,.645);ctx.save();ctx.globalAlpha=.6*(Math.sin(t*4.2)>.3?1:0);BB.glow(rx,ry,w*.03,'rgba(255,80,60,A)',.9);ctx.restore()}},
@@ -65,20 +70,28 @@ BB.bounce=(ph,amt=.06)=>{const k=Math.exp(-ph*7);return amt*k*Math.cos(ph*9)};
 // Sorter Bot with a hard hat and pickaxe. swing: 0 = raised, 1 = striking
 BB.pickbot=(x,base,h,swing,o={})=>{const sq=o.squash||0;
   ctx.save();ctx.translate(x,base);
-  // pickaxe behind the arm
+  // v12.5 pickaxe: chrome steel head, mint enamel handle with chrome ferrules + rivets (retro bot style)
   const ang=BB.lerp(-1.9,.35,swing);
-  ctx.save();ctx.translate(h*.22,-h*.62);ctx.rotate(ang);
-  ctx.fillStyle='#8c5a32';ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(-8,-h*.42,16,h*.46,6);ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.moveTo(-h*.2,-h*.36);ctx.quadraticCurveTo(0,-h*.5,h*.22,-h*.34);ctx.lineTo(h*.2,-h*.3);ctx.quadraticCurveTo(0,-h*.43,-h*.18,-h*.31);ctx.closePath();
-  ctx.fillStyle='#b4bec8';ctx.fill();ctx.stroke();ctx.restore();
+  ctx.save();ctx.translate(h*.22,-h*.62);ctx.rotate(ang);ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.lineJoin='round';
+  const hg=ctx.createLinearGradient(-9,0,9,0);hg.addColorStop(0,'#5fae99');hg.addColorStop(.35,'#cff3e6');hg.addColorStop(1,'#3f8574');ctx.fillStyle=hg;ctx.beginPath();ctx.roundRect(-9,-h*.4,18,h*.44,8);ctx.fill();ctx.stroke();
+  const fg=ctx.createLinearGradient(-11,0,11,0);fg.addColorStop(0,'#6c7775');fg.addColorStop(.4,'#f6f9f8');fg.addColorStop(1,'#5d6866');for(const fy of[-h*.03,-h*.37]){ctx.fillStyle=fg;ctx.beginPath();ctx.roundRect(-11,fy-6,22,12,4);ctx.fill();ctx.stroke()}
+  ctx.fillStyle='#fdf8ea';ctx.beginPath();ctx.roundRect(-6,-h*.27,12,h*.16,5);ctx.fill();ctx.lineWidth=2;ctx.stroke();ctx.lineWidth=4;// cream grip
+  ctx.beginPath();ctx.moveTo(-h*.21,-h*.35);ctx.quadraticCurveTo(0,-h*.52,h*.23,-h*.33);ctx.lineTo(h*.2,-h*.3);ctx.quadraticCurveTo(0,-h*.43,-h*.18,-h*.31);ctx.closePath();
+  const sg=ctx.createLinearGradient(0,-h*.5,0,-h*.3);sg.addColorStop(0,'#ffffff');sg.addColorStop(.45,'#aeb9b7');sg.addColorStop(1,'#56615f');ctx.fillStyle=sg;ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.ellipse(-h*.05,-h*.44,h*.06,2.5,-.15,0,7);ctx.fill();
+  ctx.fillStyle=fg;ctx.beginPath();ctx.roundRect(-14,-h*.45,28,h*.1,6);ctx.fill();ctx.stroke();BB.rivet(0,-h*.4,4);
+  ctx.restore();
   ctx.restore();
   BB.sprite('sorter',x,base,h,{squash:sq});
-  // hard hat + lamp
-  const hy=base-h*(1-sq)*.985;ctx.save();ctx.translate(x,hy);
-  BB.glow(0,-4,70,'rgba(255,230,120,A)',.35);
-  ctx.fillStyle='#fac83c';ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(0,0,h*.13,h*.07,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.roundRect(-h*.17,-4,h*.34,10,5);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#fffbe0';ctx.beginPath();ctx.arc(0,-h*.035,7,0,7);ctx.fill();ctx.stroke();ctx.restore()};
+  // v12.5 hard hat: mint enamel dome, cream brim, chrome ridge + rivets, chrome-bezel headlamp with beam
+  const hy=base-h*(1-sq)*.985;ctx.save();ctx.translate(x,hy);const hr=h*.13;
+  BB.glow(hr*1.6,-hr*.25,90,'rgba(255,240,170,A)',.3);
+  ctx.strokeStyle=COL.ink;ctx.lineWidth=4;const dg=ctx.createRadialGradient(-hr*.4,-hr*.6,2,0,0,hr*1.2);dg.addColorStop(0,'#e8fbf3');dg.addColorStop(.5,'#9fdcc8');dg.addColorStop(1,'#4c9a85');ctx.fillStyle=dg;ctx.beginPath();ctx.ellipse(0,0,hr,h*.075,0,Math.PI,0);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle=BB.lg(-h*.075,0,['#ffffff','#9aa6a4']);ctx.beginPath();ctx.roundRect(-hr*.12,-h*.075,hr*.24,h*.072,4);ctx.fill();ctx.lineWidth=2.5;ctx.stroke();ctx.lineWidth=4;
+  ctx.fillStyle=BB.lg(-5,7,['#fffbe9','#d8ccaa']);ctx.beginPath();ctx.roundRect(-h*.175,-5,h*.35,12,6);ctx.fill();ctx.stroke();
+  for(const rx of[-hr*.6,hr*.6])BB.rivet(rx,-h*.025,3);
+  ctx.fillStyle=BB.lg(-h*.06,-h*.01,['#ffffff','#6c7775']);ctx.beginPath();ctx.arc(hr*.55,-h*.035,10,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fffbe0';ctx.beginPath();ctx.arc(hr*.55,-h*.035,6,0,7);ctx.fill();
+  ctx.restore()};
 // Static Jr.: the tiny PLEASE STAND BY TV with stick legs and red sneakers.
 BB.staticJr=(x,base,h,o={})=>{const im=IMG.tinytv;if(!im)return;const t=BB.t,w=im.width*h/im.height,legH=h*.42,run=o.run||0;
   ctx.save();ctx.translate(x,base);

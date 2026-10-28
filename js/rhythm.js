@@ -54,11 +54,11 @@ R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'
 // a note object standing in a w x h box (bottom of box = the surface it rests on)
 R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
   // label = cream name tag on the surface UNDER the note (never on the stem); the note shrinks to make room
-  const fs=o.label?Math.max(15,Math.min(22,h*.17)):0,tagH=o.label?fs+10:0;if(o.label)h-=tagH+4;
+  const fs=o.label?Math.max(14,Math.min(21,h*.16)):0,tagH=o.label?fs+10:0,pad=o.label?Math.max(6,h*.07):0;if(o.label)h-=tagH+pad*2;// v12.5: even gap note|tag|box bottom
   if(o.shadow!==false){const sw=Math.min(w*.46,R.noteSize(k,w,h)*(k==='s'?4.6:k==='e'?3.4:1.8));const gr=ctx.createRadialGradient(x+w/2,y+h,0,x+w/2,y+h,sw);gr.addColorStop(0,'rgba(0,0,0,.42)');gr.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=gr;ctx.save();ctx.translate(x+w/2,y+h);ctx.scale(1,.22);ctx.translate(-x-w/2,-y-h);ctx.beginPath();ctx.arc(x+w/2,y+h,sw,0,7);ctx.fill();ctx.restore()}
   if(o.glyph!==false){const sp=R.note3d(k,w,h,o);ctx.drawImage(sp.c,x-sp.PAD/sp.sc,y-sp.PAD/sp.sc,sp.c.width/sp.sc,sp.c.height/sp.sc)}
-  if(o.label){const tw=Math.min(w-4,BB.measure(R.NAME[k],fs)+18),ty=y+h+4;BB.rrect(x+w/2-tw/2+2,ty+3,tw,tagH,7,'rgba(0,0,0,.3)');BB.rrect(x+w/2-tw/2,ty,tw,tagH,7,BB.lg(ty,ty+tagH,['#fbf6e6','#ddd3b8']),'rgba(25,25,31,.8)',2);BB.text(R.NAME[k],x+w/2,ty+tagH/2+1,fs,COL.ink,{maxW:tw-8})}
+  if(o.label){const tw=Math.min(w-8,BB.measure(R.NAME[k],fs)+18),ty=y+h+pad;BB.rrect(x+w/2-tw/2+2,ty+3,tw,tagH,7,'rgba(0,0,0,.3)');BB.rrect(x+w/2-tw/2,ty,tw,tagH,7,BB.lg(ty,ty+tagH,['#fbf6e6','#ddd3b8']),'rgba(25,25,31,.8)',2);BB.text(R.NAME[k],x+w/2,ty+tagH/2+1,fs,COL.ink,{maxW:tw-8})}
   if(o.beats){BB.text(String(R.BEATS[k]),x+w-18,y+h-18,22,'#fff',{stroke:4})}
   ctx.restore()};
 // segmented beat pills: one cell per beat; ti-ti = 2 segments, tika-tika = 4, half/whole stretch over cells
