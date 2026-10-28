@@ -69,6 +69,9 @@ R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'
   const sh=document.createElement('canvas');sh.width=cw;sh.height=ch;{const hg=sh.getContext('2d');hg.shadowColor='rgba(0,0,0,.5)';hg.shadowBlur=Math.max(4,s*.35);hg.shadowOffsetX=cw*4;hg.drawImage(m,-cw*4,0)}
   return n3c[key]={c:out,sh,sc,PAD,s:s/sc,gy:gy/sc}};
 // a note object standing in a w x h box (bottom of box = the surface it rests on)
+// v12.7: one syllable per printed note, centred under that note's head (matches the glyph spacing in R.glyph / R.note3d)
+R.syl=(k,x,w,h)=>{const c=x+w/2;if(k==='e'||k==='s'){const n=k==='e'?2:4,s=R.noteSize(k,w,h),gap=k==='e'?s*2.9:s*2.2,x0=c-gap*(n-1)/2;return(k==='e'?['ti','ti']:['ti','ka','ti','ka']).map((sy,i)=>[x0+i*gap+s*.1,sy])}
+  return[[c,{w:'ta-a-a-a',h:'ta-a',q:'ta',r:'rest'}[k]||R.SAY[k]]]};
 R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
   // label = cream name tag on the surface UNDER the note (never on the stem); the note shrinks to make room
   const fs=o.label?Math.max(14,Math.min(21,h*.16)):0,tagH=o.label?fs+10:0,pad=o.label?Math.max(6,h*.07):0;if(o.label)h-=tagH+pad*2;// v12.6: even gap note|tag|box bottom
@@ -115,7 +118,7 @@ Object.assign(BB.sfx,{
 class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60/this.bpm;this.snd=R.sounds(seq);this.n=this.snd.length;this.L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0));// beats in the pattern (4, 6 or 8)
     this.t0=ac.currentTime+.35;this.next=0;this.lit=new Array(this.n).fill(0);this.marks=new Array(this.n).fill(0);this.got=new Array(this.n).fill(0);this.pend=[];this.done=false;this.onDone=o.onDone;this.voice=o.voice||(()=>{});this.cnt=o.countIn!==false;
     this.base=this.cnt?4:0;// optional count-in measure
-    BB.mic.take();}
+    BB.mic.take();BB.groove&&BB.groove.sync(this.t0,this.spb)}
   beatNow(){return(ac.currentTime-this.t0)/this.spb}
   phase(){const b=this.beatNow()-this.base;return b<0?'count':b<this.L?'listen':b<this.L+4?'ready':b<2*this.L+4?'clap':'end'}// v12.2: 4-beat count-in between listen and clap
   update(dt){{const ph=this.phase();BB.listening=ph==='clap'?2:ph==='ready'?1:0}const ahead=ac.currentTime+.12,spb=this.spb,T0=this.t0+this.base*spb;

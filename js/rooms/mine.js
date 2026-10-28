@@ -99,7 +99,7 @@ function drawCart(x,base,n){// painted cart, sized to sit inside the elevator ca
 // ---- the room ----
 class MineRoom{
   constructor(o={}){this.o=o}
-  enter(){Object.assign(this,{cam:{x:960,y:540,z:1},count:0,binCount:0,lit:[0,0,0,0,0],pipeGlow:0,elevY:GY,botX:1960,botOnElev:true,
+  enter(){BB.groove.start(96);Object.assign(this,{cam:{x:960,y:540,z:1},count:0,binCount:0,lit:[0,0,0,0,0],pipeGlow:0,elevY:GY,botX:1960,botOnElev:true,
     jr:{x:1650,y:GY,vis:true,mode:'munch'},rockI:0,state:'intro',st:0,beat:null,flying:[],pipeNotes:[],stage:0,wob:0,shk:0,
     hatch:0,btnPress:0,sprCheer:0,said:{},prank:null,cardT:-9,lastOverride:-9,doneT:0,marks:[0,0,0,0],dust:[]});this.introT0=BB.t;
     for(let i=0;i<40;i++)this.dust.push({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:5+Math.random()*12});
@@ -165,7 +165,7 @@ class MineRoom{
     const ds=dustSprite();for(const d of this.caveDust){const dt=BB.t-d.t;if(dt<0)continue;const k2=dt/1.6,rr=d.r*(.5+k2*1.2);ctx.globalAlpha=1-k2;ctx.drawImage(ds,d.x-rr,d.y-rr*1.3,rr*2,rr*2)}ctx.globalAlpha=1;
     ctx.restore()}
   startBeat(){const R=this.R,spb=60/R.bpm,t0=BB.ac.currentTime+.25;
-    this.beat={spb,t0,next:0,evalM:1,hits:{},sim:0};// measure 0 = count-in, scoring starts measure 1
+    this.beat={spb,t0,next:0,evalM:1,hits:{},sim:0};BB.groove.sync(t0,spb);// v12.7 groove follows andante/allegro// measure 0 = count-in, scoring starts measure 1
     if(!this.said.ready){this.said.ready=1;BB.say('ready')}}
   beatNow(){const b=this.beat;return b?(BB.ac.currentTime-b.t0)/b.spb:0}
   scheduleTicks(){const b=this.beat,ahead=BB.ac.currentTime+.12;
@@ -269,7 +269,7 @@ class MineRoom{
     this.elevY=lerp(rail(4),GY,ease.inOut(clamp((t-E0)/4,0,1)));
     c.z=lerp(1,.62,ease.inOut(clamp(t/1.5,0,1)));if(t>4.8)c.z=lerp(.62,1,ease.inOut(clamp((t-4.8)/1.5,0,1)));
     c.y=t<5.2?this.elevY-60:lerp(GY-60,540,ease.inOut(clamp((t-5.2)/1.2,0,1)));c.x=2400;
-    if(t>5.6&&!this.endSaid){this.endSaid=1;BB.say('complete');BB.sfx.fanfare();this.sprCheer=1;BB.burst(W/2,300,60,{cols:['#ffe066','#6ee678','#fff','#e65046','#5ac8fa'],kind:'star',size:16,speed:900,g:600,life:2})}
+    if(t>5.6&&!this.endSaid){this.endSaid=1;BB.say('complete');BB.celebrate({next:'NOTE SMASHER'});this.sprCheer=1;BB.burst(W/2,300,60,{cols:['#ffe066','#6ee678','#fff','#e65046','#5ac8fa'],kind:'star',size:16,speed:900,g:600,life:2})}
     if(t>6.6&&!this.saved){this.saved=1;if(!BB.save.done.includes('mine')){BB.save.done.push('mine');localStorage.setItem('bb4',JSON.stringify(BB.save))}}}
   // ================= drawing =================
   draw(){const c=this.cam,[sx,sy]=BB.shakeXY;ctx.save();ctx.translate(W/2+sx,H/2+sy);ctx.scale(c.z,c.z);ctx.translate(-c.x,-c.y);
@@ -356,12 +356,12 @@ class MineRoom{
     // conveyor
     // v12.6 conveyor: riveted mint/cream enamel frame, chrome trim + rollers, marquee bulbs, rubber belt
     BB.contactShadow(710,GY,720,.35);
-    for(let x=80;x<1380;x+=140){const lg=ctx.createLinearGradient(x-8,0,x+8,0);lg.addColorStop(0,'#5d6866');lg.addColorStop(.4,'#eef3f1');lg.addColorStop(1,'#4a5452');ctx.fillStyle=lg;ctx.fillRect(x-7,840,14,GY-840);ctx.strokeStyle=COL.ink;ctx.lineWidth=2.5;ctx.strokeRect(x-7,840,14,GY-840)}// chrome legs
-    BB.bevel(40,770,1340,70,24,['#e8faf3','#a6e0cf','#5fae99']);
-    BB.rrect(56,778,1308,22,11,BB.lg(778,800,['#3a332e','#1d1916']),'#19191f',2);ctx.save();ctx.beginPath();ctx.roundRect(56,778,1308,22,11);ctx.clip();ctx.fillStyle='#4e463f';for(let x=0;x<1340;x+=56){ctx.fillRect(40+((x+t*80)%1340),780,20,18)}ctx.restore();
-    ctx.fillStyle=BB.lg(806,812,['#f6f9f8','#8d9997']);ctx.fillRect(50,806,1320,6);
-    for(let x=80;x<1380;x+=140){ctx.save();ctx.translate(x,823);ctx.rotate(t*2.4);ctx.fillStyle=BB.lg(-11,11,['#ffffff','#9aa6a4','#4f5a58']);ctx.strokeStyle=COL.ink;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,0,11,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(-8,0);ctx.lineTo(8,0);ctx.stroke();ctx.restore()}
-    for(let i=0;i<19;i++){const bx=80+i*70+35,on=(i+Math.floor(t*5))%3===0;ctx.fillStyle=on?'#fff6c8':'#8a6a3a';if(on&&BB.q)BB.glow(bx,830,16,'rgba(255,214,90,A)',.6);ctx.beginPath();ctx.arc(bx,830,4.5,0,7);ctx.fill()}
+    // v12.7: 3D-rendered conveyor (cut-out render), belt cleats / roller spokes / marquee bulbs animated on top in code
+    {const im=BB.V2.conveyor;if(im){const sx=1340/im.width,sy=sx*.8,X0=40,Y0=767,P=(px,py)=>[X0+px*sx,Y0+py*sy];
+      ctx.save();ctx.beginPath();ctx.rect(0,0,1500,GY+2);ctx.clip();ctx.drawImage(im,X0,Y0,im.width*sx,im.height*sy);ctx.restore();
+      const [bx0,by0]=P(40,5),[bx1,by1]=P(1165,27);ctx.save();ctx.beginPath();ctx.rect(bx0,by0,bx1-bx0,by1-by0);ctx.clip();ctx.fillStyle='rgba(120,110,100,.35)';for(let x=-60;x<bx1-bx0+60;x+=46){const xx=bx0+((x+t*80)%(bx1-bx0+46));ctx.fillRect(xx,by0,6,by1-by0)}ctx.restore();
+      for(const px of[42,1157]){const [rx,ry]=P(px,75);ctx.save();ctx.translate(rx,ry);ctx.scale(1,.8);ctx.rotate(t*2.4);ctx.strokeStyle='rgba(40,45,45,.7)';ctx.lineWidth=3;for(let k=0;k<3;k++){ctx.rotate(Math.PI/3);ctx.beginPath();ctx.moveTo(-14,0);ctx.lineTo(14,0);ctx.stroke()}ctx.restore()}
+      for(let k=0;k<11;k++){const [lx,ly]=P(137+92*k,70),on=(k+Math.floor(t*5))%3===0;if(on){if(BB.q)BB.glow(lx,ly,26,'rgba(255,214,90,A)',.7);ctx.fillStyle='rgba(255,250,215,.9)';ctx.beginPath();ctx.arc(lx,ly,8,0,7);ctx.fill()}else{ctx.fillStyle='rgba(60,40,10,.35)';ctx.beginPath();ctx.arc(lx,ly,9,0,7);ctx.fill()}}}}
     // wall gears + blinking lights
     // WAREHOUSE banner
     BB.plaque(1305,588,320,76,'RHYTHM WAREHOUSE',28,'#28403c',{font:'Rammetto One',r:18});
@@ -377,8 +377,13 @@ class MineRoom{
     const mx=SMASH_X;BB.prop('smash',mx,GY+6,420,{shadowA:.4});
     {const py=GY-498;BB.plaque(mx,py+31,230,66,'SMASH-O-MATIC',24,'#b5482a',{font:'Rammetto One',r:16,cols:['#fdf8ea','#ecdcb8','#caa77a']})}
     // elevator call button
-    const pressed=this.btnPress&&BB.t-this.btnPress<.4;BB.contactShadow(BTN_X,GY,70,.4);{const g=ctx.createLinearGradient(BTN_X-26,0,BTN_X+26,0);g.addColorStop(0,'#5c6866');g.addColorStop(.3,'#f1f5f4');g.addColorStop(.55,'#a6b2b0');g.addColorStop(1,'#3f4a48');BB.rrect(BTN_X-46,GY-14,92,14,6,BB.lg(GY-14,GY,['#cfeee4','#7fb0a4']),COL.ink,3);BB.rrect(BTN_X-26,GY-140,52,128,8,g,COL.ink,4);for(const ry of[GY-120,GY-40])for(const rx of[BTN_X-15,BTN_X+15])BB.rivet(rx,ry,3.5);BB.bevel(BTN_X-44,GY-152,88,24,10,['#e8faf3','#a6e0cf','#5fae99']);}// v12.6 mint/cream enamel + chrome pedestal
-    const pz=pressed?8:0;ctx.fillStyle=BB.lg(GY-170+pz,GY-140,['#ff8a7a','#e65046','#a82e26']);ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(BTN_X,GY-156+pz,40,16,0,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.ellipse(BTN_X-10,GY-160+pz,14,5,0,0,7);ctx.fill();
+    // v12.7: 3D-rendered call button (cut-out render); the red cap is re-drawn from the render and sinks when pressed
+    {const pressed=this.btnPress&&BB.t-this.btnPress<.4,im=BB.V2.redbtn;BB.contactShadow(BTN_X,GY,70,.45);
+     if(im){const h=215,s2=h/im.height,w=im.width*s2,x0=BTN_X-w/2,y0=GY-h,capH=im.height*.17,pz=pressed?6:0;
+       ctx.drawImage(im,0,capH,im.width,im.height-capH,x0,y0+capH*s2,w,(im.height-capH)*s2);
+       ctx.drawImage(im,0,0,im.width,capH,x0,y0+pz,w,capH*s2);
+       if(pressed||(this.btnGlow&&BB.t<this.btnGlow))BB.glow(BTN_X,y0+capH*s2*.5+pz,60,'rgba(255,80,60,A)',.5)}}
+
     // Sprocket in the warehouse
     const talk=BB.isTalking('sprocket'),ch=this.sprCheer;
     BB.sprite('sprocket',SPR_X,GY,400,{squash:(talk?Math.sin(t*16)*.02:0)+(ch>0?Math.abs(Math.sin(t*8))*.04:0),rot:ch<0?Math.sin(t*20)*.03:0});}
@@ -484,7 +489,7 @@ class MineRoom{
     BB.text('ROOM 1 COMPLETE!',0,-160,72,'#fff',{font:'Rammetto One',stroke:9});
     for(let i=0;i<8;i++)BB.wholeNote(-280+i*80,-60,30,{fill:'#6ee678',glow:.4,rot:Math.sin(BB.t*3+i)*.2});
     BB.text('8 whole notes are back in the bin!',0,20,40,COL.yellow,{stroke:5});
-    if(this.chip&&BB.V2.chip){const im=BB.V2.chip,h=110,w=im.width*h/im.height;BB.glow(440,40,90,'rgba(255,220,120,A)',.4);ctx.drawImage(im,440-w/2,30-h/2,w,h);BB.text('+ BEAT CHIP piece',440,110,24,COL.yellow,{stroke:4})}
+    if(this.chip&&BB.V2.chip){const im=BB.V2.chip,h=110,w=im.width*h/im.height;BB.glow(455,140,80,'rgba(255,220,120,A)',.4);ctx.drawImage(im,455-w/2,138-h/2,w,h);BB.text('+ BEAT CHIP piece',440,212,22,COL.yellow,{stroke:4})}
     BB.text('Next: the NOTE SMASHER!',0,80,36,'#fff',{stroke:5});ctx.restore();
     if(t>6){BB.button(W/2-520,620,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('mine')});
       BB.button(W/2+40,620,480,130,'NEXT ROOM',{size:50,id:'nextroom',onClick:()=>{if(!BB.save.done.includes('mine')){BB.save.done.push('mine');localStorage.setItem('bb4',JSON.stringify(BB.save))}BB.go(new BB.SmasherRoom())}});

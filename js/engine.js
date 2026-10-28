@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v12.6';
+BB.VERSION='v12.7';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -50,12 +50,35 @@ BB.button=(x,y,w,h,label,o={})=>{
   else if(st==='red'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#f07a6e','#d9483f','#a8302a']),'#6b1d18',6);sheen();}
   else if(st==='teal'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#fbf6e6','#e8e2cd','#cbc2a8']),'#8a806b',5);BB.well(x+12,y+12,w-24,h-24,R-10);}
   const fs=o.size||40;
-  BB.text(label,cx+(o.labelDx??(o.icon?fs*.55:0)),cy+(o.sub?-fs*.3:2),fs,st==='cream'?'#28403c':'#fff',{font:o.font||'Lilita One',stroke:st==='cream'?0:5});
-  if(o.sub)BB.text(o.sub,cx,cy+fs*.6,fs*.5,st==='cream'?'#28403c':COL.yellow,{stroke:st==='cream'?0:4});
+  BB.btnText(label,cx+(o.labelDx??(o.icon?fs*.55:0)),cy+(o.sub?-fs*.3:2),fs,st,o.font||'Lilita One');
+  if(o.sub)BB.btnText(o.sub,cx,cy+fs*.6,fs*.5,st,'Lilita One',1);
   if(o.icon)o.icon(cx-BB.measure(label,fs)/2-fs*.2,cy);
   ctx.restore();
   if(!o.disabled)hits.push({x,y,w,h,id:o.id||label,cb:o.onClick});
 };
+// v12.7: lettering is part of the button - tinted to the button's enamel, with a dark engraved lip below and a lit edge above
+const BTN_INK={green:{f:['#ffffff','#e4f8e6','#b9e6c2'],e:'#1d5a2c',lo:'rgba(10,50,20,.55)',hi:'rgba(255,255,255,.55)'},
+  red:{f:['#ffffff','#fde6e2','#f2bdb5'],e:'#6b1d18',lo:'rgba(80,15,10,.55)',hi:'rgba(255,255,255,.5)'},
+  cream:{f:['#3b5a55','#28403c','#1a2c29'],e:null,lo:'rgba(255,255,255,.75)',hi:null},teal:{f:['#3b5a55','#28403c','#1a2c29'],e:null,lo:'rgba(255,255,255,.75)',hi:null}};
+BB.btnText=(t,x,y,s,st,font='Lilita One',sub)=>{let k=BTN_INK[st]||BTN_INK.cream;ctx.font=`${s}px '${font}'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+  if(sub&&k.e){k={...k,f:['#fff6c4','#ffe066','#e8b830']}}
+  if(k.e){ctx.lineWidth=Math.max(3,s*.12);ctx.strokeStyle=k.e;ctx.strokeText(t,x,y+s*.05)}
+  ctx.fillStyle=k.lo;ctx.fillText(t,x,y+Math.max(1.5,s*.05));if(k.hi){ctx.fillStyle=k.hi;ctx.fillText(t,x,y-Math.max(1,s*.03))}
+  ctx.fillStyle=BB.lg(y-s*.45,y+s*.45,k.f);ctx.fillText(t,x,y)};
+// v12.7: logo-style rendered lettering (same build as the Beat Bots logo: chunky letters, copper rim, deep extrusion, glossy enamel face). Cached.
+const LT={};BB.logoText=(t,cx,cy,s,o={})=>{const key=t+s+(o.face||'')+(o.maxW||0);let c=LT[key];
+  if(!c){const f=`${s}px '${o.font||'Rammetto One'}'`,m=document.createElement('canvas').getContext('2d');m.font=f;let tw=m.measureText(t).width;const sc=o.maxW&&tw+s*.4>o.maxW?o.maxW/(tw+s*.4):1;
+    c=document.createElement('canvas');c.width=Math.ceil((tw+s*.5)*sc);c.height=Math.ceil(s*1.75*sc);const g=c.getContext('2d');g.scale(sc,sc);g.font=f;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
+    const X=(tw+s*.5)/2,Y=s*.8,face=o.face||['#fff6b0','#ffe066','#f2b81c','#c98a0c'],rim=o.rim||['#e79a5a','#b5642a','#7a3d12'],D=Math.max(4,s*.13);
+    g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=s*.2;g.shadowOffsetY=s*.12;g.fillStyle='#000';g.lineWidth=s*.2;g.strokeText(t,X,Y+D);g.shadowColor='transparent';
+    for(let i=D;i>0;i-=1){g.strokeStyle=i>D*.6?'#4a230a':'#6b3410';g.lineWidth=s*.2;g.strokeText(t,X,Y+i)}// extrusion
+    const rg=g.createLinearGradient(0,Y-s*.6,0,Y+s*.6);rim.forEach((cc,i)=>rg.addColorStop(i/(rim.length-1),cc));g.strokeStyle=rg;g.lineWidth=s*.2;g.strokeText(t,X,Y);// copper rim
+    g.strokeStyle='rgba(255,220,180,.6)';g.lineWidth=s*.04;g.strokeText(t,X,Y-s*.03);
+    const fg=g.createLinearGradient(0,Y-s*.45,0,Y+s*.45);face.forEach((cc,i)=>fg.addColorStop(i/(face.length-1),cc));g.fillStyle=fg;g.fillText(t,X,Y);// enamel face
+    g.save();g.globalCompositeOperation='source-atop';g.fillStyle='rgba(120,70,0,.35)';g.fillText(t,X+s*.03,Y+s*.05);g.fillStyle=fg;g.fillText(t,X-s*.01,Y-s*.01);// inner bevel shade
+    const gl=g.createLinearGradient(0,Y-s*.45,0,Y);gl.addColorStop(0,'rgba(255,255,255,.75)');gl.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gl;g.fillRect(0,Y-s*.5,c.width/sc,s*.32);g.restore();
+    c.sc=sc;LT[key]=c}
+  ctx.drawImage(c,cx-c.width/2,cy-s*.8*c.sc);return c.width};
 // Clicks run right inside the tap event (a real user gesture) so the mic prompt and audio resume are allowed.
 let lastHits=[];
 function clickAt(c){for(let i=lastHits.length-1;i>=0;i--){const b=lastHits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();return true}}return false}
@@ -82,11 +105,13 @@ BB.bevel=(x,y,w,h,r,cols=['#fdf8ea','#e9e2cc','#c9bfa3'])=>{ctx.save();ctx.shado
   ctx.strokeStyle='rgba(60,45,20,.28)';ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(x-2,y-2,w+2,h+2,Math.min(r,h/2,w/2));ctx.stroke();
   const g=ctx.createRadialGradient(x+w*.3,y,0,x+w*.3,y,Math.max(w,h));g.addColorStop(0,'rgba(255,240,200,.18)');g.addColorStop(1,'rgba(255,240,200,0)');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);// scene lamp
   ctx.restore()};
-BB.rivet=(x,y,s=5)=>{ctx.fillStyle=BB.lg(y-s,y+s,['#ffffff','#a9b3b1','#5d6866']);ctx.beginPath();ctx.arc(x,y,s,0,7);ctx.fill();ctx.strokeStyle='rgba(20,30,30,.6)';ctx.lineWidth=1.5;ctx.stroke()};
+BB.rivet=(x,y,s=5)=>{ctx.fillStyle='rgba(40,30,15,.35)';ctx.beginPath();ctx.arc(x+s*.25,y+s*.4,s*1.05,0,7);ctx.fill();ctx.fillStyle=BB.lg(y-s,y+s,['#ffffff','#a9b3b1','#5d6866']);ctx.beginPath();ctx.arc(x,y,s,0,7);ctx.fill();ctx.strokeStyle='rgba(20,30,30,.6)';ctx.lineWidth=1.5;ctx.stroke()};
 BB.plaque=(cx,cy,w,h,txt,size,col='#28403c',o={})=>{const x=cx-w/2,y=cy-h/2,r=o.r??Math.min(12,h/3);BB.bevel(x,y,w,h,r,o.cols);if(w>90&&!o.noRivet){BB.rivet(x+9,cy,3.2);BB.rivet(x+w-9,cy,3.2)}
   if(txt)BB.text(txt,cx,cy+1,size,col,{maxW:w-(w>90?30:12),stroke:o.stroke,font:o.font})};
+// v12.7: rivets sit on the flat run of the cream rim just past each rounded corner - never on the border/curve, never on the well
+BB.panelRivets=(x,y,w,h,r)=>{const ix=Math.max(14,r*.95),iy=8.5,s=3.4;for(const [rx,ry] of[[x+ix,y+iy],[x+w-ix,y+iy],[x+ix,y+h-iy],[x+w-ix,y+h-iy]])BB.rivet(rx,ry,s)};
 BB.panel=(x,y,w,h,r=30)=>{BB.bevel(x,y,w,h,r);
-  for(const [rx,ry] of[[x+9,y+9],[x+w-9,y+9],[x+9,y+h-9],[x+w-9,y+h-9]])BB.rivet(rx,ry,4);
+  BB.panelRivets(x,y,w,h,r);
   BB.well(x+18,y+16,w-36,h-32,r-8)};
 BB.well=(x,y,w,h,r)=>{BB.rrect(x,y,w,h,r,BB.lg(y,y+h,['#0e1f1d','#173230','#11302c']),COL.teal2,5);
   ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));ctx.clip();ctx.fillStyle=BB.lg(y,y+22,['rgba(0,0,0,.35)','rgba(0,0,0,0)']);ctx.fillRect(x,y,w,22);
@@ -108,6 +133,7 @@ const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC({latency
 const master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);BB.outBus=master;
 const sfxBus=ac.createGain();sfxBus.connect(master);const voBus=ac.createGain();voBus.gain.value=1.1;voBus.connect(master);
 BB.unlockAudio=()=>{if(ac.state!=='running'&&!BB.paused)ac.resume().catch(()=>{})};
+const liftBus=ac.createGain();liftBus.connect(sfxBus);setInterval(()=>{const talk=BB.talking&&BB.t<BB.talking.until+.15;liftBus.gain.setTargetAtTime(talk?.18:1,ac.currentTime,.08)},60);
 const noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);{const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
 function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
 function osc(type,f,t,dur,peak,f2,dest=sfxBus){BB.selfSound(t,dur,(type==='sine'||type==='triangle')&&!f2?[f]:null);const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);env(g,t,.004,peak,dur);o.connect(g).connect(dest);o.start(t);o.stop(t+dur+.05)}
@@ -133,8 +159,44 @@ BB.sfx={
   wobble:(t=now())=>{osc('sine',300,t,.3,.15,180);noise(t,.3,.12,'lowpass',500)},
   glitch:(t=now())=>{for(let i=0;i<5;i++)osc('square',200+Math.random()*1500,t+i*.04,.04,.06)},
   fanfare:(t=now())=>{[[523,0],[659,.15],[784,.3],[1046,.45],[784,.7],[1046,.85]].forEach(([f,d])=>{osc('square',f,t+d,.25,.08);osc('triangle',f,t+d,.3,.15)})},
-  motor:(t=now(),d=2)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';o.frequency.value=55;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.06,t+.2);g.gain.setValueAtTime(.06,t+d-.3);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(sfxBus);o.start(t);o.stop(t+d+.1)},
+  // v12.7 mine lift: smooth low rumble + geared whir + soft cable ticks (no 55 Hz sawtooth buzz). Ducks under voice lines.
+  motor:(t=now(),d=2)=>{const g=ac.createGain(),lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=260;lp.Q.value=.5;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.35);g.gain.setValueAtTime(.22,t+Math.max(.4,d-.45));g.gain.exponentialRampToValueAtTime(.0001,t+d);g.connect(lp).connect(liftBus);
+    const n=ac.createBufferSource();n.buffer=noiseBuf;n.loop=true;const nb=ac.createBiquadFilter();nb.type='bandpass';nb.frequency.value=110;nb.Q.value=.9;const ng=ac.createGain();ng.gain.value=.9;n.connect(nb).connect(ng).connect(g);n.start(t);n.stop(t+d+.05);
+    for(const [f,a] of[[72,.35],[144,.12]]){const o=ac.createOscillator(),og=ac.createGain(),lfo=ac.createOscillator(),lg=ac.createGain();o.type='sine';o.frequency.value=f;lfo.frequency.value=5.5;lg.gain.value=f*.012;lfo.connect(lg).connect(o.frequency);og.gain.value=a;o.connect(og).connect(g);o.start(t);lfo.start(t);o.stop(t+d+.05);lfo.stop(t+d+.05)}
+    for(let k=.5;k<d-.3;k+=.55){const o=ac.createOscillator(),og=ac.createGain();o.type='triangle';o.frequency.value=230+Math.random()*30;og.gain.setValueAtTime(.0001,t+k);og.gain.exponentialRampToValueAtTime(.05,t+k+.02);og.gain.exponentialRampToValueAtTime(.0001,t+k+.12);o.connect(og).connect(liftBus);o.start(t+k);o.stop(t+k+.15)}},
 };
+
+// ---------- v12.7 background groove: quiet, beat-locked, no clap-like transients ----------
+// Only soft, rounded low tones (< 300 Hz, 25 ms+ attacks): the clap detector's broadband test ignores everything under 300 Hz,
+// and there is no noise/hat/snare at all. Ducks under any voice line. Locks to the room's beat clock via sync(t0,spb).
+const grooveBus=ac.createGain();grooveBus.gain.value=0;const gLP=ac.createBiquadFilter();gLP.type='lowpass';gLP.frequency.value=420;grooveBus.connect(gLP).connect(master);
+const G2={on:false,t0:0,spb:.6,next:0,timer:null,vol:.55,
+  CH:[[110,138.6,164.8],[98,123.5,146.8],[87.3,110,130.8],[98,123.5,146.8]],BASS:[55,49,43.65,49],
+  note(f,t,d,peak,type='sine',att=.03){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(peak,t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g).connect(grooveBus);o.start(t);o.stop(t+d+.05)},
+  beat(k,t){const bar=Math.floor(k/4)%4,b=((k%4)+4)%4,spb=this.spb;
+    this.note(this.BASS[bar]*(b===2?1.5:1),t,spb*.9,b===0?.5:.32,'sine',.03);// soft round bass on every beat
+    if(b===0)for(const f of this.CH[bar])this.note(f,t,spb*3.8,.07,'triangle',.25);// slow pad swell per bar
+    if(b===1||b===3)this.note(this.CH[bar][2]*2,t+spb*.5,spb*.4,.05,'sine',.04)},// gentle off-beat 'bloop' (< 340 Hz, lowpassed)
+  tick(){if(!this.on)return;const ahead=ac.currentTime+.2;let k=Math.ceil((ac.currentTime-this.t0)/this.spb-.001);if(this.next>k)k=this.next;
+    while(this.t0+k*this.spb<ahead){this.beat(k,this.t0+k*this.spb);k++}this.next=k;
+    const talk=BB.talking&&BB.t<BB.talking.until+.2,v=BB.paused?0:talk?this.vol*.25:this.vol;grooveBus.gain.setTargetAtTime(v,ac.currentTime,.12)},
+  start(bpm=100){this.on=true;this.spb=60/bpm;this.t0=ac.currentTime+.1;this.next=0;if(!this.timer)this.timer=setInterval(()=>this.tick(),50)},
+  sync(t0,spb){if(!this.on)return;const k=Math.ceil((ac.currentTime+.2-t0)/spb);this.t0=t0;this.spb=spb;this.next=k},// re-phase onto a room's beat clock (tempo changes follow)
+  stop(){this.on=false;grooveBus.gain.setTargetAtTime(0,ac.currentTime,.15)}};
+BB.groove=G2;
+// ---------- v12.7 room-complete celebration: Level 1 video fanfare + confetti waves + Static Jr. dashes off to the next room ----------
+let fanBuf=null;fetch('assets/fanfare.mp3').then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).then(b=>fanBuf=b).catch(()=>{});
+BB.celebrate=(o={})=>{G2.stop();BB.selfSound(ac.currentTime,8.6,null);
+  if(fanBuf){const s=ac.createBufferSource(),g=ac.createGain();g.gain.value=.8;s.buffer=fanBuf;s.connect(g).connect(sfxBus);s.start()}else BB.sfx.fanfare();
+  BB.cele={t:BB.t,next:o.next||''}};
+BB.drawCelebrate=()=>{const c=BB.cele;if(!c)return;const t=BB.t-c.t;if(t>9){BB.cele=null;return}
+  const cols=['#ffe066','#6ee678','#fff','#e65046','#5ac8fa','#ff9ad5'];
+  for(const [tt,x] of[[0,W*.2],[.35,W*.8],[.8,W*.5],[1.5,W*.3],[2.1,W*.7],[3,W*.5]])if(t>=tt&&!c['b'+tt]){c['b'+tt]=1;BB.burst(x,H*.25,45,{cols,kind:Math.random()<.5?'star':'spark',size:15,speed:900,g:500,life:2.2,up:300})}
+  // Static Jr. scampers across the floor and out the right side, toward the next room
+  if(t>1.2&&t<5.5&&BB.staticJr){const k=(t-1.2)/3.6,x=-120+k*(W+260),y=H-60;BB.contactShadow(x,y,50,.4);
+    BB.staticJr(x,y,120,{spd:420,run:1,flip:false,rot:Math.sin(t*20)*.06});
+    if(BB.q&&Math.random()<.5)BB.burst(x-40,y-6,2,{cols:['rgba(220,200,170,.8)'],kind:'dust',size:8,speed:80,g:-30,life:.5});
+    if(c.next&&k<.85){ctx.save();ctx.globalAlpha=Math.min(1,(t-1.2)*3);BB.plaque(x+170,y-150,240,46,c.next+'  ▶',22,'#b5482a',{font:'Rammetto One',noRivet:1});ctx.restore()}}};
 // voice lines (Piper, Sprocket voice from the video pipeline). Caption shown while playing.
 const VO={};BB.voText={};BB.caption=null;
 BB.loadVO=async list=>{await Promise.all(list.map(async([k,txt,who])=>{BB.voText[k]={txt,who};try{const r=await fetch('vo/'+k+'.mp3');VO[k]=await ac.decodeAudioData(await r.arrayBuffer())}catch(e){}}))};
@@ -195,7 +257,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   if(window.GroupGate){GroupGate.push(tNow,GroupGate.hf(MicCore.buf),dt);GroupGate.sensMul=sens}// group-clap gate log
   const softOn=BB.softClap&&BB.t-BB.softClap<.5;const thr=window.GroupGate?GroupGate.onsetThr(mic.floor,sens,softOn):Math.max(mic.floor*2.2+.0015,.003)/sens;mic.thr=thr;// shared rule (group.js)
   const allFreqs=[880,1320];const nt=nonTonalEnergy(allFreqs);
-  if(rms>thr&&rms>mic.prev*(window.GroupGate?(softOn&&BB.fastSoft&&BB.t-BB.fastSoft<.5?GroupGate.ONSET_JUMP_FS:GroupGate.ONSET_JUMP):1.3)&&tNow-mic.lastOn>.12){mic.lastOn=tNow;
+  if(rms>thr&&rms>mic.prev*(window.GroupGate?GroupGate.adaptJump(rms,softOn&&BB.fastSoft&&BB.t-BB.fastSoft<.5?GroupGate.ONSET_JUMP_FS:GroupGate.ONSET_JUMP):1.3)&&tNow-mic.lastOn>.12){mic.lastOn=tNow;if(window.GroupGate)GroupGate.adaptPeak(rms);
     const chk=selfCheck(tNow);let ok=true;
     if(chk==='hard')ok=false;
     else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.6&&e>nonTonalFloor*6}// clap = mostly broadband energy
@@ -203,12 +265,12 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
     if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'']);
     if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;mic.onsets.push({t:tNow,lvl:lv,rms});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
   else if(rms<thr)mic.floor=lerp(mic.floor,Math.min(rms,.05),dt*.8);
-  if(rms<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(rms,(mic.prev||0)*.6);mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
+  if(rms<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(rms,(mic.prev||0)*(window.GroupGate?GroupGate.adaptDecay():.6));mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
 mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 // Simulated class (debug ?sim=1): claps on the beat with the requested loudness.
 BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl,sim:1});mic.level=lvl;mic.peak=lvl;mic.hold=.4};
 // ---------- main loop ----------
-BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.scene=s;parts.length=0;s.enter&&s.enter()};
+BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.groove&&BB.groove.stop();BB.scene=s;parts.length=0;s.enter&&s.enter()};
 let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0,perfGood=0;
 function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   if(BB.phone){perfN++;perfS+=ts-last0;if(perfS>=600){const av=perfS/perfN;if(BB.q){if(av>22&&++perfBad>=2){BB.q=0;resize()}else if(av<=20)perfBad=0}else if(!BB.qUp){if(av<14){if(++perfGood>=4){BB.q=1;BB.qUp=1;resize()}}else perfGood=0}perfN=perfS=0}}last0=ts;
@@ -219,6 +281,7 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   shakeAmt*=Math.pow(.02,dt);const sx=(Math.random()-.5)*2*shakeAmt,sy=(Math.random()-.5)*2*shakeAmt;
   BB.shakeXY=[sx,sy];
   if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt)}BB.scene.draw(ctx)}
+  BB.drawCelebrate&&BB.drawCelebrate();BB.drawParts&&0;
   ctx.restore();
   ctx.save();ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.font='13px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillStyle='rgba(255,255,255,.55)';
   ctx.fillText(BB.VERSION+' | audio '+ac.state+' '+ac.sampleRate+'Hz'+' | mic '+mic.state+(mic.ok?' '+(mic.track?mic.track.readyState+(mic.track.muted?' MUTED':''):'')+' lvl '+(mic.raw||0).toFixed(4)+(mic.useDefault?' (default)':''):''),cv.width/BB.dpr-6,cv.height/BB.dpr-4);ctx.restore();

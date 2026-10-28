@@ -54,7 +54,7 @@ const howTo={title:'NOTE SMASHER: smash notes to fill the orders!',
     if(f<.3){R.tile(k,-60,-20,120,80,{label:false})}else{const kk=ks[Math.min(4,st+1)];const m=st===0?2:st===1?2:1;for(let i=0;i<m;i++)R.tile(kk,-60+(i-(m-1)/2)*140*Math.min(1,(f-.3)*4),-20,120,80)}
     BB.text(R.NAME[k]+'  \u2192  '+(SMASH[k]?SMASH[k].map(z=>R.NAME[z]).join(' + '):''),0,140,30,'#fff',{stroke:4});ctx.restore()}};
 class SmasherRoom{constructor(o={}){this.o=o}
-  enter(){this.orders=dealOrders();this.inv={h:0,q:0,e:0,s:0,r:9};this.anvil=null;this.tray=[];this.fly=[];this.crumbs=[];this.sel=null;this.oi=this.o.startAt||0;this.prankAt=1+Math.floor(Math.random()*(this.orders.length-1));this.done=0;this.said={};
+  enter(){BB.groove.start(100);this.orders=dealOrders();this.inv={h:0,q:0,e:0,s:0,r:9};this.anvil=null;this.tray=[];this.fly=[];this.crumbs=[];this.sel=null;this.oi=this.o.startAt||0;this.prankAt=1+Math.floor(Math.random()*(this.orders.length-1));this.done=0;this.said={};
     this.ham=0;this.hamV=null;this.motes=R.motes(26);this.cust={x:2200,k:0};this.lastOverride=-9;this.firstTika=!this.o.startAt||this.o.startAt<3;
     this.state='load';R.loadImgs([['smash_bg','jpg'],['press','png'],['hammer','png'],['customer','png'],['basket','png']]).then(()=>{this.static=this.bake();
       if(this.o.skipIntro||this.o.startAt)this.beginOrder();else this.startIntro()});BB.mic.take()}
@@ -108,7 +108,9 @@ class SmasherRoom{constructor(o={}){this.o=o}
     this.tray.splice(i,1);if(it.k!=='w')this.inv[it.k]++;BB.sfx.pop()}
   smash(){if(!this.anvil||this.hamV)return;const k=this.anvil.k;const slow=k==='e'&&this.firstTika;
     this.hamV={t:BB.t,d:slow?1.6:.16,slow,k};BB.sfx.piston();if(slow){this.firstTika=false;this.slowT=BB.t}}
-  impact(){this.smashFx=BB.t;const k=this.hamV.k,slow=this.hamV.slow;BB.shake(6);BB.sfx.crunch();this.anvil=null;
+  impact(){this.smashFx=BB.t;// v12.7 item 26: beat press - a note that slid under in time still gets smashed; otherwise it slams empty
+    if(this.hamV.empty){if(this.anvil){this.hamV.k=this.anvil.k}else{BB.shake(2);BB.sfx.thunk();BB.burst(PX,ANVIL-20,6,{cols:['#fff','#ccc'],kind:'dust',size:12,speed:200,g:-40});return}}
+    const k=this.hamV.k,slow=this.hamV.slow;BB.shake(6);BB.sfx.crunch();this.anvil=null;
     BB.burst(PX,ANVIL-20,slow?40:18,{cols:['#ffe066','#fff','#ffb040'],kind:'spark',size:10,speed:slow?900:600,g:600});
     if(k==='s'){// over-smash: a funny mess of crumbs, sweep it back
       for(let i=0;i<26;i++)this.crumbs.push({x:PX+(Math.random()-.5)*260,y:ANVIL-6-Math.random()*8,r:Math.random()*6.3,s:6+Math.random()*10,c:R.COLS.s[Math.random()*3|0]});this.mess=BB.t;if(!this.said.oops){this.said.oops=1;BB.say('sm_oops')}return}
@@ -199,24 +201,27 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     this.fly.push({k:'x',x0,y0:TRAY.y+110,x1:p?p.x:1800,y1:FLOOR-150,t0:BB.t,d:.5,arc:300,end:()=>{BB.sfx.bonk();if(p){p.ph='hit';p.t3=BB.t;BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(p.x,FLOOR-200,12,{col:COL.yellow,kind:'star',size:14,g:300})}}})}
   pause(){BB.paused=true;BB.ac.suspend()}
   resume(){BB.paused=false;BB.ensureMic()}
-  next(){this.done++;this.oi++;this.tray=[];this.cb=null;if(this.oi>=this.orders.length){this.state='end';this.st=BB.t;BB.say('sm_done');BB.sfx.fanfare();
+  next(){if(BB.groove.on)BB.groove.sync(BB.ac.currentTime+.05,.6);this.done++;this.oi++;this.tray=[];this.cb=null;if(this.oi>=this.orders.length){this.state='end';this.st=BB.t;BB.say('sm_done');BB.celebrate({next:'PACKING STATION'});
       if(!BB.save.done.includes('smasher')){BB.save.done.push('smasher');localStorage.setItem('bb4',JSON.stringify(BB.save))}}else this.beginOrder()}
   // pointer: drag a basket straight onto the press or the tray (taps are handled by buttons)
   pdown(p){if(this.state!=='order')return false;const k=this.hitBasket(p);if(!k)return false;this.drag={k,x0:p.x,y0:p.y};return true}
   pup(p){const d=this.drag;this.drag=null;if(!d)return;if(Math.hypot(p.x-d.x0,p.y-d.y0)<30){BB.sfx.click();this.pick(d.k);return}if(d.k!=='w'&&!this.inv[d.k])return;
     if(Math.abs(p.x-PX)<PW/2&&p.y>PT&&p.y<FLOOR)this.toPress(d.k);else if(p.x>TRAY.x&&p.y>TRAY.y-60&&p.y<TRAY.y+TRAY.h)this.toTray(d.k)}
-  hitBasket(p){if(Math.abs(p.x-CART.x)<190&&p.y>CART.base-260&&p.y<CART.base)return 'w';for(let i=0;i<5;i++){if(i===4&&!this.O?.rest)continue;if(Math.abs(p.x-BX[i])<62&&p.y>BASE-150&&p.y<BASE+10)return KINDS[i]}return null}
+  hitBasket(p){if(Math.abs(p.x-CART.x)<190&&p.y>CART.base-260&&p.y<CART.base)return 'w';for(let i=0;i<5;i++){if(i===4&&!this.O?.rest)continue;if(Math.abs(p.x-BX[i])<62&&p.y>BASE-150&&p.y<BASE+50)return KINDS[i]}return null}
   update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
     if(this.state==='intro'){this.intro();if(BB.keys.includes('s'))this.skipIntro()}
     // hammer
     if(this.hamV){const h=this.hamV,t=(BB.t-h.t)/h.d;if(t<1)this.ham=ease.inOut(t)*.4+t*t*.6;else if(!h.hit){h.hit=1;this.ham=1;this.impact();h.up=BB.t}
       if(h.hit){const u=(BB.t-h.up)/.5;this.ham=1-ease.inOut(clamp(u,0,1));if(u>=1)this.hamV=null}}
-    // clap to smash (group-gated with a live mic)
+    // v12.7 item 26: the press auto-slams on every beat of the 100 BPM groove (lands exactly on the beat)
+    {const g=BB.groove,now=BB.ac.currentTime;if(this.state==='order'&&g&&g.on&&!this.hamV&&!BB.paused){const nb=g.t0+Math.ceil((now-g.t0+.17)/g.spb)*g.spb;
+      if(now>=nb-.17&&this.lastBeat!==nb){this.lastBeat=nb;if(this.anvil&&BB.t-this.anvil.t>.05)this.smash();else{this.hamV={t:BB.t,d:.16,k:null,empty:1};BB.sfx.piston()}}}}
+    // clap to smash (group-gated with a live mic) - still works as an instant smash between beats
     const ons=this.state==='clap'?[]:BB.mic.take();
     if(this.state==='order'&&this.anvil&&!this.hamV&&BB.t-this.anvil.t>.4){const G=window.GroupGate;
       for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;if(BB.mic.ok&&G&&!BB.debug&&!o.sim){this.pendSmash=o.t;break}this.smash();break}}
     if(this.pendSmash&&BB.ac.currentTime-.02>this.pendSmash+.2){const m=window.GroupGate.judge(this.pendSmash);this.pendSmash=null;if(m.ok)this.smash();else this.few=BB.t}
-    if(BB.debug&&this.state==='order'&&this.anvil&&!this.hamV&&BB.t-this.anvil.t>1.2)this.smash();
+    
     if(this.cb&&this.state==='clap')this.cb.update(dt);
     // fliers
     for(let i=this.fly.length-1;i>=0;i--){const f=this.fly[i];if(BB.t-f.t0>=f.d){this.fly.splice(i,1);f.end&&f.end()}}
@@ -281,7 +286,9 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
       for(const p of pile){const a=p.add?ease.out(clamp((t-p.add)/.3,0,1)):1;if(a<=0)continue;ctx.save();ctx.translate(p.x,p.y-(1-a)*70);ctx.rotate(p.r);ctx.globalAlpha=Math.min(1,a*2);R.tile(k,-50,-84,100,84,{gs:1,shadow:false});ctx.restore()}
       // front rim + basket front layered over the notes (clip: below the opening's centre line, outside its lower half)
       if(V.basket){ctx.save();ctx.beginPath();ctx.rect(-bw,-66,bw*2,80);ctx.ellipse(0,-66,55,8,0,0,Math.PI*2);ctx.clip('evenodd');ctx.drawImage(V.basket,-bw/2,-bh,bw,bh);ctx.restore()}
-      const lb=k==='r'?'REST':R.NAME[k]+' x'+n;BB.plaque(0,-1,124,34,lb,k==='s'?17:20);
+      if(k==='r')BB.plaque(0,-1,124,34,'REST',20);else{// v12.7: two-line sign hanging down - note name over its syllable, padded
+        BB.plaque(0,16,124,62,'',16);const nm={w:'WHOLE',h:'HALF',q:'QUARTER',e:'EIGHTHS',s:'16THS'}[k];
+        BB.text(nm+' x'+n,0,3,16,'#fff',{maxW:96,stroke:3});BB.text(R.SAY[k],0,30,17,COL.yellow,{maxW:96,stroke:3})}
       ctx.restore();if(this.sel===k)this.selRing(x,BASE-70,90);
       if(this.empty&&this.empty.k===k&&t-this.empty.t<1.4)R.bubble(x,BASE-200,k==='h'?'smash a WHOLE':'smash '+({q:'a HALF',e:'a TA',s:'a TI-TI'}[k]),COL.ink)});
     // pick / place buttons for the selected basket
@@ -314,14 +321,17 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
       if(mood==='huh')BB.text('?',c.x+70,yy-h-10,60,COL.yellow,{font:'Rammetto One',stroke:6})}
     ctx.restore();
     // ticket
-    if(O&&this.state!=='end'){const tx=WIN.x+232,ty=WIN.y+30,tw=300,th=204,k=ease.back(clamp((t-this.cust.in-.6)/.4,0,1));ctx.save();ctx.translate(tx+tw/2,ty);ctx.scale(k,k);ctx.rotate(Math.sin(t*1.3)*.01);
+    if(O&&this.state!=='end'){const tx=WIN.x+196,ty=WIN.y+28,tw=360,th=214,k=ease.back(clamp((t-this.cust.in-.6)/.4,0,1));ctx.save();ctx.translate(tx+tw/2,ty);ctx.scale(k,k);ctx.rotate(Math.sin(t*1.3)*.01);
       ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetX=6;ctx.shadowOffsetY=12;BB.rrect(-tw/2,0,tw,th,10,BB.lg(0,th,['#fffaf0','#f1e8d2','#ddd0b2']));ctx.restore();R.paper(-tw/2,0,tw,th);BB.rrect(-tw/2,0,tw,th,10,null,'rgba(110,95,70,.6)',2);/* v12.6: header printed on the paper (red ink + rules), not a separate bar */ctx.fillStyle='rgba(200,60,48,.85)';ctx.fillRect(-tw/2+10,39,tw-20,2.5);ctx.fillRect(-tw/2+10,44,tw-20,1);
       BB.text('ORDER #'+(this.oi+1)+(O.rush?'  RUSH!':''),0,22,26,'#c23a2e',{font:'Rammetto One'});
-      let b=0;for(const kk of O.seq){const n=R.BEATS[kk],cw=(tw-20)/4,x=-tw/2+10+b*cw,w=n*cw;ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;ctx.strokeRect(x+2,52,w-4,116);
-        R.tile(kk,x+2,62,w-4,92,{gs:kk==='s'?1.35:1});BB.text(R.SAY[kk],x+w/2,186,kk==='s'?16:19,'#5a5040');b+=n}
+      let b=0;for(const kk of O.seq){const n=R.BEATS[kk],cw=(tw-24)/4,x=-tw/2+12+b*cw,w=n*cw;ctx.strokeStyle='rgba(0,0,0,.18)';ctx.lineWidth=2;ctx.strokeRect(x+3,52,w-6,124);
+        ctx.save();ctx.beginPath();ctx.rect(x+5,54,w-10,120);ctx.clip();R.tile(kk,x+7,64,w-14,96,{});ctx.restore();// v12.7: note stays inside its own beat box
+        for(const [sx,sy] of R.syl(kk,x+7,w-14,96))BB.text(sy,sx,194,16,'#5a5040');b+=n}
       {const lg=ctx.createRadialGradient(-tw*.2,-30,10,-tw*.2,-30,tw);lg.addColorStop(0,'rgba(255,236,180,.22)');lg.addColorStop(1,'rgba(255,236,180,0)');ctx.fillStyle=lg;ctx.beginPath();ctx.roundRect(-tw/2,0,tw,th,10);ctx.fill()}// lamp light
       ctx.restore();
-      if(O.rush&&this.rushT&&this.state==='order'){const f=clamp(1-(t-this.rushT)/50,0,1);BB.rrect(tx,ty+th+12,tw,20,10,'#233','#fff',2);BB.rrect(tx,ty+th+12,tw*f,20,10,f>.3?COL.yellow:'#ffb08a');if(f===0)BB.text('take your time!',tx+tw/2,ty+th+52,24,'#fff',{stroke:4})}}
+      if(O.rush&&this.rushT&&this.state==='order'){const f=clamp(1-(t-this.rushT)/50,0,1),px=WIN.x+40,py=88,pw=WIN.w-80,ph=66;BB.panel(px,py,pw,ph,20);
+        BB.text(f===0?'take your time!':'RUSH',px+30,py+ph/2,22,f===0?'#fff':COL.yellow,{align:'left',stroke:4});
+        const bx=px+(f===0?220:110),bw=pw-(f===0?220:110)-30;BB.rrect(bx,py+ph/2-10,bw,20,10,'#233','rgba(255,255,255,.7)',2);if(f>0)BB.rrect(bx,py+ph/2-10,bw*f,20,10,BB.lg(py+ph/2-10,py+ph/2+10,f>.3?['#fff3a6','#e8b830']:['#ffc8a8','#e0805a']))}}
     // bell
     const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-118,by=WIN.y+WIN.h-64;/* v12.6: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
     this.drawBell(bx,by,ready,t);
@@ -364,8 +374,10 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     if(BB.q)BB.glow(PX,ANVIL-200,420,'rgba(216,166,255,A)',.35);
     // four tiny notes fan out, then join with a double beam
     const join=clamp((t-1.1)/.5,0,1);ctx.save();ctx.translate(PX,ANVIL-160);ctx.scale(1.6*k,1.6*k);
-    for(let i=0;i<4;i++){const ang=(i-1.5)*.5*(1-join),dx=(i-1.5)*lerp(80,46,join);ctx.save();ctx.translate(dx,Math.abs(i-1.5)*(1-join)*-30);ctx.rotate(ang);R.glyph('q',0,0,14,'#fff');ctx.restore()}
-    if(join>0){ctx.globalAlpha=a*join;R.glyph('s',8,0,14,COL.yellow)}ctx.restore();
+    const G=14*2.2,H0=8-1.5*G;// head x of each sixteenth inside R.glyph('s',8,0,14)
+    for(let i=0;i<4;i++){const ang=(i-1.5)*.5*(1-join),dx=lerp((i-1.5)*80,H0+i*G,join);ctx.save();ctx.globalAlpha=a*(1-join*.999);ctx.translate(dx,Math.abs(i-1.5)*(1-join)*-30);ctx.rotate(ang);R.glyph('q',0,0,14*(1-join*.14),'#fff');ctx.restore()}
+    if(join>0){ctx.globalAlpha=a*join;R.glyph('s',8,0,14,COL.yellow);
+      const cur=t>1.7?Math.floor((t-1.7)/.3)%4:-1;['ti','ka','ti','ka'].forEach((sy,i)=>{const hx=H0+i*G+14*.86*.43;BB.text(sy,hx,30,i===cur?20:17,i===cur?'#fff':'#ffe9a8',{stroke:4})})}ctx.restore();
     BB.text('TIKA-TIKA!',PX,ANVIL-370,96*k,COL.yellow,{font:'Rammetto One',stroke:10});BB.text('4 sounds in 1 beat',PX,ANVIL-290,44,'#fff',{stroke:6});ctx.restore()}
   drawHUD(){const t=BB.t;BB.panel(40,24,560,130,30);BB.text('ORDERS DONE',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.done} of 5`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
     for(let i=0;i<5;i++)BB.rrect(330+i*48,60,38,52,10,i<this.done?BB.lg(60,112,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);

@@ -18,6 +18,10 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   K_GROUP:.15,          // ... and this fraction of the learned/calibrated group level
   MIN_DUR:.035,PW:.5,        // burst must stay above 1/4 of its peak this long (group claps smear)
   // clap onset rule (shared with engine.js): relative jump over an adaptive noise floor, low absolute minimum so soft claps count
+  // v12.7: auto-adapting onset for loud, close-up claps. Tracks the recent onset peak; when claps are loud the tail of one clap
+  // no longer masks the next (faster tail decay) and a near-clipping mic only needs a small rise to count.
+  AD_PK:0,adaptPeak(r){this.AD_PK=Math.max(r,this.AD_PK*.92)},adaptDecay(){return this.AD_PK>this.AD_LOUD?.4:.6},
+  adaptJump(r,base){return this.AD_PK>this.AD_LOUD&&r>this.AD_PK*.3?Math.min(base,1.1):base},AD_LOUD:.08,
   ONSET_K:2.2,ONSET_ADD:.0015,ONSET_MIN:.003,ONSET_JUMP:1.3,ONSET_JUMP_FS:1.05,// v12.6: cave-in (fast + piano) - whisper claps ride on the previous clap's tail, so only demand a small rise
   
   // meter scale (shared by the mic meter, onsets and the room's p/f checks)

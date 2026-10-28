@@ -39,13 +39,13 @@ R.crateDraw=(k,x,y,w,h,o={})=>{const im=BB.V2.crate,c=R.COLS[k];ctx.save();ctx.g
   if(im){const s=h/im.height,cap=70;ctx.drawImage(im,0,0,cap,im.height,x,y,cap*s,h);ctx.drawImage(im,cap,0,im.width-2*cap,im.height,x+cap*s,y,w-2*cap*s,h);ctx.drawImage(im,im.width-cap,0,cap,im.height,x+w-cap*s,y,cap*s,h)}
   else BB.rrect(x,y,w,h,8,'#c9a06a',COL.ink,3);
   // tinted label + name tag
-  const lw=Math.min(w-40,Math.max(70,h*1.1)),lx=x+w/2-lw/2,ly=y+h*.22,lh=h*.62;BB.rrect(lx,ly,lw,lh,10,BB.lg(ly,ly+lh,[c[0],c[1]]),'rgba(25,25,31,.8)',3);
+  const lw=Math.min(w-(w<120?14:40),Math.max(70,h*1.1)),lx=x+w/2-lw/2,ly=y+h*.22,lh=h*.62;BB.rrect(lx,ly,lw,lh,10,BB.lg(ly,ly+lh,[c[0],c[1]]),'rgba(25,25,31,.8)',3);
   ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(lx+6,ly+4,lw-12,lh*.22);
   R.tile(k,lx+4,ly+lh*.06,lw-8,lh*.86,{shadow:false,gs:.95});
-  if(o.tag!==false&&w>60){const tw=BB.measure(R.NAME[k],18)+18;BB.rrect(x+12,y-12,tw,28,8,'#fbf6e6',COL.ink,2);BB.text(R.NAME[k],x+12+tw/2,y+3,18,COL.ink)}
+  if(o.tag!==false&&w>60){const fs=w<120?14:18,tw=Math.min(w-16,BB.measure(R.NAME[k],fs)+18),tx=w<120?x+w/2-tw/2:x+12;BB.rrect(tx,y-12,tw,28,8,'#fbf6e6',COL.ink,2);BB.text(R.NAME[k],tx+tw/2,y+3,fs,COL.ink,{maxW:tw-8})}
   BB.text(String(R.BEATS[k]),x+w-22,y+h-20,24,'#fff',{stroke:4});ctx.restore()};
 class PackingRoom{constructor(o={}){this.o=o}
-  enter(){this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
+  enter(){BB.groove.start(100);this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
     this.state='load';R.loadImgs([['pack_bg','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.beginRound();else this.startIntro()});BB.mic.take()}
   exit(){BB.paused=false}
   bake(){const s=BB.phone&&!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
@@ -77,7 +77,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(t>2.6&&!this.said.i){this.said.i=1;this.voEnd=BB.t+BB.say('pk_intro')}
     if(t>3.2&&BB.t>(this.voEnd||0)+.1)this.skipIntro()}
   skipIntro(){this.jr=null;this.wreck=null;BB.talking=null;BB.caption=null;this.beginRound()}
-  beginRound(){const Rd=ROUNDS[this.ri];this.Rd=Rd;setNB(Rd.n||4);if(this.bakedN!==NB){this.static=this.bake();this.bakedN=NB}this.state='play';this.cells=new Array(NB).fill(null);this.placed=[];this.cur=null;this.cb=null;this.tries=0;this.prank=null;this.palletIn=BB.t;
+  beginRound(){const Rd=ROUNDS[this.ri];this.Rd=Rd;setNB(Rd.n||4);if(this.bakedN!==NB){this.static=this.bake();this.bakedN=NB}this.state='play';this.cells=new Array(NB).fill(null);this.placed=[];this.cur=null;this.cb=null;this.tries=0;this.prank=null;this.decoyUsed=0;this.crush=[];this.palletIn=BB.t;
     if(Rd.mode==='limited')this.q=Rd.set.slice().sort(()=>Math.random()-.5);else if(Rd.mode==='match')this.q=[...Rd.code,'w','h'].sort(()=>Math.random()-.5);else this.q=[];this.fillQ();
     if(this.ri===0){this.cardT=BB.t;setTimeout(()=>BB.scene===this&&BB.say('pk_how'),2600)}
     else if(Rd.mode==='match'&&!this.said.m){this.said.m=1;BB.say('pk_match')}else if(Rd.mode==='limited')BB.say('pk_limited');
@@ -88,19 +88,24 @@ class PackingRoom{constructor(o={}){this.o=o}
   spawn(){if(!this.q.length){this.fillQ();if(!this.q.length)return}
     // never deadlock: if nothing in the queue can fit, slip in a crate that does (match mode: the crate the code needs next)
     const g=this.gapMax();if(this.Rd.mode==='match'){let b=0,need=[];for(const k of this.Rd.code){if(!this.cells[b])need.push(k);b+=R.BEATS[k]}if(!need.some(k=>this.q.includes(k)))this.q.unshift(need[0])}
-    else if(!this.q.some(k=>R.BEATS[k]<=g))this.q.unshift(g>=2?'h':'q');const k=this.q.shift();const w=R.BEATS[k];let col=this.firstFree(w);this.cur={k,col,y:CTOP-CH-10,fast:0,t:BB.t,x:CX0+col*CW};this.fillQ()}
+    else if(!this.q.some(k=>R.BEATS[k]<=g))this.q.unshift(g>=2?'h':'q');let k=this.q.shift(),decoy=0;if(this.ri>=1&&!this.Rd.prank&&this.Rd.mode!=='limited'&&!this.decoyUsed&&this.left()<=2&&this.left()>0){this.q.unshift(k);k=this.left()===1?'h':'w';decoy=1;this.decoyUsed=1;BB.sfx.glitch()}
+    const w=R.BEATS[k];let col=this.firstFree(w);this.cur={k,col,y:CTOP-CH-10,fast:0,t:BB.t,x:CX0+col*CW,decoy};this.fillQ()}
   firstFree(w){for(let c=0;c<=NB-w;c++){let ok=true;for(let i=0;i<w;i++)if(this.cells[c+i])ok=false;if(ok)return c}return 0}
   left(){return this.cells.filter(x=>!x).length}
   setCol(c){const cu=this.cur;if(!cu||this.state!=='play')return;const w=R.BEATS[cu.k];cu.col=clamp(c,0,NB-w)}
   drop(){if(this.cur&&this.state==='play'){this.cur.fast=1;BB.sfx.whoosh(undefined,.3)}}
-  swap(){const cu=this.cur;if(!cu||this.state!=='play'||!this.q.length)return;const nk=this.q[0];this.q[0]=cu.k;cu.k=nk;cu.col=clamp(cu.col,0,NB-R.BEATS[nk]);this.swapT=BB.t;BB.sfx.pop();
+  swap(){const cu=this.cur;if(!cu||this.state!=='play'||!this.q.length)return;if(cu.decoy){cu.decoy=0;this.jrToss={t:BB.t,k:cu.k,x0:cu.x};cu.k=this.q.shift();cu.col=clamp(cu.col,0,NB-R.BEATS[cu.k]);this.swapT=BB.t;BB.sfx.pop();return}
+    const nk=this.q[0];this.q[0]=cu.k;cu.k=nk;cu.col=clamp(cu.col,0,NB-R.BEATS[nk]);this.swapT=BB.t;BB.sfx.pop();
     if(this.prank&&this.prank.ph==='wait'&&cu.k!=='w'&&this.q[0]==='w'){this.q.shift();this.prankHit()}}
   land(){const cu=this.cur,w=R.BEATS[cu.k];let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;
     let why='';if(!fit)why=this.left()<w?`too big! ${w} > ${this.left()}`:'no room there!';
     else if(this.Rd.mode==='match'){let b=0,ok=false;for(const k of this.Rd.code){if(b===cu.col&&k===cu.k)ok=true;b+=R.BEATS[k]}if(!ok){fit=false;why='the code needs '+this.codeAt(cu.col)+' here'}}
     if(fit){for(let i=0;i<w;i++)this.cells[cu.col+i]=cu.k;this.placed.push({k:cu.k,col:cu.col,t:BB.t});BB.sfx.thunk();BB.shake(3);BB.burst(CX0+cu.col*CW+w*CW/2,ROWY+CH,10,{col:'#d8c8a8',kind:'dust',size:16,g:-40,speed:200});this.cur=null;
       if(this.left()===0){this.lock();return}setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),450)}
-    else{BB.sfx.boing();this.bounce.push({k:cu.k,x:CX0+cu.col*CW,y:ROWY-20,vx:-500-Math.random()*200,vy:-900,r:0,t:BB.t,why});this.boinkT=BB.t;this.blink=BB.t;
+    else if(why==='no room there!'||why.startsWith('too')||cu.decoy){BB.sfx.crunch();BB.sfx.thunk();BB.shake(6);const cx=CX0+cu.col*CW;this.crush.push({k:cu.k,x:cx,w:w*CW-12,t:BB.t,why:cu.decoy?'decoy crate!':why});
+      BB.burst(cx+w*CW/2,ROWY+20,16,{cols:['#c9a06a','#7c5530','#e8d2a8'],kind:'dot',size:10,speed:520,g:1200});this.boinkT=null;if(this.left()<=1&&why.startsWith('too'))this.blink=BB.t;
+      if(!this.said.big&&why.startsWith('too')){this.said.big=1;BB.say('pk_big')}const k=cu.k,dec=cu.decoy;this.cur=null;if(!dec&&!(this.prank&&k==='w'))this.q.push(k);else if(this.prank&&k==='w')this.prankHit(true);setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),800)}
+    else{BB.sfx.boing();this.bounce.push({k:cu.k,x:CX0+cu.col*CW,y:ROWY-20,vx:-500-Math.random()*200,vy:-900,r:0,t:BB.t,why});this.boinkT=BB.t;
       if(!this.said.big&&why.startsWith('too')){this.said.big=1;BB.say('pk_big')}else if(why.startsWith('the code')&&!this.said.wk){this.said.wk=1;BB.say('pk_wrongk')}
       const k=cu.k;this.cur=null;if(!(this.prank&&k==='w'))this.q.push(k);else this.prankHit(true);setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),700)}}
   codeAt(col){let b=0;for(const k of this.Rd.code){if(b===col)return R.NAME[k];if(col>b&&col<b+R.BEATS[k])return R.NAME[k]+' (it starts on beat '+(b+1)+')';b+=R.BEATS[k]}return '?'}
@@ -128,7 +133,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     this.belt+=dt*40;
     if(this.state==='intro'){this.intro(dt);if(BB.keys.includes('s'))this.skipIntro()}
     if(this.dragC&&this.cur&&BB.ptr.down){const w=R.BEATS[this.cur.k];this.setCol(Math.round((BB.ptr.x-CX0)/CW-w/2))}
-    const cu=this.cur;if(cu&&this.state==='play'){cu.x=lerp(cu.x,CX0+cu.col*CW,Math.min(1,dt*14));cu.y+=dt*(cu.fast?1150:44);if(cu.y>=ROWY){cu.y=ROWY;this.land()}}
+    const cu=this.cur;if(cu&&this.state==='play'){cu.x=lerp(cu.x,CX0+cu.col*CW,Math.min(1,dt*14));cu.y+=dt*(cu.fast?1150:44*(1+this.ri*.14)*(1+Math.min(.6,(BB.t-cu.t)*.04)));if(cu.y>=ROWY){cu.y=ROWY;this.land()}}
     for(let i=this.bounce.length-1;i>=0;i--){const b=this.bounce[i];b.vy+=2200*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.r-=dt*5;if(b.y>H+300)this.bounce.splice(i,1)}
     // sim: steer each crate into the first slot that fits (?sim=1&auto)
     if(BB.debug&&this.o.auto&&cu&&this.state==='play'&&BB.t-cu.t>.8&&!cu.fast){let c=-1;if(this.Rd.mode==='match'){let b=0;for(const k of this.Rd.code){if(k===cu.k&&!this.cells[b]){c=b;break}b+=R.BEATS[k]}}else c=this.left()>=R.BEATS[cu.k]?this.firstFree(R.BEATS[cu.k]):-1;
@@ -136,7 +141,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(this.Rd&&this.Rd.prank&&this.state==='play'&&!this.prank&&this.left()===1&&this.cur)this.startPrank();
     if(this.prank)this.updPrank(dt);
     if(this.cb&&this.state==='clap')this.cb.update(dt);else if(this.state!=='clap')BB.mic.take();
-    if(this.state==='ship'){const t=BB.t-this.st;if(t>3.2){this.packed++;this.ri++;if(this.ri>=ROUNDS.length){this.state='end';this.st=BB.t;BB.say('pk_done');BB.sfx.fanfare();if(!BB.save.done.includes('packing')){BB.save.done.push('packing');localStorage.setItem('bb4',JSON.stringify(BB.save))}}else this.beginRound()}}}
+    if(this.state==='ship'){const t=BB.t-this.st;if(t>3.2){this.packed++;this.ri++;if(this.ri>=ROUNDS.length){this.state='end';this.st=BB.t;BB.say('pk_done');BB.celebrate({next:'LABEL ROOM'});if(!BB.save.done.includes('packing')){BB.save.done.push('packing');localStorage.setItem('bb4',JSON.stringify(BB.save))}}else this.beginRound()}}}
   // ---------- drawing ----------
   draw(){const t=BB.t,[sx,sy]=BB.shakeXY;ctx.save();ctx.translate(sx,sy);
     if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#2a3a38';ctx.fillRect(0,0,W,H)}
@@ -147,6 +152,9 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(this.wreck)for(const c of this.wreck){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.r);R.crateDraw(c.k,-60,-50,120,100,{tag:false});ctx.restore()}
     if(this.prank&&this.prank.ph!=='done'){const p=this.prank;BB.staticJr(p.x,NEXTP.y-10,110,{run:p.ph==='in'||p.ph==='run'?1:0,dizzy:p.ph==='hit',glitch:p.ph==='hit'?.6:0,spd:p.ph==='run'?1000:600,flip:p.ph!=='run'});if(p.ph==='wait')R.bubble(p.x,NEXTP.y-230,'wrong fit! hee hee')}
     if(this.jrCrate){const j=this.jrCrate,k=clamp((t-j.t)/.5,0,1);if(t-j.t<1.4){const p=this.prank,x=lerp(j.x0,p?p.x:W,k),y=lerp(j.y0,NEXTP.y-80,k)-Math.sin(k*Math.PI)*220;ctx.save();ctx.translate(x,y);ctx.rotate(k*6);R.crateDraw('w',-90,-30,180,60,{tag:false});ctx.restore()}}
+    for(const c of (this.crush||[])){const a=t-c.t;if(a>1.6)continue;const sq=ease.out(clamp(a/.18,0,1));ctx.save();ctx.globalAlpha=a<1.2?1:1-(a-1.2)/.4;ctx.translate(c.x+6+c.w/2,ROWY);ctx.scale(1+sq*.25,1-sq*.72);R.crateDraw(c.k,-c.w/2,-CH,c.w,CH,{tag:false});ctx.restore();
+      if(a<1.4){const k=ease.back(clamp(a/.3,0,1));BB.text('CRUNCH!',CX0-150,ROWY-180,72*k,'#e65046',{font:'Rammetto One',stroke:8});R.bubble(CX0-170,ROWY-300,c.why,COL.ink)}}
+    if(this.jrToss&&t-this.jrToss.t<1){const j=this.jrToss,k=(t-j.t);ctx.save();ctx.translate(j.x0+k*900,CTOP+40-Math.sin(k*Math.PI)*200);ctx.rotate(k*8);R.crateDraw(j.k,-80,-40,160,80,{tag:false});ctx.restore()}
     for(const b of this.bounce){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.r);R.crateDraw(b.k,0,-CH/2,R.BEATS[b.k]*CW-12,CH);ctx.restore()}
     if(this.boinkT&&t-this.boinkT<1.3){const k=ease.back(clamp((t-this.boinkT)/.3,0,1));BB.text('BOINK!',CX0-150,ROWY-180,80*k,'#e65046',{font:'Rammetto One',stroke:8});const b=this.bounce[this.bounce.length-1];if(b&&b.why)R.bubble(CX0-170,ROWY-300,b.why,COL.ink)}
     ctx.restore();R.drawMotes(this.motes,BB.paused?0:Math.min(.05,BB.dt||.016),t);BB.drawParts();
@@ -182,7 +190,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;const gx=CX0+cu.col*CW+6;
     BB.rrect(gx,ROWY+6,cw,CH-12,12,fit?'rgba(110,230,120,.18)':'rgba(230,80,70,.22)',fit?'rgba(110,230,120,.8)':'#e65046',3);
     ctx.setLineDash([10,12]);ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cu.x+cw/2+6,cu.y+CH);ctx.lineTo(cu.x+cw/2+6,ROWY);ctx.stroke();ctx.setLineDash([]);
-    const wob=Math.sin(t*3)*.02;ctx.save();ctx.translate(cu.x+6+cw/2,cu.y+CH/2);ctx.rotate(wob);R.crateDraw(cu.k,-cw/2,-CH/2,cw,CH);ctx.restore();
+    const wob=Math.sin(t*3)*.02;ctx.save();ctx.translate(cu.x+6+cw/2,cu.y+CH/2);ctx.rotate(wob);R.crateDraw(cu.k,-cw/2,-CH/2,cw,CH);if(cu.decoy){ctx.save();ctx.strokeStyle='#e65046';ctx.lineWidth=6;ctx.setLineDash([14,10]);ctx.strokeRect(-cw/2-4,-CH/2-4,cw+8,CH+8);ctx.restore();BB.plaque(0,-CH/2-30,170,40,'DECOY! SWAP IT',18,'#e65046')}ctx.restore();
     ctx.restore();
     // column tap targets (big, Smartboard friendly)
     for(let c=0;c<NB;c++){const on=c>=cu.col&&c<cu.col+w;BB.rrect(CX0+c*CW+8,CTOP-44,CW-16,34,10,on?COL.yellow:'rgba(255,255,255,.12)',on?COL.ink:null,2);BB.text(String(c+1),CX0+c*CW+CW/2,CTOP-27,26,on?COL.ink:'#fff')}}
@@ -198,7 +206,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetX=6;ctx.shadowOffsetY=12;BB.rrect(0,0,w,h,10,BB.lg(0,h,['#fffaf0','#f1e8d2','#ddd0b2']));ctx.restore();BB.R.paper(0,0,w,h);BB.rrect(0,0,w,h,10,null,'rgba(110,95,70,.6)',2);{const lg=ctx.createRadialGradient(w*.3,-30,10,w*.3,-30,w);lg.addColorStop(0,'rgba(255,236,180,.2)');lg.addColorStop(1,'rgba(255,236,180,0)');ctx.fillStyle=lg;ctx.fillRect(0,0,w,h)}BB.rrect(0,0,w,50,10,'#e65046');ctx.fillStyle='#e65046';ctx.fillRect(0,28,w,22);
     BB.text('ORDER #'+(this.ri+1),w/2,26,28,'#fff',{stroke:3});BB.text(Rd.txt,w/2,80,Rd.txt.length>30?22:26,'#5a5040',{maxW:w-30});
     if(Rd.mode==='match'){let b=0;const cw=(w-40)/NB;for(const k of Rd.code){const n=R.BEATS[k],xx=20+b*cw,ww=n*cw;const done=this.cells[b]===k;ctx.strokeStyle=done?'#3fb45a':'rgba(0,0,0,.18)';ctx.lineWidth=done?4:2;ctx.strokeRect(xx+3,110,ww-6,140);
-        R.glyph(k,xx+ww/2,215,(k==='s'?9:11)*(NB>4?.75:1),COL.ink);BB.text(R.SAY[k],xx+ww/2,270,NB>6?13:18,'#5a5040',{maxW:ww-4});b+=n}}
+        R.glyph(k,xx+ww/2,215,Math.min(k==='s'?10:12,ww/(k==='s'?6.4:k==='e'?4.6:k==='w'?2.6:2.4)),COL.ink);BB.text(R.SAY[k],xx+ww/2,270,NB>6?13:18,'#5a5040',{maxW:ww-4});b+=n}}
     else{BB.text(Rd.mode==='limited'?'Every crate must fit!':'Any crates that add up to '+NB,w/2,150,26,'#5a5040');const bw=(w-60)/NB;for(let i=0;i<NB;i++){BB.rrect(30+i*bw,190,bw-14,60,10,this.cells[i]?'#9ff09a':'#eee8d6','#8a806b',2);BB.ctext(this.cells[i]?'\u2713':String(i+1),30+i*bw+(bw-14)/2,220,30,'#5a5040','Lilita One')}}
     if(this.ri===2&&BB.t-this.palletIn<3){ctx.globalAlpha=1-(BB.t-this.palletIn)/3;BB.text('TORN BY STATIC JR. ... fixed!',w/2,h-18,20,'#c0392b')}
     ctx.restore()}
