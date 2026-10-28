@@ -144,7 +144,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
     {ctx.fillStyle=hg(-bw,bw,BRS);ctx.beginPath();E(0,bb,bw,ry,0,Math.PI);ctx.lineTo(-bw,bb-7);E(0,bb-7,bw,ry,Math.PI,0,true);ctx.closePath();ctx.fill();ctx.lineWidth=2.5;ctx.stroke();
      for(let i=0;i<9;i++){const a=.2+i*(Math.PI-.4)/8;BB.rivet(Math.cos(a)*bw*.96,bb-3+Math.sin(a)*ry*.95,2.6)}}
     /* indicator light on the skirt (flashes when hit) */
-    {const lit=fl>0||ready&&Math.sin(t*6)>0,lx=bw*.55,ly=bt+28;if(lit&&hq)BB.glow(lx,ly,34,'rgba(255,140,60,A)',.7+.3*fl);ctx.fillStyle=hg(lx-9,lx+9,CHR);ctx.beginPath();E(lx,ly,9.5,7.5);ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.stroke();
+    {const lit=fl>0||ready&&Math.sin(t*6)>0,lx=bw*.55,ly=bt+28;if(lit&&hq)BB.glow(lx,ly,34+50*fl,'rgba(255,140,60,A)',.7+.3*fl);ctx.fillStyle=hg(lx-9,lx+9,CHR);ctx.beginPath();E(lx,ly,9.5,7.5);ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.stroke();
      const lg=ctx.createRadialGradient(lx-2,ly-2,1,lx,ly,7);lg.addColorStop(0,lit?'#fff2d8':'#d08a6a');lg.addColorStop(.5,lit?'#ff7a3a':'#8a3b22');lg.addColorStop(1,lit?'#b8401a':'#3a160a');ctx.fillStyle=lg;ctx.beginPath();E(lx,ly,6,4.6);ctx.fill()}
     /* top face of base + deep groove under the dome */
     ctx.fillStyle=hg(-bw,bw,BRS);ctx.beginPath();E(0,bt,bw*.9,ry*.9);ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=3;ctx.stroke();
@@ -330,19 +330,19 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
       if(mood==='huh')BB.text('?',c.x+70,yy-h-10,60,COL.yellow,{font:'Rammetto One',stroke:6})}
     ctx.restore();
     // ticket
-    if(O&&this.state!=='end'){const tx=WIN.x+255,ty=WIN.y+30,tw=300,th=232,k=ease.back(clamp((t-this.cust.in-.6)/.4,0,1));ctx.save();ctx.translate(tx+tw/2,ty);ctx.scale(k,k);ctx.rotate(Math.sin(t*1.3)*.01);
+    if(O&&this.state!=='end'){const tx=WIN.x+255,ty=WIN.y+30,tw=300,th=204,k=ease.back(clamp((t-this.cust.in-.6)/.4,0,1));ctx.save();ctx.translate(tx+tw/2,ty);ctx.scale(k,k);ctx.rotate(Math.sin(t*1.3)*.01);
       ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetX=6;ctx.shadowOffsetY=12;BB.rrect(-tw/2,0,tw,th,10,BB.lg(0,th,['#fffaf0','#f1e8d2','#ddd0b2']));ctx.restore();R.paper(-tw/2,0,tw,th);BB.rrect(-tw/2,0,tw,th,10,null,'rgba(110,95,70,.6)',2);BB.rrect(-tw/2,0,tw,44,10,'#e65046');ctx.fillStyle='#e65046';ctx.fillRect(-tw/2,24,tw,20);
       BB.text('ORDER #'+(this.oi+1)+(O.rush?'  RUSH!':''),0,23,24,'#fff',{stroke:3});
-      let b=0;for(const kk of O.seq){const n=R.BEATS[kk],cw=(tw-20)/4,x=-tw/2+10+b*cw,w=n*cw;ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;ctx.strokeRect(x+2,54,w-4,138);
-        R.tile(kk,x+2,74,w-4,104,{gs:kk==='s'?1.35:1});BB.text(R.SAY[kk],x+w/2,210,kk==='s'?16:19,'#5a5040');b+=n}
+      let b=0;for(const kk of O.seq){const n=R.BEATS[kk],cw=(tw-20)/4,x=-tw/2+10+b*cw,w=n*cw;ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;ctx.strokeRect(x+2,52,w-4,116);
+        R.tile(kk,x+2,62,w-4,92,{gs:kk==='s'?1.35:1});BB.text(R.SAY[kk],x+w/2,186,kk==='s'?16:19,'#5a5040');b+=n}
       {const lg=ctx.createRadialGradient(-tw*.2,-30,10,-tw*.2,-30,tw);lg.addColorStop(0,'rgba(255,236,180,.22)');lg.addColorStop(1,'rgba(255,236,180,0)');ctx.fillStyle=lg;ctx.beginPath();ctx.roundRect(-tw/2,0,tw,th,10);ctx.fill()}// lamp light
       ctx.restore();
       if(O.rush&&this.rushT&&this.state==='order'){const f=clamp(1-(t-this.rushT)/50,0,1);BB.rrect(tx,ty+th+12,tw,20,10,'#233','#fff',2);BB.rrect(tx,ty+th+12,tw*f,20,10,f>.3?COL.yellow:'#ffb08a');if(f===0)BB.text('take your time!',tx+tw/2,ty+th+52,24,'#fff',{stroke:4})}}
     // bell
-    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-110,by=WIN.y+WIN.h-70;
+    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-100,by=WIN.y+WIN.h-42;/* v12.5: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
     this.drawBell(bx,by,ready,t);
-    BB.plaque(bx,by+38,110,32,'RING!',22,ready?'#b5482a':'#28403c',{font:'Rammetto One',noRivet:1});
-    BB.button(bx-80,by-100,160,150,'',{id:'bell',style:'none',onClick:()=>this.ring()})}
+    BB.plaque(bx-122,by-14,110,32,'RING!',22,ready?'#b5482a':'#28403c',{font:'Rammetto One',noRivet:1});
+    BB.button(bx-180,by-110,260,140,'',{id:'bell',style:'none',onClick:()=>this.ring()})}
   // v12.5: big retro SMASH-O-MATIC marquee: chrome + enamel bevels, chasing bulbs, gear + lightning accents, flash on each smash
   drawMarquee(){const t=BB.t,cx=PX,cy=252,w=470,h=128,x=cx-w/2,y=cy-h/2,fx=this.smashFx?Math.max(0,1-(t-this.smashFx)/.5):0,fl=BB.q?(Math.random()<.02?.6:1):1;
     // gears behind the corners
