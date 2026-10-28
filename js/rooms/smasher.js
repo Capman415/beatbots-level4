@@ -121,66 +121,46 @@ class SmasherRoom{constructor(o={}){this.o=o}
   sweep(){if(!this.crumbs.length)return;BB.sfx.sweep();this.sweepT=BB.t;this.fly.push({k:'s',x0:PX,y0:ANVIL-30,x1:BX[3],y1:BASE-60,t0:BB.t+.4,d:.6,arc:200,end:()=>{this.inv.s++;BB.sfx.ting()}})}
   // v12.2: 1960s retro-robot bell (mint dome, orange plunger, cream bolted base, indicator light)
   // v12.5: CGI desk bell - chrome dome (env reflections, specular, warm rim light), beveled mint enamel base with chrome band + rivets, shaded 3D plunger, flash on hit
-  drawBell(bx,by,ready,t){const pt=this.ringT&&t>=this.ringT?t-this.ringT:9,press=pt<.25?Math.sin(pt/.25*Math.PI):0,wob=pt<1.2?Math.sin(pt*30)*.04*(1-pt/1.2):ready?Math.sin(t*6)*.012:0,fl=pt<.5?1-pt/.5:0,hq=!(BB.phone&&!BB.q),INK=COL.ink,E=(x,y,rx,ry,a0=0,a1=7,ccw)=>ctx.ellipse(x,y,rx,ry,0,a0,a1,ccw);
-    const hg=(x0,x1,stops)=>{const g=ctx.createLinearGradient(x0,0,x1,0);stops.forEach((c,i)=>g.addColorStop(i/(stops.length-1),c));return g};
-    const CHR=['#3a4442','#8e9a98','#f4f8f7','#b9c4c2','#56615f','#9fabaa','#e2e9e7','#5a6563'],BRS=['#5a3c12','#b88a3a','#fff0b8','#d8a848','#7a5418','#c89a48','#f0d690','#6a4814'];
-    /* shape-true etching: gears + rivet rings + circuit scroll, embossed (dark cut + light lip) */
-    const etchGear=(x,y,r)=>{ctx.beginPath();for(let i=0;i<16;i++){const a=i/16*Math.PI*2,rr=i%2?r:r*1.28;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr*.85)}ctx.closePath();ctx.moveTo(x+r*.45,y);E(x,y,r*.45,r*.38);};
-    const emboss=(path,dk,lt)=>{ctx.save();ctx.translate(1.2,1.4);path();ctx.strokeStyle=lt;ctx.stroke();ctx.restore();path();ctx.strokeStyle=dk;ctx.stroke()};
-    ctx.save();ctx.translate(bx,by+6);ctx.scale(.74,.74);
-    /* soft contact shadow */
-    {const g=ctx.createRadialGradient(4,0,6,4,0,110);g.addColorStop(0,'rgba(0,0,0,.6)');g.addColorStop(.6,'rgba(0,0,0,.25)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.save();ctx.translate(0,16);ctx.scale(1,.2);ctx.fillStyle=g;ctx.beginPath();ctx.arc(4,0,110,0,7);ctx.fill();ctx.restore()}
-    if((ready||fl)&&hq)BB.glow(0,-60,150,'rgba(255,210,120,A)',.16+.08*Math.sin(t*5)+.45*fl);
-    /* ===== heavy mint enamel base (flared skirt) ===== */
-    const bw=82,bt=-34,bb=12,ry=17;
-    const skirt=()=>{ctx.beginPath();ctx.moveTo(-bw*.9,bt);ctx.bezierCurveTo(-bw*.92,bt+20,-bw,bb-12,-bw,bb);E(0,bb,bw,ry,Math.PI,0,true);ctx.bezierCurveTo(bw,bb-12,bw*.92,bt+20,bw*.9,bt);E(0,bt,bw*.9,ry*.9,0,Math.PI);ctx.closePath()};
-    skirt();ctx.fillStyle=hg(-bw,bw,['#2f6b5c','#6fc2aa','#d4fff0','#9fe0cc','#4f9e88','#7fcdb5','#bff0e0','#3a7a68']);ctx.fill();
-    ctx.save();skirt();ctx.clip();
-    {const v=ctx.createLinearGradient(0,bt,0,bb+ry);v.addColorStop(0,'rgba(0,30,20,.35)');v.addColorStop(.35,'rgba(255,255,255,0)');v.addColorStop(1,'rgba(0,20,15,.45)');ctx.fillStyle=v;ctx.fillRect(-bw,bt-20,2*bw,90)}
-    if(hq){ctx.lineWidth=1.6;for(let i=-3;i<=3;i++){const a=i*.42,x=Math.sin(a)*bw*.88,sc=Math.cos(a);ctx.save();ctx.translate(x,bt+24);ctx.scale(sc,1);emboss(()=>etchGear(0,0,8),'rgba(10,50,40,.6)','rgba(230,255,248,.55)');ctx.restore();
-        if(i<3){const x2=Math.sin(a+.21)*bw*.9;emboss(()=>{ctx.beginPath();ctx.moveTo(x+8*sc,bt+24);ctx.quadraticCurveTo((x+x2)/2,bt+12,x2,bt+30);E(x2,bt+30,2,2)},'rgba(10,50,40,.5)','rgba(230,255,248,.45)')}}}
-    ctx.restore();skirt();ctx.strokeStyle=INK;ctx.lineWidth=3.5;ctx.stroke();
-    /* brass foot band + rivet ring */
-    {ctx.fillStyle=hg(-bw,bw,BRS);ctx.beginPath();E(0,bb,bw,ry,0,Math.PI);ctx.lineTo(-bw,bb-7);E(0,bb-7,bw,ry,Math.PI,0,true);ctx.closePath();ctx.fill();ctx.lineWidth=2.5;ctx.stroke();
-     for(let i=0;i<9;i++){const a=.2+i*(Math.PI-.4)/8;BB.rivet(Math.cos(a)*bw*.96,bb-3+Math.sin(a)*ry*.95,2.6)}}
-    /* indicator light on the skirt (flashes when hit) */
-    {const lit=fl>0||ready&&Math.sin(t*6)>0,lx=bw*.55,ly=bt+28;if(lit&&hq)BB.glow(lx,ly,34+50*fl,'rgba(255,140,60,A)',.7+.3*fl);ctx.fillStyle=hg(lx-9,lx+9,CHR);ctx.beginPath();E(lx,ly,9.5,7.5);ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.stroke();
-     const lg=ctx.createRadialGradient(lx-2,ly-2,1,lx,ly,7);lg.addColorStop(0,lit?'#fff2d8':'#d08a6a');lg.addColorStop(.5,lit?'#ff7a3a':'#8a3b22');lg.addColorStop(1,lit?'#b8401a':'#3a160a');ctx.fillStyle=lg;ctx.beginPath();E(lx,ly,6,4.6);ctx.fill()}
-    /* top face of base + deep groove under the dome */
-    ctx.fillStyle=hg(-bw,bw,BRS);ctx.beginPath();E(0,bt,bw*.9,ry*.9);ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=3;ctx.stroke();
-    ctx.fillStyle='#0b1714';ctx.beginPath();E(0,bt+1,bw*.86,ry*.8);ctx.fill();
-    /* ===== tall chrome dome ===== */
-    ctx.save();ctx.translate(0,bt-9+press*2);ctx.rotate(wob);const R=70,H=88,lr=15;
-    const dome=()=>{ctx.beginPath();ctx.moveTo(-R,0);ctx.bezierCurveTo(-R,-H*.62,-R*.62,-H,0,-H);ctx.bezierCurveTo(R*.62,-H,R,-H*.62,R,0);E(0,0,R,lr,0,Math.PI);ctx.closePath()};
-    dome();ctx.fillStyle=hg(-R,R,CHR);ctx.fill();
+  drawBell(bx,by,ready,t){const pt=this.ringT&&t>=this.ringT?t-this.ringT:9,press=pt<.25?Math.sin(pt/.25*Math.PI):0,wob=pt<1.2?Math.sin(pt*30)*.035*(1-pt/1.2):0,fl=pt<.6?1-pt/.6:0,hq=!(BB.phone&&!BB.q),INK=COL.ink,E=(x,y,rx,ry,a0=0,a1=7,ccw)=>ctx.ellipse(x,y,rx,ry,0,a0,a1,ccw);
+    /* v12.5: matte aged brass counter bell (ref: Victorian brass counter bell). Soft broad highlights, no gloss hotspots. */
+    const hg=(x0,x1,st)=>{const g=ctx.createLinearGradient(x0,0,x1,0);st.forEach((c,i)=>g.addColorStop(i/(st.length-1),c));return g};
+    const BR=['#4a3518','#6e5428','#9c7d42','#b39352','#a38446','#86683a','#6a5028','#3e2c12'];
+    const vshade=(y0,y1,a,b)=>{const v=ctx.createLinearGradient(0,y0,0,y1);v.addColorStop(0,a);v.addColorStop(1,b);return v};
+    ctx.save();ctx.translate(bx,by+6);ctx.scale(.8,.8);
+    /* contact shadow */
+    {const g=ctx.createRadialGradient(4,0,6,4,0,112);g.addColorStop(0,'rgba(0,0,0,.6)');g.addColorStop(.6,'rgba(0,0,0,.25)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.save();ctx.translate(0,18);ctx.scale(1,.2);ctx.fillStyle=g;ctx.beginPath();ctx.arc(4,0,112,0,7);ctx.fill();ctx.restore()}
+    if(ready&&hq)BB.glow(0,-40,140,'rgba(255,210,120,A)',.1+.05*Math.sin(t*5));
+    /* solid round base: rounded low drum */
+    const bw=88,bt=-22,bb=12,ry=18;
+    const base=()=>{ctx.beginPath();ctx.moveTo(-bw*.86,bt);ctx.bezierCurveTo(-bw,bt+2,-bw,bb-10,-bw*.97,bb);E(0,bb,bw*.97,ry,Math.PI,0,true);ctx.bezierCurveTo(bw,bb-10,bw,bt+2,bw*.86,bt);E(0,bt,bw*.86,ry*.85,0,Math.PI);ctx.closePath()};
+    base();ctx.fillStyle=hg(-bw,bw,BR);ctx.fill();
+    ctx.save();base();ctx.clip();ctx.fillStyle=vshade(bt,bb+ry,'rgba(255,230,170,.18)','rgba(20,10,0,.45)');ctx.fillRect(-bw,bt-20,2*bw,80);
+    if(hq){/* subtle wear: tarnish blotches + brushed streaks */ctx.globalAlpha=.07;for(let i=0;i<9;i++){const x=Math.sin(i*2.3)*bw*.8,y=bt+8+((i*7)%20);ctx.fillStyle=i%2?'#2a1e0c':'#5a5030';ctx.beginPath();E(x,y,10+i%3*5,4,0,7);ctx.fill()}ctx.globalAlpha=1}
+    ctx.restore();base();ctx.strokeStyle=INK;ctx.lineWidth=3.5;ctx.stroke();
+    /* base top face + slim shadow line under the dome */
+    ctx.fillStyle=hg(-bw,bw,BR);ctx.beginPath();E(0,bt,bw*.86,ry*.85);ctx.fill();ctx.lineWidth=3;ctx.stroke();
+    /* dome: smooth, wide and low, sitting snugly */
+    ctx.save();ctx.translate(0,bt-3+press*1.5);ctx.rotate(wob);const DR=bw*.84,DH=60,lr=14;
+    const dome=()=>{ctx.beginPath();ctx.moveTo(-DR,0);ctx.bezierCurveTo(-DR,-DH*.7,-DR*.55,-DH,0,-DH);ctx.bezierCurveTo(DR*.55,-DH,DR,-DH*.7,DR,0);E(0,0,DR,lr,0,Math.PI);ctx.closePath()};
+    ctx.fillStyle='rgba(20,10,0,.55)';ctx.beginPath();E(0,3,DR+2,lr+2);ctx.fill();/* slim shadow line */
+    dome();ctx.fillStyle=hg(-DR,DR,BR);ctx.fill();
     ctx.save();dome();ctx.clip();
-    {const v=ctx.createLinearGradient(0,-H,0,lr);v.addColorStop(0,'rgba(220,240,255,.6)');v.addColorStop(.3,'rgba(255,255,255,0)');v.addColorStop(.55,'rgba(15,25,25,.42)');v.addColorStop(.63,'rgba(15,25,25,0)');v.addColorStop(.85,'rgba(200,140,80,.3)');v.addColorStop(1,'rgba(90,60,30,.5)');ctx.fillStyle=v;ctx.fillRect(-R,-H,2*R,H+lr)}
-    if(hq){/* etched robot motifs: rivet ring, gear medallions, circuit scroll */
-      ctx.lineWidth=1.7;const dk='rgba(20,28,28,.55)',lt='rgba(255,255,255,.6)';
-      emboss(()=>{ctx.beginPath();E(0,-H*.86,R*.34,7)},dk,lt);
-      for(let i=0;i<14;i++){const a=i/14*Math.PI*2;const x=Math.cos(a)*R*.34,y=-H*.86+Math.sin(a)*7;if(Math.sin(a)>-.2){ctx.fillStyle=dk;ctx.beginPath();ctx.arc(x,y,1.8,0,7);ctx.fill();ctx.fillStyle=lt;ctx.beginPath();ctx.arc(x-.6,y-.6,.9,0,7);ctx.fill()}}
-      for(let i=-2;i<=2;i++){const a=i*.62,x=Math.sin(a)*R*.72,sc=Math.cos(a);ctx.save();ctx.translate(x,-H*.42);ctx.scale(sc,1);emboss(()=>etchGear(0,0,10),dk,lt);ctx.restore();
-        if(i<2){const x2=Math.sin(a+.62)*R*.72;emboss(()=>{ctx.beginPath();ctx.moveTo(x+12*sc,-H*.42);ctx.bezierCurveTo(x+18,-H*.62,x2-18,-H*.62,x2-12*Math.cos(a+.62),-H*.42);ctx.moveTo((x+x2)/2,-H*.57);ctx.lineTo((x+x2)/2,-H*.68);E((x+x2)/2,-H*.7,2.2,2.2);
-          ctx.moveTo(x+8*sc,-H*.32);ctx.quadraticCurveTo((x+x2)/2,-H*.12,x2-8,-H*.32)},dk,lt)}}
-      emboss(()=>{ctx.beginPath();E(0,-8,R*.97,lr*.95,Math.PI*.05,Math.PI*.95)},dk,lt);
-      ctx.fillStyle='rgba(255,236,190,.22)';ctx.fillRect(R*.3,-H*.82,9,H*.6);ctx.fillRect(R*.47,-H*.74,4,H*.5)}
-    {const rl=ctx.createLinearGradient(R*.5,0,R,0);rl.addColorStop(0,'rgba(255,214,150,0)');rl.addColorStop(1,'rgba(255,214,150,.75)');ctx.fillStyle=rl;ctx.fillRect(R*.45,-H,R*.6,H+lr)}
-    if(fl>0){ctx.fillStyle=`rgba(255,236,180,${.22*fl})`;ctx.fillRect(-R,-H,2*R,H+lr)}
+    /* lamp from upper-left: broad soft key, darker underside, warm bounce at rim */
+    {const k=ctx.createRadialGradient(-DR*.3,-DH*.75,4,-DR*.25,-DH*.6,DR*1.05);k.addColorStop(0,'rgba(240,215,150,.55)');k.addColorStop(.45,'rgba(220,190,120,.18)');k.addColorStop(1,'rgba(220,190,120,0)');ctx.fillStyle=k;ctx.fillRect(-DR,-DH,2*DR,DH+lr)}
+    ctx.fillStyle=vshade(-DH,lr,'rgba(0,0,0,0)','rgba(30,15,0,.5)');ctx.fillRect(-DR,-DH*.35,2*DR,DH*.35+lr);
+    {const rl=ctx.createLinearGradient(DR*.55,0,DR,0);rl.addColorStop(0,'rgba(230,190,120,0)');rl.addColorStop(1,'rgba(230,190,120,.32)');ctx.fillStyle=rl;ctx.fillRect(DR*.5,-DH,DR*.5,DH+lr)}/* soft rim light */
+    if(hq){ctx.globalAlpha=.06;for(let i=0;i<7;i++){ctx.fillStyle=i%2?'#2e220e':'#6a6038';ctx.beginPath();E(Math.sin(i*1.9)*DR*.6,-DH*.2-((i*11)%30),8+i%3*6,5,0,7);ctx.fill()}ctx.globalAlpha=1}
+    /* hit: subtle gold shine sweep */
+    if(fl>0){const sx=-DR+(1-fl)*DR*2.2,g=ctx.createLinearGradient(sx-30,0,sx+30,0);g.addColorStop(0,'rgba(255,230,160,0)');g.addColorStop(.5,`rgba(255,235,170,${.45*fl})`);g.addColorStop(1,'rgba(255,230,160,0)');ctx.fillStyle=g;ctx.fillRect(-DR,-DH,2*DR,DH+lr)}
     ctx.restore();dome();ctx.strokeStyle=INK;ctx.lineWidth=3.5;ctx.stroke();
-    /* brass lip band at the dome rim */
-    ctx.fillStyle=hg(-R,R,BRS);ctx.beginPath();E(0,lr*.1+3,R,lr,0,Math.PI);ctx.lineTo(-R,-5);E(0,-5,R,lr,Math.PI,0,true);ctx.closePath();ctx.fill();ctx.lineWidth=2.5;ctx.stroke();
-    /* specular */
-    {const sx=-R*.4,sy=-H*.66,sg=ctx.createRadialGradient(sx,sy,0,sx,sy,24);sg.addColorStop(0,'rgba(255,255,255,1)');sg.addColorStop(.35,'rgba(255,255,255,.7)');sg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.ellipse(sx,sy,26,13,-.7,0,7);ctx.fill();
-     ctx.fillStyle='rgba(255,255,255,.95)';ctx.beginPath();ctx.ellipse(sx-2,sy-1,10,4,-.7,0,7);ctx.fill();ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.ellipse(-R*.78,-H*.25,3,12,-.2,0,7);ctx.fill()}
-    /* crown: brass boss, dark lacquer collar bead, chrome stem, orange mushroom cap */
-    const ct=-H+2;ctx.fillStyle=hg(-24,24,BRS);ctx.beginPath();E(0,ct,24,8);ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=2.5;ctx.stroke();
-    const py=ct-press*9;
-    {ctx.fillStyle=hg(-5,5,CHR);ctx.beginPath();ctx.rect(-5,py-34,10,30);ctx.fill();ctx.lineWidth=2;ctx.stroke()}
-    {const cg=ctx.createRadialGradient(-4,py-14,1,0,py-11,13);cg.addColorStop(0,'#7a8a90');cg.addColorStop(.25,'#2a2f36');cg.addColorStop(1,'#07090c');ctx.fillStyle=cg;ctx.beginPath();ctx.moveTo(-9,py-4);ctx.bezierCurveTo(-14,py-10,-11,py-20,0,py-21);ctx.bezierCurveTo(11,py-20,14,py-10,9,py-4);ctx.closePath();ctx.fill();ctx.lineWidth=2.5;ctx.stroke();
-     ctx.fillStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.ellipse(-5,py-15,2.2,4,-.3,0,7);ctx.fill();ctx.fillStyle='rgba(255,200,140,.4)';ctx.beginPath();ctx.ellipse(8,py-10,1.4,4,.3,0,7);ctx.fill()}
-    {ctx.fillStyle='#7a2e0c';ctx.beginPath();E(0,py-36,29,8);ctx.fill();ctx.lineWidth=2.5;ctx.stroke();
-     const cg=ctx.createRadialGradient(-9,py-48,2,0,py-40,32);cg.addColorStop(0,'#ffe6cc');cg.addColorStop(.3,'#ffa060');cg.addColorStop(.75,'#e8641e');cg.addColorStop(1,'#8a3410');ctx.fillStyle=cg;ctx.beginPath();ctx.moveTo(-29,py-37);ctx.bezierCurveTo(-29,py-52,-14,py-57,0,py-57);ctx.bezierCurveTo(14,py-57,29,py-52,29,py-37);E(0,py-37,29,7,0,Math.PI);ctx.closePath();ctx.fill();ctx.lineWidth=3;ctx.stroke();
-     ctx.fillStyle='rgba(255,255,255,.85)';ctx.beginPath();ctx.ellipse(-11,py-49,8,3,-.35,0,7);ctx.fill();ctx.strokeStyle='rgba(255,220,170,.7)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,py-40,25,5,0,.2,Math.PI-.2);ctx.stroke()}
+    /* crown boss */
+    ctx.fillStyle=hg(-20,20,BR);ctx.beginPath();E(0,-DH+1,20,6);ctx.fill();ctx.lineWidth=2.5;ctx.stroke();
+    /* threaded stem + flat disc plunger */
+    const py=-DH-press*8;
+    {ctx.fillStyle=hg(-5,5,BR);ctx.beginPath();ctx.rect(-5,py-22,10,22);ctx.fill();ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='rgba(30,18,4,.6)';ctx.lineWidth=1.3;for(let y=py-19;y<py-1;y+=3){ctx.beginPath();ctx.moveTo(-5,y);ctx.lineTo(5,y+1.4);ctx.stroke()}
+     ctx.fillStyle=hg(-9,9,BR);ctx.beginPath();ctx.rect(-9,py-10,18,5);ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.stroke()}/* nut */
+    {const dr=30;ctx.fillStyle=hg(-dr,dr,BR);ctx.beginPath();E(0,py-24,dr,7,0,Math.PI);ctx.lineTo(-dr,py-30);E(0,py-30,dr,7,Math.PI,0,true);ctx.closePath();ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=2.5;ctx.stroke();
+     const tg=ctx.createRadialGradient(-10,py-33,2,0,py-30,dr);tg.addColorStop(0,'#c8a862');tg.addColorStop(.6,'#9a7c40');tg.addColorStop(1,'#6a5026');ctx.fillStyle=tg;ctx.beginPath();E(0,py-30,dr,7);ctx.fill();ctx.stroke()}
     ctx.restore();ctx.restore()}
   ring(){if(this.scrambled()){BB.sfx.bleep();this.busy={t:BB.t,txt:'Swap the notes back to match the ticket first!'};return}if(this.prank&&this.prank.ph==='fixed')return;if(this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending))this.ringT=BB.t;if(this.state!=='order'||R.len(this.tray)<4||this.tray.some(x=>x.pending))return;BB.sfx.bell();
     if(this.tray.some(x=>x.k==='x')){this.tossStatic(this.tray.findIndex(x=>x.k==='x'));return}
@@ -339,7 +319,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
       ctx.restore();
       if(O.rush&&this.rushT&&this.state==='order'){const f=clamp(1-(t-this.rushT)/50,0,1);BB.rrect(tx,ty+th+12,tw,20,10,'#233','#fff',2);BB.rrect(tx,ty+th+12,tw*f,20,10,f>.3?COL.yellow:'#ffb08a');if(f===0)BB.text('take your time!',tx+tw/2,ty+th+52,24,'#fff',{stroke:4})}}
     // bell
-    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-100,by=WIN.y+WIN.h-42;/* v12.5: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
+    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-112,by=WIN.y+WIN.h-42;/* v12.5: bell sits below the ticket (ticket bottom y400, bell top ~y418); RING! plaque beside it */
     this.drawBell(bx,by,ready,t);
     BB.plaque(bx-122,by-14,110,32,'RING!',22,ready?'#b5482a':'#28403c',{font:'Rammetto One',noRivet:1});
     BB.button(bx-180,by-110,260,140,'',{id:'bell',style:'none',onClick:()=>this.ring()})}
