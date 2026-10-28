@@ -124,7 +124,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
   drawBell(bx,by,ready,t){const pt=this.ringT&&t>=this.ringT?t-this.ringT:9,press=pt<.25?Math.sin(pt/.25*Math.PI):0,wob=pt<1.2?Math.sin(pt*30)*.035*(1-pt/1.2):0,fl=pt<.6?1-pt/.6:0,hq=!(BB.phone&&!BB.q),INK=COL.ink,E=(x,y,rx,ry,a0=0,a1=7,ccw)=>ctx.ellipse(x,y,rx,ry,0,a0,a1,ccw);
     /* v12.5: matte aged brass counter bell (ref: Victorian brass counter bell). Soft broad highlights, no gloss hotspots. */
     const hg=(x0,x1,st)=>{const g=ctx.createLinearGradient(x0,0,x1,0);st.forEach((c,i)=>g.addColorStop(i/(st.length-1),c));return g};
-    const BR=['#4a3518','#6e5428','#9c7d42','#b39352','#a38446','#86683a','#6a5028','#3e2c12'];
+    const BR=['#6a4c22','#94723a','#c49d58','#dcb872','#caa45e','#ab8648','#8a6834','#563e1a'];
     const vshade=(y0,y1,a,b)=>{const v=ctx.createLinearGradient(0,y0,0,y1);v.addColorStop(0,a);v.addColorStop(1,b);return v};
     ctx.save();ctx.translate(bx,by+6);ctx.scale(.8,.8);
     /* contact shadow */

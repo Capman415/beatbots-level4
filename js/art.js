@@ -92,29 +92,68 @@ BB.pickbot=(x,base,h,swing,o={})=>{const sq=o.squash||0;
   for(const rx of[-hr*.6,hr*.6])BB.rivet(rx,-h*.025,3);
   ctx.fillStyle=BB.lg(-h*.06,-h*.01,['#ffffff','#6c7775']);ctx.beginPath();ctx.arc(hr*.55,-h*.035,10,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fffbe0';ctx.beginPath();ctx.arc(hr*.55,-h*.035,6,0,7);ctx.fill();
   ctx.restore()};
-// Static Jr.: the tiny PLEASE STAND BY TV with stick legs and red sneakers.
-BB.staticJr=(x,base,h,o={})=>{const im=IMG.tinytv;if(!im)return;const t=BB.t,w=im.width*h/im.height,legH=h*.42,run=o.run||0;
+/* v12.5b Static Jr. (option A): rusty orange TV bot drawn in code, cached per size */
+const jrC={};
+function jrCanvas(h){const key=Math.round(h);if(jrC[key])return jrC[key];const S=2,H=h*S,Wd=H*1.08,c=document.createElement('canvas');c.width=Math.ceil(Wd+8);c.height=Math.ceil(H+8);const g=c.getContext('2d');g.translate(4,4);
+  const L=(y0,y1,a)=>{const G=g.createLinearGradient(0,y0,0,y1);a.forEach((v,i)=>G.addColorStop(i/(a.length-1),v));return G};
+  const rr=(x,y,w,hh,r,f,s,lw)=>{g.beginPath();g.roundRect(x,y,w,hh,r);if(f){g.fillStyle=f;g.fill()}if(s){g.strokeStyle=s;g.lineWidth=lw;g.stroke()}};
+  const ink='#2a160c',lw=Math.max(2,H*.018),cx=Wd/2;
+  /* rust speckle helper */
+  let sd=7;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  const rust=(x,y,w,hh,n)=>{g.save();g.beginPath();g.rect(x,y,w,hh);g.clip();for(let i=0;i<n;i++){g.fillStyle=rnd()<.5?'rgba(90,40,15,.35)':'rgba(255,190,130,.22)';g.beginPath();g.ellipse(x+rnd()*w,y+rnd()*hh,H*(.004+rnd()*.012),H*(.003+rnd()*.008),rnd()*3,0,7);g.fill()}g.restore()};
+  /* torso */
+  const ty=H*.6,tw=Wd*.58,tx=cx-tw/2,th=H*.36;
+  for(const s of[-1,1]){const ax=cx+s*tw*.52;rr(ax-H*.05,ty+H*.04,H*.1,H*.2,H*.04,L(ty,ty+H*.25,['#d9804a','#a8501f','#6e3010']),ink,lw);rr(ax-H*.055,ty+H*.22,H*.11,H*.07,H*.03,L(ty+H*.2,ty+H*.3,['#8a8f94','#4a4f55']),ink,lw)}
+  rr(tx,ty,tw,th,H*.06,L(ty,ty+th,['#e8925a','#c2602a','#8a3c14']),ink,lw);rust(tx,ty,tw,th,40);
+  for(const [px,py,pw,ph,r] of[[tx+tw*.1,ty+th*.25,tw*.34,th*.42,-.08],[tx+tw*.56,ty+th*.18,tw*.32,th*.44,.06]]){g.save();g.translate(px+pw/2,py+ph/2);g.rotate(r);rr(-pw/2,-ph/2,pw,ph,H*.012,L(-ph/2,ph/2,['#a8dcc8','#6aa894','#4a8270']),ink,lw*.8);
+    g.strokeStyle='rgba(30,50,45,.7)';g.lineWidth=lw*.5;g.setLineDash([H*.012,H*.01]);g.strokeRect(-pw/2+H*.012,-ph/2+H*.012,pw-H*.024,ph-H*.024);g.setLineDash([]);g.restore()}
+  g.fillStyle='rgba(255,220,180,.25)';g.fillRect(tx+H*.03,ty+H*.015,tw-H*.06,H*.02);
+  /* head */
+  const hx=Wd*.06,hw=Wd*.88,hy=H*.08,hh=H*.54;
+  for(const s of[-1,1]){const ex=s<0?hx-H*.02:hx+hw-H*.04;rr(ex,hy+hh*.3,H*.06,hh*.38,H*.025,L(hy,hy+hh,['#9aa0a6','#5a6066','#33373c']),ink,lw)}
+  g.fillStyle=L(hy,hy-H*.05,['#c2602a','#e8925a']);g.beginPath();g.ellipse(cx,hy+H*.005,hw*.18,H*.06,0,Math.PI,0);g.fill();g.strokeStyle=ink;g.lineWidth=lw;g.stroke();
+  rr(hx,hy,hw,hh,H*.07,L(hy,hy+hh,['#f09a60','#cf6a30','#9a4618','#6e3010']),ink,lw);rust(hx,hy,hw,hh,70);
+  rr(hx+H*.02,hy+H*.015,hw-H*.04,H*.03,H*.015,'rgba(255,225,190,.35)');
+  rr(hx+hw*.1,hy+H*.005,hw*.09,H*.05,H*.008,L(hy,hy+H*.05,['#a8dcc8','#5f9a86']),ink,lw*.7);
+  /* screen bezel + cracked cyan visor */
+  const sx=hx+hw*.06,sy=hy+hh*.13,sw=hw*.66,sh=hh*.72;
+  rr(sx-H*.012,sy-H*.012,sw+H*.024,sh+H*.024,H*.06,L(sy,sy+sh,['#5a5e64','#9aa0a6','#3a3e44']),ink,lw);
+  rr(sx,sy,sw,sh,H*.05,(()=>{const G=g.createRadialGradient(sx+sw*.45,sy+sh*.45,H*.02,sx+sw/2,sy+sh/2,sw*.7);G.addColorStop(0,'#1f6f78');G.addColorStop(1,'#08262c');return G})(),ink,lw);
+  g.save();g.beginPath();g.roundRect(sx,sy,sw,sh,H*.05);g.clip();
+  g.strokeStyle='rgba(120,240,255,.08)';g.lineWidth=1;for(let y=sy;y<sy+sh;y+=H*.012){g.beginPath();g.moveTo(sx,y);g.lineTo(sx+sw,y);g.stroke()}
+  g.shadowColor='#7ff4ff';g.shadowBlur=H*.03;g.fillStyle='#9ff6ff';
+  for(const s of[-1,1]){const ex=sx+sw/2+s*sw*.2,ey=sy+sh*.42;g.save();g.translate(ex,ey);g.rotate(s*.22);g.beginPath();g.ellipse(0,0,sw*.12,sh*.14,0,0,7);g.fill();g.fillStyle='#0b3036';g.beginPath();g.arc(-s*sw*.02,sh*.02,sw*.045,0,7);g.fill();g.fillStyle='#9ff6ff';g.restore();
+    g.strokeStyle='#9ff6ff';g.lineWidth=H*.025;g.lineCap='round';g.beginPath();g.moveTo(ex-s*sw*.14,ey-sh*.27);g.lineTo(ex+s*sw*.1,ey-sh*.17);g.stroke()}
+  g.lineWidth=H*.03;g.beginPath();g.arc(sx+sw/2,sy+sh*.52,sw*.22,.25,Math.PI-.25);g.stroke();
+  g.shadowBlur=0;g.strokeStyle='rgba(220,250,255,.75)';g.lineWidth=Math.max(1,H*.005);
+  const cr=[[.62,.05,.5,.35,.72,.6,.6,.95],[.5,.35,.2,.3,.05,.45],[.72,.6,.95,.7],[.2,.3,.25,.0]];for(const p of cr){g.beginPath();g.moveTo(sx+sw*p[0],sy+sh*p[1]);for(let i=2;i<p.length;i+=2)g.lineTo(sx+sw*p[i],sy+sh*p[i+1]);g.stroke()}
+  g.fillStyle='rgba(255,255,255,.12)';g.beginPath();g.ellipse(sx+sw*.3,sy+sh*.18,sw*.28,sh*.08,-.2,0,7);g.fill();g.restore();
+  /* dials */
+  for(let i=0;i<3;i++){const dx=hx+hw*.86,dy=hy+hh*(.24+i*.26),r=H*.042;g.fillStyle=(()=>{const G=g.createRadialGradient(dx-r*.4,dy-r*.4,0,dx,dy,r);G.addColorStop(0,'#c8ccd0');G.addColorStop(1,'#3e4248');return G})();g.beginPath();g.arc(dx,dy,r,0,7);g.fill();g.strokeStyle=ink;g.lineWidth=lw;g.stroke();g.strokeStyle='#22262a';g.lineWidth=lw*.8;g.beginPath();g.moveTo(dx-r*.5,dy);g.lineTo(dx+r*.5,dy);g.stroke()}
+  for(const [rx,ry] of[[hx+H*.035,hy+H*.035],[hx+hw-H*.035,hy+H*.035],[hx+H*.035,hy+hh-H*.035],[hx+hw-H*.035,hy+hh-H*.035]]){g.fillStyle='#7a4a2a';g.beginPath();g.arc(rx,ry,H*.01,0,7);g.fill()}
+  return jrC[key]={c,w:Wd/S,h:H/S,pad:4/S}}
+// Static Jr.: rusty TV bot, cracked cyan visor, rusty boots.
+BB.staticJr=(x,base,h,o={})=>{const J=jrCanvas(h),im=J.c;const t=BB.t,w=J.w,legH=h*.3,run=o.run||0;
   ctx.save();ctx.translate(x,base);
   ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,0,w*.4,10,0,0,7);ctx.fill();
   ctx.rotate(o.rot||0);if(o.flip)ctx.scale(-1,1);
   for(const lx of [-.2,.2]){const ph=run?Math.sin(t*28+(lx>0?Math.PI:0))*run:0;
     const fx=w*lx+ph*h*.18,fy=-(ph>0?ph*h*.08:0);
-    ctx.strokeStyle='#282c36';ctx.lineWidth=Math.max(5,h*.06);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(w*lx,-legH);ctx.lineTo(fx,fy-h*.06);ctx.stroke();
-    ctx.fillStyle='#e65046';ctx.strokeStyle='#1e1e28';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(fx+h*.04,fy-h*.06,h*.12,h*.065,0,0,7);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#fff';ctx.fillRect(fx-h*.06,fy-h*.05,h*.16,h*.02)}
+    ctx.strokeStyle='#4a4f55';ctx.lineWidth=Math.max(5,h*.07);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(w*lx*.8,-legH);ctx.lineTo(fx,fy-h*.06);ctx.stroke();
+    ctx.fillStyle=BB.lg(fy-h*.12,fy,['#e08850','#a8501f','#6e3010']);ctx.strokeStyle='#2a160c';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(fx+h*.03,fy-h*.06,h*.11,h*.065,0,0,7);ctx.fill();ctx.stroke()}
   const by=-legH-h,sq=o.squash||0;ctx.translate(0,-legH);ctx.scale(1+sq,1-sq);
   {// v12.4 Jr rabbit-ear antennas with sparks
     const lq=BB.q===0;for(const s of[-1,1]){const a=s*(.45+Math.sin(t*2+s)*.08),L=h*.5,bx=s*w*.12,tx=bx+Math.sin(a)*L,ty=-h-Math.cos(a)*L;
-      ctx.strokeStyle='#282c36';ctx.lineWidth=Math.max(3,h*.035);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(bx,-h*.95);ctx.lineTo(tx,ty);ctx.stroke();
+      ctx.strokeStyle='#282c36';ctx.lineWidth=Math.max(3,h*.03);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(bx,-h*.9);ctx.lineTo(tx,ty);ctx.stroke();
       const sp=Math.sin(t*7+s*2)>.55;if(sp)BB.glow(tx,ty,h*.25,'rgba(140,220,255,A)',.6);
-      ctx.fillStyle=sp?'#bff0ff':'#e65046';ctx.strokeStyle='#1e1e28';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(tx,ty,h*.06,0,7);ctx.fill();ctx.stroke();
+      ctx.fillStyle=sp?'#bff0ff':'#b85a28';ctx.strokeStyle='#2a160c';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(tx,ty,h*.06,0,7);ctx.fill();ctx.stroke();
       if(sp&&!lq){ctx.strokeStyle='#ffe066';ctx.lineWidth=2.5;for(let i=0;i<3;i++){const aa=i*2.1+t*9,r1=h*.09,r2=h*.2;ctx.beginPath();ctx.moveTo(tx+Math.cos(aa)*r1,ty+Math.sin(aa)*r1);ctx.lineTo(tx+Math.cos(aa+.3)*(r1+r2)*.6,ty+Math.sin(aa+.3)*(r1+r2)*.6);ctx.lineTo(tx+Math.cos(aa)*r2,ty+Math.sin(aa)*r2);ctx.stroke()}}}}
-  if(o.glitch){for(let i=0;i<8;i++){const sy=im.height*i/8,dy=-h+h*i/8,off=(Math.random()-.5)*h*.25*o.glitch;ctx.drawImage(im,0,sy,im.width,im.height/8,-w/2+off,dy,w,h/8+1)}}
-  else ctx.drawImage(im,-w/2,-h,w,h);
+  if(o.glitch){for(let i=0;i<8;i++){const sy=im.height*i/8,dy=-h+h*i/8,off=(Math.random()-.5)*h*.25*o.glitch;const P=J.pad;ctx.drawImage(im,0,P*2+sy*(im.height-P*4)/im.height,im.width,(im.height-P*4)/8,-w/2-P+off,dy,w+P*2,h/8+1)}}
+  else ctx.drawImage(im,-w/2-J.pad,-h-J.pad,w+J.pad*2,h+J.pad*2);
   if(o.stuffed){// cheeks stuffed + whole note sticking out
     ctx.fillStyle='rgba(255,140,150,.95)';ctx.strokeStyle=COL.ink;ctx.lineWidth=3;
-    for(const s of[-1,1]){ctx.beginPath();ctx.ellipse(s*w*.47,-h*.4,w*.12,h*.17,0,0,7);ctx.fill();ctx.stroke()}
-    BB.wholeNote(w*.05,-h*.32,h*.2,{rot:-.4+Math.sin(t*12)*.1})}
+    for(const s of[-1,1]){ctx.beginPath();ctx.ellipse(s*w*.46,-h*.62,w*.1,h*.14,0,0,7);ctx.fill();ctx.stroke()}
+    BB.wholeNote(w*.02,-h*.48,h*.17,{rot:-.4+Math.sin(t*12)*.1})}
   if(o.dizzy){for(let i=0;i<3;i++){const a=t*4+i*2.1;BB.star(Math.cos(a)*w*.45,-h*1.08+Math.sin(a)*12,12,COL.yellow,a)}}
   ctx.restore()};
 // a whole note (notation style: dark oval ring with a tilted open centre, white outline so it reads on dark panels)

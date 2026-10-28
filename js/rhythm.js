@@ -40,16 +40,31 @@ R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'
   else R.glyph(k,gx,gy,s,'#000',mg);
   const c=R.COLS[k],out=document.createElement('canvas');out.width=cw;out.height=ch;const g=out.getContext('2d');
   const ink=tint(m,()=>'#141419'),deep=tint(m,()=>c[2]),face=tint(m,(gg)=>{const L=gg.createLinearGradient(0,PAD,0,ch-PAD);L.addColorStop(0,c[0]);L.addColorStop(.55,c[1]);L.addColorStop(1,c[2]);return L});
-  const d=Math.max(2,s*.16);// extrusion depth
-  const paper=tint(m,()=>'rgba(255,250,235,.55)');// v12.5: no flat outline; a faint light edge keeps black notes readable on dark wood
-  const deep2=tint(m,(gg)=>{const L=gg.createLinearGradient(0,0,cw,ch);L.addColorStop(0,'#3a3a46');L.addColorStop(1,'#0a0a0e');return L});for(let i=Math.ceil(d);i>0;i--)g.drawImage(deep2,i*.6,i);
-  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.drawImage(paper,Math.cos(a)*s*.05,Math.sin(a)*s*.05)}
-  g.drawImage(face,0,0);
-  // light: soft top-left bevel highlight + specular streak, clipped to the face
-  const hl=tint(m,(gg)=>{const L=gg.createLinearGradient(0,0,cw*.3,ch);L.addColorStop(0,'rgba(255,255,255,.5)');L.addColorStop(.4,'rgba(255,255,255,0)');return L});
-  g.save();g.globalCompositeOperation='source-atop';g.drawImage(hl,-s*.06,-s*.08);g.restore();
+  /* v12.5b: solid 3D note object - extruded thickness, bevelled edges, shaded head, cylinder-lit stems, rim light */
+  const d=Math.max(3,s*.3),ex=d*.55;
+  const edge=(dx,dy,fill)=>{const e=document.createElement('canvas');e.width=cw;e.height=ch;const eg=e.getContext('2d');eg.drawImage(m,0,0);eg.globalCompositeOperation='destination-out';eg.drawImage(m,dx,dy);return tint(e,fill)};
+  /* extrusion: side walls lit from above (lighter near the face) */
+  const sideC=tint(m,(gg)=>{const L=gg.createLinearGradient(0,0,0,ch);L.addColorStop(0,'#2c2c36');L.addColorStop(1,'#08080b');return L});
+  for(let i=Math.ceil(d);i>0;i--){g.globalAlpha=1;g.drawImage(sideC,i*ex/d*1,i)}
+  g.drawImage(edge(0,-1.5,()=>'rgba(150,150,170,.5)'),ex,d);/* lit lower lip of the side */
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2;g.drawImage(ink,Math.cos(a)*s*.05,Math.sin(a)*s*.05)}
+  /* face: radial key light centred up-left of the note head */
+  const hx=gx-s*.45,hy=gy-s*.45;
+  const face2=tint(m,(gg)=>{const G=gg.createRadialGradient(hx,hy,s*.1,gx,gy,s*1.9);G.addColorStop(0,'#7a7a8c');G.addColorStop(.35,'#2e2e3a');G.addColorStop(1,'#060608');return G});
+  g.drawImage(face2,0,0);
+  /* stems/beams: vertical cylinder shading via a soft vertical-gradient over everything above the head */
+  {const cy=tint(m,(gg)=>{const L=gg.createLinearGradient(0,0,0,gy-s*.6);L.addColorStop(0,'rgba(120,120,140,.25)');L.addColorStop(1,'rgba(0,0,0,0)');return L});g.save();g.globalCompositeOperation='source-atop';g.drawImage(cy,0,0);g.restore()}
+  const b1=Math.max(1.5,s*.14);
+  g.save();g.globalCompositeOperation='source-atop';
+  g.drawImage(edge(b1,b1,()=>'rgba(255,255,255,.55)'),0,0);/* top-left bevel = light side; on stems this is the cylinder highlight */
+  g.drawImage(edge(b1*.45,b1*.45,()=>'rgba(255,255,255,.5)'),0,0);
+  g.drawImage(edge(-b1,-b1,()=>'rgba(0,0,0,.7)'),0,0);/* bottom-right = dark side */
+  g.drawImage(edge(-b1*.7,0,()=>'rgba(255,205,140,.55)'),0,0);/* warm rim light on the right edge */
+  g.restore();
   const sp=document.createElement('canvas');sp.width=cw;sp.height=ch;const sg=sp.getContext('2d');sg.drawImage(m,0,0);sg.globalCompositeOperation='destination-out';sg.drawImage(m,s*.09,s*.12);
-  const spt=tint(sp,()=>'rgba(255,255,255,.7)');g.drawImage(spt,0,0);
+  const spt=tint(sp,()=>'rgba(255,255,255,.55)');g.drawImage(spt,0,0);
+  /* head specular dot */
+  if(k!=='r'){const G=g.createRadialGradient(hx+s*.15,hy+s*.2,0,hx+s*.15,hy+s*.2,s*.45);G.addColorStop(0,'rgba(255,255,255,.75)');G.addColorStop(1,'rgba(255,255,255,0)');g.save();g.globalCompositeOperation='source-atop';g.fillStyle=G;g.fillRect(0,0,cw,ch);g.restore()}
   /* v12.5: shape-true soft shadow = blurred silhouette (shadowBlur trick works on Safari too) */
   const sh=document.createElement('canvas');sh.width=cw;sh.height=ch;{const hg=sh.getContext('2d');hg.shadowColor='rgba(0,0,0,.5)';hg.shadowBlur=Math.max(4,s*.35);hg.shadowOffsetX=cw*4;hg.drawImage(m,-cw*4,0)}
   return n3c[key]={c:out,sh,sc,PAD,s:s/sc,gy:gy/sc}};
