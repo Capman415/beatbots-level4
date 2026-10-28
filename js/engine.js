@@ -41,9 +41,9 @@ BB.button=(x,y,w,h,label,o={})=>{
   const pressed=hover&&ptr.down;
   const s=o.pop?o.pop:1, cx=x+w/2,cy=y+h/2;
   ctx.save();ctx.translate(cx,cy);ctx.scale(s*(pressed?.95:1),s*(pressed?.95:1));ctx.translate(-cx,-cy);
-  ctx.globalAlpha=o.disabled?.45:1;
-  const st=o.style||'cream';
+  ctx.globalAlpha=o.disabled?.45:1;const st=o.style||'cream';
   BB.rrect(x+4,y+8,w,h,o.r||28,'rgba(0,0,0,.35)');
+  if(st!=='flat'){BB.rrect(x-4,y-4,w+8,h+8,(o.r||28)+4,BB.lg(y-4,y+h+4,['#f4f7f6','#9aa6a4','#e2e8e6','#6c7775']),'rgba(20,30,30,.7)',2)}// v12.5 chrome bezel
   const R=o.r||28,sheen=()=>{ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(R,h/2));ctx.clip();BB.rrect(x+10,y+6,w-20,h*.4,Math.max(4,R-10),BB.lg(y,y+h*.45,['rgba(255,255,255,.38)','rgba(255,255,255,.04)']));ctx.restore()};
   if(st==='cream'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#fbf6e6','#e8e2cd','#cbc2a8']),'#8a806b',5);sheen();}
   else if(st==='green'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#6fd884','#3fb45a','#2a8a42']),'#1d5a2c',6);sheen();}
@@ -70,8 +70,21 @@ BB.text=(t,x,y,s,fill,o={})=>{ctx.font=`${s}px '${o.font||'Lilita One'}'`;ctx.te
 // teal+cream panel (same as l2lib_v4.panel / mockups)
 // clay-look panel: soft two-step shadow, lit cream rim, deep teal well with inner shadow + top sheen
 BB.lg=(y0,y1,stops)=>{const g=ctx.createLinearGradient(0,y0,0,y1);stops.forEach((c,i)=>g.addColorStop(i/(stops.length-1),c));return g};
-BB.panel=(x,y,w,h,r=30)=>{BB.rrect(x+3,y+14,w,h,r,'rgba(0,0,0,.16)');BB.rrect(x+2,y+7,w,h,r,'rgba(0,0,0,.24)');
-  BB.rrect(x,y,w,h,r,BB.lg(y,y+h,['#fbf6e6','#e8e2cd','#cfc6ad']),'#8a806b',4);
+// v12.5: shaded, beveled enamel plaque with a chrome rim, rivets and soft inner/outer shading (matches the robots + CGI rooms)
+BB.bevel=(x,y,w,h,r,cols=['#fdf8ea','#e9e2cc','#c9bfa3'])=>{ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=22;ctx.shadowOffsetY=10;
+  BB.rrect(x-4,y-4,w+8,h+8,r+4,BB.lg(y-4,y+h+4,['#f4f7f6','#9aa6a4','#e2e8e6','#6c7775']));ctx.restore();// chrome rim
+  BB.rrect(x-4,y-4,w+8,h+8,r+4,null,'rgba(20,30,30,.75)',2.5);
+  BB.rrect(x,y,w,h,r,BB.lg(y,y+h,cols));// enamel
+  ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));ctx.clip();
+  BB.rrect(x+2,y+2,w-4,h-4,r,null,'rgba(255,255,255,.75)',3);// top-left bevel light
+  ctx.strokeStyle='rgba(60,45,20,.28)';ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(x-2,y-2,w+2,h+2,Math.min(r,h/2,w/2));ctx.stroke();
+  const g=ctx.createRadialGradient(x+w*.3,y,0,x+w*.3,y,Math.max(w,h));g.addColorStop(0,'rgba(255,240,200,.18)');g.addColorStop(1,'rgba(255,240,200,0)');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);// scene lamp
+  ctx.restore()};
+BB.rivet=(x,y,s=5)=>{ctx.fillStyle=BB.lg(y-s,y+s,['#ffffff','#a9b3b1','#5d6866']);ctx.beginPath();ctx.arc(x,y,s,0,7);ctx.fill();ctx.strokeStyle='rgba(20,30,30,.6)';ctx.lineWidth=1.5;ctx.stroke()};
+BB.plaque=(cx,cy,w,h,txt,size,col='#28403c',o={})=>{const x=cx-w/2,y=cy-h/2,r=o.r??Math.min(12,h/3);BB.bevel(x,y,w,h,r,o.cols);if(w>90&&!o.noRivet){BB.rivet(x+9,cy,3.2);BB.rivet(x+w-9,cy,3.2)}
+  if(txt)BB.text(txt,cx,cy+1,size,col,{maxW:w-(w>90?30:12),stroke:o.stroke,font:o.font})};
+BB.panel=(x,y,w,h,r=30)=>{BB.bevel(x,y,w,h,r);
+  for(const [rx,ry] of[[x+9,y+9],[x+w-9,y+9],[x+9,y+h-9],[x+w-9,y+h-9]])BB.rivet(rx,ry,4);
   BB.well(x+18,y+16,w-36,h-32,r-8)};
 BB.well=(x,y,w,h,r)=>{BB.rrect(x,y,w,h,r,BB.lg(y,y+h,['#0e1f1d','#173230','#11302c']),COL.teal2,5);
   ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));ctx.clip();ctx.fillStyle=BB.lg(y,y+22,['rgba(0,0,0,.35)','rgba(0,0,0,0)']);ctx.fillRect(x,y,w,22);
