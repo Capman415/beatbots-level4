@@ -431,9 +431,10 @@ class MineRoom{
     for(let i=0;i<8;i++)BB.wholeNote(-280+i*80,-60,30,{fill:'#6ee678',glow:.4,rot:Math.sin(BB.t*3+i)*.2});
     BB.text('8 whole notes are back in the bin!',0,20,40,COL.yellow,{stroke:5});
     if(this.chip&&BB.V2.chip){const im=BB.V2.chip,h=110,w=im.width*h/im.height;BB.glow(440,40,90,'rgba(255,220,120,A)',.4);ctx.drawImage(im,440-w/2,30-h/2,w,h);BB.text('+ BEAT CHIP piece',440,110,24,COL.yellow,{stroke:4})}
-    BB.text('Next: the NOTE SMASHER (coming soon)',0,80,36,'#fff',{stroke:5});ctx.restore();
+    BB.text('Next: the NOTE SMASHER!',0,80,36,'#fff',{stroke:5});ctx.restore();
     if(t>6){BB.button(W/2-520,620,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('mine')});
-      BB.button(W/2+40,620,480,130,'PLAY AGAIN',{size:50,id:'again',onClick:()=>BB.go(new MineRoom())})}}
+      BB.button(W/2+40,620,480,130,'NEXT ROOM',{size:50,id:'nextroom',onClick:()=>{if(!BB.save.done.includes('mine')){BB.save.done.push('mine');localStorage.setItem('bb4',JSON.stringify(BB.save))}BB.go(new BB.SmasherRoom())}});
+      BB.button(W/2-200,780,400,100,'PLAY AGAIN',{size:40,id:'again',onClick:()=>BB.go(new MineRoom())})}}
 }
 BB.MineRoom=MineRoom;
 })();

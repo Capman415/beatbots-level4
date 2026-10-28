@@ -3,7 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v10';
+BB.VERSION='v11';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -28,14 +28,15 @@ BB.loadImages=names=>Promise.all(names.map(n=>new Promise(r=>{const i=new Image(
 // ---------- input ----------
 const ptr={x:0,y:0,down:false,clicks:[]};BB.ptr=ptr;
 function toLogical(e){return{x:(e.clientX-OX)/SC,y:(e.clientY-OY)/SC}}
-cv.addEventListener('pointerdown',e=>{e.preventDefault();const p=toLogical(e);ptr.x=p.x;ptr.y=p.y;ptr.down=true;BB.unlockAudio();if(mic.state==='off'&&!BB.noAutoMic)BB.startMic();clickAt(p);});
+cv.addEventListener('pointerdown',e=>{e.preventDefault();const p=toLogical(e);ptr.x=p.x;ptr.y=p.y;ptr.down=true;BB.unlockAudio();if(mic.state==='off'&&!BB.noAutoMic)BB.startMic();if(!(BB.scene&&BB.scene.pdown&&!BB.paused&&BB.scene.pdown(p)))clickAt(p);});
 cv.addEventListener('pointermove',e=>{const p=toLogical(e);ptr.x=p.x;ptr.y=p.y});
-addEventListener('pointerup',()=>ptr.down=false);
+addEventListener('pointerup',e=>{ptr.down=false;if(BB.scene&&BB.scene.pup&&e.target===cv)BB.scene.pup(toLogical(e))});
 const keys=[];addEventListener('keydown',e=>keys.push(e.key));BB.keys=keys;
 // ---------- UI buttons (immediate mode) ----------
 // A button only fires if a click lands inside it. Buttons are drawn big for small hands.
 let hits=[];
 BB.button=(x,y,w,h,label,o={})=>{
+  if(o.style==='none'){if(!o.disabled)hits.push({x,y,w,h,id:o.id||label,cb:o.onClick});return}
   const hover=!o.disabled&&ptr.x>x&&ptr.x<x+w&&ptr.y>y&&ptr.y<y+h;
   const pressed=hover&&ptr.down;
   const s=o.pop?o.pop:1, cx=x+w/2,cy=y+h/2;
@@ -57,7 +58,7 @@ BB.button=(x,y,w,h,label,o={})=>{
 };
 // Clicks run right inside the tap event (a real user gesture) so the mic prompt and audio resume are allowed.
 let lastHits=[];
-function clickAt(c){for(let i=lastHits.length-1;i>=0;i--){const b=lastHits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();break}}}
+function clickAt(c){for(let i=lastHits.length-1;i>=0;i--){const b=lastHits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();return true}}return false}
 function dispatchClicks(){lastHits=hits}
 // ---------- drawing helpers ----------
 BB.rrect=(x,y,w,h,r,fill,stroke,lw)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.lineWidth=lw||3;ctx.strokeStyle=stroke;ctx.stroke()}};

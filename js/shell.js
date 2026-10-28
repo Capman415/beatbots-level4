@@ -5,8 +5,8 @@
 // Scene interface: enter(), update(dt), draw(ctx), exit(); room scenes call BB.roomDone(id) when finished.
 BB.ROOMS=[
   {id:'mine',name:'NOTE MINE',sub:'Dig up whole notes',create:()=>BB.MineRoom&&new BB.MineRoom(),col:'#a0643c'},
-  {id:'smasher',name:'NOTE SMASHER',sub:'Meet tika-tika',create:null,col:'#5a8cb4'},
-  {id:'packing',name:'PACKING STATION',sub:'Cargo Code',create:null,col:'#c89632'},
+  {id:'smasher',name:'NOTE SMASHER',sub:'Meet tika-tika',create:()=>new BB.SmasherRoom(),col:'#5a8cb4'},
+  {id:'packing',name:'PACKING STATION',sub:'Cargo Code',create:()=>new BB.PackingRoom(),col:'#c89632'},
   {id:'label',name:'NAME THAT RHYTHM',sub:'Label Room',create:null,col:'#b45aa0'},
   {id:'finale',name:'DELIVERY',sub:'Stop Static Jr.!',create:null,col:'#3c5a8c'},
 ];
@@ -111,7 +111,8 @@ async function boot(){ctx.setTransform(1,0,0,1,0,0);
   await Promise.all([BB.loadImages(['sprocket','sorter','turtle','rocket','whisper','boom','tinytv']),BB.loadV2(),document.fonts.load("40px 'Rammetto One'"),document.fonts.load("40px 'Lilita One'")]);
   BB.loadVO(BB.VO_LINES||[]);
   const p=new URLSearchParams(location.search);
-  if(p.get('room')==='mine')BB.go(new BB.MineRoom({skipIntro:p.has('skip'),startAt:+p.get('at')||0}));else BB.go(new TitleScene());
+  const ro={skipIntro:p.has('skip'),startAt:+p.get('at')||0,auto:p.has('auto')};
+  if(p.get('room')==='mine')BB.go(new BB.MineRoom(ro));else if(p.get('room')==='smasher')BB.go(new BB.SmasherRoom(ro));else if(p.get('room')==='packing')BB.go(new BB.PackingRoom(ro));else BB.go(new TitleScene());
   BB.start()}
 boot();
 })();

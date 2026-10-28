@@ -1,0 +1,282 @@
+// Room 2: NOTE SMASHER (style B, the SMASH-O-MATIC 4000). Static Jr. broke the notes; customers' rhythm orders pile up.
+// Smash whole -> 2 halves -> 2 quarters each -> ta into ti-ti -> ti-ti into TIKA-TIKA. Fill the 4-beat tray, ring the bell, clap it back.
+'use strict';
+(()=>{const ctx=BB.ctx,COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB,R=BB.R;
+BB.VO_LINES=(BB.VO_LINES||[]).concat([
+ ['sm_intro',"Oh no! Static Jr. broke all the notes, and the rhythm orders are piling up!",'sprocket'],
+ ['sm_how',"Put a note in the Smash-O-Matic, then smash it! Clap together, or tap SMASH!",'sprocket'],
+ ['sm_half',"One whole note smashes into two half notes!",'sprocket'],
+ ['sm_q',"One half note smashes into two quarter notes. Ta! Ta!",'sprocket'],
+ ['sm_e',"Smash a ta, and you get ti-ti. Two sounds in one beat!",'sprocket'],
+ ['sm_tika',"FOUR sounds in ONE beat! Tika-tika!",'sprocket'],
+ ['sm_echo',"Say it with me! Tika-tika! Tika-tika!",'sprocket'],
+ ['sm_order',"Order up! Fill all four beats on the tray, then ring the bell!",'sprocket'],
+ ['sm_wrong',"Hmm, that doesn't match the ticket. Let's check it!",'sprocket'],
+ ['sm_serve',"Ding! Listen to the order, then clap it back!",'sprocket'],
+ ['sm_great',"Delicious rhythm! Order complete!",'sprocket'],
+ ['sm_again',"Almost! Let's clap it one more time!",'sprocket'],
+ ['sm_rush',"Rush order! Smash fast, but take your time!",'sprocket'],
+ ['sm_oops',"Whoa! Too many pieces! Sweep them back into the basket!",'sprocket'],
+ ['sm_trick',"Hey! Static Jr. snuck something onto the tray! Tap it to toss it out!",'sprocket'],
+ ['sm_rest',"A rest is one beat of silence. Shh!",'sprocket'],
+ ['sm_done',"Five orders served! Room two complete! Next stop, the Packing Station!",'sprocket'],
+ ['jr_extra',"Hee hee! Extra static!",'jr'],
+]);
+const FLOOR=952,PX=960,PH=760,PS=PH/900,PW=673*PS,PL=PX-PW/2,PT=FLOOR-PH;
+const HAM={x:PL+222*PS,y:PT+286*PS,w:230*PS,h:264*PS},COLLAR=PT+290*PS,ANVIL=PT+628*PS,ROD=[PL+290*PS,PL+395*PS];
+const KINDS=['h','q','e','s','r'],BX=[95,225,355,485,615],BASE=520;
+const CART={x:250,base:FLOOR};
+const WIN={x:1300,y:170,w:580,h:420},TRAY={x:1300,y:625,w:580,h:190};
+const ORDERS=[
+ {seq:['h','q','q'],note:'halves and quarters'},
+ {seq:['q','e','e','q'],note:'with ti-ti'},
+ {seq:['e','s','q','s'],note:'the first tika-tika!',prank:1},
+ {seq:['s','r','e','s'],note:'tika-tika with rests',rest:1},
+ {seq:['e','s','s','q'],note:'RUSH ORDER',rush:1,rest:1},
+];
+const SMASH={w:['h','h'],h:['q','q'],q:['e'],e:['s']};
+const howTo={title:'NOTE SMASHER: smash notes to fill the orders!',
+  steps:['Tap a basket (or the cart), then TO PRESS.','Clap together (or tap SMASH!) to smash it.','Tap a basket, then TO TRAY to fill the 4 beats.','Ring the bell. Listen, then clap the order back.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  words:'whole = 2 halves = 4 ta.   ta = ti-ti.   ti-ti = TIKA-TIKA (4 sounds in 1 beat)',
+  example:(x,y,w,h,t)=>{const st=Math.floor(t/1.4)%5,ks=['w','h','q','e','s'],k=ks[st],f=(t%1.4)/1.4;
+    const n=k==='w'?1:k==='h'?2:k==='q'?4:k==='e'?4:4;ctx.save();ctx.translate(x+w/2,y+h/2);
+    const hy=-150+Math.min(1,f*3)*60;ctx.fillStyle='#8a9496';ctx.fillRect(-60,-200,120,hy+200-30);BB.rrect(-90,hy-30,180,60,10,BB.lg(hy-30,hy+30,['#b8c0c2','#6c7476']),COL.ink,3);
+    if(f<.3){R.tile(k,-60,-20,120,80,{label:false})}else{const kk=ks[Math.min(4,st+1)];const m=st===0?2:st===1?2:1;for(let i=0;i<m;i++)R.tile(kk,-60+(i-(m-1)/2)*140*Math.min(1,(f-.3)*4),-20,120,80)}
+    BB.text(R.NAME[k]+'  \u2192  '+(SMASH[k]?SMASH[k].map(z=>R.NAME[z]).join(' + '):''),0,140,30,'#fff',{stroke:4});ctx.restore()}};
+class SmasherRoom{constructor(o={}){this.o=o}
+  enter(){this.inv={h:0,q:0,e:0,s:0,r:9};this.anvil=null;this.tray=[];this.fly=[];this.crumbs=[];this.sel=null;this.oi=this.o.startAt||0;this.done=0;this.said={};
+    this.ham=0;this.hamV=null;this.motes=R.motes(26);this.cust={x:2200,k:0};this.lastOverride=-9;this.firstTika=!this.o.startAt||this.o.startAt<3;
+    this.state='load';R.loadImgs([['smash_bg','jpg'],['press','png'],['hammer','png'],['customer','png'],['basket','png']]).then(()=>{this.static=this.bake();
+      if(this.o.skipIntro||this.o.startAt)this.beginOrder();else this.startIntro()});BB.mic.take()}
+  exit(){BB.paused=false}
+  bake(){const s=BB.phone&&!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
+    if(V.smash_bg)g.drawImage(V.smash_bg,0,0,W,H);
+    // warm pool of light under the press, floor shadow
+    const gr=g.createRadialGradient(PX,FLOOR,40,PX,FLOOR,700);gr.addColorStop(0,'rgba(255,220,160,.18)');gr.addColorStop(1,'rgba(255,220,160,0)');g.fillStyle=gr;g.fillRect(0,0,W,H);
+    R.shadow(g,PX,FLOOR+4,PW*.62,.6);
+    // basket shelf
+    g.fillStyle='rgba(0,0,0,.25)';g.fillRect(28,BASE+12,672,16);const sg=g.createLinearGradient(0,BASE,0,BASE+24);sg.addColorStop(0,'#c99a62');sg.addColorStop(1,'#7c5530');g.fillStyle=sg;g.fillRect(24,BASE,672,22);
+    for(const bx of [80,640]){g.fillStyle='#6c4a2a';g.beginPath();g.moveTo(bx-8,BASE+22);g.lineTo(bx+8,BASE+22);g.lineTo(bx-8,BASE+70);g.closePath();g.fill()}
+    if(V.press)g.drawImage(V.press,PL,PT,PW,PH);
+    // nameplate text baked onto the press
+    g.font="30px 'Rammetto One'";g.textAlign='center';g.textBaseline='middle';g.fillStyle='#3a3226';g.fillText('SMASH-O-MATIC 4000',PL+388*PS,PT+105*PS);
+    // cart of whole notes
+    R.shadow(g,CART.x,CART.base,190,.55);if(V.cart)g.drawImage(V.cart,CART.x-190,CART.base-225,380,225);
+    return c}
+  // ---------- flow ----------
+  startIntro(){this.state='intro';this.st=BB.t;this.jr={x:-200,ph:'run'};BB.sfx.glitch()}
+  intro(){const t=BB.t-this.st,j=this.jr;
+    if(t<1.6){j.x=lerp(-200,PX-80,ease.out(t/1.6));j.run=1}
+    else if(t<3.4){j.run=0;j.hop=Math.abs(Math.sin((t-1.6)*9))*40;if(!this.said.s1){this.said.s1=1;BB.say('jr_giggle',{overlap:true})}
+      if(Math.random()<.25){BB.sfx.ting();BB.burst(PX+(Math.random()-.5)*300,ANVIL-20,6,{cols:['#5aa8e6','#ffd36b','#a96ef0','#fff'],kind:'dot',size:10,speed:500,g:900})}}
+    else if(t<4.6){j.hop=0;j.run=1;j.x+=BB.dt*1400}
+    if(t>3.6&&!this.said.s2){this.said.s2=1;this.voEnd=BB.t+BB.say('sm_intro')}
+    if(t>4.6&&BB.t>(this.voEnd||0)+.2){this.jr=null;this.beginOrder()}}
+  skipIntro(){this.jr=null;BB.talking=null;BB.caption=null;this.beginOrder()}
+  beginOrder(){const O=ORDERS[this.oi];this.O=O;this.state='order';this.tray=[];this.cust={x:2200,k:this.oi,in:BB.t};this.mood=null;this.rushT=O.rush?BB.t:null;this.prank=null;this.tries=0;this.cb=null;
+    if(this.oi===0){this.cardT=BB.t;setTimeout(()=>BB.scene===this&&BB.say('sm_how'),2500)}
+    else if(O.rush)BB.say('sm_rush');else if(O.rest&&!this.said.rest){this.said.rest=1;BB.say('sm_rest')}else BB.say('sm_order');
+    BB.sfx.bleep()}
+  // ---------- actions ----------
+  pick(k){if(this.state!=='order'&&this.state!=='smashing')return;if(k!=='w'&&!this.inv[k]){BB.sfx.bonk();this.empty={k,t:BB.t};return}this.sel=this.sel===k?null:k}
+  toPress(k){this.sel=null;if(this.anvil){BB.sfx.bonk();this.busy={t:BB.t,txt:'The press is full! SMASH first.'};return}
+    if(k==='r'){BB.sfx.boing();this.busy={t:BB.t,txt:"You can't smash silence!"};return}
+    if(k!=='w')this.inv[k]--;const from=k==='w'?[CART.x,CART.base-200]:[BX[KINDS.indexOf(k)],BASE-60];
+    this.fly.push({k,x0:from[0],y0:from[1],x1:PX,y1:ANVIL-36,t0:BB.t,d:.45,end:()=>{this.anvil={k,t:BB.t};BB.sfx.clunk()}})}
+  toTray(k){this.sel=null;const used=R.len(this.tray),n=R.BEATS[k];if(used+n>4){BB.sfx.boing();this.busy={t:BB.t,txt:`Too big! ${n} beats > ${4-used} left`};return}
+    if(k!=='w')this.inv[k]--;const from=k==='w'?[CART.x,CART.base-200]:[BX[KINDS.indexOf(k)],BASE-60],cx=this.slotX(used)+this.slotW(n)/2;
+    this.tray.push({k,t:BB.t,pending:1});const it=this.tray[this.tray.length-1];
+    this.fly.push({k,x0:from[0],y0:from[1],x1:cx,y1:TRAY.y+110,t0:BB.t,d:.4,end:()=>{it.pending=0;BB.sfx.thunk()}})}
+  slotX(b){return TRAY.x+30+b*132}
+  slotW(n){return n*132-12}
+  untray(i){if(this.state!=='order')return;const it=this.tray[i];if(!it||it.pending)return;
+    if(it.k==='x'){this.tossStatic(i);return}
+    this.tray.splice(i,1);if(it.k!=='w')this.inv[it.k]++;BB.sfx.pop()}
+  smash(){if(!this.anvil||this.hamV)return;const k=this.anvil.k;const slow=k==='e'&&this.firstTika;
+    this.hamV={t:BB.t,d:slow?1.6:.16,slow,k};BB.sfx.piston();if(slow){this.firstTika=false;this.slowT=BB.t}}
+  impact(){const k=this.hamV.k,slow=this.hamV.slow;BB.shake(6);BB.sfx.crunch();this.anvil=null;
+    BB.burst(PX,ANVIL-20,slow?40:18,{cols:['#ffe066','#fff','#ffb040'],kind:'spark',size:10,speed:slow?900:600,g:600});
+    if(k==='s'){// over-smash: a funny mess of crumbs, sweep it back
+      for(let i=0;i<26;i++)this.crumbs.push({x:PX+(Math.random()-.5)*260,y:ANVIL-6-Math.random()*8,r:Math.random()*6.3,s:6+Math.random()*10,c:R.COLS.s[Math.random()*3|0]});this.mess=BB.t;if(!this.said.oops){this.said.oops=1;BB.say('sm_oops')}return}
+    if(k==='w'&&!this.said.half){this.said.half=1;BB.say('sm_half')}
+    if(k==='h'&&!this.said.q){this.said.q=1;BB.say('sm_q')}
+    if(k==='q'&&!this.said.e){this.said.e=1;BB.say('sm_e')}
+    if(slow){this.fan={t:BB.t};setTimeout(()=>{if(BB.scene!==this)return;BB.say('sm_tika');this.echo={t:BB.t+2.6};setTimeout(()=>BB.scene===this&&this.chant(),2600)},700)}
+    const out=SMASH[k];out.forEach((o,i)=>{const bx=BX[KINDS.indexOf(o)];this.fly.push({k:o,x0:PX+(i-(out.length-1)/2)*120,y0:ANVIL-40,x1:bx,y1:BASE-60,t0:BB.t+(slow?2.2:.15)+i*.1,d:.6,arc:260,end:()=>{this.inv[o]++;this.binPop={k:o,t:BB.t};BB.sfx.ting()}})})}
+  chant(){const t=BB.ac.currentTime+.3,spb=60/84;BB.say('sm_echo',{overlap:true});for(let r=0;r<2;r++)for(let i=0;i<4;i++)BB.sfx.block(t+1.2+r*spb*2+i*spb/4,.8)}
+  sweep(){if(!this.crumbs.length)return;BB.sfx.sweep();this.sweepT=BB.t;this.fly.push({k:'s',x0:PX,y0:ANVIL-30,x1:BX[3],y1:BASE-60,t0:BB.t+.4,d:.6,arc:200,end:()=>{this.inv.s++;BB.sfx.ting()}})}
+  ring(){if(this.state!=='order'||R.len(this.tray)<4||this.tray.some(x=>x.pending))return;BB.sfx.bell();
+    if(this.tray.some(x=>x.k==='x')){this.tossStatic(this.tray.findIndex(x=>x.k==='x'));return}
+    const want=this.O.seq,got=this.tray.map(x=>x.k);
+    if(got.join()===want.join()){this.mood={k:'yum',t:BB.t};this.state='serve';this.st=BB.t;BB.say('sm_serve');setTimeout(()=>BB.scene===this&&this.startClap(),2300);return}
+    // mismatch: the customer bleeps, pieces that don't match hop back into their baskets
+    BB.sfx.bleep();this.mood={k:'huh',t:BB.t};BB.say('sm_wrong');let b=0;const wantAt={};{let bb=0;want.forEach(k=>{wantAt[bb]=k;bb+=R.BEATS[k]})}
+    const keep=[];for(const it of this.tray){if(wantAt[b]===it.k&&keep.length===this.tray.indexOf(it))keep.push(it);else if(it.k!=='w')this.fly.push({k:it.k,x0:this.slotX(b)+this.slotW(R.BEATS[it.k])/2,y0:TRAY.y+110,x1:BX[KINDS.indexOf(it.k)],y1:BASE-60,t0:BB.t+.4,d:.6,arc:200,end:()=>this.inv[it.k]++});b+=R.BEATS[it.k]}
+    this.tray=keep}
+  startClap(){this.state='clap';this.cb=new R.ClapBack(this.O.seq,{bpm:84,onDone:sc=>this.clapDone(sc),voice:s=>{this.custBop=BB.t}})}
+  clapDone(sc){this.tries++;if(sc>=.6||this.tries>=2){this.state='happy';this.st=BB.t;this.mood={k:'love',t:BB.t};BB.sfx.fanfare();BB.say('sm_great');
+      BB.burst(TRAY.x+TRAY.w/2,TRAY.y+60,40,{cols:['#ffe066','#6ee678','#fff','#5ac8fa'],kind:'star',size:14,speed:800,g:500})}
+    else{BB.say('sm_again');setTimeout(()=>BB.scene===this&&this.state==='clap'&&this.startClap(),1800)}}
+  manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;
+    if(this.state==='clap'&&this.cb)this.cb.override();
+    else if(this.state==='order'&&this.anvil)this.smash();}
+  startPrank(){this.prank={t:BB.t,x:2050,ph:'in'};BB.sfx.glitch();BB.say('jr_extra',{overlap:true})}
+  updPrank(dt){const p=this.prank,t=BB.t-p.t;
+    if(p.ph==='in'){p.x=lerp(2050,1700,ease.out(clamp(t/1,0,1)));if(t>1.1){const used=R.len(this.tray);if(used<4){this.tray.push({k:'x',t:BB.t});BB.sfx.zap();BB.say('sm_trick')}p.ph='wait';p.t2=BB.t}}
+    if(p.ph==='wait'){p.x=1700+Math.sin(BB.t*6)*10;if(BB.t-p.t2>9){const i=this.tray.findIndex(x=>x.k==='x');if(i>=0)this.tossStatic(i);else p.ph='run'}}
+    if(p.ph==='hit'){if(BB.t-p.t3>1.5)p.ph='run'}
+    if(p.ph==='run'){p.x+=dt*1100;if(p.x>2200)p.ph='done'}}
+  tossStatic(i){const p=this.prank;this.tray.splice(i,1);BB.sfx.boing();const x0=this.slotX(R.len(this.tray))+60;
+    this.fly.push({k:'x',x0,y0:TRAY.y+110,x1:p?p.x:1800,y1:FLOOR-150,t0:BB.t,d:.5,arc:300,end:()=>{BB.sfx.bonk();if(p){p.ph='hit';p.t3=BB.t;BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(p.x,FLOOR-200,12,{col:COL.yellow,kind:'star',size:14,g:300})}}})}
+  pause(){BB.paused=true;BB.ac.suspend()}
+  resume(){BB.paused=false;BB.ensureMic()}
+  next(){this.done++;this.oi++;this.tray=[];this.cb=null;if(this.oi>=ORDERS.length){this.state='end';this.st=BB.t;BB.say('sm_done');BB.sfx.fanfare();
+      if(!BB.save.done.includes('smasher')){BB.save.done.push('smasher');localStorage.setItem('bb4',JSON.stringify(BB.save))}}else this.beginOrder()}
+  // pointer: drag a basket straight onto the press or the tray (taps are handled by buttons)
+  pdown(p){if(this.state!=='order')return false;const k=this.hitBasket(p);if(!k)return false;this.drag={k,x0:p.x,y0:p.y};return true}
+  pup(p){const d=this.drag;this.drag=null;if(!d)return;if(Math.hypot(p.x-d.x0,p.y-d.y0)<30){BB.sfx.click();this.pick(d.k);return}if(d.k!=='w'&&!this.inv[d.k])return;
+    if(Math.abs(p.x-PX)<PW/2&&p.y>PT&&p.y<FLOOR)this.toPress(d.k);else if(p.x>TRAY.x&&p.y>TRAY.y-60&&p.y<TRAY.y+TRAY.h)this.toTray(d.k)}
+  hitBasket(p){if(Math.abs(p.x-CART.x)<190&&p.y>CART.base-260&&p.y<CART.base)return 'w';for(let i=0;i<5;i++){if(i===4&&!this.O?.rest)continue;if(Math.abs(p.x-BX[i])<62&&p.y>BASE-150&&p.y<BASE+10)return KINDS[i]}return null}
+  update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
+    if(this.state==='intro'){this.intro();if(BB.keys.includes('s'))this.skipIntro()}
+    // hammer
+    if(this.hamV){const h=this.hamV,t=(BB.t-h.t)/h.d;if(t<1)this.ham=ease.inOut(t)*.4+t*t*.6;else if(!h.hit){h.hit=1;this.ham=1;this.impact();h.up=BB.t}
+      if(h.hit){const u=(BB.t-h.up)/.5;this.ham=1-ease.inOut(clamp(u,0,1));if(u>=1)this.hamV=null}}
+    // clap to smash (group-gated with a live mic)
+    const ons=this.state==='clap'?[]:BB.mic.take();
+    if(this.state==='order'&&this.anvil&&!this.hamV&&BB.t-this.anvil.t>.4){const G=window.GroupGate;
+      for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;if(BB.mic.ok&&G&&!BB.debug&&!o.sim){this.pendSmash=o.t;break}this.smash();break}}
+    if(this.pendSmash&&BB.ac.currentTime-.02>this.pendSmash+.2){const m=window.GroupGate.judge(this.pendSmash);this.pendSmash=null;if(m.ok)this.smash();else this.few=BB.t}
+    if(BB.debug&&this.state==='order'&&this.anvil&&!this.hamV&&BB.t-this.anvil.t>1.2)this.smash();
+    if(this.cb&&this.state==='clap')this.cb.update(dt);
+    // fliers
+    for(let i=this.fly.length-1;i>=0;i--){const f=this.fly[i];if(BB.t-f.t0>=f.d){this.fly.splice(i,1);f.end&&f.end()}}
+    // customer roll-in
+    const c=this.cust;if(this.state==='order'||this.state==='serve'||this.state==='clap')c.x=lerp(2200,WIN.x+140,ease.out(clamp((BB.t-c.in)/1.2,0,1)));
+    if(this.state==='happy'){const t=BB.t-this.st;if(t>2.2)c.x+=dt*900;this.trayOut=clamp((t-1.6)/1,0,1);if(t>3.4){this.trayOut=0;this.next()}}
+    if(this.O&&this.O.prank&&this.state==='order'&&!this.prank&&this.tray.filter(x=>!x.pending).length>=1&&R.len(this.tray)<=2)this.startPrank();
+    if(this.prank)this.updPrank(dt);
+    if(this.crumbs.length&&this.sweepT&&BB.t-this.sweepT>.4){this.crumbs=[];this.sweepT=0}
+    // sim: auto-play an order (debug ?sim=1&auto)
+    if(BB.debug&&this.o.auto)this.autoplay()}
+  autoplay(){if(this.state!=='order'||this.fly.length||this.hamV||BB.t-(this.autoT||0)<.7)return;this.autoT=BB.t;
+    if(this.tray.some(x=>x.k==='x')){this.untray(this.tray.findIndex(x=>x.k==='x'));return}
+    const used=R.len(this.tray);if(used>=4){this.ring();return}
+    let b=0,need=null;for(const k of this.O.seq){if(b===used){need=k;break}b+=R.BEATS[k]}
+    if(!need)return;if(need==='r'||this.inv[need]>0){this.toTray(need);return}
+    if(this.anvil){this.smash();return}
+    const chain={h:'w',q:'h',e:'q',s:'e'};let src=chain[need];while(src!=='w'&&!this.inv[src])src=chain[src];this.toPress(src)}
+  // ---------- drawing ----------
+  draw(){const t=BB.t,[sx,sy]=BB.shakeXY;ctx.save();
+    // slow-mo push-in on the first tika-tika
+    let z=1;if(this.slowT){const k=(t-this.slowT);z=k<1.6?1+.28*ease.inOut(clamp(k/1.2,0,1)):1+.28*(1-ease.inOut(clamp((k-3.2)/1,0,1)));if(k>4.4)this.slowT=0}
+    if(z!==1){ctx.translate(PX,ANVIL-80);ctx.scale(z,z);ctx.translate(-PX,-(ANVIL-80))}
+    ctx.translate(sx,sy);
+    if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#2a3a38';ctx.fillRect(0,0,W,H)}
+    R.lampGlow([[312,170],[520,215],[1393,215],[1628,170]],t);
+    this.drawCartNotes();this.drawBaskets();this.drawPress();this.drawWindow();this.drawTray();
+    if(this.jr)BB.staticJr(this.jr.x,FLOOR-(this.jr.hop||0),130,{run:this.jr.run,glitch:this.jr.hop?.6:0});
+    if(this.prank&&this.prank.ph!=='done'){const p=this.prank;BB.staticJr(p.x,FLOOR,130,{run:p.ph==='in'||p.ph==='run'?1:0,dizzy:p.ph==='hit',rot:p.ph==='hit'?Math.sin(t*10)*.15:0,glitch:p.ph==='hit'?.7:0});
+      if(p.ph==='wait')R.bubble(p.x,FLOOR-280,'extra static! hee hee')}
+    for(const f of this.fly)this.drawFly(f);
+    if(this.drag&&Math.hypot(BB.ptr.x-this.drag.x0,BB.ptr.y-this.drag.y0)>30&&(this.drag.k==='w'||this.inv[this.drag.k])){ctx.save();ctx.globalAlpha=.9;R.tile(this.drag.k,BB.ptr.x-60,BB.ptr.y-42,120,84,{label:true});ctx.restore()}
+    for(const c of this.crumbs){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.r);ctx.fillStyle=c.c;ctx.strokeStyle=COL.ink;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-c.s,0);ctx.lineTo(0,-c.s*.7);ctx.lineTo(c.s,c.s*.3);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+    if(this.fan)this.drawFan();
+    ctx.restore();
+    R.drawMotes(this.motes,BB.paused?0:Math.min(.05,BB.dt||.016),t);BB.drawParts();
+    this.drawHUD();BB.captionBox();
+    if(this.state==='order'&&this.oi===0&&BB.t-this.cardT<2.6)BB.titleCard('ROOM 2: NOTE SMASHER','Static Jr. broke the notes. Smash them into orders!',(BB.t-this.cardT)/2.6);
+    if(this.state==='end')this.drawEnd();
+    if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
+  drawCartNotes(){const t=BB.t;for(let i=0;i<4;i++)BB.wholeNote(CART.x-110+i*72,CART.base-205-Math.abs(Math.sin(t*1.2+i))*4,26,{rot:-.2+i*.15});
+    BB.rrect(CART.x-120,CART.base-300,240,52,20,BB.lg(CART.base-300,CART.base-248,['#fbf6e6','#d8d0b8']),'#8a806b',4);BB.text('WHOLE NOTES',CART.x,CART.base-273,28,'#28403c');
+    if(this.sel==='w')this.selRing(CART.x,CART.base-120,210)}
+  drawBaskets(){const V=BB.V2,t=BB.t;KINDS.forEach((k,i)=>{if(k==='r'&&!(this.O&&this.O.rest))return;const x=BX[i],n=this.inv[k],pop=this.binPop&&this.binPop.k===k&&t-this.binPop.t<.35?1+.12*Math.sin((t-this.binPop.t)/.35*Math.PI):1;
+      ctx.save();ctx.translate(x,BASE);ctx.scale(pop,pop);
+      // pieces peeking out of the basket
+      const show=k==='r'?2:Math.min(n,3);for(let j=0;j<show;j++)R.tile(k,-50+j*10-(show-1)*5,-150+j*6,100,72,{gs:.9});
+      if(V.basket){const h=104,w=V.basket.width*h/V.basket.height;ctx.drawImage(V.basket,-w/2,-h,w,h)}
+      BB.text(k==='r'?'REST':R.NAME[k]+' x'+n,0,-37,k==='s'?15:18,'#28403c');
+      ctx.restore();if(this.sel===k)this.selRing(x,BASE-70,90);
+      if(this.empty&&this.empty.k===k&&t-this.empty.t<1.4)R.bubble(x,BASE-200,k==='h'?'smash a WHOLE':'smash '+({q:'a HALF',e:'a TA',s:'a TI-TI'}[k]),COL.ink)});
+    // pick / place buttons for the selected basket
+    if(this.sel&&this.state==='order'){const i=this.sel==='w'?-1:KINDS.indexOf(this.sel),x=i<0?CART.x:BX[i],y=i<0?CART.base-370:BASE+40;const bx=clamp(x-150,20,420);
+      BB.button(bx,y,145,84,'TO PRESS',{style:'green',size:28,id:'topress',onClick:()=>this.toPress(this.sel)});
+      BB.button(bx+155,y,145,84,'TO TRAY',{style:'green',size:28,id:'totray',onClick:()=>this.toTray(this.sel)})}
+}
+  selRing(x,y,r){ctx.save();ctx.strokeStyle=COL.yellow;ctx.lineWidth=6;ctx.setLineDash([18,12]);ctx.lineDashOffset=-BB.t*60;ctx.beginPath();ctx.ellipse(x,y,r,r*.62,0,0,7);ctx.stroke();ctx.restore()}
+  drawPress(){const V=BB.V2,t=BB.t;const dy=lerp(-86,0,this.ham)+(this.hamV?0:Math.sin(t*2)*2);
+    // piece on the anvil
+    if(this.anvil){const a=this.anvil,k=ease.back(clamp((t-a.t)/.3,0,1)),sq=this.hamV&&this.ham>.85?(this.ham-.85)*3:0;
+      ctx.save();ctx.translate(PX,ANVIL);ctx.scale(1+sq*.4,(1-sq)*k);R.tile(a.k,-80,-74,160,74,{label:true});ctx.restore();
+      if(this.state==='order'&&!this.hamV&&BB.q)BB.glow(PX,ANVIL-40,160,'rgba(255,230,140,A)',.18+.08*Math.sin(t*5))}
+    // rod + hammer (clipped under the collar so it slides into the machine)
+    if(V.hammer){ctx.save();ctx.beginPath();ctx.rect(PL,COLLAR,PW,ANVIL-COLLAR);ctx.clip();
+      ctx.fillStyle=BB.lg(0,1,['#9aa2a4','#9aa2a4']);const rg=ctx.createLinearGradient(ROD[0],0,ROD[1],0);rg.addColorStop(0,'#5d6567');rg.addColorStop(.35,'#c3cacc');rg.addColorStop(1,'#4d5456');ctx.fillStyle=rg;ctx.fillRect(ROD[0],COLLAR,ROD[1]-ROD[0],HAM.y+dy+20-COLLAR);
+      ctx.drawImage(V.hammer,HAM.x,HAM.y+dy,HAM.w,HAM.h);ctx.restore()}
+    if(this.state==='order'||this.state==='intro')BB.button(PX-150,FLOOR-150,300,92,this.anvil?'SMASH!':'SMASH',{style:'red',size:44,id:'smash',disabled:!this.anvil||!!this.hamV,onClick:()=>this.smash()});
+    if(this.crumbs.length)BB.button(PX+170,FLOOR-150,220,92,'SWEEP',{size:40,id:'sweep',onClick:()=>this.sweep()});
+    if(this.busy&&t-this.busy.t<1.6)R.bubble(PX,PT+60,this.busy.txt,COL.ink)}
+  drawWindow(){const V=BB.V2,t=BB.t,O=this.O;BB.panel(WIN.x,WIN.y,WIN.w,WIN.h,34);BB.well(WIN.x+16,WIN.y+16,WIN.w-32,WIN.h-32,24);
+    // customer
+    ctx.save();ctx.beginPath();ctx.roundRect(WIN.x+16,WIN.y+16,WIN.w-32,WIN.h-32,24);ctx.clip();
+    const glowC=['#ffe066','#9ff09a','#d8a6ff','#8fd0ff','#ffb08a'][this.cust.k%5];if(BB.q)BB.glow(WIN.x+150,WIN.y+260,200,'rgba(255,240,200,A)',.12);
+    if(V.customer){const c=this.cust,bop=this.custBop&&t-this.custBop<.15?.05:0,mood=this.mood&&t-this.mood.t<2?this.mood.k:null;const h=280,w=h,yy=WIN.y+WIN.h-24+Math.sin(t*3)*3;
+      BB.contactShadow(c.x,WIN.y+WIN.h-22,100,.5);ctx.save();ctx.translate(c.x,yy);ctx.scale(1+bop,1-bop);if(mood==='huh')ctx.rotate(Math.sin(t*20)*.05);ctx.drawImage(BB.tinted('customer',null,glowC,.12)||V.customer,-w/2,-h,w,h);ctx.restore();
+      if(mood==='love'){for(let i=0;i<3;i++){const a=(t*1.5+i*.33)%1;ctx.globalAlpha=1-a;BB.text('\u2665',c.x-40+i*40,yy-h-a*60,40,'#ff6b8a');ctx.globalAlpha=1}}
+      if(mood==='huh')BB.text('?',c.x+70,yy-h-10,60,COL.yellow,{font:'Rammetto One',stroke:6})}
+    ctx.restore();
+    // ticket
+    if(O&&this.state!=='end'){const tx=WIN.x+255,ty=WIN.y+36,tw=300,th=250,k=ease.back(clamp((t-this.cust.in-.6)/.4,0,1));ctx.save();ctx.translate(tx+tw/2,ty);ctx.scale(k,k);ctx.rotate(Math.sin(t*1.3)*.01);
+      BB.rrect(-tw/2+4,8,tw,th,10,'rgba(0,0,0,.3)');BB.rrect(-tw/2,0,tw,th,10,'#fffdf3','#8a806b',3);BB.rrect(-tw/2,0,tw,44,10,'#e65046');ctx.fillStyle='#e65046';ctx.fillRect(-tw/2,24,tw,20);
+      BB.text('ORDER #'+(this.oi+1)+(O.rush?'  RUSH!':''),0,23,24,'#fff',{stroke:3});
+      let b=0;for(const kk of O.seq){const n=R.BEATS[kk],cw=(tw-20)/4,x=-tw/2+10+b*cw,w=n*cw;ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=2;ctx.strokeRect(x+2,56,w-4,150);
+        R.glyph(kk,x+w/2,170,kk==='s'?9:11,COL.ink);BB.text(R.SAY[kk],x+w/2,222,kk==='s'?16:19,'#5a5040');b+=n}
+      ctx.restore();
+      if(O.rush&&this.rushT&&this.state==='order'){const f=clamp(1-(t-this.rushT)/50,0,1);BB.rrect(tx,ty+th+12,tw,20,10,'#233','#fff',2);BB.rrect(tx,ty+th+12,tw*f,20,10,f>.3?COL.yellow:'#ffb08a');if(f===0)BB.text('take your time!',tx+tw/2,ty+th+52,24,'#fff',{stroke:4})}}
+    // bell
+    const ready=this.state==='order'&&R.len(this.tray)>=4&&!this.tray.some(x=>x.pending);const bx=WIN.x+WIN.w-110,by=WIN.y+WIN.h-60;
+    ctx.save();ctx.translate(bx,by);const wob=ready?Math.sin(t*8)*.06:0;ctx.rotate(wob);if(ready&&BB.q)BB.glow(0,-30,120,'rgba(255,220,100,A)',.35);
+    ctx.fillStyle=BB.lg(-70,0,['#ffe680','#e8b830','#a87a10']);ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-62,0);ctx.quadraticCurveTo(-60,-70,0,-72);ctx.quadraticCurveTo(60,-70,62,0);ctx.closePath();ctx.fill();ctx.stroke();
+    BB.rrect(-76,-4,152,16,8,'#6b5a3a',COL.ink,3);ctx.beginPath();ctx.arc(0,-78,9,0,7);ctx.fill();ctx.stroke();ctx.restore();
+    BB.text('RING!',bx,by+36,26,ready?COL.yellow:'#9fb',{stroke:4});
+    BB.button(bx-80,by-100,160,150,'',{id:'bell',style:'none',onClick:()=>this.ring()})}
+  drawTray(){const t=BB.t;const off=(this.trayOut||0)*700;ctx.save();ctx.translate(off,0);BB.panel(TRAY.x,TRAY.y,TRAY.w,TRAY.h,30);
+    BB.text('ORDER TRAY',TRAY.x+TRAY.w/2,TRAY.y+30,26,COL.yellow,{stroke:4});
+    for(let b=0;b<4;b++){const x=this.slotX(b);BB.rrect(x,TRAY.y+52,120,120,18,'rgba(10,25,23,.7)','rgba(200,240,230,.35)',3);BB.text(String(b+1),x+60,TRAY.y+112,54,'rgba(200,240,230,.18)',{font:'Rammetto One'})}
+    let b=0;this.tray.forEach((it,i)=>{const n=it.k==='x'?1:R.BEATS[it.k],x=this.slotX(b),w=this.slotW(n);
+      if(!it.pending){if(it.k==='x'){BB.rrect(x,TRAY.y+52,w,120,18,'#333','#e65046',4);for(let j=0;j<40;j++){ctx.fillStyle=`rgba(255,255,255,${Math.random()*.8})`;ctx.fillRect(x+6+Math.random()*(w-16),TRAY.y+58+Math.random()*106,8,4)}BB.text('???',x+w/2,TRAY.y+112,36,'#ff9c8a',{stroke:4})}
+        else{const k=ease.back(clamp((t-it.t-.4)/.25,0,1));ctx.save();ctx.translate(x+w/2,TRAY.y+172);ctx.scale(1,.8+.2*k);R.tile(it.k,-w/2,-120,w,120,{label:true});ctx.restore()}
+        if(this.state==='order')BB.button(x,TRAY.y+52,w,120,'',{id:'tray'+i,style:'none',onClick:()=>this.untray(i)})}
+      b+=n});
+    ctx.restore()}
+  drawFly(f){const t=BB.t;if(t<f.t0)return;const k=clamp((t-f.t0)/f.d,0,1),e=ease.inOut(k),x=lerp(f.x0,f.x1,e),y=lerp(f.y0,f.y1,e)-Math.sin(k*Math.PI)*(f.arc||160);
+    ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(k*Math.PI)*.4);if(f.k==='x'){BB.rrect(-50,-40,100,80,14,'#333','#e65046',4);BB.text('???',0,0,30,'#ff9c8a',{stroke:3})}else R.tile(f.k,-60,-42,120,84,{label:true});ctx.restore()}
+  drawFan(){const t=BB.t-this.fan.t;if(t>4.2){this.fan=null;return}const k=ease.back(clamp(t/.6,0,1)),a=t<3.6?1:1-(t-3.6)/.6;ctx.save();ctx.globalAlpha=a;
+    if(BB.q)BB.glow(PX,ANVIL-200,420,'rgba(216,166,255,A)',.35);
+    // four tiny notes fan out, then join with a double beam
+    const join=clamp((t-1.1)/.5,0,1);ctx.save();ctx.translate(PX,ANVIL-160);ctx.scale(1.6*k,1.6*k);
+    for(let i=0;i<4;i++){const ang=(i-1.5)*.5*(1-join),dx=(i-1.5)*lerp(80,46,join);ctx.save();ctx.translate(dx,Math.abs(i-1.5)*(1-join)*-30);ctx.rotate(ang);R.glyph('q',0,0,14,'#fff');ctx.restore()}
+    if(join>0){ctx.globalAlpha=a*join;R.glyph('s',8,0,14,COL.yellow)}ctx.restore();
+    BB.text('TIKA-TIKA!',PX,ANVIL-370,96*k,COL.yellow,{font:'Rammetto One',stroke:10});BB.text('4 sounds in 1 beat',PX,ANVIL-290,44,'#fff',{stroke:6});ctx.restore()}
+  drawHUD(){const t=BB.t;BB.panel(40,24,560,130,30);BB.text('ORDERS DONE',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.done} of 5`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+    for(let i=0;i<5;i++)BB.rrect(330+i*48,60,38,52,10,i<this.done?BB.lg(60,112,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
+    BB.pauseBtn(()=>this.pause());
+    if(this.state==='intro')BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});
+    else{BB.micMeter(40,H-150);BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1})}
+    if(this.cb&&(this.state==='clap'))this.cb.draw(W/2,H-90);
+    else if(this.state==='order'){const used=R.len(this.tray);const msg=this.anvil?(this.hamV?'':'CLAP together to SMASH!'):used>=4?'Ring the bell!':'Fill the tray: '+(4-used)+' beat'+(4-used===1?'':'s')+' left';
+      if(msg){BB.rrect(W/2-330,H-120,660,76,38,'rgba(12,28,26,.78)','rgba(200,240,230,.5)',3);BB.text(msg,W/2,H-82,38,'#fff',{stroke:5})}}
+    if(this.few&&t-this.few<1.2)R.bubble(PX,PT-10,'Everyone together!',COL.ink);
+    if(this.cb&&this.cb.few&&t-this.cb.few<1.2)R.bubble(W/2,H-300,'Everyone together!',COL.ink)}
+  drawEnd(){const t=BB.t-this.st;if(t<.4)return;const k=ease.back(clamp((t-.4)/.6,0,1));ctx.fillStyle=`rgba(8,18,17,${.5*clamp(t,0,1)})`;ctx.fillRect(0,0,W,H);
+    ctx.save();ctx.translate(W/2,360);ctx.scale(k,k);BB.panel(-600,-260,1200,520,44);
+    BB.text('ROOM 2 COMPLETE!',0,-170,72,'#fff',{font:'Rammetto One',stroke:9});
+    ['h','q','e','s'].forEach((kk,i)=>R.tile(kk,-430+i*220,-100,190,120,{label:true}));
+    BB.text('whole = 2 halves = 4 ta.  ta = ti-ti.  ti-ti \u2192 TIKA-TIKA!',0,80,36,COL.yellow,{stroke:5});
+    BB.text('Next: the PACKING STATION',0,150,38,'#fff',{stroke:5});ctx.restore();
+    if(t>1.6){BB.button(W/2-520,700,480,130,'NEXT ROOM',{style:'green',size:56,id:'nextroom',onClick:()=>{BB.go(BB.PackingRoom?new BB.PackingRoom():new BB.MapScene('smasher'))}});
+      BB.button(W/2+40,700,480,130,'ROOM MAP',{size:50,id:'tomap',onClick:()=>BB.roomDone('smasher')})}}
+}
+BB.SmasherRoom=SmasherRoom;
+})();

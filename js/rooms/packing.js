@@ -1,0 +1,212 @@
+// Room 3: PACKING STATION / CARGO CODE (style C, drop chute). Static Jr. destroyed the orders.
+// Crates are sized by beats. Steer the falling crate into one of 4 beat columns, DROP it, or SWAP with NEXT. A full 4-beat pallet locks and the class claps the code.
+'use strict';
+(()=>{const ctx=BB.ctx,COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB,R=BB.R;
+BB.VO_LINES=(BB.VO_LINES||[]).concat([
+ ['pk_intro',"Static Jr. destroyed the orders! Let's pack new rhythm crates. Every pallet holds four beats.",'sprocket'],
+ ['pk_how',"Tap a column, then tap DROP. Or swap it with NEXT!",'sprocket'],
+ ['pk_full',"Pallet full! Listen, then clap the cargo code!",'sprocket'],
+ ['pk_big',"Boing! Too big! Count the beats that are left.",'sprocket'],
+ ['pk_match',"Now match the order code. Look at the ticket!",'sprocket'],
+ ['pk_wrongk',"Oops, the code needs a different crate there.",'sprocket'],
+ ['pk_limited',"Only four crates this time. Choose wisely!",'sprocket'],
+ ['pk_swap',"Uh oh! Static Jr. swapped the next crate! Spot it, and swap it out!",'sprocket'],
+ ['pk_great',"Packed and sealed!",'sprocket'],
+ ['pk_done',"All orders packed! Room three complete! Next stop, the Label Room!",'sprocket'],
+ ['jr_fit',"Wrong fit! Hee hee!",'jr'],
+]);
+const FLOOR=947,CX0=640,CW=160,CTOP=230,ROWY=575,CH=128;
+const NEXTP={x:1350,y:170,w:330,h:430};
+const ROUNDS=[
+ {mode:'free',pool:['h','q','e','q','s'],txt:'FREE BUILD: fill 4 beats any way!'},
+ {mode:'free',pool:['w','h','q','e','s','r'],txt:'FREE BUILD: wholes, halves and rests too!'},
+ {mode:'match',code:['h','e','q'],txt:'MATCH THE CODE'},
+ {mode:'match',code:['s','q','r','e'],txt:'MATCH THE CODE'},
+ {mode:'limited',set:['e','s','q','q'],txt:'ONLY 4 CRATES: use them all!'},
+ {mode:'match',code:['q','s','e','r'],prank:1,txt:"MATCH THE CODE (watch out!)"},
+];
+const howTo={title:'PACKING STATION: pack 4 beats on every pallet!',
+  steps:['A crate falls down the chute. Its size = its beats.','Tap a column (1-4) to move it. Tap DROP to drop it.','Tap SWAP to trade it with the NEXT crate.','Full pallet? Listen, then clap the cargo code back!','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  words:'whole = 4 beats   half = 2   ta, ti-ti, tika-tika, rest = 1 beat each',
+  example:(x,y,w,h,t)=>{const ph=(t%4)/4;ctx.save();ctx.translate(x+w/2,y+h/2);const cw=100;
+    BB.rrect(-2*cw-10,-150,4*cw+20,300,14,'#132322','#50aaa0',3);R.crateDraw('h',-2*cw,90,2*cw-6,70);R.crateDraw('q',0,90,cw-6,70);
+    const yy=lerp(-140,90,ease.inOut(clamp(ph*1.6,0,1)));R.crateDraw('e',cw,yy,cw-6,70);if(ph>.66)BB.text('FULL! clap it',0,-120,32,COL.yellow,{stroke:4});ctx.restore()}};
+// crate: painted wood 3-slice + colored code label
+R.crateDraw=(k,x,y,w,h,o={})=>{const im=BB.V2.crate,c=R.COLS[k];ctx.save();ctx.globalAlpha=o.alpha??1;
+  BB.rrect(x+4,y+8,w,h,10,'rgba(0,0,0,.3)');
+  if(im){const s=h/im.height,cap=70;ctx.drawImage(im,0,0,cap,im.height,x,y,cap*s,h);ctx.drawImage(im,cap,0,im.width-2*cap,im.height,x+cap*s,y,w-2*cap*s,h);ctx.drawImage(im,im.width-cap,0,cap,im.height,x+w-cap*s,y,cap*s,h)}
+  else BB.rrect(x,y,w,h,8,'#c9a06a',COL.ink,3);
+  // tinted label + name tag
+  const lw=Math.min(w-40,Math.max(70,h*1.1)),lx=x+w/2-lw/2,ly=y+h*.22,lh=h*.62;BB.rrect(lx,ly,lw,lh,10,BB.lg(ly,ly+lh,[c[0],c[1]]),'rgba(25,25,31,.8)',3);
+  ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(lx+6,ly+4,lw-12,lh*.22);
+  R.glyph(k,lx+lw/2-(k==='e'||k==='s'?0:4),ly+lh*.83,lh*.12*(k==='s'?.85:1),COL.ink);
+  if(o.tag!==false&&w>60){const tw=BB.measure(R.NAME[k],18)+18;BB.rrect(x+12,y-12,tw,28,8,'#fbf6e6',COL.ink,2);BB.text(R.NAME[k],x+12+tw/2,y+3,18,COL.ink)}
+  BB.text(String(R.BEATS[k]),x+w-22,y+h-20,24,'#fff',{stroke:4});ctx.restore()};
+class PackingRoom{constructor(o={}){this.o=o}
+  enter(){this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
+    this.state='load';R.loadImgs([['pack_bg','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.beginRound();else this.startIntro()});BB.mic.take()}
+  exit(){BB.paused=false}
+  bake(){const s=BB.phone&&!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
+    if(V.pack_bg)g.drawImage(V.pack_bg,0,0,W,H);
+    // chute: shadow, frame, dark glass interior with column lanes
+    R.shadow(g,W/2,FLOOR+8,420,.6);
+    g.fillStyle='rgba(0,0,0,.3)';g.fillRect(CX0-34,CTOP-60+14,4*CW+68,ROWY+CH+60-CTOP+60);
+    const fr=g.createLinearGradient(CX0-30,0,CX0+4*CW+30,0);fr.addColorStop(0,'#7c8a8c');fr.addColorStop(.5,'#c9d2d3');fr.addColorStop(1,'#6a7678');g.fillStyle=fr;g.fillRect(CX0-30,CTOP-60,4*CW+60,ROWY+CH+40-CTOP+60);
+    const ig=g.createLinearGradient(0,CTOP,0,ROWY+CH);ig.addColorStop(0,'#16282a');ig.addColorStop(1,'#20393a');g.fillStyle=ig;g.fillRect(CX0,CTOP-10,4*CW,ROWY+CH+10-CTOP+10);
+    for(let i=1;i<4;i++){g.fillStyle='rgba(160,210,200,.16)';g.fillRect(CX0+i*CW-2,CTOP-10,4,ROWY-CTOP+10)}
+    g.font="64px 'Rammetto One'";g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(180,230,220,.14)';for(let i=0;i<4;i++)g.fillText(String(i+1),CX0+i*CW+CW/2,CTOP+40);
+    // rivets
+    g.fillStyle='#4d585a';for(let y=CTOP-40;y<ROWY+CH+30;y+=70){for(const x of [CX0-16,CX0+4*CW+16]){g.beginPath();g.arc(x,y,5,0,7);g.fill()}}
+    // yellow header
+    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.moveTo(CX0-90,CTOP-118+10);g.lineTo(CX0+4*CW+90,CTOP-118+10);g.lineTo(CX0+4*CW+30,CTOP-48+10);g.lineTo(CX0-30,CTOP-48+10);g.fill();
+    const hg=g.createLinearGradient(0,CTOP-118,0,CTOP-48);hg.addColorStop(0,'#ffe680');hg.addColorStop(1,'#e8b830');g.fillStyle=hg;g.beginPath();g.moveTo(CX0-90,CTOP-118);g.lineTo(CX0+4*CW+90,CTOP-118);g.lineTo(CX0+4*CW+30,CTOP-48);g.lineTo(CX0-30,CTOP-48);g.closePath();g.fill();g.strokeStyle='#19191f';g.lineWidth=4;g.stroke();
+    g.font="34px 'Rammetto One'";g.fillStyle='#3a2a10';g.fillText('DROP CHUTE',W/2,CTOP-82);
+    // steel stand under the chute down to the floor
+    for(const x of [CX0-10,CX0+4*CW-40]){const lg=g.createLinearGradient(x,0,x+50,0);lg.addColorStop(0,'#5d696b');lg.addColorStop(.5,'#aab4b5');lg.addColorStop(1,'#4d585a');g.fillStyle=lg;g.fillRect(x,ROWY+CH+40,50,FLOOR-ROWY-CH-30)}
+    g.fillStyle='#6a7678';g.fillRect(CX0-10,ROWY+CH+120,4*CW+20,26);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(CX0-10,ROWY+CH+146,4*CW+20,8);
+    // hazard strip + pallet bed
+    for(let i=0;i<24;i++){g.fillStyle=i%2?'#19191f':'#f2c230';g.beginPath();const x=CX0-30+i*((4*CW+60)/24);g.moveTo(x,ROWY+CH+14);g.lineTo(x+(4*CW+60)/24,ROWY+CH+14);g.lineTo(x+(4*CW+60)/24-12,ROWY+CH+40);g.lineTo(x-12,ROWY+CH+40);g.fill()}
+    return c}
+  startIntro(){this.state='intro';this.st=BB.t;this.jr={x:-160};this.wreck=[];for(let i=0;i<6;i++)this.wreck.push({k:['h','q','e','s','w','r'][i],x:CX0+80+i*100,y:ROWY+40,vx:0,vy:0,r:0,hit:0})}
+  intro(dt){const t=BB.t-this.st,j=this.jr;j.x=lerp(-160,W+200,clamp(t/3.2,0,1));
+    for(const c of this.wreck){if(!c.hit&&Math.abs(j.x-c.x)<60){c.hit=1;c.vx=300+Math.random()*500;c.vy=-700-Math.random()*400;BB.sfx.crunch();BB.shake(4);BB.burst(c.x,c.y,10,{cols:['#c9a06a','#7c5530'],kind:'dot',size:10,speed:400,g:900})}
+      if(c.hit){c.vy+=1800*dt;c.x+=c.vx*dt;c.y+=c.vy*dt;c.r+=dt*8}}
+    if(t>.6&&!this.said.g){this.said.g=1;BB.say('jr_giggle',{overlap:true})}
+    if(t>2.6&&!this.said.i){this.said.i=1;this.voEnd=BB.t+BB.say('pk_intro')}
+    if(t>3.2&&BB.t>(this.voEnd||0)+.1)this.skipIntro()}
+  skipIntro(){this.jr=null;this.wreck=null;BB.talking=null;BB.caption=null;this.beginRound()}
+  beginRound(){const Rd=ROUNDS[this.ri];this.Rd=Rd;this.state='play';this.cells=[null,null,null,null];this.placed=[];this.cur=null;this.cb=null;this.tries=0;this.prank=null;this.palletIn=BB.t;
+    if(Rd.mode==='limited')this.q=Rd.set.slice().sort(()=>Math.random()-.5);else if(Rd.mode==='match')this.q=[...Rd.code,'w','h'].sort(()=>Math.random()-.5);else this.q=[];this.fillQ();
+    if(this.ri===0){this.cardT=BB.t;setTimeout(()=>BB.scene===this&&BB.say('pk_how'),2600)}
+    else if(Rd.mode==='match'&&!this.said.m){this.said.m=1;BB.say('pk_match')}else if(Rd.mode==='limited')BB.say('pk_limited');
+    this.spawn()}
+  fillQ(){const Rd=this.Rd;while(this.q.length<4){if(Rd.mode==='match')this.q.push(...Rd.code.filter(k=>!this.cells.includes(k)||true).sort(()=>Math.random()-.5));
+      else if(Rd.mode==='limited')break;else{let left=4;const set=[];while(left>0){const ok=Rd.pool.filter(k=>R.BEATS[k]<=left);const k=ok[Math.random()*ok.length|0];set.push(k);left-=R.BEATS[k]}this.q.push(...set.sort(()=>Math.random()-.5))}}}
+  gapMax(){let m=0,r=0;for(const c of this.cells){r=c?0:r+1;m=Math.max(m,r)}return m}
+  spawn(){if(!this.q.length){this.fillQ();if(!this.q.length)return}
+    // never deadlock: if nothing in the queue can fit, slip in a crate that does (match mode: the crate the code needs next)
+    const g=this.gapMax();if(this.Rd.mode==='match'){let b=0,need=[];for(const k of this.Rd.code){if(!this.cells[b])need.push(k);b+=R.BEATS[k]}if(!need.some(k=>this.q.includes(k)))this.q.unshift(need[0])}
+    else if(!this.q.some(k=>R.BEATS[k]<=g))this.q.unshift(g>=2?'h':'q');const k=this.q.shift();const w=R.BEATS[k];let col=this.firstFree(w);this.cur={k,col,y:CTOP-CH-10,fast:0,t:BB.t,x:CX0+col*CW};this.fillQ()}
+  firstFree(w){for(let c=0;c<=4-w;c++){let ok=true;for(let i=0;i<w;i++)if(this.cells[c+i])ok=false;if(ok)return c}return 0}
+  left(){return this.cells.filter(x=>!x).length}
+  setCol(c){const cu=this.cur;if(!cu||this.state!=='play')return;const w=R.BEATS[cu.k];cu.col=clamp(c,0,4-w)}
+  drop(){if(this.cur&&this.state==='play'){this.cur.fast=1;BB.sfx.whoosh(undefined,.3)}}
+  swap(){const cu=this.cur;if(!cu||this.state!=='play'||!this.q.length)return;const nk=this.q[0];this.q[0]=cu.k;cu.k=nk;cu.col=clamp(cu.col,0,4-R.BEATS[nk]);this.swapT=BB.t;BB.sfx.pop();
+    if(this.prank&&this.prank.ph==='wait'&&cu.k!=='w'&&this.q[0]==='w'){this.q.shift();this.prankHit()}}
+  land(){const cu=this.cur,w=R.BEATS[cu.k];let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;
+    let why='';if(!fit)why=this.left()<w?`too big! ${w} > ${this.left()}`:'no room there!';
+    else if(this.Rd.mode==='match'){let b=0,ok=false;for(const k of this.Rd.code){if(b===cu.col&&k===cu.k)ok=true;b+=R.BEATS[k]}if(!ok){fit=false;why='the code needs '+this.codeAt(cu.col)+' here'}}
+    if(fit){for(let i=0;i<w;i++)this.cells[cu.col+i]=cu.k;this.placed.push({k:cu.k,col:cu.col,t:BB.t});BB.sfx.thunk();BB.shake(3);BB.burst(CX0+cu.col*CW+w*CW/2,ROWY+CH,10,{col:'#d8c8a8',kind:'dust',size:16,g:-40,speed:200});this.cur=null;
+      if(this.left()===0){this.lock();return}setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),450)}
+    else{BB.sfx.boing();this.bounce.push({k:cu.k,x:CX0+cu.col*CW,y:ROWY-20,vx:-500-Math.random()*200,vy:-900,r:0,t:BB.t,why});this.boinkT=BB.t;this.blink=BB.t;
+      if(!this.said.big&&why.startsWith('too')){this.said.big=1;BB.say('pk_big')}else if(why.startsWith('the code')&&!this.said.wk){this.said.wk=1;BB.say('pk_wrongk')}
+      const k=cu.k;this.cur=null;if(!(this.prank&&k==='w'))this.q.push(k);else this.prankHit(true);setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),700)}}
+  codeAt(col){let b=0;for(const k of this.Rd.code){if(b===col)return R.NAME[k];if(col>b&&col<b+R.BEATS[k])return R.NAME[k]+' (it starts on beat '+(b+1)+')';b+=R.BEATS[k]}return '?'}
+  seq(){const s=[];for(let c=0;c<4;){const k=this.cells[c];s.push(k);c+=R.BEATS[k]}return s}
+  lock(){this.state='lock';this.st=BB.t;BB.sfx.clunk();BB.sfx.thunk(BB.ac.currentTime+.15);BB.shake(5);BB.say('pk_full');setTimeout(()=>{if(BB.scene!==this)return;this.state='clap';this.cb=new R.ClapBack(this.seq(),{bpm:84,onDone:sc=>this.clapDone(sc)})},2200)}
+  clapDone(sc){this.tries++;if(sc>=.6||this.tries>=2){this.state='ship';this.st=BB.t;BB.sfx.fanfare();BB.say('pk_great');BB.burst(W/2,ROWY+40,40,{cols:['#ffe066','#6ee678','#fff','#5ac8fa'],kind:'star',size:14,speed:800,g:500})}
+    else{BB.say('sm_again');setTimeout(()=>BB.scene===this&&this.state==='clap'&&(this.cb=new R.ClapBack(this.seq(),{bpm:84,onDone:s=>this.clapDone(s)})),1800)}}
+  manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;if(this.state==='clap'&&this.cb)this.cb.override();else if(this.state==='play')this.drop()}
+  // Static Jr. sneaks an overflow crate into NEXT when one beat is left
+  startPrank(){this.prank={t:BB.t,x:W+120,ph:'in'};BB.sfx.glitch();BB.say('jr_fit',{overlap:true})}
+  updPrank(dt){const p=this.prank,t=BB.t-p.t;
+    if(p.ph==='in'){p.x=lerp(W+120,NEXTP.x+NEXTP.w/2+40,ease.out(clamp(t/1,0,1)));if(t>1.1){this.q.unshift('w');BB.sfx.zap();this.swapT=BB.t;p.ph='wait';p.t2=BB.t;setTimeout(()=>BB.scene===this&&BB.say('pk_swap'),600)}}
+    if(p.ph==='wait')p.x=NEXTP.x+NEXTP.w/2+40+Math.sin(BB.t*5)*12;
+    if(p.ph==='hit'&&BB.t-p.t3>1.6)p.ph='run';
+    if(p.ph==='run'){p.x+=dt*1000;if(p.x>W+200)p.ph='done'}}
+  prankHit(viaBoink){const p=this.prank;if(!p||p.ph!=='wait')return;p.ph='hit';p.t3=BB.t;this.jrCrate={t:BB.t,x0:viaBoink?CX0:NEXTP.x+60,y0:viaBoink?ROWY-100:NEXTP.y+100};
+    setTimeout(()=>{if(BB.scene!==this)return;BB.sfx.bonk();BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(p.x,NEXTP.y-40,12,{col:COL.yellow,kind:'star',size:14,g:300})},500)}
+  pause(){BB.paused=true;BB.ac.suspend()}
+  resume(){BB.paused=false;BB.ensureMic()}
+  // pointer: tap a column to steer, or drag the falling crate sideways
+  pdown(p){if(this.state!=='play'||!this.cur)return false;if(p.x>CX0&&p.x<CX0+4*CW&&p.y>CTOP-60&&p.y<ROWY+CH){this.dragC={x0:p.x,col0:this.cur.col};this.setCol(Math.floor((p.x-CX0)/CW)-(p.y>this.cur.y&&p.y<this.cur.y+CH?0:0));return true}return false}
+  pup(){this.dragC=null}
+  update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
+    for(const key of BB.keys){if(key>='1'&&key<='4')this.setCol(+key-1);if(key==='ArrowLeft'&&this.cur)this.setCol(this.cur.col-1);if(key==='ArrowRight'&&this.cur)this.setCol(this.cur.col+1);if(key==='ArrowDown'||key==='d')this.drop();if(key==='n')this.swap()}
+    this.belt+=dt*40;
+    if(this.state==='intro'){this.intro(dt);if(BB.keys.includes('s'))this.skipIntro()}
+    if(this.dragC&&this.cur&&BB.ptr.down){const w=R.BEATS[this.cur.k];this.setCol(Math.round((BB.ptr.x-CX0)/CW-w/2))}
+    const cu=this.cur;if(cu&&this.state==='play'){cu.x=lerp(cu.x,CX0+cu.col*CW,Math.min(1,dt*14));cu.y+=dt*(cu.fast?1500:52);if(cu.y>=ROWY){cu.y=ROWY;this.land()}}
+    for(let i=this.bounce.length-1;i>=0;i--){const b=this.bounce[i];b.vy+=2200*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.r-=dt*5;if(b.y>H+300)this.bounce.splice(i,1)}
+    // sim: steer each crate into the first slot that fits (?sim=1&auto)
+    if(BB.debug&&this.o.auto&&cu&&this.state==='play'&&BB.t-cu.t>.8&&!cu.fast){let c=-1;if(this.Rd.mode==='match'){let b=0;for(const k of this.Rd.code){if(k===cu.k&&!this.cells[b]){c=b;break}b+=R.BEATS[k]}}else c=this.left()>=R.BEATS[cu.k]?this.firstFree(R.BEATS[cu.k]):-1;
+      if(c<0&&this.q.length&&!this.autoSw){this.autoSw=1;this.swap()}else{this.autoSw=0;if(c>=0)this.setCol(c);this.drop()}}
+    if(this.Rd&&this.Rd.prank&&this.state==='play'&&!this.prank&&this.left()===1&&this.cur)this.startPrank();
+    if(this.prank)this.updPrank(dt);
+    if(this.cb&&this.state==='clap')this.cb.update(dt);else if(this.state!=='clap')BB.mic.take();
+    if(this.state==='ship'){const t=BB.t-this.st;if(t>3.2){this.packed++;this.ri++;if(this.ri>=ROUNDS.length){this.state='end';this.st=BB.t;BB.say('pk_done');BB.sfx.fanfare();if(!BB.save.done.includes('packing')){BB.save.done.push('packing');localStorage.setItem('bb4',JSON.stringify(BB.save))}}else this.beginRound()}}}
+  // ---------- drawing ----------
+  draw(){const t=BB.t,[sx,sy]=BB.shakeXY;ctx.save();ctx.translate(sx,sy);
+    if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#2a3a38';ctx.fillRect(0,0,W,H)}
+    R.lampGlow([[348,140],[562,175],[955,175],[1340,175],[1585,140]],t);
+    this.drawBelt();this.drawPallet();this.drawChuteContents();this.drawOrder();this.drawNext();
+    BB.contactShadow(1790,905,110,.5);BB.sprite('sprocket',1790,905,280,{squash:BB.isTalking('sprocket')?Math.sin(t*18)*.015:Math.sin(t*2)*.006});
+    if(this.jr)BB.staticJr(this.jr.x,FLOOR,120,{run:1});
+    if(this.wreck)for(const c of this.wreck){ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.r);R.crateDraw(c.k,-60,-50,120,100,{tag:false});ctx.restore()}
+    if(this.prank&&this.prank.ph!=='done'){const p=this.prank;BB.staticJr(p.x,NEXTP.y-10,110,{run:p.ph==='in'||p.ph==='run'?1:0,dizzy:p.ph==='hit',glitch:p.ph==='hit'?.6:0,flip:1});if(p.ph==='wait')R.bubble(p.x,NEXTP.y-230,'wrong fit! hee hee')}
+    if(this.jrCrate){const j=this.jrCrate,k=clamp((t-j.t)/.5,0,1);if(t-j.t<1.4){const p=this.prank,x=lerp(j.x0,p?p.x:W,k),y=lerp(j.y0,NEXTP.y-80,k)-Math.sin(k*Math.PI)*220;ctx.save();ctx.translate(x,y);ctx.rotate(k*6);R.crateDraw('w',-90,-30,180,60,{tag:false});ctx.restore()}}
+    for(const b of this.bounce){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.r);R.crateDraw(b.k,0,-CH/2,R.BEATS[b.k]*CW-12,CH);ctx.restore()}
+    if(this.boinkT&&t-this.boinkT<1.3){const k=ease.back(clamp((t-this.boinkT)/.3,0,1));BB.text('BOINK!',CX0-150,ROWY-180,80*k,'#e65046',{font:'Rammetto One',stroke:8});const b=this.bounce[this.bounce.length-1];if(b&&b.why)R.bubble(CX0-170,ROWY-300,b.why,COL.ink)}
+    ctx.restore();R.drawMotes(this.motes,BB.paused?0:Math.min(.05,BB.dt||.016),t);BB.drawParts();
+    this.drawHUD();BB.captionBox();
+    if(this.state==='play'&&this.ri===0&&t-this.cardT<2.6)BB.titleCard('ROOM 3: PACKING STATION','Static Jr. destroyed the orders. Pack new ones!',(t-this.cardT)/2.6);
+    if(this.state==='end')this.drawEnd();
+    if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
+  drawBelt(){// ambient: little parcels ride the painted back conveyor (only where the chute doesn't cover it)
+    if(BB.phone&&!BB.q)return;const y=388;for(let i=0;i<6;i++){const x=((this.belt+i*330)%1980)-60;if(x>CX0-60&&x<CX0+4*CW+60)continue;BB.rrect(x,y-46,64,44,6,BB.lg(y-46,y,['#d79a5a','#a86a34']),'#5a3a1a',2);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(x+28,y-46,8,44)}}
+  drawPallet(){const t=BB.t,out=this.state==='ship'?ease.inOut(clamp((t-this.st-.8)/1.6,0,1))*1300:0,inn=this.palletIn?(1-ease.out(clamp((t-this.palletIn)/.6,0,1)))*-900:0;
+    ctx.save();ctx.translate(out+inn,0);
+    // wooden pallet
+    const y=ROWY+CH;for(let i=0;i<4;i++)BB.rrect(CX0+4+i*CW,y-4,CW-8,16,4,BB.lg(y-4,y+12,['#d6b07a','#9a6e3a']),'#5a3a1a',2);
+    // placed crates
+    const blink=this.blink&&t-this.blink<1.2&&Math.sin((t-this.blink)*18)>0;
+    for(let c=0;c<4;c++)if(!this.cells[c]){BB.rrect(CX0+c*CW+8,ROWY+6,CW-16,CH-12,12,blink?'rgba(255,224,102,.35)':'rgba(255,255,255,.05)',blink?COL.yellow:'rgba(255,255,255,.18)',3);BB.text(String(c+1),CX0+c*CW+CW/2,ROWY+CH/2,52,blink?COL.yellow:'rgba(255,255,255,.18)',{font:'Rammetto One'})}
+    for(const p of this.placed){const w=R.BEATS[p.k],sq=Math.max(0,1-(t-p.t)/.25)*.12;ctx.save();ctx.translate(CX0+p.col*CW+w*CW/2,ROWY+CH);ctx.scale(1+sq,1-sq);R.crateDraw(p.k,-w*CW/2+6,-CH,w*CW-12,CH);ctx.restore()}
+    // lock clamps + green light sweep
+    if(this.state==='lock'||this.state==='clap'||this.state==='ship'){const k=ease.back(clamp((t-(this.st||t))/.3,0,1));for(const x of [CX0-26,CX0+4*CW+26]){BB.rrect(x-18,ROWY+10,36,CH-20,8,BB.lg(ROWY,ROWY+CH,['#ffe680','#c8961a']),COL.ink,3)}
+      if(this.state==='lock'){const sw=(t-this.st)/1.2;for(let c=0;c<4;c++){const l=clamp(1-Math.abs(sw*4-c-.5),0,1);if(l>0&&BB.q)BB.glow(CX0+c*CW+CW/2,ROWY+CH/2,120,'rgba(110,230,120,A)',l*.5)}}
+      if(this.state==='ship'){BB.rrect(CX0+20,ROWY-26,4*CW-40,30,8,'#e8e2cd',COL.ink,3);BB.text('SEALED',W/2,ROWY-11,24,'#c0392b')}}
+    ctx.restore()}
+  drawChuteContents(){const cu=this.cur,t=BB.t;if(!cu||this.state!=='play')return;const w=R.BEATS[cu.k],cw=w*CW-12;
+    ctx.save();ctx.beginPath();ctx.rect(CX0,CTOP-20,4*CW,ROWY+CH-CTOP+20);ctx.clip();
+    // ghost on the pallet + guide line
+    let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;const gx=CX0+cu.col*CW+6;
+    BB.rrect(gx,ROWY+6,cw,CH-12,12,fit?'rgba(110,230,120,.18)':'rgba(230,80,70,.22)',fit?'rgba(110,230,120,.8)':'#e65046',3);
+    ctx.setLineDash([10,12]);ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cu.x+cw/2+6,cu.y+CH);ctx.lineTo(cu.x+cw/2+6,ROWY);ctx.stroke();ctx.setLineDash([]);
+    const wob=Math.sin(t*3)*.02;ctx.save();ctx.translate(cu.x+6+cw/2,cu.y+CH/2);ctx.rotate(wob);R.crateDraw(cu.k,-cw/2,-CH/2,cw,CH);ctx.restore();
+    ctx.restore();
+    // column tap targets (big, Smartboard friendly)
+    for(let c=0;c<4;c++){const on=c>=cu.col&&c<cu.col+w;BB.rrect(CX0+c*CW+8,CTOP-44,CW-16,34,10,on?COL.yellow:'rgba(255,255,255,.12)',on?COL.ink:null,2);BB.text(String(c+1),CX0+c*CW+CW/2,CTOP-27,26,on?COL.ink:'#fff')}}
+  drawNext(){const t=BB.t;BB.panel(NEXTP.x,NEXTP.y,NEXTP.w,NEXTP.h,30);BB.well(NEXTP.x+16,NEXTP.y+16,NEXTP.w-32,NEXTP.h-32,22);BB.text('NEXT',NEXTP.x+NEXTP.w/2,NEXTP.y+52,40,COL.yellow,{font:'Rammetto One',stroke:6});
+    const sw=this.swapT&&t-this.swapT<.3?1+.15*Math.sin((t-this.swapT)/.3*Math.PI):1;
+    this.q.slice(0,3).forEach((k,i)=>{const w=R.BEATS[k],cw=Math.min(260,w*62+20),h=i?64:84,s=i?1:sw;ctx.save();ctx.translate(NEXTP.x+NEXTP.w/2,NEXTP.y+140+i*104);ctx.scale(s,s);ctx.globalAlpha=i?.75:1;R.crateDraw(k,-cw/2,-h/2,cw,h,{tag:i===0});ctx.restore();
+      if(i===0&&this.prank&&this.prank.ph==='wait'){ctx.save();ctx.strokeStyle='#e65046';ctx.lineWidth=5;ctx.setLineDash([12,8]);ctx.strokeRect(NEXTP.x+30,NEXTP.y+90,NEXTP.w-60,100);ctx.restore()}});
+    const can=this.state==='play'&&this.cur;
+    BB.button(NEXTP.x,NEXTP.y+NEXTP.h+20,NEXTP.w,96,'SWAP',{size:44,id:'swap',disabled:!can||!this.q.length,onClick:()=>this.swap()});
+    BB.button(NEXTP.x,NEXTP.y+NEXTP.h+130,NEXTP.w,130,'DROP',{style:'green',size:64,id:'drop',disabled:!can,onClick:()=>this.drop()});
+    BB.rrect(NEXTP.x+20,NEXTP.y+NEXTP.h+276,NEXTP.w-40,56,28,'rgba(12,28,26,.85)',COL.teal2,3);BB.text('BEATS LEFT: '+this.left(),NEXTP.x+NEXTP.w/2,NEXTP.y+NEXTP.h+305,30,this.blink&&t-this.blink<1.2?COL.yellow:'#fff',{stroke:4})}
+  drawOrder(){const Rd=this.Rd;if(!Rd)return;const x=50,y=300,w=520,h=300;ctx.save();ctx.translate(x,y);ctx.rotate(-.02);
+    BB.rrect(4,10,w,h,10,'rgba(0,0,0,.3)');BB.rrect(0,0,w,h,10,'#fffdf3','#8a806b',3);BB.rrect(0,0,w,50,10,'#e65046');ctx.fillStyle='#e65046';ctx.fillRect(0,28,w,22);
+    BB.text('ORDER #'+(this.ri+1),w/2,26,28,'#fff',{stroke:3});BB.text(Rd.txt,w/2,80,Rd.txt.length>30?22:26,'#5a5040',{maxW:w-30});
+    if(Rd.mode==='match'){let b=0;const cw=(w-40)/4;for(const k of Rd.code){const n=R.BEATS[k],xx=20+b*cw,ww=n*cw;const done=this.cells[b]===k;ctx.strokeStyle=done?'#3fb45a':'rgba(0,0,0,.18)';ctx.lineWidth=done?4:2;ctx.strokeRect(xx+3,110,ww-6,140);
+        R.glyph(k,xx+ww/2,215,k==='s'?9:11,COL.ink);BB.text(R.SAY[k],xx+ww/2,270,18,'#5a5040');b+=n}}
+    else{BB.text(Rd.mode==='limited'?'Every crate must fit!':'Any crates that add up to 4',w/2,150,26,'#5a5040');for(let i=0;i<4;i++){BB.rrect(30+i*118,190,104,60,10,this.cells[i]?'#9ff09a':'#eee8d6','#8a806b',2);BB.text(this.cells[i]?'\u2713':String(i+1),82+i*118,221,30,'#5a5040')}}
+    if(this.ri===2&&BB.t-this.palletIn<3){ctx.globalAlpha=1-(BB.t-this.palletIn)/3;BB.text('TORN BY STATIC JR. ... fixed!',w/2,h-18,20,'#c0392b')}
+    ctx.restore()}
+  drawHUD(){const t=BB.t;BB.panel(40,24,560,130,30);BB.text('ORDERS PACKED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.packed} of 6`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+    for(let i=0;i<6;i++)BB.rrect(330+i*42,60,32,52,9,i<this.packed?BB.lg(60,112,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
+    BB.pauseBtn(()=>this.pause());
+    if(this.state==='intro')BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});
+    else{BB.micMeter(40,H-150);BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1})}
+    if(this.cb&&this.state==='clap')this.cb.draw(W/2,H-90);
+    if(this.cb&&this.cb.few&&t-this.cb.few<1.2)R.bubble(W/2,H-300,'Everyone together!',COL.ink)}
+  drawEnd(){const t=BB.t-this.st;if(t<.4)return;const k=ease.back(clamp((t-.4)/.6,0,1));ctx.fillStyle=`rgba(8,18,17,${.5*clamp(t,0,1)})`;ctx.fillRect(0,0,W,H);
+    ctx.save();ctx.translate(W/2,360);ctx.scale(k,k);BB.panel(-600,-260,1200,520,44);
+    BB.text('ROOM 3 COMPLETE!',0,-170,72,'#fff',{font:'Rammetto One',stroke:9});
+    R.crateDraw('h',-440,-100,300,120);R.crateDraw('q',-120,-100,140,120);R.crateDraw('e',40,-100,140,120);R.crateDraw('s',200,-100,140,120);R.crateDraw('r',360,-100,100,120,{tag:false});
+    BB.text('6 orders packed and sealed!',0,80,40,COL.yellow,{stroke:5});BB.text('Next: the LABEL ROOM (coming soon)',0,150,36,'#fff',{stroke:5});ctx.restore();
+    if(t>1.6){BB.button(W/2-520,700,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('packing')});
+      BB.button(W/2+40,700,480,130,'PLAY AGAIN',{size:50,id:'again',onClick:()=>BB.go(new PackingRoom())})}}
+}
+BB.PackingRoom=PackingRoom;
+})();
