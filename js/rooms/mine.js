@@ -47,7 +47,10 @@ let dirtPat=null;function dirt(){if(dirtPat)return dirtPat;const c=document.crea
   g.fillStyle='#78503a';g.fillRect(0,0,256,256);let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
   for(let i=0;i<70;i++){g.fillStyle=['#6a4532','#86593f','#5f3e2c','#8d6447'][i%4];g.beginPath();g.ellipse(r()*256,r()*256,4+r()*16,3+r()*8,r()*3,0,7);g.fill()}
   return dirtPat=ctx.createPattern(c,'repeat')}
-let ePat=null,shaftC=null;const litCache={};
+let ePat=null,shaftC=null,dustC=null;
+// one pre-rendered dust puff (same radial gradient as before; fades via globalAlpha instead of a new gradient per puff per frame)
+function dustSprite(){if(dustC)return dustC;const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),gr=g.createRadialGradient(64,64-.3*64,0,64,64-.3*64,64);
+  gr.addColorStop(0,'rgba(214,180,140,.55)');gr.addColorStop(.6,'rgba(170,130,95,.3)');gr.addColorStop(1,'rgba(150,110,80,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);return dustC=c}const litCache={};
 function litC(k,amb){if(litCache[k])return litCache[k];const im=BB.V2['tun'+k];if(!im)return null;const c=document.createElement('canvas');c.width=1140;c.height=420;const g=c.getContext('2d');g.drawImage(im,-740,0,1880,420);g.globalCompositeOperation='soft-light';g.globalAlpha=.3;g.fillStyle=amb;g.fillRect(0,0,1140,420);return litCache[k]=c}function earthPat(){if(ePat)return ePat;const e=BB.V2.earth;if(!e)return dirt();
   const D=rail(4)+200-GY+2000,c=document.createElement('canvas');c.width=e.width;c.height=D;const g=c.getContext('2d');g.fillStyle=g.createPattern(e,'repeat');g.translate(0,-GY);g.fillRect(0,GY,e.width,D);
   const gr=g.createLinearGradient(0,GY,0,rail(4)+200);gr.addColorStop(0,'rgba(20,10,5,.15)');gr.addColorStop(1,'rgba(10,5,3,.55)');g.fillStyle=gr;g.fillRect(0,GY,e.width,D);
@@ -120,19 +123,24 @@ class MineRoom{
   // -------- rock flow --------
   beginRock(first){const R=ROCKS[this.rockI];this.R=R;this.stage=0;this.state='drop';this.st=BB.t;this.rockY=-400;this.marks=[0,0,0,0];this.missVO=false;
     const newFloor=first||ROCKS[this.rockI-1]&&ROCKS[this.rockI-1].f!==R.f;
-    if(newFloor){this.cardT=BB.t;if(R.f===4)this.startCave();
+    if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4)this.startCave();
       this.voEnd=BB.t+9;setTimeout(()=>{if(BB.scene===this)this.voEnd=BB.t+BB.say(FLOORS[R.f].vo)},R.f===4?3000:first?2200:300)}
     else this.voEnd=BB.t+.5;
     if(R.bonus&&!newFloor){this.voEnd=BB.t+.5;BB.caption={txt:'BONUS! Andante + forte: slow and LOUD!',who:'sprocket',until:BB.t+3.5,start:BB.t}}}
   // ---- cave-in event: painted rocks crash down and pile up in the tunnel; clearing both bonus rocks digs it out ----
+  // build per-floor caches up front so the first frames of a floor don't stall (tinted props, baked layers, dust sprite)
+  prewarm(k){const L=LIGHT[k];earthPat();dustSprite();litC(k,L.amb);
+    for(const [n,a,amb] of [['rock',.22,L.amb],['rock',.16,L.amb],['rock',.16,'#ff7a40'],['rock',.3,'#2a2030'],['crystal',.16,L.amb],['crystal',.16,'#ff7a40'],['rubble',.2,L.amb],['funnel',.12,L.amb]])BB.tinted(n,n==='rock'||n==='crystal'?(k===4&&amb==='#ff7a40'?L.rim:L.rim):L.rim,amb,a)}
   startCave(){this.caveT=BB.t;this.caveCleared=0;this.caveDust=[];BB.sfx.rumble(BB.ac.currentTime,2.6);BB.shake(8);
     const y=top(4);this.caveRocks=[[2560,.15,95,.4],[3240,.3,120,-.6],[2700,.45,80,1.2],[3080,.55,140,.2],[2930,.7,105,-1],[3300,.85,90,.9],[2620,1.0,70,-.3],[3150,1.15,85,.7]]
       .map(([x,d,h,r])=>({x,d,h,r,y0:y+20,landed:0}));
     BB.caption={txt:'Cave-in! Clear it with rhythm!',who:'sprocket',until:BB.t+2.8,start:BB.t}}
   updCave(){if(!this.caveRocks)return;const t=BB.t-this.caveT;
-    for(const r of this.caveRocks){if(!r.landed&&t>r.d+.55){r.landed=1;BB.shake(4);BB.sfx.clunk();this.caveDust.push({x:r.x,y:rail(4)-10,t:BB.t,r:r.h*1.3},{x:r.x+r.h*.6,y:rail(4)-30,t:BB.t+.08,r:r.h},{x:r.x-r.h*.6,y:rail(4)-20,t:BB.t+.12,r:r.h*.9})}}
+    for(const r of this.caveRocks){if(!r.landed&&t>r.d+.55){r.landed=1;BB.shake(4);BB.sfx.clunk();if(BB.q)this.caveDust.push({x:r.x,y:rail(4)-10,t:BB.t,r:r.h*1.3},{x:r.x+r.h*.6,y:rail(4)-30,t:BB.t+.08,r:r.h},{x:r.x-r.h*.6,y:rail(4)-20,t:BB.t+.12,r:r.h*.9});else this.caveDust.push({x:r.x,y:rail(4)-10,t:BB.t,r:r.h*1.6})}}
     this.caveDust=this.caveDust.filter(d=>BB.t-d.t<1.6)}
-  drawCave(k){if(k!==4||!this.caveRocks)return;const t=BB.t-this.caveT,y=top(4),L=LIGHT[4],B=TBOX(4),keep=1-(this.caveCleared||0)/2;
+  pileSettled(){return this.caveRocks&&BB.t-this.caveT>2.2&&(!this.caveClearT||BB.t-this.caveClearT>.85)}
+  drawCave(k,bakeOnly){if(k!==4||!this.caveRocks)return;const settled=this.pileSettled();if(bakeOnly&&!settled)return;
+    if(!bakeOnly&&settled&&this._stat){this.drawDust();return}const t=BB.t-this.caveT,y=top(4),L=LIGHT[4],B=TBOX(4),keep=1-(this.caveCleared||0)/2;
     ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();
     // ceiling crack + trickling grit while it falls
     if(t<1.8){ctx.globalAlpha=1-t/1.8;ctx.strokeStyle='rgba(20,10,4,.8)';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(2540,y+40);ctx.lineTo(2700,y+62);ctx.lineTo(2820,y+48);ctx.lineTo(3000,y+70);ctx.lineTo(3180,y+52);ctx.lineTo(3320,y+66);ctx.stroke();ctx.globalAlpha=1}
@@ -142,8 +150,9 @@ class MineRoom{
       const leaving=i>=Math.ceil(this.caveRocks.length*keep);const a=leaving?1-cl:1;if(a<=0)return;
       if(ft>=1)BB.contactShadow(r.x,rail(4)+6,r.h*.6,.45*a);
       ctx.globalAlpha=a;BB.prop('rock',r.x,yy-(leaving?cl*60:0),r.h,{box:B,rim:L.rim,amb:L.amb,ambA:.22,shadow:false,rot:r.r*(1-ft*.6)});ctx.globalAlpha=1});
-    for(const d of this.caveDust){const dt=BB.t-d.t;if(dt<0)continue;const k2=dt/1.6,rr=d.r*(.5+k2*1.2);const g=ctx.createRadialGradient(d.x,d.y-rr*.3,0,d.x,d.y-rr*.3,rr);
-      g.addColorStop(0,`rgba(214,180,140,${.55*(1-k2)})`);g.addColorStop(.6,`rgba(170,130,95,${.3*(1-k2)})`);g.addColorStop(1,'rgba(150,110,80,0)');ctx.fillStyle=g;ctx.fillRect(d.x-rr,d.y-rr*1.3,rr*2,rr*2)}
+    if(!bakeOnly){ctx.restore();this.drawDust()}else ctx.restore()}
+  drawDust(){if(!this.caveDust.length)return;const y=top(4);ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();
+    const ds=dustSprite();for(const d of this.caveDust){const dt=BB.t-d.t;if(dt<0)continue;const k2=dt/1.6,rr=d.r*(.5+k2*1.2);ctx.globalAlpha=1-k2;ctx.drawImage(ds,d.x-rr,d.y-rr*1.3,rr*2,rr*2)}ctx.globalAlpha=1;
     ctx.restore()}
   startBeat(){const R=this.R,spb=60/R.bpm,t0=BB.ac.currentTime+.25;
     this.beat={spb,t0,next:0,evalM:1,hits:{},sim:0};// measure 0 = count-in, scoring starts measure 1
@@ -206,7 +215,7 @@ class MineRoom{
       if(!n.gold)this.count++;BB.sfx.ding();this.meterPop=t}}
     for(let i=this.pipeNotes.length-1;i>=0;i--){const p=this.pipeNotes[i];p.y-=dt*1100;if(p.y<GY-120){this.pipeNotes.splice(i,1);this.binCount++;}}
     // Static Jr. pebble prank: once per marked rock, during the 2nd scored measure
-    if(this.R&&this.R.prank&&this.state==='dig'&&!this.prank&&this.beat&&this.beatNow()>8)this.startPrank();
+    if(this.R&&this.R.prank&&this.state==='dig'&&!this.prank&&this.beat&&this.beatNow()>8&&!(this.R.f===4&&BB.t-(this.caveT||-99)<9))this.startPrank();
     if(this.prank)this.updPrank(dt);
     if(this.state==='end')this.updEnd(dt);
     for(const d of this.dust){d.y-=d.v*dt;d.x+=Math.sin(t*.5+d.s)*6*dt;if(d.y<-10){d.y=H+10;d.x=Math.random()*W}}}
@@ -243,9 +252,9 @@ class MineRoom{
     if(vy0<GY){const g=ctx.createLinearGradient(0,0,0,GY);g.addColorStop(0,'#9ccfe6');g.addColorStop(1,'#c7e3ee');ctx.fillStyle=g;ctx.fillRect(vx0,Math.min(vy0,0),vx1-vx0,GY-Math.min(vy0,0));
       this.drawWarehouse(vx0,vx1)}
     // ---- static mine layer (earth + tunnel backdrops + shaft wall) is pre-composited into an offscreen canvas while the camera is still
-    const key=[c.x,c.y,c.z,...this.lit].map(v=>v.toFixed(3)).join()+(vy0<GY?'w':'')+BB.dpr+ctx.canvas.width;
-    if(vy1>GY&&key===this._sk&&BB.statCache!==false){if(this._skB!==key){this._skB=key;this.buildStatic(vx0,vx1,vy0,vy1)}
-      const [sx,sy]=BB.shakeXY,M=ctx.getTransform(),k0=M.a/this.cam.z;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(this._sc,sx*k0-this._sxy[0]*k0,sy*k0-this._sxy[1]*k0);ctx.restore();this._stat=1}else this._stat=0;
+    const key=[c.x,c.y,c.z,...this.lit].map(v=>v.toFixed(3)).join()+(this.pileSettled()?'p'+this.caveCleared:'')+(vy0<GY?'w':'')+BB.dpr+ctx.canvas.width;
+    if(vy1>GY&&key===this._sk&&BB.statCache!==false){this._built=0;if(this._skB!==key){this._skB=key;this.buildStatic(vx0,vx1,vy0,vy1)}
+      if(!this._built){const [sx,sy]=BB.shakeXY,M=ctx.getTransform(),k0=M.a/this.cam.z;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(this._sc,sx*k0-this._sxy[0]*k0,sy*k0-this._sxy[1]*k0);ctx.restore()}this._stat=1}else this._stat=0;
     this._sk=key;
     if(!this._stat)this.drawStatic(vx0,vx1,vy0,vy1);
     for(let k=0;k<5;k++){const y=top(k);if(y>vy1||y+420<vy0)continue;this.drawTunnel(k)}
@@ -253,11 +262,11 @@ class MineRoom{
     const sh=BB.V2.shaft,sx0=SHAFT[0],sw=SHAFT[1]-SHAFT[0],sb=rail(4)+60;
     if(sh&&!this._stat)this.drawShaftWall(vx0,vx1,vy0,vy1);
     this.drawRest(vx0,vx1,vy0,vy1)}
-  buildStatic(vx0,vx1,vy0,vy1){if(!this._sc)this._sc=document.createElement('canvas');const c=this._sc;c.width=ctx.canvas.width;c.height=ctx.canvas.height;
-    const g=c.getContext('2d'),m=ctx.getTransform(),[sx,sy]=BB.shakeXY;this._sxy=[sx,sy];const old=ctx;BB.ctx=ctx=g;
-    // same transform as the live frame minus the shake offset (the blit adds it back)
-    g.setTransform(m);g.beginPath();g.rect(-1e5,GY,2e5,1e5);g.clip();
-    this.drawStatic(vx0,vx1,vy0,vy1,true);this.drawShaftWall(vx0,vx1,vy0,vy1);BB.ctx=ctx=old}
+  buildStatic(vx0,vx1,vy0,vy1){if(!this._sc)this._sc=document.createElement('canvas');const c=this._sc,cv=ctx.canvas;c.width=cv.width;c.height=cv.height;
+    // draw the static layers straight onto the frame (so shared helpers work), then copy the below-ground band into the cache
+    const m=ctx.getTransform();this._sxy=BB.shakeXY.slice();
+    this.drawStatic(vx0,vx1,vy0,vy1);this.drawShaftWall(vx0,vx1,vy0,vy1);if(top(4)<vy1&&top(4)+420>vy0)this.drawCave(4,true);
+    const yd=Math.max(0,Math.floor(m.d*GY+m.f));if(yd<cv.height)c.getContext('2d').drawImage(cv,0,yd,cv.width,cv.height-yd,0,yd,cv.width,cv.height-yd);this._built=1}
   drawStatic(vx0,vx1,vy0,vy1){
     ctx.fillStyle=earthPat();ctx.fillRect(vx0,GY,vx1-vx0,Math.max(0,vy1-GY));
     if(!BB.V2.earth){const g=ctx.createLinearGradient(0,GY,0,rail(4)+200);g.addColorStop(0,'rgba(20,10,5,.15)');g.addColorStop(1,'rgba(10,5,3,.55)');ctx.fillStyle=g;ctx.fillRect(vx0,GY,vx1-vx0,Math.max(0,vy1-GY))}

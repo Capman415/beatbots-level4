@@ -3,11 +3,12 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
-BB.VERSION='v8';
+BB.VERSION='v9';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
-BB.q=1;// 1 = full extras, 0 = phone low mode
+BB.q=BB.phone?0:1;BB.qUp=0;// phones start in light mode and step up only if they prove fast (avoids a mid-scene resize hitch on slow phones)
+// 1 = full extras, 0 = phone low mode
 function resize(){const vw=innerWidth,vh=innerHeight;let dpr=Math.min(2,window.devicePixelRatio||1);
   if(BB.phone){const cap=BB.q?1280:960;dpr=Math.min(dpr,cap/Math.max(vw,vh*16/9))}
   SC=Math.min(vw/W,vh/H);OX=(vw-W*SC)/2;OY=(vh-H*SC)/2;
@@ -184,9 +185,9 @@ mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl});mic.level=lvl;mic.peak=lvl;mic.hold=.4};
 // ---------- main loop ----------
 BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.scene=s;parts.length=0;s.enter&&s.enter()};
-let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0;
+let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0,perfGood=0;
 function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
-  if(BB.phone&&BB.q){perfN++;perfS+=ts-last0;if(perfS>=1000){if(perfS/perfN>20&&++perfBad>=2){BB.q=0;resize()}else if(perfS/perfN<=20)perfBad=0;perfN=perfS=0}}last0=ts;
+  if(BB.phone){perfN++;perfS+=ts-last0;if(perfS>=600){const av=perfS/perfN;if(BB.q){if(av>22&&++perfBad>=2){BB.q=0;resize()}else if(av<=20)perfBad=0}else if(!BB.qUp){if(av<14){if(++perfGood>=4){BB.q=1;BB.qUp=1;resize()}}else perfGood=0}perfN=perfS=0}}last0=ts;
   if(!BB.paused){BB.t+=dt;BB.updParts(dt);mic.update(dt)}
   hits=[];
   ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,cv.width,cv.height);
