@@ -155,7 +155,14 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(this.state==='end')this.drawEnd();
     if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
   drawBelt(){// ambient: little parcels ride the painted back conveyor (only where the chute doesn't cover it)
-    if(BB.phone&&!BB.q)return;const y=388;for(let i=0;i<6;i++){const x=((this.belt+i*330)%1980)-60;if(x>CX0-60&&x<CX0+NB*CW+60)continue;BB.rrect(x,y-46,64,44,6,BB.lg(y-46,y,['#d79a5a','#a86a34']),'#5a3a1a',2);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(x+28,y-46,8,44)}}
+    if(BB.phone&&!BB.q)return;const y=388;/* v12.5: mint-bevel belt with chrome rollers + shaded cardboard parcels (matches the mine conveyor) */
+    const segs=[[0,CX0-40],[CX0+NB*CW+40,W]];for(const[a0,a1]of segs){if(a1<=a0)continue;BB.rrect(a0,y,a1-a0,18,4,BB.lg(y,y+18,['#bff0e0','#6fbca5','#2f6b5c']),'rgba(20,30,28,.9)',2);ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(a0+2,y+2,a1-a0-4,2);
+      ctx.save();ctx.beginPath();ctx.rect(a0,y,a1-a0,18);ctx.clip();for(let rx=a0-40+((this.belt*.6)%40);rx<a1;rx+=40){const g=ctx.createLinearGradient(0,y+6,0,y+16);g.addColorStop(0,'#f4f8f7');g.addColorStop(.5,'#8e9a98');g.addColorStop(1,'#3a4442');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(rx,y+11,9,5,0,0,7);ctx.fill()}ctx.restore()}
+    for(let i=0;i<6;i++){const x=((this.belt+i*330)%1980)-60;if(x>CX0-110&&x<CX0+NB*CW+50)continue;
+      ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x+34,y+1,36,5,0,0,7);ctx.fill();
+      BB.rrect(x,y-46,64,46,5,BB.lg(y-46,y,['#e2a868','#b77a3e','#8a5426']),'#4a2e12',2);
+      ctx.fillStyle='rgba(255,240,210,.35)';ctx.fillRect(x+2,y-44,60,4);ctx.fillStyle='rgba(60,30,10,.25)';ctx.fillRect(x+44,y-44,18,42);
+      ctx.fillStyle='rgba(240,220,170,.75)';ctx.fillRect(x+27,y-46,10,46);ctx.fillStyle='rgba(90,60,30,.6)';ctx.font="9px 'Lilita One'";ctx.fillText('♪',x+8,y-10)}}
   drawPallet(){const t=BB.t,out=this.state==='ship'?ease.inOut(clamp((t-this.st-.8)/1.6,0,1))*1300:0,inn=this.palletIn?(1-ease.out(clamp((t-this.palletIn)/.6,0,1)))*-900:0;
     ctx.save();ctx.translate(out+inn,0);
     // wooden pallet
