@@ -106,40 +106,7 @@ BB.pickbot=(x,base,h,swing,o={})=>{const sq=o.squash||0;
   ctx.restore();
   ctx.restore();
   /* v12.5e: hard hat sits ON the bucket rim, covering the open lid; no added height */
-  BB.sprite('sorter',x,base,h,{squash:sq,cut:(w,H)=>{ctx.beginPath();ctx.rect(-w*.6,-H*1.2,w*1.2,H*1.25);ctx.rect(w*.27,-H*.745,-w*.9,-H*.6);ctx.clip('evenodd')}});
-  /* hard hat v12.5f: classic construction silhouette - rounded crown, raised centre ridge, front bill, narrow brim; glossy safety-yellow plastic, mint stripe, clip-on headlamp */
-  {const W=h*273/420;ctx.save();ctx.translate(x+W*.062*(1+sq),base-h*(1-sq)*.74);ctx.scale(1+sq,1-sq);
-  const bw=h*.152,bry=h*.026,hr=h*.128,top=-h*.165,e=Math.max(1,h*.004),ink='rgba(70,45,5,.85)';
-  const plast=(x0,y0,r)=>{const G=ctx.createRadialGradient(x0,y0,0,x0+r*.3,y0+r*.45,r*1.5);G.addColorStop(0,'#fffbe0');G.addColorStop(.22,'#ffe45a');G.addColorStop(.62,'#f2b80c');G.addColorStop(1,'#a86d00');return G};
-  /* contact shadow where the brim meets the rim */
-  {const G=ctx.createRadialGradient(0,bry*.7,0,0,bry*.7,bw*1.05);G.addColorStop(0,'rgba(10,25,20,.55)');G.addColorStop(1,'rgba(10,25,20,0)');ctx.fillStyle=G;ctx.beginPath();ctx.ellipse(0,bry*.8,bw*1.08,bry*1.6,0,0,7);ctx.fill()}
-  /* narrow brim all round + front bill (pushed toward the viewer) */
-  const brim=()=>{ctx.beginPath();ctx.ellipse(0,0,bw,bry,0,Math.PI,0);ctx.bezierCurveTo(bw,bry*1.2,bw*.6,bry*2.6,0,bry*2.7);ctx.bezierCurveTo(-bw*.6,bry*2.6,-bw,bry*1.2,-bw,0);ctx.closePath()};
-  ctx.save();ctx.translate(0,bry*.35);brim();ctx.fillStyle='#8a5a00';ctx.fill();ctx.restore();
-  brim();{const G=ctx.createLinearGradient(-bw,0,bw,0);G.addColorStop(0,'#c98d00');G.addColorStop(.33,'#fff1a0');G.addColorStop(.6,'#f6c51e');G.addColorStop(1,'#a06600');ctx.fillStyle=G}ctx.fill();ctx.strokeStyle=ink;ctx.lineWidth=e;ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.ellipse(-bw*.25,bry*1.7,bw*.3,bry*.28,-.08,0,7);ctx.fill();
-  /* crown */
-  const dome=()=>{ctx.beginPath();ctx.moveTo(-hr,bry*.3);ctx.bezierCurveTo(-hr*1.03,top*.6,-hr*.6,top,0,top);ctx.bezierCurveTo(hr*.6,top,hr*1.03,top*.6,hr,bry*.3);ctx.ellipse(0,bry*.3,hr,bry*1.1,0,0,Math.PI);ctx.closePath()};
-  dome();ctx.fillStyle=plast(-hr*.4,top*.72,hr);ctx.fill();
-  ctx.save();dome();ctx.clip();
-  /* mint stripe band around the crown base */
-  ctx.fillStyle='#5fb59c';ctx.beginPath();ctx.ellipse(0,bry*.1,hr*1.05,bry*1.25,0,0,7);ctx.ellipse(0,-h*.006-bry*.1,hr*1.05,bry*1.25,0,0,7,true);ctx.fill();
-  ctx.fillStyle='#5fb59c';ctx.fillRect(-hr*1.1,-h*.03,hr*2.2,h*.02);
-  ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(-hr*1.1,-h*.03,hr*2.2,h*.004);
-  ctx.fillStyle='rgba(255,255,255,.75)';ctx.beginPath();ctx.ellipse(-hr*.45,top*.68,hr*.2,-top*.1,-.6,0,7);ctx.fill();
-  ctx.strokeStyle='rgba(255,250,210,.6)';ctx.lineWidth=h*.007;ctx.beginPath();ctx.moveTo(hr*.97,-h*.012);ctx.bezierCurveTo(hr*.98,top*.6,hr*.6,top*.98,hr*.15,top*.99);ctx.stroke();
-  {const G=ctx.createLinearGradient(0,top*.3,0,bry*1.4);G.addColorStop(0,'rgba(0,0,0,0)');G.addColorStop(1,'rgba(90,50,0,.35)');ctx.fillStyle=G;ctx.fillRect(-hr*1.1,top*.3,hr*2.2,-top*.3+bry*1.5)}
-  ctx.restore();dome();ctx.strokeStyle=ink;ctx.lineWidth=e;ctx.stroke();
-  /* raised centre ridge front-to-back (molded, same plastic) */
-  ctx.beginPath();ctx.moveTo(-hr*.13,bry*1.2);ctx.quadraticCurveTo(-hr*.16,top*.9,0,top*1.035);ctx.quadraticCurveTo(hr*.16,top*.9,hr*.13,bry*1.2);ctx.closePath();
-  {const G=ctx.createLinearGradient(-hr*.15,0,hr*.15,0);G.addColorStop(0,'#c98d00');G.addColorStop(.35,'#fff6c0');G.addColorStop(.7,'#f0b60a');G.addColorStop(1,'#9a6200');ctx.fillStyle=G}ctx.fill();ctx.strokeStyle=ink;ctx.stroke();
-  /* clip-on headlamp at the front */
-  {const lx=-hr*.42,ly=top*.32,R=h*.026;ctx.fillStyle='#2e3439';ctx.fillRect(lx-R*.5,ly+R*.6,R,h*.02);
-   BB.glow(lx,ly,h*.2,'rgba(255,240,170,A)',.25);ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.arc(lx+R*.15,ly+R*.2,R*1.05,0,7);ctx.fill();
-   ctx.fillStyle=chromeX(lx-R,lx+R);ctx.beginPath();ctx.arc(lx,ly,R,0,7);ctx.fill();ctx.strokeStyle=ink;ctx.lineWidth=e;ctx.stroke();
-   const G=ctx.createRadialGradient(lx-R*.2,ly-R*.2,0,lx,ly,R*.65);G.addColorStop(0,'#fff');G.addColorStop(.5,'#fff3b8');G.addColorStop(1,'#e0b84a');ctx.fillStyle=G;ctx.beginPath();ctx.arc(lx,ly,R*.65,0,7);ctx.fill();
-   ctx.fillStyle='rgba(255,255,255,.9)';ctx.beginPath();ctx.ellipse(lx-R*.25,ly-R*.3,R*.22,R*.1,-.6,0,7);ctx.fill()}
-  ctx.restore()}};
+  BB.sprite('sorter',x,base,h,{squash:sq})};
 /* v12.5b Static Jr. (option A): rusty orange TV bot drawn in code, cached per size */
 const jrC={};
 function jrCanvas(h){const key=Math.round(h);if(jrC[key])return jrC[key];const S=h<160?3:2,H=h*S,Wd=H*1.08,P=Math.ceil(H*.03),c=document.createElement('canvas');c.width=Math.ceil(Wd+P*2);c.height=Math.ceil(H+P*2);const g=c.getContext('2d');g.translate(P,P);
