@@ -3,6 +3,7 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');BB.ctx=ctx;
+BB.VERSION='v3';
 let SC=1,OX=0,OY=0;
 function resize(){const dpr=Math.min(2,window.devicePixelRatio||1),vw=innerWidth,vh=innerHeight;
   SC=Math.min(vw/W,vh/H);OX=(vw-W*SC)/2;OY=(vh-H*SC)/2;
@@ -122,15 +123,19 @@ const sensSteps=[.5,.7,1,1.4,2,2.8];mic.sensIdx=2;
 BB.startMic=async()=>{mic.state='asking';mic.err='';
   try{ac.resume().catch(()=>{});
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoSupport'};
-    let st;try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}
+    let st;try{st=await navigator.mediaDevices.getUserMedia(mic.useDefault?{audio:true}:{audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}
     catch(e){if(e&&(e.name==='OverconstrainedError'||e.name==='TypeError'))st=await navigator.mediaDevices.getUserMedia({audio:true});else throw e}
     if(mic.stream)mic.stream.getTracks().forEach(t=>t.stop());
     // keep every node referenced on BB.mic so Chrome never garbage-collects the mic graph
     const src=ac.createMediaStreamSource(st);const an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0;src.connect(an);
     const sink=ac.createGain();sink.gain.value=0;an.connect(sink);sink.connect(ac.destination);// silent pull keeps the graph running
-    mic.stream=st;mic.src=src;mic.an=an;mic.sink=sink;mic.buf=new Float32Array(an.fftSize);mic.floor=.003;mic.prev=0;
+    mic.stream=st;mic.track=st.getAudioTracks()[0];mic.src=src;mic.an=an;mic.sink=sink;mic.buf=new Float32Array(an.fftSize);mic.floor=.003;mic.prev=0;
     const tr=st.getAudioTracks()[0];if(tr)tr.onended=()=>{mic.ok=false;mic.state='lost';mic.err='Microphone disconnected. Tap MIC SETUP to turn it back on.'};
-    await ac.resume().catch(()=>{});mic.ok=true;mic.state='on';return true}
+    await ac.resume().catch(()=>{});mic.ok=true;mic.state='on';
+    // silent-track guard: if raw constraints give pure zeros on this device, retry with browser defaults
+    if(!mic.defaultTried){await new Promise(r=>setTimeout(r,1200));let mx=0;const b=new Float32Array(an.fftSize);an.getFloatTimeDomainData(b);for(const v of b)mx=Math.max(mx,Math.abs(v));
+      mic.probe=mx;if(mx===0){mic.defaultTried=true;mic.useDefault=true;return BB.startMic()}}
+    return true}
   catch(e){const n=e&&e.name;mic.ok=false;
     mic.state=(n==='NotFoundError'||n==='DevicesNotFoundError')?'nodevice':(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError')?'denied':'error';
     mic.err=mic.state==='denied'?'Mic permission is blocked. Click the mic/lock icon in the address bar, choose Allow, then reload.':
@@ -141,7 +146,7 @@ BB.startMic=async()=>{mic.state='asking';mic.err='';
 BB.ensureMic=()=>{if(ac.state!=='running')ac.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!BB.paused)BB.ensureMic()});
 // Called every frame. Onset = sharp energy jump above an adaptive noise floor, 120 ms refractory.
-mic.update=dt=>{if(!mic.ok||BB.paused)return;mic.an.getFloatTimeDomainData(mic.buf);
+mic.update=dt=>{if(!mic.ok||BB.paused)return;if(ac.state!=='running')ac.resume().catch(()=>{});mic.an.getFloatTimeDomainData(mic.buf);
   // look at the newest ~20 ms in 5 ms slices to timestamp the clap more precisely
   const b=mic.buf,N=b.length,sr=ac.sampleRate,sl=Math.round(sr*.005);let best=0,bestI=0,sum=0;
   for(let s=N-sl*4;s<N;s+=sl){let e=0;for(let i=s;i<s+sl;i++)e+=b[i]*b[i];e=Math.sqrt(e/sl);if(e>best){best=e;bestI=s}}
@@ -170,6 +175,8 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   BB.shakeXY=[sx,sy];
   if(BB.scene){if(!BB.paused)BB.scene.update(dt);BB.scene.draw(ctx)}
   ctx.restore();
+  ctx.save();ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.font='13px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillStyle='rgba(255,255,255,.55)';
+  ctx.fillText(BB.VERSION+' | audio '+ac.state+' '+ac.sampleRate+'Hz'+(mic.ok?' | mic '+(mic.track?mic.track.readyState+(mic.track.muted?' MUTED':''):'')+' lvl '+(mic.raw||0).toFixed(4)+(mic.useDefault?' (default)':''):''),cv.width/BB.dpr-6,cv.height/BB.dpr-4);ctx.restore();
   dispatchClicks();keys.length=0;
   requestAnimationFrame(frame)}
 BB.start=()=>requestAnimationFrame(frame);
