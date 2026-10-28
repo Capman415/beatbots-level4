@@ -5,35 +5,25 @@ button{font-size:30px;padding:18px 40px;border-radius:18px;border:0;background:#
 button.alt{background:#2c6b66}#bar{height:50px;background:#233;border-radius:10px;overflow:hidden;margin:14px 0}
 #fill{height:100%;width:0;background:linear-gradient(90deg,#6ee678,#ffe066,#ff7b5c)}
 #claps{font-size:80px;color:#ffe066}td{padding:4px 14px}td:first-child{color:#9fd}.err{color:#ff9c8a}</style></head><body>
-<h1>Beat Bots Mic Test <small style="font-size:16px;opacity:.6">v4</small></h1>
+<h1>Beat Bots Mic Test <small style="font-size:16px;opacity:.6">v5</small></h1>
 <label><input type="checkbox" id="raw" checked style="width:24px;height:24px"> Raw mode (echo/noise/auto-gain OFF). Uncheck for browser default.</label><br>
 <button id="go">START MIC</button><button id="stop" class="alt">STOP</button>
 <div id="bar"><div id="fill"></div></div>
 <div>Claps heard: <span id="claps">0</span></div>
 <table id="info"></table><div id="err" class="err"></div>
-<script>
-let ac,st,an,buf,claps=0,peak=0,floor=.003,prev=0,lastOn=0,raf;
-const $=id=>document.getElementById(id);
+<script src="js/mic.js?v=5"></script><script>
+let claps=0,peak=0,floor=.003,prev=0,lastOn=0,raf;const $=id=>document.getElementById(id);
 function row(k,v){return `<tr><td>${k}</td><td>${v}</td></tr>`}
-async function start(){stop();$('err').textContent='';
- try{ac=new (window.AudioContext||window.webkitAudioContext)();await ac.resume();
-  const c=$('raw').checked?{audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}:{audio:true};
-  st=await navigator.mediaDevices.getUserMedia(c);
-  const src=ac.createMediaStreamSource(st);an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=0;src.connect(an);
-  const g=ac.createGain();g.gain.value=0;an.connect(g);g.connect(ac.destination);window._keep=[src,an,g,st];
-  buf=new Float32Array(an.fftSize);claps=0;peak=0;loop()}
- catch(e){$('err').textContent='ERROR: '+e.name+' - '+e.message}}
-function stop(){cancelAnimationFrame(raf);if(st)st.getTracks().forEach(t=>t.stop());if(ac)ac.close();st=ac=null}
-function loop(){an.getFloatTimeDomainData(buf);let s=0,mx=0;for(const v of buf){s+=v*v;mx=Math.max(mx,Math.abs(v))}
- const rms=Math.sqrt(s/buf.length);peak=Math.max(peak*.995,rms);
- const thr=Math.max(floor*2.5+.004,.008);const now=performance.now();
+async function start(){cancelAnimationFrame(raf);$('err').textContent='';try{await MicCore.start($('raw').checked);claps=0;peak=0;loop()}catch(e){$('err').textContent='ERROR: '+e.name+' - '+e.message}}
+function stop(){cancelAnimationFrame(raf);MicCore.stop()}
+function loop(){const {rms,max:mx}=MicCore.read();peak=Math.max(peak*.995,rms);
+ const thr=Math.max(floor*2.5+.004,.008),now=performance.now();
  if(rms>thr&&rms>prev*1.35&&now-lastOn>120){claps++;lastOn=now}else if(rms<thr)floor+=(Math.min(rms,.05)-floor)*.02;prev=Math.max(rms,prev*.6);
  $('fill').style.width=Math.min(100,Math.sqrt(rms)*250)+'%';$('claps').textContent=claps;
- const t=st.getAudioTracks()[0],set=t.getSettings?t.getSettings():{};
+ const t=MicCore.track(),set=t.getSettings?t.getSettings():{},ac=MicCore.ctx;
  $('info').innerHTML=row('Device',t.label||'(no label)')+row('Track',`readyState=${t.readyState} enabled=${t.enabled} muted=${t.muted}`)+
-  row('Audio engine',`${ac.state}, ${ac.sampleRate} Hz`)+row('Mic settings',JSON.stringify(set))+
-  row('Raw RMS',rms.toFixed(5))+row('Max sample',mx.toFixed(5))+row('Peak (decaying)',peak.toFixed(5))+row('Clap threshold',thr.toFixed(5))+
-  row('Verdict',mx===0?'<b class="err">ALL ZEROS - mic sends silence (try unchecking Raw mode / check ChromeOS sound input)</b>':'Receiving sound ✔');
+  row('Audio engine',`${ac.state}, ${ac.sampleRate} Hz`)+row('Mic settings',JSON.stringify(set))+row('Raw RMS',rms.toFixed(5))+row('Max sample',mx.toFixed(5))+
+  row('Peak (decaying)',peak.toFixed(5))+row('Clap threshold',thr.toFixed(5))+row('Verdict',mx===0?'<b class="err">ALL ZEROS - mic sends silence</b>':'Receiving sound ✔');
  raf=requestAnimationFrame(loop)}
 $('go').onclick=start;$('stop').onclick=stop;
 </script></body></html>
