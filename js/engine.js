@@ -5,7 +5,7 @@ const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)
 const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v12.9';
+BB.VERSION='v13.0';
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -143,6 +143,11 @@ function osc(type,f,t,dur,peak,f2,dest=sfxBus){BB.selfSound(t,dur,(type==='sine'
 function noise(t,dur,peak,ftype,f,q=1,f2){BB.selfSound(t,dur,null);const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=noiseBuf;fl.type=ftype;fl.frequency.setValueAtTime(f,t);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+dur);fl.Q.value=q;env(g,t,.003,peak,dur);s.connect(fl).connect(g).connect(sfxBus);s.start(t,Math.random()*.5);s.stop(t+dur+.05)}
 const now=()=>ac.currentTime;
 BB.sfx={
+  // v13.0 packing playback voices (robot/factory): ka-chunk ta, double blips ti-ti, quad blips tika-tika, hum for long notes, soft hiss rest
+  pkTa:(t=now())=>{noise(t,.07,.35,'lowpass',2200,1,300);osc('square',120,t,.13,.16,60)},
+  pkBlip:(t=now(),f=1100)=>{osc('square',f,t,.05,.09,f*.8)},
+  pkHum:(t=now(),d=.6)=>{noise(t,.06,.3,'lowpass',2000,1,300);osc('sawtooth',196,t,d,.07,180);osc('square',98,t,d*.8,.05)},
+  pkHiss:(t=now(),d=.4)=>{noise(t,d,.035,'highpass',5000,1)},
   click:(t=now())=>{osc('square',900,t,.05,.08,600)},
   tick:(t=now(),acc=false,v=1)=>{osc('sine',acc?1320:880,t,.06,.18*v)},// pure tone so the mic can tell it apart from claps,
   tink:(t=now(),v=1,quiet)=>{osc('triangle',2200,t,.18,.22*v);osc('sine',3300,t,.12,.1*v);if(!quiet)noise(t,.04,.15*v,'bandpass',4000,3)},// quiet: no noise burst (cave-in whisper claps)
