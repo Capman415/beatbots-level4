@@ -3,17 +3,31 @@
 const W=1920,H=1080;
 const BB=window.BB={W,H,t:0,paused:false,debug:/[?&]sim=1/.test(location.search)};
 const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
+// v13.1 lite floor: the main canvas ignores shadow blur and CSS filters (the two costliest per-draw effects on weak GPUs/CPUs).
+// Offscreen bakes use their own contexts, so baked sprites keep their shading.
+{const P=CanvasRenderingContext2D.prototype,dSB=Object.getOwnPropertyDescriptor(P,'shadowBlur'),dF=Object.getOwnPropertyDescriptor(P,'filter');
+  if(dSB)Object.defineProperty(ctx,'shadowBlur',{get(){return dSB.get.call(this)},set(v){dSB.set.call(this,BB.tier===0?0:v)}});
+  if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v13.0';
+BB.VERSION='v13.1';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
-BB.q=BB.phone?0:1;BB.qUp=0;// phones start in light mode and step up only if they prove fast (avoids a mid-scene resize hitch on slow phones)
+// v13.1 low-power kid devices (Fire/Silk, Kindle, cheap Android tablets, LeapFrog, older iPads): start on the 'lite' floor
+const UA=navigator.userAgent,hc=navigator.hardwareConcurrency||4,mem=navigator.deviceMemory||4;
+BB.lowDev=/Silk|KF[A-Z]{2,4}\b|Kindle|LeapFrog|LeapPad/i.test(UA)||(/Android/i.test(UA)&&!BB.phone&&(mem<=2||hc<=4))||(/iPad/.test(UA)&&hc<=2)||(/Macintosh/.test(UA)&&navigator.maxTouchPoints>1&&hc<=2);
+// tiers: 2 full, 1 light (sprites baked, fewer extras), 0 lite floor (light + lower resolution, no blur/shadows, fewer particles)
+BB.tier=BB.lowDev?0:BB.phone?1:2;try{const f=new URLSearchParams(location.search).get('tier');if(f!=null&&f!=='')BB.tier=+f;BB.tierLock=f!=null&&f!==''}catch(e){}
+BB.q=BB.tier>=2?1:0;BB.qUp=0;// phones start in light mode and step up only if they prove fast (avoids a mid-scene resize hitch on slow phones)
 // 1 = full extras, 0 = phone low mode
+// v13.1 safe areas (notches / rounded corners) read from CSS env(); the 16:9 stage is letterboxed inside them
+const safe=document.createElement('div');safe.style.cssText='position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';document.body.appendChild(safe);
 function resize(){const vw=innerWidth,vh=innerHeight;let dpr=Math.min(2,window.devicePixelRatio||1);
-  if(BB.phone){const cap=BB.q?1280:880;/* v12.8: phone light mode renders at <=880 px wide */dpr=Math.min(dpr,cap/Math.max(vw,vh*16/9))}
-  SC=Math.min(vw/W,vh/H);OX=(vw-W*SC)/2;OY=(vh-H*SC)/2;
+  // v13.1 backing-store cap per tier (the stage is 1920x1080 logical): full <=1920 px wide (4K boards render 1080p and upscale), light 1280 (phones 880), lite 720
+  const cap=BB.tier>=2?1920:BB.tier===1?(BB.phone?880:1280):720;dpr=Math.min(dpr,cap/Math.min(vw,vh*16/9));
+  const cs=getComputedStyle(safe),sl=parseFloat(cs.paddingLeft)||0,sr=parseFloat(cs.paddingRight)||0,st=parseFloat(cs.paddingTop)||0,sb=parseFloat(cs.paddingBottom)||0;
+  const aw=vw-sl-sr,ah=vh-st-sb;SC=Math.min(aw/W,ah/H);OX=sl+(aw-W*SC)/2;OY=st+(ah-H*SC)/2;
   cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);cv.style.width=vw+'px';cv.style.height=vh+'px';BB.dpr=dpr;}
 addEventListener('resize',resize);resize();BB.resize=resize;
 // ---------- helpers ----------
@@ -84,7 +98,10 @@ const LT={};BB.logoText=(t,cx,cy,s,o={})=>{o={matte:1,...o};const key=t+s+(o.fac
   ctx.drawImage(c,cx-c.width/2,cy-s*.8*c.sc);return c.width};
 // Clicks run right inside the tap event (a real user gesture) so the mic prompt and audio resume are allowed.
 let lastHits=[];
-function clickAt(c){for(let i=lastHits.length-1;i>=0;i--){const b=lastHits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();return true}}return false}
+function clickAt(c){for(let i=lastHits.length-1;i>=0;i--){const b=lastHits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();return true}}
+  // v13.1: every button is at least a 44 css-px touch target - a near miss snaps to the closest button
+  const pad=22/SC;let best=null,bd=pad;for(const b of lastHits){const dx=Math.max(b.x-c.x,0,c.x-b.x-b.w),dy=Math.max(b.y-c.y,0,c.y-b.y-b.h),d=Math.hypot(dx,dy);if(d<bd){bd=d;best=b}}
+  if(best){BB.sfx.click();best.cb&&best.cb();return true}return false}
 function dispatchClicks(){lastHits=hits}
 // ---------- drawing helpers ----------
 BB.rrect=(x,y,w,h,r,fill,stroke,lw)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.lineWidth=lw||3;ctx.strokeStyle=stroke;ctx.stroke()}};
@@ -122,7 +139,7 @@ BB.well=(x,y,w,h,r)=>{BB.rrect(x,y,w,h,r,BB.lg(y,y+h,['#0e1f1d','#173230','#1130
 BB.glow=(x,y,r,col,a=1)=>{const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col.replace('A',a));g.addColorStop(1,col.replace('A',0));ctx.fillStyle=g;ctx.fillRect(x-r,y-r,2*r,2*r)};
 // ---------- particles + shake ----------
 const parts=[];BB.parts=parts;
-BB.burst=(x,y,n,o={})=>{if(BB.phone){n=Math.ceil(n*(BB.q?.7:.4));if(parts.length>(BB.q?140:70))return}for(let i=0;i<n;i++){const a=(o.a0??0)+(o.spread??Math.PI*2)*Math.random(),sp=(o.speed||400)*(.4+Math.random()*.8);
+BB.burst=(x,y,n,o={})=>{if(BB.tier<2){n=Math.ceil(n*(BB.tier?.4:.25));if(parts.length>(BB.tier?70:40))return}for(let i=0;i<n;i++){const a=(o.a0??0)+(o.spread??Math.PI*2)*Math.random(),sp=(o.speed||400)*(.4+Math.random()*.8);
   parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(o.up||0),life:o.life||.8,age:0,size:(o.size||10)*(.6+Math.random()*.8),col:o.cols?o.cols[i%o.cols.length]:(o.col||'#ffe066'),g:o.g??900,kind:o.kind||'spark',rot:Math.random()*6,w:o.world?1:0})}};
 BB.updParts=dt=>{for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.age+=dt;if(p.age>p.life){parts.splice(i,1);continue}p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=1-dt*(p.kind==='dust'?3:.5);p.rot+=dt*5}};
 BB.drawParts=(world=0)=>{for(const p of parts){if((p.w||0)!==world)continue;const k=1-p.age/p.life;ctx.globalAlpha=Math.min(1,k*1.5);ctx.fillStyle=p.col;
@@ -135,7 +152,14 @@ let shakeAmt=0;BB.shake=a=>shakeAmt=Math.min(6,Math.max(shakeAmt,a));// capped a
 const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC({latencyHint:'interactive'});BB.ac=ac;
 const master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);BB.outBus=master;
 const sfxBus=ac.createGain();sfxBus.connect(master);const voBus=ac.createGain();voBus.gain.value=1.1;voBus.connect(master);
-BB.unlockAudio=()=>{if(ac.state!=='running'&&!BB.paused)ac.resume().catch(()=>{})};
+BB.unlockAudio=()=>{if(ac.state!=='running'&&!BB.paused&&!document.hidden){ac.resume().catch(()=>{});
+  // v13.1 iOS/Silk/old WebView: a 1-sample silent buffer started inside the gesture is what actually unlocks output
+  try{const b=ac.createBuffer(1,1,22050),s=ac.createBufferSource();s.buffer=b;s.connect(ac.destination);s.start(0)}catch(e){}}};
+// v13.1 unlock on whichever gesture comes first (touchend is the one iOS honours; keys for Chromebook keyboards / clickers)
+for(const ev of ['touchend','click','keydown','pointerup'])addEventListener(ev,()=>BB.unlockAudio(),{passive:true});
+// v13.1 output meter for the playback-aware clap filter (whole mix: groove, voice, effects)
+const outAn=ac.createAnalyser();outAn.fftSize=256;outAn.smoothingTimeConstant=0;master.connect(outAn);const outBuf=new Float32Array(outAn.fftSize);
+BB.outRms=()=>{outAn.getFloatTimeDomainData(outBuf);let s=0;for(let i=0;i<outBuf.length;i++)s+=outBuf[i]*outBuf[i];return Math.sqrt(s/outBuf.length)};
 const liftBus=ac.createGain();liftBus.connect(sfxBus);setInterval(()=>{const talk=BB.talking&&BB.t<BB.talking.until+.15;liftBus.gain.setTargetAtTime(talk?.18:1,ac.currentTime,.08)},60);
 const noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);{const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
 function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
@@ -193,7 +217,8 @@ BB.drawCelebrate=()=>{const c=BB.cele;if(!c)return;const t=BB.t-c.t;if(t>9){BB.c
     if(c.next&&k<.85){ctx.save();ctx.globalAlpha=Math.min(1,(t-1.2)*3);BB.plaque(x+170,y-150,240,46,c.next+'  ▶',22,'#b5482a',{font:'Rammetto One',noRivet:1});ctx.restore()}}};
 // voice lines (Piper, Sprocket voice from the video pipeline). Caption shown while playing.
 const VO={};BB.voText={};BB.caption=null;
-BB.loadVO=async list=>{await Promise.all(list.map(async([k,txt,who])=>{BB.voText[k]={txt,who};try{const r=await fetch('vo/'+k+'.mp3');VO[k]=await ac.decodeAudioData(await r.arrayBuffer())}catch(e){}}))};
+// v13.1 VO loads 2 at a time in script order (first lines first) instead of all at once - avoids a decode spike / memory peak on Fire & Chromebooks
+BB.loadVO=async list=>{for(const [k,txt,who] of list)BB.voText[k]={txt,who};let i=0;const one=async()=>{while(i<list.length){const k=list[i++][0];try{const r=await fetch('vo/'+k+'.mp3');const ab=await r.arrayBuffer();VO[k]=await new Promise((res,rej)=>{const p=ac.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej)})}catch(e){}}};await Promise.all([one(),one()])};
 let voSrc=null;
 BB.say=(k,o={})=>{const info=BB.voText[k]||{txt:k,who:'sprocket'};const b=VO[k];
   if(voSrc&&!o.overlap){try{voSrc.stop()}catch(e){}}
@@ -210,14 +235,14 @@ BB.setSens=i=>{mic.sensIdx=Math.max(0,Math.min(5,i));try{localStorage.setItem('b
 BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic.err='';ac.resume().catch(()=>{});
   return mic.starting=(async()=>{try{
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoSupport'};
-    const st=await MicCore.start(true);mic.ac=MicCore.ctx;mic.stream=st;mic.track=MicCore.track();mic.floor=.003;mic.prev=0;
+    const st=await MicCore.start(true,BB.aec);mic.ac=MicCore.ctx;mic.stream=st;mic.track=MicCore.track();mic.floor=.003;mic.prev=0;
     if(mic.track)mic.track.onended=()=>{mic.ok=false;mic.state='lost';mic.err='Microphone disconnected. Tap MIC SETUP to turn it back on.'};
     mic.ok=true;mic.state='on';return true}
   catch(e){const n=e&&e.name;mic.ok=false;
     mic.state=(n==='NotFoundError'||n==='DevicesNotFoundError')?'nodevice':(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError')?'denied':'error';
     mic.err=mic.state==='denied'?'Mic permission is blocked. Click the mic/lock icon in the address bar, choose Allow, then reload.':
       mic.state==='nodevice'?'No microphone found. Plug one in or check Chromebook sound settings, then try again.':
-      n==='NoSupport'?'This browser cannot use the mic here.':'The mic could not start ('+(n||'unknown')+'). Close other apps using the mic and try again.';
+      n==='NoSupport'?'This browser cannot use the mic here (some tablets, like Fire/Silk, block it). Use the MANUAL tap button to play along!':'The mic could not start ('+(n||'unknown')+'). Close other apps using the mic and try again.';
     return false}finally{mic.starting=null}})()};
 // mic health: after resume / tab return, make sure the audio clock runs again
 BB.ensureMic=()=>{if(ac.state!=='running')ac.resume().catch(()=>{});if(MicCore.ctx&&MicCore.ctx.state!=='running')MicCore.ctx.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
@@ -227,9 +252,11 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!BB.pause
 // Every sound the game makes is logged with its time. Onsets heard while a noisy/harmonic effect plays are ignored.
 // Onsets during a pure-tone beep only count if the mic hears broadband (clap-like) energy away from the beep pitches.
 const selfWins=[];BB.selfSound=(t,dur,freqs)=>{selfWins.push({t,e:t+dur,freqs});if(selfWins.length>200)selfWins.splice(0,selfWins.length-200)};
-mic.lat=null;// measured speaker->mic delay (s); null = not calibrated yet
+mic.lat=null;
+// v13.1 echo cancellation: on by default on Chromebooks (speaker right next to the mic); ?aec=0/1 or localStorage bb_aec overrides
+{let a=/CrOS/.test(navigator.userAgent);try{const q=new URLSearchParams(location.search).get('aec'),l=localStorage.getItem('bb_aec');if(l!=null)a=l==='1';if(q!=null)a=q==='1'}catch(e){}BB.aec=a}// measured speaker->mic delay (s); null = not calibrated yet
 function micLat(){return mic.lat!=null?mic.lat:(ac.outputLatency||ac.baseLatency||.02)+((MicCore.ctx&&MicCore.ctx.baseLatency)||.01)+.03}
-let fbin=null,nonTonalFloor=1e-9;
+let fbin=null,nonTonalFloor=1e-9;const ALLF=[880,1320];
 function nonTonalEnergy(freqs){const an=MicCore.an;if(!an)return 0;if(!fbin||fbin.length!==an.frequencyBinCount)fbin=new Float32Array(an.frequencyBinCount);
   an.getFloatFrequencyData(fbin);const hz=MicCore.ctx.sampleRate/an.fftSize;let e=0,tot=0;
   for(let i=Math.floor(300/hz);i<Math.min(fbin.length,Math.floor(9000/hz));i++){const f=i*hz,pw=Math.pow(10,fbin[i]/10);tot+=pw;
@@ -250,11 +277,13 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   const tNow=ac.currentTime-.02;
   if(window.GroupGate){GroupGate.push(tNow,GroupGate.hf(MicCore.buf),dt);GroupGate.sensMul=sens}// group-clap gate log
   const softOn=BB.softClap&&BB.t-BB.softClap<.5;const thr=window.GroupGate?GroupGate.onsetThr(mic.floor,sens,softOn):Math.max(mic.floor*2.2+.0015,.003)/sens;mic.thr=thr;// shared rule (group.js)
-  const allFreqs=[880,1320];const nt=nonTonalEnergy(allFreqs);
+  const nt=nonTonalEnergy(ALLF);
+  const oR=BB.outRms(),EG=BB.echoOff?null:window.EchoGate;if(EG){EG.push(ac.currentTime,oR);if(tNow-mic.lastOn>.3)EG.learn(rms,EG.outAt(tNow,micLat()).peak)}
   if(rms>thr&&rms>mic.prev*(window.GroupGate?GroupGate.adaptJump(rms,softOn&&BB.fastSoft&&BB.t-BB.fastSoft<.5?GroupGate.ONSET_JUMP_FS:GroupGate.ONSET_JUMP):1.3)&&tNow-mic.lastOn>.12){mic.lastOn=tNow;if(window.GroupGate)GroupGate.adaptPeak(rms);
     const chk=selfCheck(tNow);let ok=true;
     if(chk==='hard')ok=false;
     else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.6&&e>nonTonalFloor*6}// clap = mostly broadband energy
+    if(ok&&EG&&!EG.check(tNow,rms,micLat(),thr)){ok=false;mic.echoRej=(mic.echoRej||0)+1}// v13.1 playback-aware: drop onsets explained by our own speaker output
     if(mic.calib)mic.calib.push(tNow);
     if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'']);
     if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;mic.onsets.push({t:tNow,lvl:lv,rms});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
@@ -265,9 +294,16 @@ mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl,sim:1});mic.level=lvl;mic.peak=lvl;mic.hold=.4};
 // ---------- main loop ----------
 BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.groove&&BB.groove.stop();BB.scene=s;parts.length=0;s.enter&&s.enter()};
-let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0,perfGood=0;
+let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0,perfGood=0,bootT=last;
+BB.setTier=t=>{BB.tier=Math.max(0,Math.min(2,t));BB.q=BB.tier>=2?1:0;BB.tierT=performance.now();resize();BB.onTier&&BB.onTier()};
+// v13.1 tab hidden -> stop drawing and suspend audio; back -> resume (rAF already stops, this also silences the groove)
+document.addEventListener('visibilitychange',()=>{if(document.hidden){ac.suspend().catch(()=>{})}else{last=performance.now();if(!BB.paused)ac.resume().catch(()=>{})}});
 function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
-  if(BB.phone){perfN++;perfS+=ts-last0;if(perfS>=600){const av=perfS/perfN;if(BB.q){if(av>22&&++perfBad>=2){BB.q=0;resize()}else if(av<=20)perfBad=0}else if(!BB.qUp){if(av<14){if(++perfGood>=4){BB.q=1;BB.qUp=1;resize()}}else perfGood=0}perfN=perfS=0}}last0=ts;
+  // v13.1 auto quality (all devices): after a 1.5 s settle, 0.6 s windows of frame time step the tier down when slow
+  // (>22 ms twice = under ~45 fps); one step up per session when clearly fast (<14 ms x4) so it never flaps.
+  if(!BB.tierLock&&ts-bootT>1500&&!document.hidden){perfN++;perfS+=ts-last0;if(perfS>=600){const av=perfS/perfN;
+    if(av>22&&BB.tier>0){if(++perfBad>=2){BB.setTier(BB.tier-1);perfBad=0}}else{perfBad=0;if(av<14&&!BB.qUp&&BB.tier<(BB.phone||BB.lowDev?1:2)){if(++perfGood>=4){BB.qUp=1;BB.setTier(BB.tier+1)}}else perfGood=0}
+    perfN=perfS=0}}last0=ts;
   if(!BB.paused){BB.t+=dt;BB.updParts(dt);mic.update(dt)}
   hits=[];
   ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,cv.width,cv.height);

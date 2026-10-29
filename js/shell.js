@@ -150,7 +150,7 @@ async function boot(){ctx.setTransform(1,0,0,1,0,0);
   BB.loadVO(BB.VO_LINES||[]);
   const p=new URLSearchParams(location.search);
   const ro={skipIntro:p.has('skip'),startAt:+p.get('at')||0,auto:p.has('auto')};
-  if(p.get('room')==='mine')BB.go(new BB.MineRoom(ro));else if(p.get('room')==='smasher')BB.go(new BB.SmasherRoom(ro));else if(p.get('room')==='packing')BB.go(new BB.PackingRoom(ro));else BB.go(new TitleScene());
+  if(p.get('room')==='mine')BB.go(new BB.MineRoom(ro));else if(p.get('room')==='smasher')BB.go(new BB.SmasherRoom(ro));else if(p.get('room')==='packing')BB.go(new BB.PackingRoom(ro));else if(p.get('room')==='map')BB.go(new MapScene());else if(p.get('room')==='mic')BB.go(new MicScene());else BB.go(new TitleScene());
   BB.start()}
 boot();
 })();

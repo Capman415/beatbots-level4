@@ -1,8 +1,8 @@
 // Shared mic core used by BOTH mic-test.html and the game, so the game runs the exact path proven on the Chromebook.
 window.MicCore={ctx:null,stream:null,src:null,an:null,sink:null,buf:null,
- async start(raw=true){this.stop();const AC=window.AudioContext||window.webkitAudioContext;
-  this.ctx=new AC();await this.ctx.resume();
-  this.stream=await navigator.mediaDevices.getUserMedia(raw?{audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}:{audio:true});
+ async start(raw=true,aec=false){this.stop();const AC=window.AudioContext||window.webkitAudioContext;
+  this.ctx=new AC({latencyHint:'interactive'});await this.ctx.resume();
+  this.stream=await navigator.mediaDevices.getUserMedia(raw?{audio:{echoCancellation:!!aec,noiseSuppression:false,autoGainControl:false}}:{audio:true});
   this.src=this.ctx.createMediaStreamSource(this.stream);this.an=this.ctx.createAnalyser();this.an.fftSize=2048;this.an.smoothingTimeConstant=0;this.src.connect(this.an);
   this.sink=this.ctx.createGain();this.sink.gain.value=0;this.an.connect(this.sink);this.sink.connect(this.ctx.destination);
   this.buf=new Float32Array(this.an.fftSize);return this.stream},

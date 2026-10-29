@@ -4,7 +4,7 @@
 (()=>{let ctx=BB.ctx;BB._sw.push(g=>ctx=g);const COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB,R=BB.R;
 // v12.9 phones (light mode): static UI pieces (panels, ticket, marquee face, signs, HUD, tray) are baked once into small sprites
 // keyed by their content and blitted each frame - same idea as the v12.8 mine fix. Desktop/Chromebook/Smartboard draw live as before.
-const SPR=new Map();const lq=()=>BB.phone&&!BB.q;
+const SPR=new Map();const lq=()=>!BB.q;
 function spr(key,x,y,w,h,fn){if(!lq()){fn();return}const s=Math.min(1,(BB.dpr||1)*(ctx.canvas.width/(BB.dpr||1))/W*1.15)||.5;let e=SPR.get(key);
   if(!e||e.s!==s){if(SPR.size>80)SPR.clear();const c=document.createElement('canvas');c.width=Math.max(1,Math.ceil(w*s));c.height=Math.max(1,Math.ceil(h*s));const g=c.getContext('2d');g.scale(s,s);g.translate(-x,-y);
     BB.withCtx(g,fn);e={c,s};SPR.set(key,e)}
@@ -66,7 +66,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
     this.state='load';R.loadImgs([['smash_bg','jpg'],['press','png'],['hammer','png'],['customer','png'],['basket','png']]).then(()=>{this.static=this.bake();
       if(this.o.skipIntro||this.o.startAt)this.beginOrder();else this.startIntro()});BB.mic.take()}
   exit(){BB.paused=false}
-  bake(){const s=BB.phone&&!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
+  bake(){const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
     if(V.smash_bg)g.drawImage(V.smash_bg,0,0,W,H);
     // warm pool of light under the press, floor shadow
     const gr=g.createRadialGradient(PX,FLOOR,40,PX,FLOOR,700);gr.addColorStop(0,'rgba(255,220,160,.18)');gr.addColorStop(1,'rgba(255,220,160,0)');g.fillStyle=gr;g.fillRect(0,0,W,H);
@@ -130,7 +130,7 @@ class SmasherRoom{constructor(o={}){this.o=o}
   sweep(){if(!this.crumbs.length)return;BB.sfx.sweep();this.sweepT=BB.t;this.fly.push({k:'s',x0:PX,y0:ANVIL-30,x1:BX[3],y1:BASE-60,t0:BB.t+.4,d:.6,arc:200,end:()=>{this.inv.s++;BB.sfx.ting()}})}
   // v12.2: 1960s retro-robot bell (mint dome, orange plunger, cream bolted base, indicator light)
   // v12.6: CGI desk bell - chrome dome (env reflections, specular, warm rim light), beveled mint enamel base with chrome band + rivets, shaded 3D plunger, flash on hit
-  drawBell(bx,by,ready,t){const pt=this.ringT&&t>=this.ringT?t-this.ringT:9,press=pt<.25?Math.sin(pt/.25*Math.PI):0,wob=pt<1.2?Math.sin(pt*30)*.035*(1-pt/1.2):0,fl=pt<.6?1-pt/.6:0,hq=!(BB.phone&&!BB.q),INK=COL.ink,E=(x,y,rx,ry,a0=0,a1=7,ccw)=>ctx.ellipse(x,y,rx,ry,0,a0,a1,ccw);
+  drawBell(bx,by,ready,t){const pt=this.ringT&&t>=this.ringT?t-this.ringT:9,press=pt<.25?Math.sin(pt/.25*Math.PI):0,wob=pt<1.2?Math.sin(pt*30)*.035*(1-pt/1.2):0,fl=pt<.6?1-pt/.6:0,hq=!(!BB.q),INK=COL.ink,E=(x,y,rx,ry,a0=0,a1=7,ccw)=>ctx.ellipse(x,y,rx,ry,0,a0,a1,ccw);
     /* v12.6: matte aged brass counter bell (ref: Victorian brass counter bell). Soft broad highlights, no gloss hotspots. */
     const hg=(x0,x1,st)=>{const g=ctx.createLinearGradient(x0,0,x1,0);st.forEach((c,i)=>g.addColorStop(i/(st.length-1),c));return g};
     const BR=['#6a4c22','#94723a','#c49d58','#dcb872','#caa45e','#ab8648','#8a6834','#563e1a'];
@@ -350,7 +350,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     // gears behind the corners
     for(const [gx,sd] of[[x+12,1],[x+w-12,-1]]){ctx.save();ctx.translate(gx,cy+6);ctx.rotate(t*.6*sd+fx*2*sd);ctx.fillStyle=BB.lg(-44,44,['#e6eceb','#7d8987','#3b4544']);ctx.strokeStyle='#1e2b29';ctx.lineWidth=3;ctx.beginPath();
       for(let i=0;i<20;i++){const a=i/20*Math.PI*2,rr=i%2?44:36;ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#2b3534';ctx.beginPath();ctx.arc(0,0,12,0,7);ctx.fill();ctx.restore()}
-    if(BB.q||!BB.phone)BB.glow(cx,cy,w*.75,'rgba(255,214,90,A)',(.18+.35*fx)*fl);
+    if(BB.q)BB.glow(cx,cy,w*.75,'rgba(255,214,90,A)',(.18+.35*fx)*fl);
     const face=()=>{BB.bevel(x,y,w,h,26,['#ff8f6a','#e0503c','#9e2c22']);
     BB.rrect(x+16,y+30,w-32,h-60,14,BB.lg(y+30,y+h-30,['#173230','#0d1f1d']),'rgba(255,240,200,.5)',2);};if(fx>0||!lq())face();else spr('mq',x-4,y-4,w+8,h+8,face);
     // chasing bulbs

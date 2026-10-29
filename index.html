@@ -1,26 +1,28 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Beat Bots Level 4: The Rhythm Warehouse</title>
 <style>
 @font-face{font-family:'Rammetto One';src:url(assets/RammettoOne-Regular.ttf)}
 @font-face{font-family:'Lilita One';src:url(assets/LilitaOne-Regular.ttf)}
-html,body{margin:0;height:100%;background:#0d1d1b;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;background:#0d1d1b;overflow:hidden;touch-action:none;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 canvas{position:absolute;left:0;top:0;touch-action:none}
-#fs{position:absolute;right:8px;top:8px;z-index:2;opacity:.25;font:14px sans-serif;background:#000;color:#fff;border:0;padding:6px 10px;border-radius:6px}
+#fs{position:absolute;right:calc(8px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top));z-index:2;opacity:.3;font:15px sans-serif;background:#000;color:#fff;border:0;min-width:44px;min-height:44px;padding:6px 12px;border-radius:8px;touch-action:manipulation}
 </style></head><body>
 <canvas id="c"></canvas>
-<button id="fs" onclick="document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()">full screen</button>
-<script>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.build!=='1793400132'&&!sessionStorage.bbReload){sessionStorage.bbReload=1;location.reload()}}).catch(()=>{})</script>
-<script src="js/mic.js?v=1793400132"></script>
-<script src="js/group.js?v=1793400132"></script>
-<script src="js/engine.js?v=1793400132"></script>
-<script src="js/groove.js?v=1793400132"></script>
-<script src="js/art.js?v=1793400132"></script>
-<script src="js/rooms/mine.js?v=1793400132"></script>
-<script src="js/rhythm.js?v=1793400132"></script>
-<script src="js/rooms/smasher.js?v=1793400132"></script>
-<script src="js/rooms/packing.js?v=1793400132"></script>
-<script src="js/shell.js?v=1793400132"></script>
+<button id="fs" onclick="const d=document.documentElement,f=d.requestFullscreen||d.webkitRequestFullscreen;f&&f.call(d).catch&&f.call(d).catch(()=>{})">full screen</button>
+<script>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.build!=='1793400133'&&!sessionStorage.bbReload){sessionStorage.bbReload=1;location.reload()}}).catch(()=>{})</script>
+<script>/* v13.1 no pinch / double-tap zoom, long-press menus or page scroll on touch boards & tablets */for(const e of ['gesturestart','gesturechange','dblclick','contextmenu'])addEventListener(e,ev=>ev.preventDefault(),{passive:false});addEventListener('touchmove',e=>e.preventDefault(),{passive:false});addEventListener('keydown',e=>{if(e.key==='f'||e.key==='F'){const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen().catch(()=>{})}});</script>
+<script src="js/echo.js?v=1793400133"></script>
+<script src="js/mic.js?v=1793400133"></script>
+<script src="js/group.js?v=1793400133"></script>
+<script src="js/engine.js?v=1793400133"></script>
+<script src="js/groove.js?v=1793400133"></script>
+<script src="js/art.js?v=1793400133"></script>
+<script src="js/rooms/mine.js?v=1793400133"></script>
+<script src="js/rhythm.js?v=1793400133"></script>
+<script src="js/rooms/smasher.js?v=1793400133"></script>
+<script src="js/rooms/packing.js?v=1793400133"></script>
+<script src="js/shell.js?v=1793400133"></script>
 <script>/* v12.6: full-screen button only on the title screen, so it never sits on a room's panel border */setInterval(()=>{const b=document.getElementById('fs');if(b&&window.BB)b.style.display=(BB.scene&&BB.scene.constructor&&BB.scene.constructor.name==='TitleScene'&&!document.fullscreenElement)?'':'none'},250)</script>
 </body></html>

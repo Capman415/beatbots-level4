@@ -289,7 +289,7 @@ class MineRoom{
       this.drawWarehouse(vx0,vx1)}
     // ---- static mine layer (earth + tunnel backdrops + shaft wall) is pre-composited into an offscreen canvas while the camera is still
     // v12.8 phones: earth, tunnel backdrops (fully lit) and shaft wall come from one baked world-space layer; tunnel darkness is a live overlay
-    this._ug=0;if(BB.phone&&!BB.q&&vy1>GY&&BB.V2.shaft){const U=this.ugBake();if(U){this._ug=1;this._stat=0;const S=U.S,y0=Math.max(GY,vy0),y1=Math.min(U.Y1,vy1),x0=Math.max(U.XA,vx0),x1=Math.min(U.X1,vx1);
+    this._ug=0;if(!BB.q&&vy1>GY&&BB.V2.shaft){const U=this.ugBake();if(U){this._ug=1;this._stat=0;const S=U.S,y0=Math.max(GY,vy0),y1=Math.min(U.Y1,vy1),x0=Math.max(U.XA,vx0),x1=Math.min(U.X1,vx1);
       if(y1>y0&&x1>x0)ctx.drawImage(U.c,(x0-U.XA)*S,(y0-GY)*S,(x1-x0)*S,(y1-y0)*S,x0,y0,x1-x0,y1-y0);
       for(let k=0;k<5;k++){const y=top(k),l=this.lit[k];if(y>vy1||y+420<vy0||l>=1)continue;ctx.fillStyle=`rgba(10,6,4,${.78*(1-l)})`;ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.fill()}
       for(let k=0;k<5;k++){const y=top(k);if(y>vy1||y+420<vy0)continue;this.drawTunnel(k)}this.drawPipe();this.drawRest(vx0,vx1,vy0,vy1);return}}
@@ -320,7 +320,7 @@ class MineRoom{
   drawRest(vx0,vx1,vy0,vy1){const c=this.cam,t=BB.t,sh=BB.V2.shaft,sx0=SHAFT[0],sw=SHAFT[1]-SHAFT[0],sb=rail(4)+60;
     for(let k=0;k<5;k++){const y0=top(k)+40;// open doorway where each tunnel meets the shaft
       ctx.save();ctx.beginPath();ctx.rect(sx0,y0,sw,rail(k)-y0+6);ctx.clip();if(!sh){ctx.fillStyle='rgba(18,10,6,.55)';ctx.fillRect(sx0,y0,sw,rail(k)-y0+6)}
-      if(!(BB.phone&&!BB.q))BB.glow((SHAFT[0]+SHAFT[1])/2,rail(k)-120,320,'rgba('+(k===2?'150,200,255':'255,190,110')+',A)',.18*this.lit[k]);ctx.restore();
+      if(!(!BB.q))BB.glow((SHAFT[0]+SHAFT[1])/2,rail(k)-120,320,'rgba('+(k===2?'150,200,255':'255,190,110')+',A)',.18*this.lit[k]);ctx.restore();
       ctx.fillStyle='#6b4428';ctx.fillRect(sx0-6,y0-22,sw+12,22);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx0-6,y0,sw+12,6);
       const l=this.lit[k];ctx.fillStyle=l>.5?(Math.sin(t*3+k)>0?'#6ee678':'#3c8a48'):'#333';ctx.beginPath();ctx.arc(sx0+24,y0-11,7,0,7);ctx.arc(SHAFT[1]-24,y0-11,7,0,7);ctx.fill()}
     // cables
@@ -373,7 +373,7 @@ class MineRoom{
 }
   whBake(){const V=BB.V2;if(!V.wh||!V.conveyor)return null;if(this._wh)return this._wh;const S=.42,XA=-2400,X1=6400,Y1=GY+40,c=document.createElement('canvas');c.width=Math.ceil((X1-XA)*S);c.height=Math.ceil(Y1*S);
     const g=c.getContext('2d');g.scale(S,S);g.translate(-XA,0);BB.withCtx(g,()=>this.whStatic(XA,X1));this._wh={c,XA,X1,Y1};return this._wh}
-  drawWarehouse(vx0,vx1){const t=BB.t;const lq=BB.phone&&!BB.q,bk=lq?this.whBake():null,baked=!!bk;
+  drawWarehouse(vx0,vx1){const t=BB.t;const lq=!BB.q,bk=lq?this.whBake():null,baked=!!bk;
     if(baked)ctx.drawImage(bk.c,bk.XA,0,bk.X1-bk.XA,bk.Y1);else this.whStatic(vx0,vx1);
     {const im=BB.V2.conveyor;if(im){const sx=1340/im.width,sy=sx*.8,X0=40,Y0=767,P=(px,py)=>[X0+px*sx,Y0+py*sy];
       if(!baked){ctx.save();ctx.beginPath();ctx.rect(0,0,1500,GY+2);ctx.clip();ctx.drawImage(im,X0,Y0,im.width*sx,im.height*sy);ctx.restore();}
@@ -450,7 +450,7 @@ class MineRoom{
       const bonk=p.ph==='bonk';BB.staticJr(p.x,bonk?yb+Math.min(1,(BB.t-p.t3)*3)*(rail(k)-yb):yb,95,{run:p.ph==='in'||p.ph==='out'?1:0,glitch:p.ph==='throw'&&Math.sin(BB.t*20)>.6?1:0,dizzy:bonk,rot:bonk?.6:0,spd:p.ph==='out'?900:500,flip:p.ph==='in'});
       if(p.ph==='throw')this.bubble(p.x-330,yb-190,'hee hee! pebbles!',k);if(bonk)this.bubble(p.x-170,yb-150,'oof!',k)}
     // lantern light over everything in this tunnel (ties the cut-out characters into the painting) + slight depth haze
-    if(active&&!BB.phone){ctx.save();ctx.beginPath();ctx.rect(2200,y,1140,420);ctx.clip();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=.3*l;ctx.fillStyle=L.amb;ctx.fillRect(2200,y,1140,420);ctx.restore()}
+    if(active&&BB.q&&!BB.phone){ctx.save();ctx.beginPath();ctx.rect(2200,y,1140,420);ctx.clip();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=.3*l;ctx.fillStyle=L.amb;ctx.fillRect(2200,y,1140,420);ctx.restore()}
     for(const b of this._bub)this.bubble(b[0],b[1],b[2],b[3],true);this._bub=null}
   bubble(x,y,txt,k,now){if(k!=null&&this._bub&&!now){this._bub.push([x,y,txt,k,1]);return}const w=BB.measure(txt,34)+50;
     if(k!=null){const B=TBOX(k);x=clamp(x,B.x0+10,B.x1-w-10);y=clamp(y,top(k)+14,rail(k)-80)}

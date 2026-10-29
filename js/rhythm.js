@@ -77,7 +77,7 @@ R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
   const fs=o.label?Math.max(14,Math.min(21,h*.16)):0,tagH=o.label?fs+10:0,pad=o.label?Math.max(6,h*.07):0;if(o.label)h-=tagH+pad*2;// v12.6: even gap note|tag|box bottom
   if(o.shadow!==false){const sw=Math.min(w*.46,R.noteSize(k,w,h)*(k==='s'?4.6:k==='e'?3.4:1.8));const gr=ctx.createRadialGradient(x+w/2,y+h,0,x+w/2,y+h,sw);gr.addColorStop(0,'rgba(0,0,0,.42)');gr.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=gr;ctx.save();ctx.translate(x+w/2,y+h);ctx.scale(1,.22);ctx.translate(-x-w/2,-y-h);ctx.beginPath();ctx.arc(x+w/2,y+h,sw,0,7);ctx.fill();ctx.restore()}
-  if(o.glyph!==false){const sp=R.note3d(k,w,h,o);if(o.shadow!==false&&!(BB.phone&&!BB.q)){/* lamp upper-left: shadow falls right & down, flattened onto the surface */const ox=sp.s*.35,oy=sp.s*.18;ctx.save();ctx.globalAlpha*=.75;const pv=y-sp.PAD/sp.sc+sp.gy+sp.s*.7;ctx.translate(x+w/2,pv);ctx.transform(1,0,-.35,.45,0,0);ctx.translate(-x-w/2,-pv);ctx.drawImage(sp.sh,x-sp.PAD/sp.sc+ox,y-sp.PAD/sp.sc+oy,sp.c.width/sp.sc,sp.c.height/sp.sc);ctx.restore()}ctx.drawImage(sp.c,x-sp.PAD/sp.sc,y-sp.PAD/sp.sc,sp.c.width/sp.sc,sp.c.height/sp.sc)}
+  if(o.glyph!==false){const sp=R.note3d(k,w,h,o);if(o.shadow!==false&&!(!BB.q)){/* lamp upper-left: shadow falls right & down, flattened onto the surface */const ox=sp.s*.35,oy=sp.s*.18;ctx.save();ctx.globalAlpha*=.75;const pv=y-sp.PAD/sp.sc+sp.gy+sp.s*.7;ctx.translate(x+w/2,pv);ctx.transform(1,0,-.35,.45,0,0);ctx.translate(-x-w/2,-pv);ctx.drawImage(sp.sh,x-sp.PAD/sp.sc+ox,y-sp.PAD/sp.sc+oy,sp.c.width/sp.sc,sp.c.height/sp.sc);ctx.restore()}ctx.drawImage(sp.c,x-sp.PAD/sp.sc,y-sp.PAD/sp.sc,sp.c.width/sp.sc,sp.c.height/sp.sc)}
   if(o.label){const tw=Math.min(w-8,BB.measure(R.NAME[k],fs)+18),ty=y+h+pad;BB.rrect(x+w/2-tw/2+2,ty+3,tw,tagH,7,'rgba(0,0,0,.3)');BB.rrect(x+w/2-tw/2,ty,tw,tagH,7,BB.lg(ty,ty+tagH,['#fbf6e6','#ddd3b8']),'rgba(25,25,31,.8)',2);BB.text(R.NAME[k],x+w/2,ty+tagH/2+1,fs,COL.ink,{maxW:tw-8})}
   if(o.beats){BB.text(String(R.BEATS[k]),x+w-18,y+h-18,22,'#fff',{stroke:4})}
   ctx.restore()};
@@ -169,13 +169,13 @@ R.yourTurn=(ph,rb,py)=>{const t=BB.t,pu=.5+.5*Math.sin(t*Math.PI*2*1.4),cl=ph===
     ctx.fillStyle='#e9e2c8';ctx.strokeStyle='#1e2b29';ctx.lineWidth=5;ctx.beginPath();ctx.arc(76,-36,15,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(84,-34);ctx.lineTo(106,-26);ctx.lineWidth=9;ctx.stroke();ctx.restore()}};
 // ---------- shared room bits ----------
 // bake a static layer once (background + anything that never moves). Phones bake at half size.
-R.bake=(fn)=>{const s=BB.phone&&!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const old=BB.ctx;
+R.bake=(fn)=>{const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const old=BB.ctx;
   // BB helpers draw on the shared ctx, so temporarily point the drawing calls at the layer via a swap
   fn(g);return c};
 R.shadow=(g,x,y,rw,a=.45)=>{g.save();g.translate(x,y);g.scale(1,.16);const gr=g.createRadialGradient(0,0,0,0,0,rw);gr.addColorStop(0,`rgba(10,5,2,${a})`);gr.addColorStop(.6,`rgba(10,5,2,${a*.5})`);gr.addColorStop(1,'rgba(10,5,2,0)');g.fillStyle=gr;g.fillRect(-rw,-rw,2*rw,2*rw);g.restore()};
-R.lampGlow=(pts,t)=>{if(!BB.q&&BB.phone)return;for(const [x,y,s] of pts){BB.glow(x,y+30,180*(s||1),'rgba(255,220,150,A)',.13+.03*Math.sin(t*2.3+x))}};
+R.lampGlow=(pts,t)=>{if(!BB.q)return;for(const [x,y,s] of pts){BB.glow(x,y+30,180*(s||1),'rgba(255,220,150,A)',.13+.03*Math.sin(t*2.3+x))}};
 R.motes=n=>{const a=[];for(let i=0;i<n;i++)a.push({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2.5,v:6+Math.random()*14,p:Math.random()*6});return a};
-R.drawMotes=(m,dt,t)=>{if(BB.phone&&!BB.q)return;ctx.fillStyle='rgba(255,240,200,.28)';for(const d of m){d.y-=d.v*dt;d.x+=Math.sin(t*.4+d.p)*8*dt;if(d.y<-10){d.y=H+10;d.x=Math.random()*W}ctx.beginPath();ctx.arc(d.x,d.y,d.s,0,7);ctx.fill()}};
+R.drawMotes=(m,dt,t)=>{if(!BB.q)return;ctx.fillStyle='rgba(255,240,200,.28)';for(const d of m){d.y-=d.v*dt;d.x+=Math.sin(t*.4+d.p)*8*dt;if(d.y<-10){d.y=H+10;d.x=Math.random()*W}ctx.beginPath();ctx.arc(d.x,d.y,d.s,0,7);ctx.fill()}};
 // Static Jr. bubble
 R.bubble=(x,y,txt,col='#c0392b')=>{const w=BB.measure(txt,30)+50;BB.rrect(x-w/2+3,y-34+6,w,68,30,'rgba(0,0,0,.25)');BB.rrect(x-w/2,y-34,w,68,30,'#fff',COL.ink,4);
   ctx.fillStyle='#fff';ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x-12,y+32);ctx.lineTo(x,y+56);ctx.lineTo(x+14,y+32);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillRect(x-14,y+26,30,8);BB.text(txt,x,y+2,30,col)};

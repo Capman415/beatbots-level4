@@ -65,5 +65,5 @@ BB.makeGroove=(ac,out,o={})=>{const lite=!!o.lite;
     stop(){this.on=false;bus.gain.setTargetAtTime(0,ac.currentTime,.15)},
     _bus:bus};
   return G};
-if(BB.ac&&BB.outBus){BB.groove=BB.makeGroove(BB.ac,BB.outBus,{lite:BB.phone});}
+if(BB.ac&&BB.outBus){BB.groove=BB.makeGroove(BB.ac,BB.outBus,{lite:BB.phone||BB.lowDev});}
 })();

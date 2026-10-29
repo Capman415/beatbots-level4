@@ -49,7 +49,7 @@ class PackingRoom{constructor(o={}){this.o=o}
   enter(){BB.groove.start(100,'pack');this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
     this.state='load';R.loadImgs([['pack_bg','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.beginRound();else this.startIntro()});BB.mic.take()}
   exit(){BB.paused=false}
-  bake(){const s=BB.phone&&!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
+  bake(){const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
     if(V.pack_bg)g.drawImage(V.pack_bg,0,0,W,H);
     // chute: shadow, frame, dark glass interior with column lanes
     R.shadow(g,W/2,FLOOR+8,420,.6);
@@ -173,7 +173,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(this.state==='end')this.drawEnd();
     if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
   drawBelt(){// ambient: little parcels ride the painted back conveyor (only where the chute doesn't cover it)
-    if(BB.phone&&!BB.q)return;const y=388;/* v12.6: mint-bevel belt with chrome rollers + shaded cardboard parcels (matches the mine conveyor) */
+    if(!BB.q)return;const y=388;/* v12.6: mint-bevel belt with chrome rollers + shaded cardboard parcels (matches the mine conveyor) */
     const segs=[[0,CX0-40],[CX0+NB*CW+40,W]];for(const[a0,a1]of segs){if(a1<=a0)continue;BB.rrect(a0,y,a1-a0,18,4,BB.lg(y,y+18,['#bff0e0','#6fbca5','#2f6b5c']),'rgba(20,30,28,.9)',2);ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(a0+2,y+2,a1-a0-4,2);
       ctx.save();ctx.beginPath();ctx.rect(a0,y,a1-a0,18);ctx.clip();for(let rx=a0-40+((this.belt*.6)%40);rx<a1;rx+=40){const g=ctx.createLinearGradient(0,y+6,0,y+16);g.addColorStop(0,'#f4f8f7');g.addColorStop(.5,'#8e9a98');g.addColorStop(1,'#3a4442');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(rx,y+11,9,5,0,0,7);ctx.fill()}ctx.restore()}
     for(let i=0;i<6;i++){const x=((this.belt+i*330)%1980)-60;if(x>CX0-110&&x<CX0+NB*CW+50)continue;
@@ -221,7 +221,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(this.ri===2&&BB.t-this.palletIn<3){ctx.globalAlpha=1-(BB.t-this.palletIn)/3;BB.text('TORN BY STATIC JR. ... fixed!',w/2,h-18,20,'#c0392b')}
     ctx.restore()}
   drawPB(){const p=this.pb;if(!p)return;const now=BB.ac.currentTime;for(const n of p.notes){const on=now>=n.t&&now<n.t+n.n*p.spb,x=CX0+n.col*CW+4,w=n.n*CW-8;if(!on)continue;const a=1-(now-n.t)/(n.n*p.spb)*.5;
-      ctx.save();ctx.globalAlpha=a;ctx.shadowColor='#ffe066';ctx.shadowBlur=BB.phone?0:30;BB.rrect(x,ROWY-4,w,CH+8,14,'rgba(255,230,102,.35)','#ffe066',6);ctx.restore()}
+      ctx.save();ctx.globalAlpha=a;ctx.shadowColor='#ffe066';ctx.shadowBlur=!BB.q?0:30;BB.rrect(x,ROWY-4,w,CH+8,14,'rgba(255,230,102,.35)','#ffe066',6);ctx.restore()}
     BB.plaque(CX0+NB*CW/2,ROWY-70,360,52,'\u266A PLAYING YOUR RHYTHM',22,COL.teal2||'#2aa198')}
   drawRush(){const r=this.rush,st=this.stars||0;const x=60,y=178,w=500,h=86;
     if(r){const left=this.rushLeft(),f=left/r.lim,live=!r.done&&left>0;BB.rrect(x,y,w,h,18,'rgba(12,28,26,.88)',live?'#e65046':COL.teal2,4);
