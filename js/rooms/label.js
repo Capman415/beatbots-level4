@@ -94,20 +94,14 @@ function drawCardRaw(x,y,w,h,seq,o={}){ctx.save();
 class LabelRoom{constructor(o={}){this.o=o}
   enter(){BB.groove.start(100,'pack');this.allowed=loadAllowed();this.streak=0;this.best=0;this.score=0;this.shipped=this.o.startAt||0;this.last=null;this.said={};this.motes=R.motes(18);this.belt=0;this.lamps=[0,0,0,0];
     this.clapBack=localStorage.getItem('bb_lbl_clap')==='1';this.state='load';this.teacher=false;this.lastOverride=-9;
-    R.loadImgs([['pack_blur','jpg'],['pack_bg','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.newBox(true);else this.startIntro()});BB.mic.take();window.__lbl=this}
+    R.loadImgs([['mail_bg','jpg'],['pack_blur','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.newBox(true);else this.startIntro()});BB.mic.take();window.__lbl=this}
   exit(){BB.paused=false;if(window.__lbl===this)window.__lbl=null}
   bake(){const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
-    if(V.pack_blur||V.pack_bg)g.drawImage(V.pack_blur||V.pack_bg,0,0,W,H);g.fillStyle='rgba(8,18,17,.35)';g.fillRect(0,0,W,H);
+    if(V.mail_bg||V.pack_blur)g.drawImage(V.mail_bg||V.pack_blur,0,0,W,H);g.fillStyle='rgba(8,18,17,.28)';g.fillRect(0,0,W,H);
     // v14.0 LABEL ROOM stage: plum riveted wall, label rail with hanging tags, printer hatch sign, checker floor strip
-    {const wg=g.createLinearGradient(0,0,0,BELT_Y);wg.addColorStop(0,'rgba(70,30,66,.92)');wg.addColorStop(1,'rgba(120,52,108,.82)');g.fillStyle=wg;g.fillRect(0,0,W,BELT_Y+24);
-     g.strokeStyle='rgba(20,8,20,.55)';g.lineWidth=4;for(let x=0;x<W;x+=240){g.beginPath();g.moveTo(x,0);g.lineTo(x,BELT_Y+24);g.stroke();for(let y=40;y<BELT_Y;y+=110){g.fillStyle='rgba(255,220,250,.35)';g.beginPath();g.arc(x+14,y,5,0,7);g.arc(x+226,y,5,0,7);g.fill()}}
-     g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,250,W,10);
-     g.fillStyle='#3a3f44';g.fillRect(0,262,W,14);g.fillStyle='#9aa4a8';g.fillRect(0,262,W,4);// label rail
-     const TC=['#fffaf0','#ffe066','#a6f5ae','#9fe0ff','#ffb3e6'];for(let i=0;i<11;i++){const x=420+i*100+(i%2)*20,y=276,r=(i%3-1)*.12;g.save();g.translate(x,y);g.rotate(r);g.strokeStyle='#2a2a2a';g.lineWidth=2;g.beginPath();g.moveTo(0,0);g.lineTo(0,30);g.stroke();
-       g.fillStyle=TC[i%5];g.strokeStyle='rgba(60,40,40,.8)';g.beginPath();g.roundRect(-34,30,68,46,8);g.fill();g.stroke();g.fillStyle='#d24a3c';g.fillRect(-34,30,68,10);g.fillStyle='#19191f';for(let k=0;k<3;k++){g.beginPath();g.ellipse(-16+k*16,62,5,4,-.35,0,7);g.fill();g.fillRect(-12+k*16,46,2,16)}g.restore()}
+    {// v14.0.2 robot mailing room: painted assets/v2/mail_bg.jpg (cubbies, parcels, pneumatic tube, stamp arm)
      g.save();g.translate(W-250,300);g.fillStyle='#1e2b29';g.beginPath();g.roundRect(-190,-70,380,120,22);g.fill();g.strokeStyle='#ff8adf';g.lineWidth=6;g.shadowColor='#ff8adf';g.shadowBlur=24;g.beginPath();g.roundRect(-176,-56,352,92,16);g.stroke();g.shadowBlur=0;
        g.fillStyle='#ffd6f4';g.font='44px "Rammetto One"';g.textAlign='center';g.textBaseline='middle';g.fillText('LABEL ROOM',0,-10);g.restore();
-     const fl=g.createLinearGradient(0,BELT_Y+24,0,H);fl.addColorStop(0,'rgba(40,20,40,.6)');fl.addColorStop(1,'rgba(10,6,12,.85)');g.fillStyle=fl;g.fillRect(0,BELT_Y+24,W,H-BELT_Y-24);
      for(let x=0;x<W;x+=60){g.fillStyle=(x/60)%2?'#ffe066':'#1e2b29';g.fillRect(x,H-36,60,14)}}
     // conveyor frame (belt surface + rollers drawn live)
     R.shadow(g,780,BELT_Y+120,760,.55);const fr=g.createLinearGradient(0,BELT_Y+24,0,BELT_Y+80);fr.addColorStop(0,'#c9d2d3');fr.addColorStop(.5,'#8a9798');fr.addColorStop(1,'#56625f');g.fillStyle=fr;g.fillRect(40,BELT_Y+24,1440,56);

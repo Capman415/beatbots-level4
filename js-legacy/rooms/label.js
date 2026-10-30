@@ -315,7 +315,7 @@
       this.state = "load";
       this.teacher = false;
       this.lastOverride = -9;
-      R.loadImgs([["pack_blur", "jpg"], ["pack_bg", "jpg"], ["crate", "png"]]).then(() => {
+      R.loadImgs([["mail_bg", "jpg"], ["pack_blur", "jpg"], ["crate", "png"]]).then(() => {
         this.static = this.bake();
         if (this.o.skipIntro || this.o.startAt) this.newBox(true);
         else this.startIntro();
@@ -334,65 +334,10 @@
       const g = c.getContext("2d");
       g.scale(s, s);
       const V = BB.V2;
-      if (V.pack_blur || V.pack_bg) g.drawImage(V.pack_blur || V.pack_bg, 0, 0, W, H);
-      g.fillStyle = "rgba(8,18,17,.35)";
+      if (V.mail_bg || V.pack_blur) g.drawImage(V.mail_bg || V.pack_blur, 0, 0, W, H);
+      g.fillStyle = "rgba(8,18,17,.28)";
       g.fillRect(0, 0, W, H);
       {
-        const wg = g.createLinearGradient(0, 0, 0, BELT_Y);
-        wg.addColorStop(0, "rgba(70,30,66,.92)");
-        wg.addColorStop(1, "rgba(120,52,108,.82)");
-        g.fillStyle = wg;
-        g.fillRect(0, 0, W, BELT_Y + 24);
-        g.strokeStyle = "rgba(20,8,20,.55)";
-        g.lineWidth = 4;
-        for (let x = 0; x < W; x += 240) {
-          g.beginPath();
-          g.moveTo(x, 0);
-          g.lineTo(x, BELT_Y + 24);
-          g.stroke();
-          for (let y = 40; y < BELT_Y; y += 110) {
-            g.fillStyle = "rgba(255,220,250,.35)";
-            g.beginPath();
-            g.arc(x + 14, y, 5, 0, 7);
-            g.arc(x + 226, y, 5, 0, 7);
-            g.fill();
-          }
-        }
-        g.fillStyle = "rgba(0,0,0,.25)";
-        g.fillRect(0, 250, W, 10);
-        g.fillStyle = "#3a3f44";
-        g.fillRect(0, 262, W, 14);
-        g.fillStyle = "#9aa4a8";
-        g.fillRect(0, 262, W, 4);
-        const TC = ["#fffaf0", "#ffe066", "#a6f5ae", "#9fe0ff", "#ffb3e6"];
-        for (let i = 0; i < 11; i++) {
-          const x = 420 + i * 100 + i % 2 * 20, y = 276, r = (i % 3 - 1) * 0.12;
-          g.save();
-          g.translate(x, y);
-          g.rotate(r);
-          g.strokeStyle = "#2a2a2a";
-          g.lineWidth = 2;
-          g.beginPath();
-          g.moveTo(0, 0);
-          g.lineTo(0, 30);
-          g.stroke();
-          g.fillStyle = TC[i % 5];
-          g.strokeStyle = "rgba(60,40,40,.8)";
-          g.beginPath();
-          g.roundRect(-34, 30, 68, 46, 8);
-          g.fill();
-          g.stroke();
-          g.fillStyle = "#d24a3c";
-          g.fillRect(-34, 30, 68, 10);
-          g.fillStyle = "#19191f";
-          for (let k = 0; k < 3; k++) {
-            g.beginPath();
-            g.ellipse(-16 + k * 16, 62, 5, 4, -0.35, 0, 7);
-            g.fill();
-            g.fillRect(-12 + k * 16, 46, 2, 16);
-          }
-          g.restore();
-        }
         g.save();
         g.translate(W - 250, 300);
         g.fillStyle = "#1e2b29";
@@ -413,11 +358,6 @@
         g.textBaseline = "middle";
         g.fillText("LABEL ROOM", 0, -10);
         g.restore();
-        const fl = g.createLinearGradient(0, BELT_Y + 24, 0, H);
-        fl.addColorStop(0, "rgba(40,20,40,.6)");
-        fl.addColorStop(1, "rgba(10,6,12,.85)");
-        g.fillStyle = fl;
-        g.fillRect(0, BELT_Y + 24, W, H - BELT_Y - 24);
         for (let x = 0; x < W; x += 60) {
           g.fillStyle = x / 60 % 2 ? "#ffe066" : "#1e2b29";
           g.fillRect(x, H - 36, 60, 14);
