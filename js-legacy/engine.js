@@ -1002,7 +1002,8 @@ mic.update = (dt) => {
   }
   const CD = window.ClapDet, x = CD && EG && EG.on ? EG.resid(tNow, rms, micLat()) : rms;
   const gap = CD ? CD.gapOk(mic, tNow, x) : tNow - mic.lastOn > 0.12 ? 1 : 0;
-  if (x > thr && x > mic.prev * (window.GroupGate ? GroupGate.adaptJump(x, softOn && BB.fastSoft && BB.t - BB.fastSoft < 0.5 ? GroupGate.ONSET_JUMP_FS : GroupGate.ONSET_JUMP) : 1.3) && gap) {
+  const jmp = window.GroupGate ? GroupGate.adaptJump(x, softOn && BB.fastSoft && BB.t - BB.fastSoft < 0.5 ? GroupGate.ONSET_JUMP_FS : GroupGate.ONSET_JUMP) : 1.3;
+  if (x > thr && (CD && CD.jumpOk ? CD.jumpOk(mic, x, mic.prev || 0, jmp, tNow) : x > mic.prev * jmp) && gap) {
     const prevOn = mic.lastOn;
     mic.lastOn = tNow;
     if (window.GroupGate) GroupGate.adaptPeak(x);
@@ -1027,6 +1028,7 @@ mic.update = (dt) => {
     }
     if (CD) {
       if (ok) {
+        if (gap !== 2 && CD.fired) CD.fired(mic, x);
         mic.up = gap === 2;
         mic.lastX = gap === 2 ? Math.max(mic.lastX || 0, x) : x;
       } else mic.lastOn = prevOn;
@@ -1039,7 +1041,11 @@ mic.update = (dt) => {
       mic.peak = lvl;
       mic.hold = 0.6;
     } else mic.rejected = (mic.rejected || 0) + 1;
-  } else if (x < thr) mic.floor = lerp(mic.floor, Math.min(x, 0.05), dt * 0.8);
+  } else if (x < thr) {
+    const nf = lerp(mic.floor, Math.min(x, 0.05), dt * 0.8);
+    mic.floor = CD && CD.active && CD.active(tNow) && tNow - mic.lastOn < 0.35 ? Math.min(mic.floor, nf) : nf;
+  }
+  if (CD && CD.track) CD.track(mic, x, tNow);
   if (x < thr) nonTonalFloor = lerp(nonTonalFloor, Math.max(nt, 1e-9), Math.min(1, dt * 2));
   mic.prev = Math.max(x, (mic.prev || 0) * (window.GroupGate ? GroupGate.adaptDecay() : 0.6));
   mic.hold -= dt;

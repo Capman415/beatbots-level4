@@ -607,6 +607,7 @@
     handleOnsets() {
       const b = this.beat, ons = BB.mic.take();
       if (!b || this.state !== "dig" && this.state !== "count") return;
+      if (window.ClapDet && ClapDet.expect) ClapDet.expect(b.spb, BB.ac.currentTime + 0.5);
       if (this.R.dyn) BB.dynMode = BB.t;
       if (this.R.dyn === "p") {
         BB.softClap = BB.t;

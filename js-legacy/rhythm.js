@@ -475,13 +475,20 @@
       const ons = BB.mic.take(), C = T0 + (this.L + 4) * spb;
       const G = window.GroupGate, gated = BB.mic.ok && G && !BB.debug;
       if (window.ClapDet && this.seq.includes("s")) ClapDet.fastUntil = ac.currentTime + 0.5;
+      if (window.ClapDet && ClapDet.expect && !this._gap) {
+        const bs = this.snd.map((x) => x.b).sort((p, q) => p - q);
+        let g = 1;
+        for (let i = 1; i < bs.length; i++) g = Math.min(g, bs[i] - bs[i - 1]);
+        this._gap = Math.max(0.125, g) * spb;
+      }
+      if (window.ClapDet && ClapDet.expect) ClapDet.expect(this._gap, ac.currentTime + 0.5);
       for (const o of ons) {
         if (BB.talking && BB.t < BB.talking.until && !BB.debug) continue;
         if (o.up) continue;
         let best = -1, bd = 1;
         for (let i = 0; i < this.n; i++) {
           if (this.got[i]) continue;
-          const s2 = this.snd[i], te = C + s2.b * spb, gapB = Math.min(...this.snd.filter((x, j) => j !== i).map((x) => Math.abs(x.b - s2.b)), 1), lat = G ? G.lat || 0 : 0, dd = o.t - lat - te, tol = dd < 0 ? Math.min(0.12, gapB * spb * 0.3) : Math.min(0.17, gapB * spb * 0.45), d = Math.abs(dd);
+          const s2 = this.snd[i], te = C + s2.b * spb, gapB = Math.min(...this.snd.filter((x, j) => j !== i).map((x) => Math.abs(x.b - s2.b)), 1), lat = G ? G.lat || 0 : 0, dd = o.t - lat - te, tol = dd < 0 ? Math.min(0.12, gapB * spb * 0.45) : Math.min(0.18, gapB * spb * 0.5), d = Math.abs(dd);
           if (d < tol && d < bd) {
             bd = d;
             best = i;
