@@ -9,11 +9,11 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   // v12.6: lat = speaker->mic->kids round-trip delay beyond what the windows were tuned for (set from the mic-setup
   // beep test). Kids clap to the beat they HEAR, so every window is centred on beat+lat. At fast tempos kids also
   // drag a little, so the late side of the window is wider than the early side.
-  lat:0,LAT_BASE:.04,setLat(measured){this.lat=measured==null?0:Math.min(.18,Math.max(0,measured-this.LAT_BASE))},
-  early(spb){return Math.min(.12,spb*.28)},late(spb){return Math.min(.17,spb*.4)},
+  lat:0,LAT_BASE:.04,setLat(measured){this.lat=measured==null?0:Math.min(.25,Math.max(0,measured-this.LAT_BASE))},
+  early(spb){return Math.min(.12,spb*.28)},late(spb){return Math.min(.18,spb*.4)},// v13.2: ~-120/+180 ms at 100 bpm (group claps of young kids drag)
   inTol(dt,spb){const d=dt-this.lat;return d>=-this.early(spb)&&d<=this.late(spb)},
-  win(spb){return[-Math.min(.12,spb*.26),Math.min(.18,spb*.44)]},
-  K_FLOOR:1.2,          // window energy must exceed this many "quiet windows"
+  win(spb){return[-Math.min(.12,spb*.26),Math.min(.2,spb*.44)]},
+  K_FLOOR:.5,          // window energy must exceed this many "quiet windows"
   K_SINGLE:1.6,         // ... and this many single stray claps
   K_GROUP:.15,          // ... and this fraction of the learned/calibrated group level
   MIN_DUR:.035,PW:.5,        // burst must stay above 1/4 of its peak this long (group claps smear)
@@ -46,7 +46,10 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   SOFT_BAR:.1,SOFT_MAX:.65,LOUD_MIN:.8,// SOFT_BAR = first green meter segment lit
   rmsForLvl(l,sens){const c=this.centre(sens),d=l>=.5?(l-.5)*20:(l-.5)*60;return Math.pow(10,(c+d)/20)},
   // soft=true (piano challenge): anything that lights the soft bar is an onset, as long as it clears the room floor
-  onsetThr(floor,sens,soft){const t=Math.max(floor*this.ONSET_K+this.ONSET_ADD,this.ONSET_MIN)/(sens||1);
+  // v13.2 quiet-mic scale: low-gain USB mics put whole-class claps 10-20 dB lower, so the absolute parts of the bar shrink with
+  // this mic's median clap peak (below -40 dBFS); the floor-relative part still keeps voice/noise out.
+  absScale(){const p=this.loud.peaks;if(p.length<6)return 1;const a=[...p].sort((x,y)=>x-y);return Math.min(1,Math.max(.1,Math.pow(10,(a[a.length>>1]+40)/20)))},
+  onsetThr(floor,sens,soft){const k=this.absScale(),t=Math.max(floor*this.ONSET_K+this.ONSET_ADD*k,this.ONSET_MIN*k)/(sens||1);
     return soft?Math.min(t,Math.max(floor*1.6,this.rmsForLvl(this.SOFT_BAR,sens))):t},
   reset(){this.hist.length=0},
   hf(buf){let s=0;for(let i=2;i<buf.length;i++){const d=buf[i]-2*buf[i-1]+buf[i-2];s+=d*d}return s/(buf.length-2)},

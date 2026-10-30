@@ -10,7 +10,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v13.1';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v13.2';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -149,7 +149,11 @@ BB.drawParts=(world=0)=>{for(const p of parts){if((p.w||0)!==world)continue;cons
 BB.star=(x,y,r,col,rot=0)=>{ctx.beginPath();for(let i=0;i<10;i++){const a=rot+i*Math.PI/5,rr=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr)}ctx.closePath();ctx.fillStyle=col;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=COL.ink;ctx.stroke()};
 let shakeAmt=0;BB.shake=a=>shakeAmt=Math.min(6,Math.max(shakeAmt,a));// capped at 6px per design doc
 // ---------- audio ----------
-const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC({latencyHint:'interactive'});BB.ac=ac;
+// v13.2 progressive enhancement: old boards may lack Web Audio or the options form; never let audio stop the game loading
+function silentAC(){const t0=performance.now(),node=()=>new Proxy(function(){},{get:(o,k)=>k==='connect'?(()=>node()):k==='gain'||k==='frequency'||k==='Q'||k==='detune'||k==='playbackRate'||k==='offset'?{value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){},setTargetAtTime(){},cancelScheduledValues(){}}:(()=>node()),set:()=>true});
+  return new Proxy({},{get:(o,k)=>k==='currentTime'?(performance.now()-t0)/1000:k==='state'?'running':k==='sampleRate'?44100:k==='destination'?node():k==='resume'||k==='suspend'||k==='close'?(()=>Promise.resolve()):k==='decodeAudioData'?(()=>Promise.reject(new Error('no audio'))):k==='createBuffer'?((c,n,r)=>({getChannelData:()=>new Float32Array(n),length:n,sampleRate:r,duration:n/r})):k==='outputLatency'||k==='baseLatency'?0:(()=>node())})}
+const AC=window.AudioContext||window.webkitAudioContext;let ac;try{ac=new AC({latencyHint:'interactive'})}catch(e){try{ac=new AC()}catch(e2){ac=silentAC();BB.noAudio=true}}BB.ac=ac;// v13.2 beat lights follow what the class HEARS: audio leaves the speaker outputLatency after it is scheduled (big on HDMI/Bluetooth boards)
+BB.visLat=()=>Math.min(.25,Math.max(0,(ac.outputLatency||ac.baseLatency||0)+(BB.visLatAdd||0)));
 const master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);BB.outBus=master;
 const sfxBus=ac.createGain();sfxBus.connect(master);const voBus=ac.createGain();voBus.gain.value=1.1;voBus.connect(master);
 BB.unlockAudio=()=>{if(ac.state!=='running'&&!BB.paused&&!document.hidden){ac.resume().catch(()=>{});
@@ -235,7 +239,7 @@ BB.setSens=i=>{mic.sensIdx=Math.max(0,Math.min(5,i));try{localStorage.setItem('b
 BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic.err='';ac.resume().catch(()=>{});
   return mic.starting=(async()=>{try{
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoSupport'};
-    const st=await MicCore.start(true,BB.aec);mic.ac=MicCore.ctx;mic.stream=st;mic.track=MicCore.track();mic.floor=.003;mic.prev=0;
+    const st=await MicCore.start(true,BB.aec);mic.ac=MicCore.ctx;mic.stream=st;mic.track=MicCore.track();try{if(mic.lat==null&&window.GroupGate){const ts=mic.track&&mic.track.getSettings?mic.track.getSettings():{};mic.latEst=(ts.latency||0)+micLat();GroupGate.setLat(mic.latEst)}}catch(e){}// v13.2: no beep test yet -> seed latency from the browser's own numbers (USB mics add 50-150 ms); Mine refines it livemic.floor=.003;mic.prev=0;
     if(mic.track)mic.track.onended=()=>{mic.ok=false;mic.state='lost';mic.err='Microphone disconnected. Tap MIC SETUP to turn it back on.'};
     mic.ok=true;mic.state='on';return true}
   catch(e){const n=e&&e.name;mic.ok=false;
@@ -247,15 +251,16 @@ BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic
 // mic health: after resume / tab return, make sure the audio clock runs again
 BB.ensureMic=()=>{if(ac.state!=='running')ac.resume().catch(()=>{});if(MicCore.ctx&&MicCore.ctx.state!=='running')MicCore.ctx.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!BB.paused)BB.ensureMic()});
-// Called every frame. Onset = sharp energy jump above an adaptive noise floor, 120 ms refractory.
+// Called every frame. Onset = sharp energy jump above an adaptive noise floor (on the echo residual), 200 ms minimum gap
+// (120 ms in tika-tika clap-backs; a much louder burst inside the gap is passed once, flagged up:1 = same group clap).
 // ---------- self-sound rejection ----------
 // Every sound the game makes is logged with its time. Onsets heard while a noisy/harmonic effect plays are ignored.
 // Onsets during a pure-tone beep only count if the mic hears broadband (clap-like) energy away from the beep pitches.
-const selfWins=[];BB.selfSound=(t,dur,freqs)=>{selfWins.push({t,e:t+dur,freqs});if(selfWins.length>200)selfWins.splice(0,selfWins.length-200)};
+const selfWins=[];BB.selfSound=(t,dur,freqs)=>{selfWins.push({t,e:t+dur,freqs});if(window.ClapDet)ClapDet.TickLat.note(t,dur,freqs);if(selfWins.length>200)selfWins.splice(0,selfWins.length-200)};
 mic.lat=null;
 // v13.1 echo cancellation: on by default on Chromebooks (speaker right next to the mic); ?aec=0/1 or localStorage bb_aec overrides
 {let a=/CrOS/.test(navigator.userAgent);try{const q=new URLSearchParams(location.search).get('aec'),l=localStorage.getItem('bb_aec');if(l!=null)a=l==='1';if(q!=null)a=q==='1'}catch(e){}BB.aec=a}// measured speaker->mic delay (s); null = not calibrated yet
-function micLat(){return mic.lat!=null?mic.lat:(ac.outputLatency||ac.baseLatency||.02)+((MicCore.ctx&&MicCore.ctx.baseLatency)||.01)+.03}
+function micLat(){const TL=window.ClapDet&&ClapDet.TickLat;if(TL&&TL.heard(ac.currentTime))return TL.lat;return mic.lat!=null?mic.lat:(ac.outputLatency||ac.baseLatency||.02)+((MicCore.ctx&&MicCore.ctx.baseLatency)||.01)+.03}
 let fbin=null,nonTonalFloor=1e-9;const ALLF=[880,1320];
 function nonTonalEnergy(freqs){const an=MicCore.an;if(!an)return 0;if(!fbin||fbin.length!==an.frequencyBinCount)fbin=new Float32Array(an.frequencyBinCount);
   an.getFloatFrequencyData(fbin);const hz=MicCore.ctx.sampleRate/an.fftSize;let e=0,tot=0;
@@ -271,6 +276,9 @@ function selfCheck(T){const L=micLat();let tonal=null;
   return tonal}
 BB.selfWins=selfWins;
 mic.update=dt=>{if(!mic.ok||BB.paused)return;
+  {const TL=window.ClapDet&&ClapDet.TickLat;if(TL&&TL.active()&&MicCore.an){const an=MicCore.an,fb=mic._tfb=mic._tfb||new Float32Array(an.frequencyBinCount),hz=MicCore.ctx.sampleRate/an.fftSize;an.getFloatFrequencyData(fb);
+    const was=TL.lat;TL.frame(ac.currentTime-.02,f=>{const k=Math.round(f/hz);return Math.max(fb[k-1],fb[k],fb[k+1])});// v13.2 metronome ticks -> live latency
+    if(TL.lat!=null&&TL.lat!==was&&window.GroupGate)GroupGate.setLat(TL.lat)}}
   const r=MicCore.read();const rms=r.rms;mic.rms=rms;mic.raw=rms;mic.max=r.max;const sens=sensSteps[mic.sensIdx];
   const lvl=window.GroupGate?GroupGate.lvl(rms,sens):clamp(Math.sqrt(rms*sens*6),0,1);// same scale as the meter and the soft-clap threshold
   mic.level=Math.max(lvl,mic.level-dt*1.8);
@@ -279,16 +287,22 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   const softOn=BB.softClap&&BB.t-BB.softClap<.5;const thr=window.GroupGate?GroupGate.onsetThr(mic.floor,sens,softOn):Math.max(mic.floor*2.2+.0015,.003)/sens;mic.thr=thr;// shared rule (group.js)
   const nt=nonTonalEnergy(ALLF);
   const oR=BB.outRms(),EG=BB.echoOff?null:window.EchoGate;if(EG){EG.push(ac.currentTime,oR);if(tNow-mic.lastOn>.3)EG.learn(rms,EG.outAt(tNow,micLat()).peak)}
-  if(rms>thr&&rms>mic.prev*(window.GroupGate?GroupGate.adaptJump(rms,softOn&&BB.fastSoft&&BB.t-BB.fastSoft<.5?GroupGate.ONSET_JUMP_FS:GroupGate.ONSET_JUMP):1.3)&&tNow-mic.lastOn>.12){mic.lastOn=tNow;if(window.GroupGate)GroupGate.adaptPeak(rms);
-    const chk=selfCheck(tNow);let ok=true;
+  // v13.2: onsets are found on the residual after removing the predicted echo of our own output (x = rms when silent)
+  const CD=window.ClapDet,x=CD&&EG&&EG.on?EG.resid(tNow,rms,micLat()):rms;
+  const gap=CD?CD.gapOk(mic,tNow,x):(tNow-mic.lastOn>.12?1:0);
+  if(x>thr&&x>mic.prev*(window.GroupGate?GroupGate.adaptJump(x,softOn&&BB.fastSoft&&BB.t-BB.fastSoft<.5?GroupGate.ONSET_JUMP_FS:GroupGate.ONSET_JUMP):1.3)&&gap){const prevOn=mic.lastOn;mic.lastOn=tNow;if(window.GroupGate)GroupGate.adaptPeak(x);
+    const chk=selfCheck(tNow);let ok=true,sg=null;
     if(chk==='hard')ok=false;
     else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.6&&e>nonTonalFloor*6}// clap = mostly broadband energy
     if(ok&&EG&&!EG.check(tNow,rms,micLat(),thr)){ok=false;mic.echoRej=(mic.echoRej||0)+1}// v13.1 playback-aware: drop onsets explained by our own speaker output
+    // v13.2 spectral clap signature: reject voiced speech, 's'/'sh' and other non-clap onsets (fbin was just read by nonTonalEnergy)
+    if(ok&&CD&&fbin&&!BB.noSig){sg=CD.sig(i=>Math.pow(10,fbin[i]/10),fbin.length,MicCore.ctx.sampleRate/MicCore.an.fftSize);sg.imp=CD.impulse(MicCore.buf);if(CD.isVoice(sg)){ok=false;mic.voiceRej=(mic.voiceRej||0)+1}}
+    if(CD){if(ok){mic.up=gap===2;mic.lastX=gap===2?Math.max(mic.lastX||0,x):x}else mic.lastOn=prevOn}// a rejected onset must not start a refractory window
     if(mic.calib)mic.calib.push(tNow);
-    if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'']);
-    if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;mic.onsets.push({t:tNow,lvl:lv,rms});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
-  else if(rms<thr)mic.floor=lerp(mic.floor,Math.min(rms,.05),dt*.8);
-  if(rms<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(rms,(mic.prev||0)*(window.GroupGate?GroupGate.adaptDecay():.6));mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
+    if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'',sg?[+sg.hfr.toFixed(2),+sg.flat.toFixed(2),+sg.imp.toFixed(1)]:'',gap]);
+    if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;mic.onsets.push({t:tNow,lvl:lv,rms,up:gap===2?1:0});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
+  else if(x<thr)mic.floor=lerp(mic.floor,Math.min(x,.05),dt*.8);
+  if(x<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(x,(mic.prev||0)*(window.GroupGate?GroupGate.adaptDecay():.6));mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
 mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 // Simulated class (debug ?sim=1): claps on the beat with the requested loudness.
 BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl,sim:1});mic.level=lvl;mic.peak=lvl;mic.hold=.4};

@@ -120,15 +120,18 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     this.base=this.cnt?4:0;// optional count-in measure
     BB.mic.take();BB.groove&&BB.groove.sync(this.t0,this.spb)}
   beatNow(){return(ac.currentTime-this.t0)/this.spb}
+  beatNowV(){return(ac.currentTime-BB.visLat()-this.t0)/this.spb}// v13.2 visual clock = audible beat
   phase(){const b=this.beatNow()-this.base;return b<0?'count':b<this.L?'listen':b<this.L+4?'ready':b<2*this.L+4?'clap':'end'}// v12.2: 4-beat count-in between listen and clap
   update(dt){{const ph=this.phase();BB.listening=ph==='clap'?2:ph==='ready'?1:0}const ahead=ac.currentTime+.12,spb=this.spb,T0=this.t0+this.base*spb;
     while(this.t0+this.next*spb<ahead&&this.next<this.base+2*this.L+4){const t=this.t0+this.next*spb,rd=this.next>=this.base+this.L&&this.next<this.base+this.L+4;BB.sfx.tick(t,this.next%4===0||rd,rd?1:.8);if(this.next===this.base+this.L)R.turnCue(t);this.next++}
     // machine plays the rhythm in measure "listen"
-    if(!this.sched){this.sched=1;this.snd.forEach((s,i)=>{const t=T0+s.b*spb;BB.sfx.block(t);setTimeout(()=>{this.lit[i]=1;this.voice(s)},Math.max(0,(t-ac.currentTime)*1000))});
+    if(!this.sched){this.sched=1;this.snd.forEach((s,i)=>{const t=T0+s.b*spb;BB.sfx.block(t);setTimeout(()=>this.voice(s),Math.max(0,(t-ac.currentTime)*1000))});
       if(BB.debug)this.snd.forEach((s,i)=>{if(Math.random()<.93){const t=T0+(this.L+4+s.b)*spb+(Math.random()-.5)*.05;setTimeout(()=>BB.simClap(t,.7),Math.max(0,(t-ac.currentTime)*1000+30))}})}
-    for(let i=0;i<this.n;i++){this.lit[i]=Math.max(0,this.lit[i]-dt*2.5);if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5)}
+    {const tv=ac.currentTime-BB.visLat(),Cc=T0+(this.L+4)*spb;for(let i=0;i<this.n;i++){let l=0;for(const b0 of[T0,Cc]){const d=tv-(b0+this.snd[i].b*spb);if(d>=0&&d<.4)l=Math.max(l,1-d*2.5)}this.lit[i]=l}}// v13.2 lights locked to the audible beat (listen AND clap turn), not setTimeout
+    for(let i=0;i<this.n;i++){if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5)}
     const ons=BB.mic.take(),C=T0+(this.L+4)*spb;const G=window.GroupGate,gated=BB.mic.ok&&G&&!BB.debug;
-    for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;let best=-1,bd=1;
+    if(window.ClapDet&&this.seq.includes('s'))ClapDet.fastUntil=ac.currentTime+.5;// v13.2 tika-tika: claps 0.18 s apart must not be merged
+    for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;if(o.up)continue;let best=-1,bd=1;
       for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),lat=G?G.lat||0:0,dd=o.t-lat-te,tol=dd<0?Math.min(.12,gapB*spb*.3):Math.min(.17,gapB*spb*.45),d=Math.abs(dd);if(d<tol&&d<bd){bd=d;best=i}}
       if(best<0){if(gated&&o.t>C)G.stray(o.t);continue}
       const s=this.snd[best];if(gated&&!o.sim&&s.f===0){this.got[best]=2;this.pend.push(best)}else this.hit(best)}
@@ -138,10 +141,10 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
   override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}
   cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-this.L-4;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
   draw(cx,y){const ph=this.phase(),yt=ph==='ready'||ph==='clap';
-    if(yt)R.yourTurn(ph,this.beatNow()-this.base-this.L,y);
+    if(yt)R.yourTurn(ph,this.beatNowV()-this.base-this.L,y);
     if(yt){ctx.save();ctx.translate(cx,y);ctx.scale(1.18,1.18);ctx.translate(-cx,-y);}// bigger beat lights while it's the class's turn
     R.pills(cx,y,this.seq,{lit:this.lit,marks:this.marks,cur:this.cursor(),words:true});if(yt)ctx.restore();
-    const bn=this.beatNow();let msg='';
+    const bn=this.beatNowV();let msg='';
     if(ph==='count'){const n=4-Math.floor(bn);msg=n>0?'Listen... '+n:'';}
     else if(ph==='listen')msg='MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-this.L)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
     if(msg)BB.text(msg,cx,y-125,ph==='ready'?56:40,ph==='clap'||msg==='GO!'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});

@@ -28,8 +28,9 @@ BB.gear=(x,y,r,a,col)=>{ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyl
   ctx.closePath();ctx.fill();ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(0,0,r*.35,0,7);ctx.fill();ctx.restore()};
 // ---- Title ----
 class TitleScene{enter(){this.t0=BB.t}
-  update(){if(BB.keys.includes('Enter'))this.start()}
-  start(){BB.unlockAudio();BB.sfx.fanfare();BB.go(new MicScene())}
+  update(){if(!this.mus&&BB.groove&&BB.ac.state==='running'){this.mus=1;BB.groove.start(108,'title')}// v13.2 title music (starts on the first tap: browsers block autoplay)
+    if(BB.keys.includes('Enter'))this.start()}
+  start(){BB.unlockAudio();BB.groove&&BB.groove.stop();BB.sfx.fanfare();BB.go(new MicScene())}
   draw(){menuBg();const t=BB.t-this.t0,k=Math.min(1,t/.8);
     // v12.7: the real Beat Bots logo + logo-style rendered yellow subtitle (no panel, nothing on a border)
     ctx.save();ctx.translate(W/2,300);const s=BB.ease.back(k);ctx.scale(s,s);BB.glow(0,-60,700,'rgba(255,220,150,A)',.22);
@@ -146,7 +147,9 @@ class MapScene{constructor(justDone){this.justDone=justDone}
 BB.MapScene=MapScene;BB.MicScene=MicScene;
 // ---- boot ----
 async function boot(){ctx.setTransform(1,0,0,1,0,0);
-  await Promise.all([BB.loadImages(['sprocket','sorter','turtle','rocket','whisper','boom','tinytv','jr_a']),BB.loadV2(),document.fonts.load("40px 'Rammetto One'"),document.fonts.load("40px 'Lilita One'")]);
+  // v13.2: never hang on a slow/old board - fonts API may be missing, and after 10 s we start with whatever has loaded
+  const F=document.fonts&&document.fonts.load?[document.fonts.load("40px 'Rammetto One'").catch(()=>{}),document.fonts.load("40px 'Lilita One'").catch(()=>{})]:[];
+  await Promise.race([Promise.all([BB.loadImages(['sprocket','sorter','turtle','rocket','whisper','boom','tinytv','jr_a']),BB.loadV2()].concat(F)),new Promise(r=>setTimeout(r,10000))]);
   BB.loadVO(BB.VO_LINES||[]);
   const p=new URLSearchParams(location.search);
   const ro={skipIntro:p.has('skip'),startAt:+p.get('at')||0,auto:p.has('auto')};

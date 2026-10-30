@@ -8,6 +8,12 @@
 const mtof=m=>440*Math.pow(2,(m-69)/12);
 // chord = [root midi (bass octave), chord tones (keys octave)]
 const STY={
+ title:{// v13.2 "Beat Bots Theme" (title screen): G major I-V-vi-IV, bouncy bass, bright marimba hook
+  ch:[[43,[59,62,67]],[38,[57,62,66]],[40,[59,64,67]],[36,[55,60,64]]],chB:[[36,[55,60,64]],[38,[57,62,66]],[43,[59,62,67]],[38,[57,62,66]]],
+  bass:[[0,0],[3,12],[6,7],[8,0],[11,12],[14,7]],fill:[[0,0],[4,2],[8,4],[10,7],[12,9],[14,12]],
+  keys:[2,6,10,14],keysB:[2,6,9,14],keyWave:'triangle',keyLen:.45,keyLp:1700,
+  hook:[[0,79],[2,78],[4,74],[8,76],[10,74],[12,71]],hookB:[[0,71],[2,74],[4,79],[6,78],[8,76],[12,74]],hookWave:'sine',hookAmp:.06,
+  kick:[0,8],kickB:[0,6,8],sh:[2,6,10,14],swing:.1,lead:'marimba'},
  mine:{// "Mine Bounce": C major I-vi-IV-V, octave-jumping bass, marimba hook, swung shaker
   ch:[[36,[60,64,67]],[45,[57,60,64]],[41,[57,60,65]],[43,[59,62,67]]],chB:[[41,[57,60,65]],[43,[59,62,67]],[40,[55,59,64]],[45,[57,60,64]]],
   bass:[[0,0],[3,12],[6,0],[8,7],[10,12],[14,0]],fill:[[0,0],[4,4],[8,7],[10,9],[12,11],[14,12]],
