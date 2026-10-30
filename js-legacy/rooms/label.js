@@ -60,12 +60,12 @@
     ["syl_b", "tika-tee", "sprocket"],
     ["syl_h", "ta-ah", "sprocket"]
   ]);
-  const STAGES = [[4, 5], [6, 3], [8, 2]], BOXES = STAGES.reduce((a, x) => a + x[1], 0), beatsFor = (n) => {
+  const STAGES = [[4, 6], [6, 4]], BOXES = STAGES.reduce((a, x) => a + x[1], 0), beatsFor = (n) => {
     for (const [L, c] of STAGES) {
       if (n < c) return L;
       n -= c;
     }
-    return 8;
+    return 6;
   };
   const ALL = ["q", "e", "r", "h", "s", "a", "b"];
   const LV = [["q", "e"], ["q", "e", "r"], ["q", "e", "r", "h"], ["q", "e", "r", "h", "s"], ["q", "e", "r", "h", "s", "a", "b"]];

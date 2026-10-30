@@ -31,7 +31,7 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['lb_done2',"Next stop, the delivery dock!",'sprocket'],
  ['syl_q','ta','sprocket'],['syl_e','tee-tee','sprocket'],['syl_s','tika-tika','sprocket'],['syl_a','tee-tika','sprocket'],['syl_b','tika-tee','sprocket'],['syl_h','ta-ah','sprocket'],
 ]);
-const STAGES=[[4,5],[6,3],[8,2]],BOXES=STAGES.reduce((a,x)=>a+x[1],0),beatsFor=n=>{for(const[L,c]of STAGES){if(n<c)return L;n-=c}return 8};// v14.0: 5 x 4-beat, 3 x 6-beat, 2 x 8-beat finale (random within each stage)
+const STAGES=[[4,6],[6,4]],BOXES=STAGES.reduce((a,x)=>a+x[1],0),beatsFor=n=>{for(const[L,c]of STAGES){if(n<c)return L;n-=c}return 6};// v14.0.1: 6 x 4-beat, then 4 x 6-beat (last one = finale) (random within each stage)
 const ALL=['q','e','r','h','s','a','b'];
 const LV=[['q','e'],['q','e','r'],['q','e','r','h'],['q','e','r','h','s'],['q','e','r','h','s','a','b']];
 const loadAllowed=()=>{try{const a=JSON.parse(localStorage.getItem('bb_lbl_notes')||'null');if(Array.isArray(a)&&a.length)return a}catch(e){}return ALL.slice()};
