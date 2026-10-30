@@ -4,8 +4,9 @@
 (()=>{const ctx=BB.ctx,COL=BB.COL,W=BB.W,H=BB.H,{clamp,lerp,ease}=BB,R=BB.R;
 BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['pk_intro',"Static Jr. destroyed the orders! Let's pack new rhythm crates. Fill every beat on the pallet. Fill all eight beats on every pallet. Beat the timer on rush orders for bonus stars!",'sprocket'],
- ['pk_how',"Tap a column, then tap DROP. Or swap it with NEXT!",'sprocket'],
+ ['pk_how',"Tap a column, then tap DROP. Or swap it with NEXT! Be quick, the next crate is coming!",'sprocket'],
  ['pk_full',"Pallet full! Listen to your rhythm!",'sprocket'],
+ ['pk_more',"Here comes another crate! Tap the crate you want to move. Quick, what note is it?",'sprocket'],
  ['pk_rush',"Rush order! Pack it before the timer runs out for a bonus star!",'sprocket'],
  ['pk_big',"Boing! Too big! Count the beats that are left.",'sprocket'],
  ['pk_match',"Now match the order code. Look at the ticket!",'sprocket'],
@@ -19,17 +20,21 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
 const FLOOR=947,CX0=640,CTOP=172,ROWY=575,CH=128;let NB=4,CW=160;const setNB=n=>{NB=n;CW=640/n};
 const NEXTP={x:1350,y:170,w:330,h:430};
 const ROUNDS=[// v13.0: every pallet is 8 beats; belt speeds up gently (sp); rush orders have a beat timer for a bonus star (no fail). No clap-back: the packed rhythm plays back as robot sounds.
- {n:8,mode:'free',pool:['h','q','e','r','q'],sp:1,txt:'FREE BUILD: fill 8 beats any way!'},
- {n:8,mode:'match',code:['h','q','e','q','r','h'],sp:1.08,txt:'MATCH THE CODE'},
- {n:8,mode:'free',pool:['w','h','q','e','s','r'],sp:1.16,rush:32,txt:'RUSH ORDER: any 8 beats, fast!'},
- {n:8,mode:'match',code:['q','s','e','h','r','q','q'],sp:1.24,txt:'8-BEAT CODE with tika-tika'},
- {n:8,mode:'match',code:['w','e','s','q','r'],sp:1.32,rush:36,txt:'RUSH ORDER: match the code!'},
- {n:8,mode:'match',code:['h','s','e','q','r','e','q'],sp:1.4,prank:1,txt:'8-BEAT CODE (watch out!)'},
+ {n:8,mode:'free',pool:['h','q','e','r','q'],sp:1,ov:1,txt:'FREE BUILD: fill 8 beats any way!'},
+ {n:8,mode:'match',code:['h','q','e','q','r','h'],sp:1.08,ov:1,txt:'MATCH THE CODE'},
+ {n:8,mode:'free',pool:['w','h','q','e','s','r'],sp:1.16,rush:32,ov:3,txt:'RUSH ORDER: any 8 beats, fast!'},
+ {n:8,mode:'match',code:['q','s','e','h','r','q','q'],sp:1.24,ov:2,txt:'8-BEAT CODE with tika-tika'},
+ {n:8,mode:'match',code:['w','e','s','q','r'],sp:1.32,rush:36,ov:4,txt:'RUSH ORDER: match the code!'},
+ {n:8,mode:'match',code:['h','s','e','q','r','e','q'],sp:1.4,prank:1,ov:3,txt:'8-BEAT CODE (watch out!)'},
 ];
+// v13.2 OVERLAP ("next box falls while you sort"): level -> when the next crate spawns and how many may be in the air.
+// at = fraction of the fall the lowest crate has covered before the next one spawns; dly = fallback seconds; max = crates in the air.
+// Unplaced crates never fail: a crate that lands where it can't go bounces back to the NEXT queue.
+const OVL=[{at:1.01,dly:99,max:1},{at:.68,dly:7,max:2},{at:.55,dly:5.5,max:2},{at:.4,dly:3.6,max:3},{at:.3,dly:3,max:3}];
 const splitParts=Rd=>{if(Rd.mode!=='match'){const a=[];for(let n=Rd.n;n>0;n-=8)a.push({n:Math.min(8,n)});return a}const a=[];let cur=[],b=0;for(const k of Rd.code){cur.push(k);b+=R.BEATS[k];if(b===8){a.push({n:8,code:cur});cur=[];b=0}}if(cur.length)a.push({n:b,code:cur});return a};
 
 const howTo={title:'PACKING STATION: fill every beat on the pallet!',
-  steps:['A crate falls down the chute. Its size = its beats.','Tap a column (1-4) to move it. Tap DROP to drop it.','Tap SWAP to trade it with the NEXT crate.','Full pallet? Listen, then clap the cargo code back!','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  steps:['A crate falls down the chute. Its size = its beats.','Tap a column (1-4) to move it. Tap DROP to drop it.','Tap SWAP to trade it with the NEXT crate.','Later orders: more crates fall at once. Tap one to grab it (each finger can drag its own).','Full pallet? Listen, then clap the cargo code back!','No mic? Tap MANUAL OVERRIDE when they nail it.'],
   words:'whole = 4 beats   half = 2   ta, ti-ti, tika-tika, rest = 1 beat each',
   example:(x,y,w,h,t)=>{const ph=(t%4)/4;ctx.save();ctx.translate(x+w/2,y+h/2);const cw=100;
     BB.rrect(-2*cw-10,-150,4*cw+20,300,14,'#132322','#50aaa0',3);R.crateDraw('h',-2*cw,90,2*cw-6,70);R.crateDraw('q',0,90,cw-6,70);
@@ -46,7 +51,7 @@ R.crateDraw=(k,x,y,w,h,o={})=>{const im=BB.V2.crate,c=R.COLS[k];ctx.save();ctx.g
   if(o.tag!==false&&w>60){const fs=w<120?14:18,tw=Math.min(w-16,BB.measure(R.NAME[k],fs)+18),tx=w<120?x+w/2-tw/2:x+12;BB.rrect(tx,y-12,tw,28,8,'#fbf6e6',COL.ink,2);BB.text(R.NAME[k],tx+tw/2,y+3,fs,COL.ink,{maxW:tw-8})}
   BB.text(String(R.BEATS[k]),x+w-22,y+h-20,24,'#fff',{stroke:4});ctx.restore()};
 class PackingRoom{constructor(o={}){this.o=o}
-  enter(){BB.groove.start(100,'pack');this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
+  enter(){BB.groove.start(100,'pack');this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.air=[];this.grab={};this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
     this.state='load';R.loadImgs([['pack_bg','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.beginRound();else this.startIntro()});BB.mic.take()}
   exit(){BB.paused=false}
   bake(){const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
@@ -79,7 +84,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(t>3.2&&BB.t>(this.voEnd||0)+.1)this.skipIntro()}
   skipIntro(){this.jr=null;this.wreck=null;BB.talking=null;BB.caption=null;this.beginRound()}
   beginRound(){const Rd=ROUNDS[this.ri];this.Rd=Rd;this.parts=splitParts(Rd);this.part=0;this.beginPart()}
-  beginPart(){const Rd=this.Rd,P=this.parts[this.part];this.pcode=P.code||null;setNB(P.n);if(this.bakedN!==NB){this.static=this.bake();this.bakedN=NB}this.state='play';this.cells=new Array(NB).fill(null);this.placed=[];this.cur=null;this.cb=null;this.tries=0;this.prank=null;this.decoyUsed=0;this.crush=[];this.palletIn=BB.t;
+  beginPart(){const Rd=this.Rd,P=this.parts[this.part];this.pcode=P.code||null;setNB(P.n);if(this.bakedN!==NB){this.static=this.bake();this.bakedN=NB}this.state='play';this.cells=new Array(NB).fill(null);this.placed=[];this.cur=null;this.air=[];this.grab={};this.lastSpawn=BB.t;this.cb=null;this.tries=0;this.prank=null;this.decoyUsed=0;this.crush=[];this.palletIn=BB.t;
     if(Rd.mode==='limited')this.q=Rd.set.slice().sort(()=>Math.random()-.5);else if(Rd.mode==='match')this.q=[...this.pcode,'h'].sort(()=>Math.random()-.5);else this.q=[];this.fillQ();
     this.rush=Rd.rush?{t0:BB.t,spb:.6,lim:Rd.rush}:null;if(this.rush&&this.ri>0)setTimeout(()=>BB.scene===this&&BB.say('pk_rush'),400);
     if(this.ri===0){this.cardT=BB.t;setTimeout(()=>BB.scene===this&&BB.say('pk_how'),2600)}
@@ -92,25 +97,38 @@ class PackingRoom{constructor(o={}){this.o=o}
     // never deadlock: if nothing in the queue can fit, slip in a crate that does (match mode: the crate the code needs next)
     const g=this.gapMax();if(this.Rd.mode==='match'){let b=0,need=[];for(const k of this.pcode){if(!this.cells[b])need.push(k);b+=R.BEATS[k]}if(!need.some(k=>this.q.includes(k)))this.q.unshift(need[0])}
     else if(!this.q.some(k=>R.BEATS[k]<=g))this.q.unshift(g>=2?'h':'q');let k=this.q.shift(),decoy=0;
-    const w=R.BEATS[k];let col=this.firstFree(w);this.cur={k,col,y:CTOP-CH-10,fast:0,t:BB.t,x:CX0+col*CW,decoy};this.fillQ()}
+    const w=R.BEATS[k];let col=this.firstFree(w);const c={k,col,y:CTOP-CH-10,fast:0,t:BB.t,x:CX0+col*CW,decoy,id:++this.cid||(this.cid=1)};
+    // spread a 2nd/3rd crate into a different lane so they don't stack on top of each other
+    if(this.air.length){const used=this.air.map(a=>a.col);for(let cc=0;cc<=NB-w;cc++){if(!used.some(u=>Math.abs(u-cc)<w)){c.col=cc;break}}c.x=CX0+c.col*CW}
+    this.air.push(c);if(!this.cur)this.cur=c;this.lastSpawn=BB.t;if(this.air.length>1){this.newT=BB.t;if(!this.said.ov){this.said.ov=1;BB.say('pk_more',{overlap:true})}}this.fillQ()}
+  ovl(){const Rd=this.Rd;if(!Rd)return OVL[0];let i=Rd.ov||0;if(this.part)i++;return OVL[Math.min(OVL.length-1,i)]}
+  // crates still needed in the air? (never more than the beats that are left can hold)
+  maybeSpawn(){if(this.state!=='play')return;const o=this.ovl(),n=this.air.length;if(!n){return}
+    if(n>=o.max)return;let need=this.left();for(const a of this.air)need-=R.BEATS[a.k];if(need<=0)return;
+    const low=Math.max(...this.air.map(a=>a.y)),fr=(low-(CTOP-CH-10))/(ROWY-(CTOP-CH-10));
+    const top=Math.min(...this.air.map(a=>a.y));if(top<CTOP+40)return;// room at the top of the chute
+    if(fr>=o.at||BB.t-this.lastSpawn>o.dly)this.spawn()}
+  select(c){if(c&&this.air.includes(c)){this.cur=c;this.selT=BB.t}}
   firstFree(w){for(let c=0;c<=NB-w;c++){let ok=true;for(let i=0;i<w;i++)if(this.cells[c+i])ok=false;if(ok)return c}return 0}
   left(){return this.cells.filter(x=>!x).length}
-  setCol(c){const cu=this.cur;if(!cu||this.state!=='play')return;const w=R.BEATS[cu.k];cu.col=clamp(c,0,NB-w)}
-  drop(){if(this.cur&&this.state==='play'){this.cur.fast=1;BB.sfx.whoosh(undefined,.3)}}
+  setCol(c){const cu=this.cur;if(!cu||this.state!=='play')return;cu.touched=1;const w=R.BEATS[cu.k];cu.col=clamp(c,0,NB-w)}
+  drop(){if(this.cur&&this.state==='play'){this.cur.fast=1;this.cur.touched=1;const d=this.cur;this.cur=this.air.filter(a=>a!==d).sort((a,b)=>b.y-a.y)[0]||d;BB.sfx.whoosh(undefined,.3)}}
   swap(){const cu=this.cur;if(!cu||this.state!=='play'||!this.q.length)return;if(cu.decoy){cu.decoy=0;this.jrToss={t:BB.t,k:cu.k,x0:cu.x};cu.k=this.q.shift();cu.col=clamp(cu.col,0,NB-R.BEATS[cu.k]);this.swapT=BB.t;BB.sfx.pop();return}
     const nk=this.q.shift();this.q.push(cu.k);cu.k=nk;cu.col=clamp(cu.col,0,NB-R.BEATS[nk]);this.swapT=BB.t;BB.sfx.pop();
     if(this.prank&&this.prank.ph==='wait'&&cu.k!=='w'&&this.q[0]==='w'){this.q.shift();this.prankHit()}}
-  land(){const cu=this.cur,w=R.BEATS[cu.k];let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;
+  land(cu){const w=R.BEATS[cu.k];const sel=cu===this.cur;this.air=this.air.filter(a=>a!==cu);for(const id in this.grab)if(this.grab[id].c===cu)delete this.grab[id];const after=()=>{if(this.cur===cu||!this.air.includes(this.cur))this.cur=this.air.slice().sort((a,b)=>b.y-a.y)[0]||null};let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;
     let why='';if(!fit)why=this.left()<w?`too big! ${w} > ${this.left()}`:'no room there!';
     else if(this.Rd.mode==='match'){let b=0,ok=false;for(const k of this.pcode){if(b===cu.col&&k===cu.k)ok=true;b+=R.BEATS[k]}if(!ok){fit=false;why='the code needs '+this.codeAt(cu.col)+' here'}}
-    if(fit){for(let i=0;i<w;i++)this.cells[cu.col+i]=cu.k;this.placed.push({k:cu.k,col:cu.col,t:BB.t});BB.sfx.thunk();BB.shake(3);BB.burst(CX0+cu.col*CW+w*CW/2,ROWY+CH,10,{col:'#d8c8a8',kind:'dust',size:16,g:-40,speed:200});this.cur=null;
-      if(this.left()===0){this.lock();return}setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),450)}
+    if(fit){for(let i=0;i<w;i++)this.cells[cu.col+i]=cu.k;this.placed.push({k:cu.k,col:cu.col,t:BB.t});BB.sfx.thunk();BB.shake(3);BB.burst(CX0+cu.col*CW+w*CW/2,ROWY+CH,10,{col:'#d8c8a8',kind:'dust',size:16,g:-40,speed:200});after();
+      if(this.left()===0){this.air=[];this.cur=null;this.lock();return}this.respawn(450)}
+    else if(!sel&&!cu.decoy&&!cu.touched){BB.sfx.boing();this.bounce.push({k:cu.k,x:CX0+cu.col*CW,y:ROWY-20,vx:900,vy:-1100,r:0,t:BB.t,why:''});this.backT=BB.t;const k=cu.k;after();if(!(this.prank&&k==='w'))this.q.unshift(k);else this.prankHit(true);this.respawn(600)}
     else if(why==='no room there!'||why.startsWith('too')||cu.decoy){BB.sfx.crunch();BB.sfx.thunk();BB.shake(6);const cx=CX0+cu.col*CW;this.crush.push({k:cu.k,x:cx,w:w*CW-12,t:BB.t,why:cu.decoy?'decoy crate!':why});
       BB.burst(cx+w*CW/2,ROWY+20,16,{cols:['#c9a06a','#7c5530','#e8d2a8'],kind:'dot',size:10,speed:520,g:1200});this.boinkT=null;if(this.left()<=1&&why.startsWith('too'))this.blink=BB.t;
-      if(!this.said.big&&why.startsWith('too')){this.said.big=1;BB.say('pk_big')}const k=cu.k,dec=cu.decoy;this.cur=null;if(!dec&&!(this.prank&&k==='w'))this.q.push(k);else if(this.prank&&k==='w')this.prankHit(true);setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),800)}
+      if(!this.said.big&&why.startsWith('too')){this.said.big=1;BB.say('pk_big')}const k=cu.k,dec=cu.decoy;after();if(!dec&&!(this.prank&&k==='w'))this.q.splice(sel?this.q.length:0,0,k);else if(this.prank&&k==='w')this.prankHit(true);this.respawn(800)}
     else{BB.sfx.boing();this.bounce.push({k:cu.k,x:CX0+cu.col*CW,y:ROWY-20,vx:-500-Math.random()*200,vy:-900,r:0,t:BB.t,why});this.boinkT=BB.t;
       if(!this.said.big&&why.startsWith('too')){this.said.big=1;BB.say('pk_big')}else if(why.startsWith('the code')&&!this.said.wk){this.said.wk=1;BB.say('pk_wrongk')}
-      const k=cu.k;this.cur=null;if(!(this.prank&&k==='w'))this.q.push(k);else this.prankHit(true);setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.cur&&this.spawn(),700)}}
+      const k=cu.k;after();if(!(this.prank&&k==='w'))this.q.splice(sel?this.q.length:0,0,k);else this.prankHit(true);this.respawn(700)}}
+  respawn(ms){setTimeout(()=>BB.scene===this&&this.state==='play'&&!this.air.length&&this.spawn(),ms)}
   codeAt(col){let b=0;for(const k of this.pcode){if(b===col)return R.NAME[k];if(col>b&&col<b+R.BEATS[k])return R.NAME[k]+' (it starts on beat '+(b+1)+')';b+=R.BEATS[k]}return '?'}
   seq(){const s=[];for(let c=0;c<NB;){const k=this.cells[c];s.push(k);c+=R.BEATS[k]}return s}
   lock(){this.state='lock';this.st=BB.t;BB.sfx.clunk();BB.sfx.thunk(BB.ac.currentTime+.15);BB.shake(5);
@@ -136,17 +154,27 @@ class PackingRoom{constructor(o={}){this.o=o}
   pause(){BB.paused=true;BB.ac.suspend()}
   resume(){BB.paused=false;BB.ensureMic()}
   // pointer: tap a column to steer, or drag the falling crate sideways
-  pdown(p){if(this.state!=='play'||!this.cur)return false;if(p.x>CX0&&p.x<CX0+NB*CW&&p.y>CTOP-60&&p.y<ROWY+CH){this.dragC={x0:p.x,col0:this.cur.col};this.setCol(Math.floor((p.x-CX0)/CW)-(p.y>this.cur.y&&p.y<this.cur.y+CH?0:0));return true}return false}
-  pup(){this.dragC=null}
+  // v13.2: multi-touch. Touching a crate grabs + selects it (each finger drags its own crate); tapping an empty lane steers the selected crate.
+  hitCrate(p){let best=null;for(const a of this.air){const w=R.BEATS[a.k];if(p.x>a.x-10&&p.x<a.x+w*CW+10&&p.y>a.y-30&&p.y<a.y+CH+30&&(!best||a.y>best.y))best=a}return best}
+  pdown(p){if(this.state!=='play'||!this.air.length)return false;if(p.x>CX0-20&&p.x<CX0+NB*CW+20&&p.y>CTOP-CH-60&&p.y<ROWY+CH){const c=this.hitCrate(p);
+      if(c){this.grab[p.id]={c,dx:p.x-c.x};c.touched=1;this.select(c);return true}
+      if(this.cur){this.cur.touched=1;this.grab[p.id]={c:this.cur,dx:R.BEATS[this.cur.k]*CW/2};this.setColOf(this.cur,Math.floor((p.x-CX0)/CW))}return true}return false}
+  pmove(p){const g=this.grab[p.id];if(!g||!this.air.includes(g.c))return;this.setColOf(g.c,Math.round((p.x-g.dx-CX0)/CW))}
+  pup(p){if(p&&this.grab[p.id])delete this.grab[p.id];else if(!p)this.grab={}}
+  setColOf(c,col){if(this.state!=='play')return;c.col=clamp(col,0,NB-R.BEATS[c.k])}
   update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
     for(const key of BB.keys){if(key>='1'&&key<=String(NB))this.setCol(+key-1);if(key==='ArrowLeft'&&this.cur)this.setCol(this.cur.col-1);if(key==='ArrowRight'&&this.cur)this.setCol(this.cur.col+1);if(key==='ArrowDown'||key==='d')this.drop();if(key==='n')this.swap()}
     this.belt+=dt*40;
     if(this.state==='intro'){this.intro(dt);if(BB.keys.includes('s'))this.skipIntro()}
-    if(this.dragC&&this.cur&&BB.ptr.down){const w=R.BEATS[this.cur.k];this.setCol(Math.round((BB.ptr.x-CX0)/CW-w/2))}
-    const cu=this.cur;if(cu&&this.state==='play'){cu.x=lerp(cu.x,CX0+cu.col*CW,Math.min(1,dt*14));cu.y+=dt*(cu.fast?1150:44*(this.Rd.sp||1)*(1+this.part*.06)*(1+Math.min(.6,(BB.t-cu.t)*.04)));if(cu.y>=ROWY){cu.y=ROWY;this.land()}}
+    const cu=this.cur;if(this.state==='play'){const base=44*(this.Rd.sp||1)*(1+this.part*.06);
+      for(const a of this.air.slice()){a.x=lerp(a.x,CX0+a.col*CW,Math.min(1,dt*14));
+        // the selected crate falls at full speed; waiting crates drift a bit slower so the overlap stays readable
+        const v=a.fast?1150:base*(1+Math.min(.6,(BB.t-a.t)*.04))*(a===this.cur||this.air.length<2?1:.8);a.y+=dt*v;
+        if(a.y>=ROWY){a.y=ROWY;this.land(a);if(this.state!=='play')break}}
+      this.maybeSpawn()}
     for(let i=this.bounce.length-1;i>=0;i--){const b=this.bounce[i];b.vy+=2200*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.r-=dt*5;if(b.y>H+300)this.bounce.splice(i,1)}
     // sim: steer each crate into the first slot that fits (?sim=1&auto)
-    if(BB.debug&&this.o.auto&&cu&&this.state==='play'&&BB.t-cu.t>.8&&!cu.fast){let c=-1;if(this.Rd.mode==='match'){let b=0;for(const k of this.pcode){if(k===cu.k&&!this.cells[b]){c=b;break}b+=R.BEATS[k]}}else c=this.left()>=R.BEATS[cu.k]?this.firstFree(R.BEATS[cu.k]):-1;
+    if(BB.debug&&this.o.auto&&cu&&this.state==='play'&&BB.t-Math.max(cu.t,this.selT||0)>.8&&!cu.fast){let c=-1;if(this.Rd.mode==='match'){let b=0;for(const k of this.pcode){if(k===cu.k&&!this.cells[b]){c=b;break}b+=R.BEATS[k]}}else c=this.left()>=R.BEATS[cu.k]?this.firstFree(R.BEATS[cu.k]):-1;
       if(c<0&&this.q.length&&!this.autoSw){this.autoSw=1;this.swap()}else{this.autoSw=0;if(c>=0)this.setCol(c);this.drop()}}
     if(this.Rd&&this.Rd.prank&&this.part===this.parts.length-1&&this.state==='play'&&!this.prank&&this.left()===1&&this.cur)this.startPrank();
     if(this.prank)this.updPrank(dt);
@@ -196,11 +224,12 @@ class PackingRoom{constructor(o={}){this.o=o}
     ctx.restore()}
   drawChuteContents(){const cu=this.cur,t=BB.t;if(!cu||this.state!=='play')return;const w=R.BEATS[cu.k],cw=w*CW-12;
     ctx.save();ctx.beginPath();ctx.rect(CX0,CTOP-20,NB*CW,ROWY+CH-CTOP+20);ctx.clip();
+    for(const a of this.air){if(a===cu)continue;const aw=R.BEATS[a.k]*CW-12;ctx.save();ctx.globalAlpha=.82;R.crateDraw(a.k,a.x+6,a.y,aw,CH);ctx.restore();BB.rrect(a.x+6+aw/2-58,a.y-38,116,30,10,'rgba(12,28,26,.85)',COL.teal2,2);BB.text('TAP ME',a.x+6+aw/2,a.y-23,18,'#fff')}
     // ghost on the pallet + guide line
     let fit=true;for(let i=0;i<w;i++)if(this.cells[cu.col+i])fit=false;const gx=CX0+cu.col*CW+6;
     BB.rrect(gx,ROWY+6,cw,CH-12,12,fit?'rgba(110,230,120,.18)':'rgba(230,80,70,.22)',fit?'rgba(110,230,120,.8)':'#e65046',3);
     ctx.setLineDash([10,12]);ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cu.x+cw/2+6,cu.y+CH);ctx.lineTo(cu.x+cw/2+6,ROWY);ctx.stroke();ctx.setLineDash([]);
-    const wob=Math.sin(t*3)*.02;ctx.save();ctx.translate(cu.x+6+cw/2,cu.y+CH/2);ctx.rotate(wob);R.crateDraw(cu.k,-cw/2,-CH/2,cw,CH);if(cu.decoy){ctx.save();ctx.strokeStyle='#e65046';ctx.lineWidth=6;ctx.setLineDash([14,10]);ctx.strokeRect(-cw/2-4,-CH/2-4,cw+8,CH+8);ctx.restore();BB.plaque(0,-CH/2-30,170,40,'DECOY! SWAP IT',18,'#e65046')}ctx.restore();
+    const wob=Math.sin(t*3)*.02;ctx.save();ctx.translate(cu.x+6+cw/2,cu.y+CH/2);ctx.rotate(wob);R.crateDraw(cu.k,-cw/2,-CH/2,cw,CH);if(this.air.length>1){ctx.save();ctx.strokeStyle=COL.yellow;ctx.lineWidth=6;ctx.strokeRect(-cw/2-5,-CH/2-5,cw+10,CH+10);ctx.restore()}if(cu.decoy){ctx.save();ctx.strokeStyle='#e65046';ctx.lineWidth=6;ctx.setLineDash([14,10]);ctx.strokeRect(-cw/2-4,-CH/2-4,cw+8,CH+8);ctx.restore();BB.plaque(0,-CH/2-30,170,40,'DECOY! SWAP IT',18,'#e65046')}ctx.restore();
     ctx.restore();
     // column tap targets (big, Smartboard friendly)
     for(let c=0;c<NB;c++){const on=c>=cu.col&&c<cu.col+w;BB.rrect(CX0+c*CW+8,CTOP-44,CW-16,34,10,on?COL.yellow:'rgba(255,255,255,.12)',on?COL.ink:null,2);BB.text(String(c+1),CX0+c*CW+CW/2,CTOP-27,26,on?COL.ink:'#fff')}}

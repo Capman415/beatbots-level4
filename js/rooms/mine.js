@@ -13,7 +13,8 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['got_note',"A whole note! Four beats long!",'sprocket'],
  ['pebbles',"Hey! Static Jr. is dropping pebbles! Hold that beat steady!",'sprocket'],
  ['complete',"Eight whole notes! Room one complete! Next stop, the Note Smasher!",'sprocket'],
- ['ready',"Ready? Clap on every green light!",'sprocket'],
+ ['ready',"Ready? Warm up with four claps in a row on the green lights. Then every clap is a pickaxe strike. Four strikes break the rock!",'sprocket'],
+ ['mn_more',"This rock is tougher! Keep striking on the beat!",'sprocket'],
  ['keepgoing',"Keep that beat going!",'sprocket'],
  ['jr_giggle',"Hee hee hee!",'jr'],['jr_nom',"Nom nom nom!",'jr'],['jr_catch',"Can't catch me!",'jr'],['jr_oof',"Oof!",'jr'],
 ]);
@@ -32,15 +33,16 @@ const FLOORS=[
 const ROCKS=[
  {f:0,kind:'rock',bpm:75},{f:0,kind:'rock',bpm:75},
  {f:1,kind:'rock',bpm:145,prank:true},{f:1,kind:'rock',bpm:145},
- {f:2,kind:'crystal',bpm:96,dyn:'p'},{f:2,kind:'crystal',bpm:96,dyn:'p',prank:true},
- {f:3,kind:'boulder',bpm:96,dyn:'f'},{f:3,kind:'boulder',bpm:96,dyn:'f'},
+ {f:2,kind:'crystal',bpm:96,dyn:'p',st:6},{f:2,kind:'crystal',bpm:96,dyn:'p',prank:true,st:6},
+ {f:3,kind:'boulder',bpm:96,dyn:'f',st:8},{f:3,kind:'boulder',bpm:96,dyn:'f',st:8},
  {f:4,kind:'crystal',bpm:145,dyn:'p',bonus:true,sign:['ALLEGRO + PIANO','fast but soft'],icons:['rocket','whisper'],prank:true},
  {f:4,kind:'boulder',bpm:75,dyn:'f',bonus:true,sign:['ANDANTE + FORTE','slow and loud'],icons:['turtle','boom']},
 ];
 // tunnel boxes (props are clamped inside) + lantern light colour per floor
 const TBOX=k=>({x0:1480,x1:3320,y0:top(k)+34,y1:rail(k)});
 const LIGHT=[{rim:'#ffd08a',amb:'#ff9a40',haze:'60,34,18'},{rim:'#ffc070',amb:'#ff8030',haze:'64,32,16'},{rim:'#bfe6ff',amb:'#6a8cff',haze:'24,26,60'},{rim:'#ffb060',amb:'#ff6a30',haze:'66,28,14'},{rim:'#ffa070',amb:'#d05030',haze:'58,24,16'}];
-const NEED=4,WARM=4,STRIKE_PER_CRACK=2;// v13.2: 8 on-beat strikes crack a whole-note rock (bonus rocks: 4)// steady measures per whole note (bonus rocks need 2)
+const NEED=4,WARM=4;// v13.2 4+4 loop: 4-beat warm-up, then 4 strikes break a rock. Scaling: rock.st = strikes needed (floors 1-2: 4, soft crystals: 6, loud boulders: 8, bonus: 4). A broken streak keeps the strikes already landed.
+const strikesFor=R=>R?(R.bonus?4:(R.st||4)):4;// steady measures per whole note (bonus rocks need 2)
 const SOFT_MAX=window.GroupGate?GroupGate.SOFT_MAX:.62,LOUD_MIN=window.GroupGate?GroupGate.LOUD_MIN:.7;
 // dirt pattern
 let dirtPat=null;function dirt(){if(dirtPat)return dirtPat;const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
@@ -56,7 +58,7 @@ function litC(k,amb){if(litCache[k])return litCache[k];const im=BB.V2['tun'+k];i
   const gr=g.createLinearGradient(0,GY,0,rail(4)+200);gr.addColorStop(0,'rgba(20,10,5,.15)');gr.addColorStop(1,'rgba(10,5,3,.55)');g.fillStyle=gr;g.fillRect(0,GY,e.width,D);
   const p=ctx.createPattern(c,'repeat-x');p.setTransform(new DOMMatrix([1,0,0,1,0,GY]));return ePat=p}
 const howTo={title:'NOTE MINE: dig up the whole notes!',
-  steps:['Watch the green beat lights.','Clap ONE clap on every light.','4 steady beats = 1 whole note!','Piano = soft claps. Forte = loud claps.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  steps:['Watch the green beat lights.','WARM UP: 4 claps in a row on the lights.','Then every clap = a pickaxe strike. 4 strikes break a rock!','Tougher rocks later need 6 or 8 strikes.','Piano = soft claps. Forte = loud claps.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
   words:'"ta - a - a - a" (one whole note = 4 beats)   andante = walking speed,  allegro = fast',
   example:(x,y,w,h,t)=>{const bpm=90,ph=t*bpm/60,b=Math.floor(ph)%4,f=ph%1;
     const lit=[0,0,0,0];lit[b]=1-f*.6;ctx.save();ctx.translate(x+w/2,y+h-80);ctx.scale(.62,.62);BB.beatPills(0,0,lit);ctx.restore();
@@ -136,7 +138,7 @@ class MineRoom{
     if(t>27.5&&this.botOnElev){} 
     if(t>=31.2){this.botOnElev=false;this.botWalk=BB.t;this.beginRock(true)}}
   // -------- rock flow --------
-  beginRock(first){const R=ROCKS[this.rockI];this.R=R;this.stage=0;this.state='drop';this.st=BB.t;this.rockY=-400;this.marks=[0,0,0,0];this.missVO=false;
+  beginRock(first){const R=ROCKS[this.rockI];this.R=R;if(strikesFor(R)>4&&!R.bonus&&!(this.said||{})['st'+R.st]){(this.said=this.said||{})['st'+R.st]=1;setTimeout(()=>BB.scene===this&&BB.say('mn_more',{overlap:true}),5200)}this.stage=0;this.state='drop';this.st=BB.t;this.rockY=-400;this.marks=[0,0,0,0];this.missVO=false;
     const newFloor=first||ROCKS[this.rockI-1]&&ROCKS[this.rockI-1].f!==R.f;
     if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4){this.startCave()}// v12.6: no loudness check here - the cave-in uses the levels from mic setup
       this.voEnd=BB.t+9;setTimeout(()=>{if(BB.scene===this)this.voEnd=BB.t+BB.say(FLOORS[R.f].vo)},R.f===4?3000:first?2200:300)}
@@ -194,7 +196,7 @@ class MineRoom{
       if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;continue}// wait for the beat window to close, then ask: was that the whole group?
       if(this.state==='count')this.warmClap(bi);else this.hit(bi)}}
   gated(){return BB.mic.ok&&window.GroupGate&&!BB.debug}
-  hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;this.swingT=BB.t;this.strikes++;if(this.strikes%STRIKE_PER_CRACK===0)this.crack();// v12.6 cave-in (fast + piano): a soft, purely tonal tink so it can't mask the next whisper clap
+  hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;this.swingT=BB.t;this.strikes++;{const n=strikesFor(this.R),st=Math.floor(this.strikes*NEED/n+1e-9);while(this.stage<st&&this.stage<NEED)this.crack(1)}// v12.6 cave-in (fast + piano): a soft, purely tonal tink so it can't mask the next whisper clap
     if(d==='p'&&b.spb<.5)BB.sfx.tink(undefined,.3,true);else BB.sfx.tink();if(d==='f'){BB.sfx.boom();BB.shake(5)}
       BB.burst(ROCK_X-140,rail(this.R.f)-170,12,{world:1,cols:['#ffe066','#fff','#ffb040'],speed:600,size:12})}
   resolveGroup(){const b=this.beat,G=window.GroupGate;if(!b||!G)return;const now=BB.ac.currentTime-.02;
@@ -212,7 +214,7 @@ class MineRoom{
       else{const talking=BB.talking&&BB.t<BB.talking.until;if(talking&&!BB.debug)continue;
         this.wob=1;BB.sfx.wobble();this.shrugT=BB.t;BB.burst(ROCK_X,rail(this.R.f)-60,10,{world:1,col:'#c8b49a',kind:'dust',size:18,g:-60,speed:160});
         if(!this.missVO&&n<2){this.missVO=true;BB.say('keepgoing')}}}}
-  crack(){const R=this.R;this.stage+=R.bonus?2:1;BB.sfx.crack();BB.shake(4);this.shk=1;
+  crack(one){const R=this.R;this.stage+=one?1:(R.bonus?2:1);BB.sfx.crack();BB.shake(4);this.shk=1;
     {const ix=ROCK_X-30,iy=rail(R.f)-170,lq=!BB.q;BB.burst(ix,iy,lq?8:18,{world:1,cols:['#a08c78','#6e5a4a','#cbb79c'],speed:520,size:10,kind:'dot'});if(!lq)BB.burst(ix,iy,10,{world:1,cols:['rgba(210,190,160,.5)'],speed:160,size:22,kind:'dot',g:-40})}// v12.6 chips + dust at the impact point
     if(this.stage>=NEED)this.popNote()}
   popNote(){const R=this.R;BB.burst(ROCK_X,rail(R.f)-140,BB.q?14:6,{world:1,cols:['#8c7764','#5e4c3e','#a8957f'],speed:700,size:30,kind:'dot',g:900});// v12.6 chunks split off on the final break
@@ -225,7 +227,7 @@ class MineRoom{
         BB.caption={txt:'Cave-in cleared! You earned a Level 4 Beat Chip piece!',who:'sprocket',until:BB.t+3,start:BB.t}}}}
   manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;
     if(this.state==='dig'||this.state==='count'){this.marks=[1,1,1,1];if(this.state==='count'){this.state='dig';this.beat.evalM=Math.max(1,Math.ceil(this.beatNow()/4))}
-      this.beat.evalM=Math.max(this.beat.evalM,Math.ceil(this.beatNow()/4));this.crack()}}
+      this.beat.evalM=Math.max(this.beat.evalM,Math.ceil(this.beatNow()/4));this.strikes=Math.max(this.strikes||0,Math.ceil((this.stage+(this.R.bonus?2:1))*strikesFor(this.R)/NEED));this.crack()}}
   pause(){BB.paused=true;BB.ac.suspend()}
   resume(){BB.paused=false;BB.ensureMic()}
   update(dt){const t=BB.t;
@@ -501,11 +503,11 @@ class MineRoom{
     if(this.beat){const bn=this.beatNow()-BB.visLat()/this.beat.spb;if(bn>=0){const bi=Math.floor(bn),f=bn-bi;lit[bi%4]=Math.max(.25,1-f*.9);count=this.state==='count'}}
     BB.beatPills(W/2,H-90,lit,{marks:this.marks,wobble:this.wob*(this.prank&&this.prank.ph==='throw'?1:.4)});
     if(count){BB.text(this.warm>0?this.warm+' ...':'WARM UP: clap 4 in a row!',W/2,H-215,this.warm>0?70:44,COL.yellow,{font:'Rammetto One',stroke:8})}
-    else if(this.state==='dig'){BB.text(R.dyn==='p'?'soft claps!':R.dyn==='f'?'LOUD claps!':'every clap = a pickaxe hit!',W/2,H-180,34,'#fff',{stroke:6})}
+    else if(this.state==='dig'){BB.text(R.dyn==='p'?'soft claps!':R.dyn==='f'?'LOUD claps!':(strikesFor(R)+' strikes break the rock!'),W/2,H-180,34,'#fff',{stroke:6})}
     if(this.pebbles){ctx.fillStyle='#8a7060';ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const q of this.pebbles){ctx.beginPath();ctx.ellipse(q.x,q.y,14,10,q.x,0,7);ctx.fill();ctx.stroke()}}
     // crack progress chips next to the lights
-    const need=this.R&&this.R.bonus?2:4;for(let i=0;i<need;i++){const on=i<Math.floor(this.stage/(4/need));BB.rrect(W/2+400+i*38,H-112,28,44,8,on?COL.yellow:'#3a4a48','#fff',2)}
-    BB.text('CRACKS',W/2+400+need*19,H-140,22,'#fff',{stroke:4});
+    const need=strikesFor(this.R),pw=need>6?28:38;for(let i=0;i<need;i++){const on=this.state==='pop'||i<(this.strikes||0);BB.rrect(W/2+400+i*pw,H-112,pw-10,44,8,on?COL.yellow:'#3a4a48','#fff',2)}
+    BB.text('STRIKES',W/2+400+need*pw/2-5,H-140,22,'#fff',{stroke:4});
     BB.micMeter(40,H-150,{band:R.dyn==='p'?'soft':R.dyn==='f'?'loud':null});
     BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&BB.t-this.ovPop<.3?1.08:1})}
   drawIntroHUD(){BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});BB.pauseBtn(()=>this.pause())}

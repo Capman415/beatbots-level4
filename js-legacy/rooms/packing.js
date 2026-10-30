@@ -3,8 +3,9 @@
   const ctx = BB.ctx, COL = BB.COL, W = BB.W, H = BB.H, { clamp, lerp, ease } = BB, R = BB.R;
   BB.VO_LINES = (BB.VO_LINES || []).concat([
     ["pk_intro", "Static Jr. destroyed the orders! Let's pack new rhythm crates. Fill every beat on the pallet. Fill all eight beats on every pallet. Beat the timer on rush orders for bonus stars!", "sprocket"],
-    ["pk_how", "Tap a column, then tap DROP. Or swap it with NEXT!", "sprocket"],
+    ["pk_how", "Tap a column, then tap DROP. Or swap it with NEXT! Be quick, the next crate is coming!", "sprocket"],
     ["pk_full", "Pallet full! Listen to your rhythm!", "sprocket"],
+    ["pk_more", "Here comes another crate! Tap the crate you want to move. Quick, what note is it?", "sprocket"],
     ["pk_rush", "Rush order! Pack it before the timer runs out for a bonus star!", "sprocket"],
     ["pk_big", "Boing! Too big! Count the beats that are left.", "sprocket"],
     ["pk_match", "Now match the order code. Look at the ticket!", "sprocket"],
@@ -23,13 +24,14 @@
   const NEXTP = { x: 1350, y: 170, w: 330, h: 430 };
   const ROUNDS = [
     // v13.0: every pallet is 8 beats; belt speeds up gently (sp); rush orders have a beat timer for a bonus star (no fail). No clap-back: the packed rhythm plays back as robot sounds.
-    { n: 8, mode: "free", pool: ["h", "q", "e", "r", "q"], sp: 1, txt: "FREE BUILD: fill 8 beats any way!" },
-    { n: 8, mode: "match", code: ["h", "q", "e", "q", "r", "h"], sp: 1.08, txt: "MATCH THE CODE" },
-    { n: 8, mode: "free", pool: ["w", "h", "q", "e", "s", "r"], sp: 1.16, rush: 32, txt: "RUSH ORDER: any 8 beats, fast!" },
-    { n: 8, mode: "match", code: ["q", "s", "e", "h", "r", "q", "q"], sp: 1.24, txt: "8-BEAT CODE with tika-tika" },
-    { n: 8, mode: "match", code: ["w", "e", "s", "q", "r"], sp: 1.32, rush: 36, txt: "RUSH ORDER: match the code!" },
-    { n: 8, mode: "match", code: ["h", "s", "e", "q", "r", "e", "q"], sp: 1.4, prank: 1, txt: "8-BEAT CODE (watch out!)" }
+    { n: 8, mode: "free", pool: ["h", "q", "e", "r", "q"], sp: 1, ov: 1, txt: "FREE BUILD: fill 8 beats any way!" },
+    { n: 8, mode: "match", code: ["h", "q", "e", "q", "r", "h"], sp: 1.08, ov: 1, txt: "MATCH THE CODE" },
+    { n: 8, mode: "free", pool: ["w", "h", "q", "e", "s", "r"], sp: 1.16, rush: 32, ov: 3, txt: "RUSH ORDER: any 8 beats, fast!" },
+    { n: 8, mode: "match", code: ["q", "s", "e", "h", "r", "q", "q"], sp: 1.24, ov: 2, txt: "8-BEAT CODE with tika-tika" },
+    { n: 8, mode: "match", code: ["w", "e", "s", "q", "r"], sp: 1.32, rush: 36, ov: 4, txt: "RUSH ORDER: match the code!" },
+    { n: 8, mode: "match", code: ["h", "s", "e", "q", "r", "e", "q"], sp: 1.4, prank: 1, ov: 3, txt: "8-BEAT CODE (watch out!)" }
   ];
+  const OVL = [{ at: 1.01, dly: 99, max: 1 }, { at: 0.68, dly: 7, max: 2 }, { at: 0.55, dly: 5.5, max: 2 }, { at: 0.4, dly: 3.6, max: 3 }, { at: 0.3, dly: 3, max: 3 }];
   const splitParts = (Rd) => {
     if (Rd.mode !== "match") {
       const a2 = [];
@@ -52,7 +54,7 @@
   };
   const howTo = {
     title: "PACKING STATION: fill every beat on the pallet!",
-    steps: ["A crate falls down the chute. Its size = its beats.", "Tap a column (1-4) to move it. Tap DROP to drop it.", "Tap SWAP to trade it with the NEXT crate.", "Full pallet? Listen, then clap the cargo code back!", "No mic? Tap MANUAL OVERRIDE when they nail it."],
+    steps: ["A crate falls down the chute. Its size = its beats.", "Tap a column (1-4) to move it. Tap DROP to drop it.", "Tap SWAP to trade it with the NEXT crate.", "Later orders: more crates fall at once. Tap one to grab it (each finger can drag its own).", "Full pallet? Listen, then clap the cargo code back!", "No mic? Tap MANUAL OVERRIDE when they nail it."],
     words: "whole = 4 beats   half = 2   ta, ti-ti, tika-tika, rest = 1 beat each",
     example: (x, y, w, h, t) => {
       const ph = t % 4 / 4;
@@ -105,6 +107,8 @@
       this.placed = [];
       this.q = [];
       this.cur = null;
+      this.air = [];
+      this.grab = {};
       this.bounce = [];
       this.motes = R.motes(22);
       this.said = {};
@@ -273,6 +277,9 @@
       this.cells = new Array(NB).fill(null);
       this.placed = [];
       this.cur = null;
+      this.air = [];
+      this.grab = {};
+      this.lastSpawn = BB.t;
       this.cb = null;
       this.tries = 0;
       this.prank = null;
@@ -337,8 +344,57 @@
       let k = this.q.shift(), decoy = 0;
       const w = R.BEATS[k];
       let col = this.firstFree(w);
-      this.cur = { k, col, y: CTOP - CH - 10, fast: 0, t: BB.t, x: CX0 + col * CW, decoy };
+      const c = { k, col, y: CTOP - CH - 10, fast: 0, t: BB.t, x: CX0 + col * CW, decoy, id: ++this.cid || (this.cid = 1) };
+      if (this.air.length) {
+        const used = this.air.map((a) => a.col);
+        for (let cc = 0; cc <= NB - w; cc++) {
+          if (!used.some((u) => Math.abs(u - cc) < w)) {
+            c.col = cc;
+            break;
+          }
+        }
+        c.x = CX0 + c.col * CW;
+      }
+      this.air.push(c);
+      if (!this.cur) this.cur = c;
+      this.lastSpawn = BB.t;
+      if (this.air.length > 1) {
+        this.newT = BB.t;
+        if (!this.said.ov) {
+          this.said.ov = 1;
+          BB.say("pk_more", { overlap: true });
+        }
+      }
       this.fillQ();
+    }
+    ovl() {
+      const Rd = this.Rd;
+      if (!Rd) return OVL[0];
+      let i = Rd.ov || 0;
+      if (this.part) i++;
+      return OVL[Math.min(OVL.length - 1, i)];
+    }
+    // crates still needed in the air? (never more than the beats that are left can hold)
+    maybeSpawn() {
+      if (this.state !== "play") return;
+      const o = this.ovl(), n = this.air.length;
+      if (!n) {
+        return;
+      }
+      if (n >= o.max) return;
+      let need = this.left();
+      for (const a of this.air) need -= R.BEATS[a.k];
+      if (need <= 0) return;
+      const low = Math.max(...this.air.map((a) => a.y)), fr = (low - (CTOP - CH - 10)) / (ROWY - (CTOP - CH - 10));
+      const top = Math.min(...this.air.map((a) => a.y));
+      if (top < CTOP + 40) return;
+      if (fr >= o.at || BB.t - this.lastSpawn > o.dly) this.spawn();
+    }
+    select(c) {
+      if (c && this.air.includes(c)) {
+        this.cur = c;
+        this.selT = BB.t;
+      }
     }
     firstFree(w) {
       for (let c = 0; c <= NB - w; c++) {
@@ -354,12 +410,16 @@
     setCol(c) {
       const cu = this.cur;
       if (!cu || this.state !== "play") return;
+      cu.touched = 1;
       const w = R.BEATS[cu.k];
       cu.col = clamp(c, 0, NB - w);
     }
     drop() {
       if (this.cur && this.state === "play") {
         this.cur.fast = 1;
+        this.cur.touched = 1;
+        const d = this.cur;
+        this.cur = this.air.filter((a) => a !== d).sort((a, b) => b.y - a.y)[0] || d;
         BB.sfx.whoosh(void 0, 0.3);
       }
     }
@@ -386,8 +446,14 @@
         this.prankHit();
       }
     }
-    land() {
-      const cu = this.cur, w = R.BEATS[cu.k];
+    land(cu) {
+      const w = R.BEATS[cu.k];
+      const sel = cu === this.cur;
+      this.air = this.air.filter((a) => a !== cu);
+      for (const id in this.grab) if (this.grab[id].c === cu) delete this.grab[id];
+      const after = () => {
+        if (this.cur === cu || !this.air.includes(this.cur)) this.cur = this.air.slice().sort((a, b) => b.y - a.y)[0] || null;
+      };
       let fit = true;
       for (let i = 0; i < w; i++) if (this.cells[cu.col + i]) fit = false;
       let why = "";
@@ -409,12 +475,23 @@
         BB.sfx.thunk();
         BB.shake(3);
         BB.burst(CX0 + cu.col * CW + w * CW / 2, ROWY + CH, 10, { col: "#d8c8a8", kind: "dust", size: 16, g: -40, speed: 200 });
-        this.cur = null;
+        after();
         if (this.left() === 0) {
+          this.air = [];
+          this.cur = null;
           this.lock();
           return;
         }
-        setTimeout(() => BB.scene === this && this.state === "play" && !this.cur && this.spawn(), 450);
+        this.respawn(450);
+      } else if (!sel && !cu.decoy && !cu.touched) {
+        BB.sfx.boing();
+        this.bounce.push({ k: cu.k, x: CX0 + cu.col * CW, y: ROWY - 20, vx: 900, vy: -1100, r: 0, t: BB.t, why: "" });
+        this.backT = BB.t;
+        const k = cu.k;
+        after();
+        if (!(this.prank && k === "w")) this.q.unshift(k);
+        else this.prankHit(true);
+        this.respawn(600);
       } else if (why === "no room there!" || why.startsWith("too") || cu.decoy) {
         BB.sfx.crunch();
         BB.sfx.thunk();
@@ -429,10 +506,10 @@
           BB.say("pk_big");
         }
         const k = cu.k, dec = cu.decoy;
-        this.cur = null;
-        if (!dec && !(this.prank && k === "w")) this.q.push(k);
+        after();
+        if (!dec && !(this.prank && k === "w")) this.q.splice(sel ? this.q.length : 0, 0, k);
         else if (this.prank && k === "w") this.prankHit(true);
-        setTimeout(() => BB.scene === this && this.state === "play" && !this.cur && this.spawn(), 800);
+        this.respawn(800);
       } else {
         BB.sfx.boing();
         this.bounce.push({ k: cu.k, x: CX0 + cu.col * CW, y: ROWY - 20, vx: -500 - Math.random() * 200, vy: -900, r: 0, t: BB.t, why });
@@ -445,11 +522,14 @@
           BB.say("pk_wrongk");
         }
         const k = cu.k;
-        this.cur = null;
-        if (!(this.prank && k === "w")) this.q.push(k);
+        after();
+        if (!(this.prank && k === "w")) this.q.splice(sel ? this.q.length : 0, 0, k);
         else this.prankHit(true);
-        setTimeout(() => BB.scene === this && this.state === "play" && !this.cur && this.spawn(), 700);
+        this.respawn(700);
       }
+    }
+    respawn(ms) {
+      setTimeout(() => BB.scene === this && this.state === "play" && !this.air.length && this.spawn(), ms);
     }
     codeAt(col) {
       let b = 0;
@@ -582,17 +662,46 @@
       BB.ensureMic();
     }
     // pointer: tap a column to steer, or drag the falling crate sideways
+    // v13.2: multi-touch. Touching a crate grabs + selects it (each finger drags its own crate); tapping an empty lane steers the selected crate.
+    hitCrate(p) {
+      let best = null;
+      for (const a of this.air) {
+        const w = R.BEATS[a.k];
+        if (p.x > a.x - 10 && p.x < a.x + w * CW + 10 && p.y > a.y - 30 && p.y < a.y + CH + 30 && (!best || a.y > best.y)) best = a;
+      }
+      return best;
+    }
     pdown(p) {
-      if (this.state !== "play" || !this.cur) return false;
-      if (p.x > CX0 && p.x < CX0 + NB * CW && p.y > CTOP - 60 && p.y < ROWY + CH) {
-        this.dragC = { x0: p.x, col0: this.cur.col };
-        this.setCol(Math.floor((p.x - CX0) / CW) - (p.y > this.cur.y && p.y < this.cur.y + CH ? 0 : 0));
+      if (this.state !== "play" || !this.air.length) return false;
+      if (p.x > CX0 - 20 && p.x < CX0 + NB * CW + 20 && p.y > CTOP - CH - 60 && p.y < ROWY + CH) {
+        const c = this.hitCrate(p);
+        if (c) {
+          this.grab[p.id] = { c, dx: p.x - c.x };
+          c.touched = 1;
+          this.select(c);
+          return true;
+        }
+        if (this.cur) {
+          this.cur.touched = 1;
+          this.grab[p.id] = { c: this.cur, dx: R.BEATS[this.cur.k] * CW / 2 };
+          this.setColOf(this.cur, Math.floor((p.x - CX0) / CW));
+        }
         return true;
       }
       return false;
     }
-    pup() {
-      this.dragC = null;
+    pmove(p) {
+      const g = this.grab[p.id];
+      if (!g || !this.air.includes(g.c)) return;
+      this.setColOf(g.c, Math.round((p.x - g.dx - CX0) / CW));
+    }
+    pup(p) {
+      if (p && this.grab[p.id]) delete this.grab[p.id];
+      else if (!p) this.grab = {};
+    }
+    setColOf(c, col) {
+      if (this.state !== "play") return;
+      c.col = clamp(col, 0, NB - R.BEATS[c.k]);
     }
     update(dt) {
       BB.dt = dt;
@@ -613,18 +722,20 @@
         this.intro(dt);
         if (BB.keys.includes("s")) this.skipIntro();
       }
-      if (this.dragC && this.cur && BB.ptr.down) {
-        const w = R.BEATS[this.cur.k];
-        this.setCol(Math.round((BB.ptr.x - CX0) / CW - w / 2));
-      }
       const cu = this.cur;
-      if (cu && this.state === "play") {
-        cu.x = lerp(cu.x, CX0 + cu.col * CW, Math.min(1, dt * 14));
-        cu.y += dt * (cu.fast ? 1150 : 44 * (this.Rd.sp || 1) * (1 + this.part * 0.06) * (1 + Math.min(0.6, (BB.t - cu.t) * 0.04)));
-        if (cu.y >= ROWY) {
-          cu.y = ROWY;
-          this.land();
+      if (this.state === "play") {
+        const base = 44 * (this.Rd.sp || 1) * (1 + this.part * 0.06);
+        for (const a of this.air.slice()) {
+          a.x = lerp(a.x, CX0 + a.col * CW, Math.min(1, dt * 14));
+          const v = a.fast ? 1150 : base * (1 + Math.min(0.6, (BB.t - a.t) * 0.04)) * (a === this.cur || this.air.length < 2 ? 1 : 0.8);
+          a.y += dt * v;
+          if (a.y >= ROWY) {
+            a.y = ROWY;
+            this.land(a);
+            if (this.state !== "play") break;
+          }
         }
+        this.maybeSpawn();
       }
       for (let i = this.bounce.length - 1; i >= 0; i--) {
         const b = this.bounce[i];
@@ -634,7 +745,7 @@
         b.r -= dt * 5;
         if (b.y > H + 300) this.bounce.splice(i, 1);
       }
-      if (BB.debug && this.o.auto && cu && this.state === "play" && BB.t - cu.t > 0.8 && !cu.fast) {
+      if (BB.debug && this.o.auto && cu && this.state === "play" && BB.t - Math.max(cu.t, this.selT || 0) > 0.8 && !cu.fast) {
         let c = -1;
         if (this.Rd.mode === "match") {
           let b = 0;
@@ -862,6 +973,16 @@
       ctx.beginPath();
       ctx.rect(CX0, CTOP - 20, NB * CW, ROWY + CH - CTOP + 20);
       ctx.clip();
+      for (const a of this.air) {
+        if (a === cu) continue;
+        const aw = R.BEATS[a.k] * CW - 12;
+        ctx.save();
+        ctx.globalAlpha = 0.82;
+        R.crateDraw(a.k, a.x + 6, a.y, aw, CH);
+        ctx.restore();
+        BB.rrect(a.x + 6 + aw / 2 - 58, a.y - 38, 116, 30, 10, "rgba(12,28,26,.85)", COL.teal2, 2);
+        BB.text("TAP ME", a.x + 6 + aw / 2, a.y - 23, 18, "#fff");
+      }
       let fit = true;
       for (let i = 0; i < w; i++) if (this.cells[cu.col + i]) fit = false;
       const gx = CX0 + cu.col * CW + 6;
@@ -879,6 +1000,13 @@
       ctx.translate(cu.x + 6 + cw / 2, cu.y + CH / 2);
       ctx.rotate(wob);
       R.crateDraw(cu.k, -cw / 2, -CH / 2, cw, CH);
+      if (this.air.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = COL.yellow;
+        ctx.lineWidth = 6;
+        ctx.strokeRect(-cw / 2 - 5, -CH / 2 - 5, cw + 10, CH + 10);
+        ctx.restore();
+      }
       if (cu.decoy) {
         ctx.save();
         ctx.strokeStyle = "#e65046";

@@ -15,7 +15,8 @@
     ["got_note", "A whole note! Four beats long!", "sprocket"],
     ["pebbles", "Hey! Static Jr. is dropping pebbles! Hold that beat steady!", "sprocket"],
     ["complete", "Eight whole notes! Room one complete! Next stop, the Note Smasher!", "sprocket"],
-    ["ready", "Ready? Clap on every green light!", "sprocket"],
+    ["ready", "Ready? Warm up with four claps in a row on the green lights. Then every clap is a pickaxe strike. Four strikes break the rock!", "sprocket"],
+    ["mn_more", "This rock is tougher! Keep striking on the beat!", "sprocket"],
     ["keepgoing", "Keep that beat going!", "sprocket"],
     ["jr_giggle", "Hee hee hee!", "jr"],
     ["jr_nom", "Nom nom nom!", "jr"],
@@ -37,16 +38,17 @@
     { f: 0, kind: "rock", bpm: 75 },
     { f: 1, kind: "rock", bpm: 145, prank: true },
     { f: 1, kind: "rock", bpm: 145 },
-    { f: 2, kind: "crystal", bpm: 96, dyn: "p" },
-    { f: 2, kind: "crystal", bpm: 96, dyn: "p", prank: true },
-    { f: 3, kind: "boulder", bpm: 96, dyn: "f" },
-    { f: 3, kind: "boulder", bpm: 96, dyn: "f" },
+    { f: 2, kind: "crystal", bpm: 96, dyn: "p", st: 6 },
+    { f: 2, kind: "crystal", bpm: 96, dyn: "p", prank: true, st: 6 },
+    { f: 3, kind: "boulder", bpm: 96, dyn: "f", st: 8 },
+    { f: 3, kind: "boulder", bpm: 96, dyn: "f", st: 8 },
     { f: 4, kind: "crystal", bpm: 145, dyn: "p", bonus: true, sign: ["ALLEGRO + PIANO", "fast but soft"], icons: ["rocket", "whisper"], prank: true },
     { f: 4, kind: "boulder", bpm: 75, dyn: "f", bonus: true, sign: ["ANDANTE + FORTE", "slow and loud"], icons: ["turtle", "boom"] }
   ];
   const TBOX = (k) => ({ x0: 1480, x1: 3320, y0: top(k) + 34, y1: rail(k) });
   const LIGHT = [{ rim: "#ffd08a", amb: "#ff9a40", haze: "60,34,18" }, { rim: "#ffc070", amb: "#ff8030", haze: "64,32,16" }, { rim: "#bfe6ff", amb: "#6a8cff", haze: "24,26,60" }, { rim: "#ffb060", amb: "#ff6a30", haze: "66,28,14" }, { rim: "#ffa070", amb: "#d05030", haze: "58,24,16" }];
-  const NEED = 4, WARM = 4, STRIKE_PER_CRACK = 2;
+  const NEED = 4, WARM = 4;
+  const strikesFor = (R) => R ? R.bonus ? 4 : R.st || 4 : 4;
   const SOFT_MAX = window.GroupGate ? GroupGate.SOFT_MAX : 0.62, LOUD_MIN = window.GroupGate ? GroupGate.LOUD_MIN : 0.7;
   let dirtPat = null;
   function dirt() {
@@ -117,7 +119,7 @@
   }
   const howTo = {
     title: "NOTE MINE: dig up the whole notes!",
-    steps: ["Watch the green beat lights.", "Clap ONE clap on every light.", "4 steady beats = 1 whole note!", "Piano = soft claps. Forte = loud claps.", "No mic? Tap MANUAL OVERRIDE when they nail it."],
+    steps: ["Watch the green beat lights.", "WARM UP: 4 claps in a row on the lights.", "Then every clap = a pickaxe strike. 4 strikes break a rock!", "Tougher rocks later need 6 or 8 strikes.", "Piano = soft claps. Forte = loud claps.", "No mic? Tap MANUAL OVERRIDE when they nail it."],
     words: '"ta - a - a - a" (one whole note = 4 beats)   andante = walking speed,  allegro = fast',
     example: (x, y, w, h, t) => {
       const bpm = 90, ph = t * bpm / 60, b = Math.floor(ph) % 4, f = ph % 1;
@@ -437,6 +439,10 @@
     beginRock(first) {
       const R = ROCKS[this.rockI];
       this.R = R;
+      if (strikesFor(R) > 4 && !R.bonus && !(this.said || {})["st" + R.st]) {
+        (this.said = this.said || {})["st" + R.st] = 1;
+        setTimeout(() => BB.scene === this && BB.say("mn_more", { overlap: true }), 5200);
+      }
       this.stage = 0;
       this.state = "drop";
       this.st = BB.t;
@@ -646,7 +652,10 @@
       this.hitT = BB.t;
       this.swingT = BB.t;
       this.strikes++;
-      if (this.strikes % STRIKE_PER_CRACK === 0) this.crack();
+      {
+        const n = strikesFor(this.R), st = Math.floor(this.strikes * NEED / n + 1e-9);
+        while (this.stage < st && this.stage < NEED) this.crack(1);
+      }
       if (d === "p" && b.spb < 0.5) BB.sfx.tink(void 0, 0.3, true);
       else BB.sfx.tink();
       if (d === "f") {
@@ -721,9 +730,9 @@
         }
       }
     }
-    crack() {
+    crack(one) {
       const R = this.R;
-      this.stage += R.bonus ? 2 : 1;
+      this.stage += one ? 1 : R.bonus ? 2 : 1;
       BB.sfx.crack();
       BB.shake(4);
       this.shk = 1;
@@ -768,6 +777,7 @@
           this.beat.evalM = Math.max(1, Math.ceil(this.beatNow() / 4));
         }
         this.beat.evalM = Math.max(this.beat.evalM, Math.ceil(this.beatNow() / 4));
+        this.strikes = Math.max(this.strikes || 0, Math.ceil((this.stage + (this.R.bonus ? 2 : 1)) * strikesFor(this.R) / NEED));
         this.crack();
       }
     }
@@ -1815,7 +1825,7 @@
       if (count) {
         BB.text(this.warm > 0 ? this.warm + " ..." : "WARM UP: clap 4 in a row!", W / 2, H - 215, this.warm > 0 ? 70 : 44, COL.yellow, { font: "Rammetto One", stroke: 8 });
       } else if (this.state === "dig") {
-        BB.text(R.dyn === "p" ? "soft claps!" : R.dyn === "f" ? "LOUD claps!" : "every clap = a pickaxe hit!", W / 2, H - 180, 34, "#fff", { stroke: 6 });
+        BB.text(R.dyn === "p" ? "soft claps!" : R.dyn === "f" ? "LOUD claps!" : strikesFor(R) + " strikes break the rock!", W / 2, H - 180, 34, "#fff", { stroke: 6 });
       }
       if (this.pebbles) {
         ctx.fillStyle = "#8a7060";
@@ -1828,12 +1838,12 @@
           ctx.stroke();
         }
       }
-      const need = this.R && this.R.bonus ? 2 : 4;
+      const need = strikesFor(this.R), pw = need > 6 ? 28 : 38;
       for (let i = 0; i < need; i++) {
-        const on = i < Math.floor(this.stage / (4 / need));
-        BB.rrect(W / 2 + 400 + i * 38, H - 112, 28, 44, 8, on ? COL.yellow : "#3a4a48", "#fff", 2);
+        const on = this.state === "pop" || i < (this.strikes || 0);
+        BB.rrect(W / 2 + 400 + i * pw, H - 112, pw - 10, 44, 8, on ? COL.yellow : "#3a4a48", "#fff", 2);
       }
-      BB.text("CRACKS", W / 2 + 400 + need * 19, H - 140, 22, "#fff", { stroke: 4 });
+      BB.text("STRIKES", W / 2 + 400 + need * pw / 2 - 5, H - 140, 22, "#fff", { stroke: 4 });
       BB.micMeter(40, H - 150, { band: R.dyn === "p" ? "soft" : R.dyn === "f" ? "loud" : null });
       BB.overrideBtn(() => this.manualOverride(), { pop: this.ovPop && BB.t - this.ovPop < 0.3 ? 1.08 : 1 });
     }

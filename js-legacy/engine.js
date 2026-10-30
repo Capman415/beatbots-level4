@@ -124,7 +124,7 @@ BB.loadImages = (names) => Promise.all(names.map((n) => new Promise((r) => {
 const ptr = { x: 0, y: 0, down: false, clicks: [] };
 BB.ptr = ptr;
 function toLogical(e) {
-  return { x: (e.clientX - OX) / SC, y: (e.clientY - OY) / SC };
+  return { x: (e.clientX - OX) / SC, y: (e.clientY - OY) / SC, id: e.pointerId == null ? 1 : e.pointerId };
 }
 cv.addEventListener("pointerdown", (e) => {
   e.preventDefault();
@@ -140,10 +140,15 @@ cv.addEventListener("pointermove", (e) => {
   const p = toLogical(e);
   ptr.x = p.x;
   ptr.y = p.y;
+  if (BB.scene && BB.scene.pmove && !BB.paused) BB.scene.pmove(p);
+});
+addEventListener("pointercancel", (e) => {
+  ptr.down = false;
+  if (BB.scene && BB.scene.pup) BB.scene.pup(toLogical(e));
 });
 addEventListener("pointerup", (e) => {
   ptr.down = false;
-  if (BB.scene && BB.scene.pup && e.target === cv) BB.scene.pup(toLogical(e));
+  if (BB.scene && BB.scene.pup && (e.target === cv || BB.scene.pmove)) BB.scene.pup(toLogical(e));
 });
 const keys = [];
 addEventListener("keydown", (e) => keys.push(e.key));
