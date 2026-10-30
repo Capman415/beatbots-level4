@@ -143,8 +143,8 @@ class MapScene{constructor(justDone){this.justDone=justDone}
       else BB.button(cx-120,930,240,80,'LOCKED',{size:34,id:'room'+i,onClick:()=>this.open(i)});
     });
     /* v14.2.1 session tag for the clap log: set at the start of class */
-    if(BB.session){const L=BB.clapLog;BB.panel(24,24,440,76,20);BB.button(34,32,150,60,'DAY '+BB.session.day,{size:24,id:'hday',onClick:()=>BB.session.cycleDay()});BB.button(192,32,150,60,'CLASS '+BB.session.cls,{size:24,id:'hcls',onClick:()=>BB.session.cycleClass()});
-     BB.text('LOG '+(L?L.count():0),404,62,20,L&&L.nearCap()?'#ffd35c':'#cfe8e2',{stroke:3});if(L&&L.nearCap())BB.text('Clap log nearly full: download + clear in Pause',250,124,22,'#ffd35c',{stroke:4})}
+    if(BB.session){const L=BB.clapLog;BB.panel(24,24,302,76,20);BB.button(34,32,138,60,'DAY '+BB.session.day,{size:22,id:'hday',onClick:()=>BB.session.cycleDay()});BB.button(178,32,138,60,'CLASS '+BB.session.cls,{size:22,id:'hcls',onClick:()=>BB.session.cycleClass()});
+     {const n=L?L.count():0,f=L&&L.nearCap();BB.text(f?'Clap log nearly full ('+n+'): download + clear in Pause':'Clap log: '+n+' events',30,124,20,f?'#ffd35c':'#cfe8e2',{stroke:4,align:'left'})}}
     BB.button(W-250,24,226,76,'MIC SETUP',{size:30,id:'mic',onClick:()=>BB.go(new MicScene())});
     if(this.toast&&BB.t-this.toast.t<2.5){const k=Math.min(1,(BB.t-this.toast.t)*5);ctx.save();ctx.globalAlpha=k;BB.rrect(W/2-450,940,900,100,50,BB.lg(940,1040,['#ffffff','#e8e2cd']),COL.ink,5);BB.text(this.toast.txt,W/2,992,40,COL.ink);ctx.restore()}}}
 BB.MapScene=MapScene;BB.MicScene=MicScene;

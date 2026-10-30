@@ -293,10 +293,14 @@ BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRec
   // v13.8: back to the room picker, only from inside the pause menu (hard to hit by accident)
   BB.button(x+60,y+h-200,380,120,'ROOM SELECT',{size:40,id:'roomsel',onClick:()=>{BB.paused=false;BB.ac.resume().catch(()=>{});BB.caption=null;BB.talking=null;BB.go(new BB.MapScene())}});
   {const S=BB.clapStats;if(S){const m=BB.mic;BB.text('CLAP READOUT  counted '+S.hit+'/'+S.exp+'  \u2022  heard '+S.heard+'  \u2022  off-beat '+S.stray+'  \u2022  blocked by voice '+S.talk+'  \u2022  mic peak '+Math.round(S.peak*100)+'%  \u2022  slow frames '+S.slow+'  \u2022  mic '+(m.ok?'on':m.state)+(window.C96&&C96.active&&C96.active()?' (clap96)':''),W/2,y+h-38,22,'#cfe8e2',{maxW:w-80})}}
-  if(BB.clapLog){const L=BB.clapLog,bx=x+w-330,bw=290,warn=L.nearCap();BB.button(bx,y+30,bw,52,'CLAP LOG: '+(L.on?'ON':'OFF')+' ('+L.count()+'/'+L.CAP+')',{size:20,id:'clog',onClick:()=>{L.on=!L.on}});
-   BB.button(bx,y+88,bw,48,'Download clap log (CSV)',{size:19,id:'clogdl',onClick:()=>L.download()});BB.button(bx,y+142,bw,48,'Download summary (CSV)',{size:19,id:'clogsum',onClick:()=>L.downloadSummary()});BB.button(bx,y+196,bw,42,'Clear log',{size:19,id:'clogclr',onClick:()=>{if(window.confirm('Clear the clap log? Download it first.'))L.clear()}});
-   /* v14.2.1 session tag */BB.button(bx,y+250,bw,48,'DAY: '+BB.session.day,{size:20,id:'psday',onClick:()=>BB.session.cycleDay()});BB.button(bx,y+304,bw,48,'CLASS: '+BB.session.cls,{size:20,id:'pscls',onClick:()=>BB.session.cycleClass()});
-   if(warn)BB.text('LOG NEARLY FULL: download + clear',bx+bw/2,y+372,20,'#ffd35c',{stroke:4,maxW:bw+20})}
+  /* v14.2.1: clap log + session tag, compact column kept above the example picture (ends y+188) */
+  if(BB.clapLog){const L=BB.clapLog,bx=x+w-330,bw=290,warn=L.nearCap(),tw=(bw-12)/3;
+   BB.button(bx,y+24,bw,42,(warn?'NEARLY FULL! ':'CLAP LOG: '+(L.on?'ON ':'OFF '))+L.count()+'/'+L.CAP,{style:warn?'cream':undefined,size:19,id:'clog',onClick:()=>{L.on=!L.on}});
+   BB.button(bx,y+72,bw,36,'Download clap log (CSV)',{size:17,id:'clogdl',onClick:()=>L.download()});
+   BB.button(bx,y+114,bw,36,'Download summary (CSV)',{size:17,id:'clogsum',onClick:()=>L.downloadSummary()});
+   BB.button(bx,y+156,tw,36,'DAY '+BB.session.day,{size:16,id:'psday',onClick:()=>BB.session.cycleDay()});
+   BB.button(bx+tw+6,y+156,tw,36,'CLASS '+BB.session.cls,{size:16,id:'pscls',onClick:()=>BB.session.cycleClass()});
+   BB.button(bx+2*tw+12,y+156,tw,36,'Clear',{size:16,id:'clogclr',onClick:()=>{if(window.confirm('Clear the clap log? Download it first.'))L.clear()}})}
   BB.button(W/2-220,y+h-200,440,120,'RESUME',{style:'green',size:56,id:'resume',onClick:onResume})};
 let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)/1000;rl=n;return rt};
 // room title card
