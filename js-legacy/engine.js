@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.1.2";
+BB.VERSION = "v14.2";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -190,6 +190,7 @@ BB.button = (x, y, w, h, label, o = {}) => {
   };
   if (st === "cream") {
     BB.rrect(x, y, w, h, R, BB.lg(y, y + h, ["#fbf6e6", "#e8e2cd", "#cbc2a8"]), "#8a806b", 5);
+    BB.rrect(x + 9, y + 9, w - 18, h - 18, Math.max(6, R - 8), BB.lg(y, y + h, ["#2f5a55", "#1d3b38", "#142826"]), "rgba(80,170,160,.9)", 2.5);
     sheen();
   } else if (st === "green") {
     BB.rrect(x, y, w, h, R, BB.lg(y, y + h, ["#6fd884", "#3fb45a", "#2a8a42"]), "#1d5a2c", 6);
@@ -211,7 +212,7 @@ BB.button = (x, y, w, h, label, o = {}) => {
 const BTN_INK = {
   green: { f: ["#f1faf2", "#e4f8e6", "#d3f0da"], e: "#1d5a2c", lo: "rgba(10,50,20,.55)", hi: "rgba(255,255,255,.14)" },
   red: { f: ["#fdf1ef", "#fde6e2", "#f6d0ca"], e: "#6b1d18", lo: "rgba(80,15,10,.55)", hi: "rgba(255,255,255,.14)" },
-  cream: { f: ["#3b5a55", "#28403c", "#1a2c29"], e: null, lo: "rgba(255,255,255,.75)", hi: null },
+  cream: { f: ["#ffe46a", "#ffd84a", "#f5c83a"], e: "#3a2410", lo: "rgba(0,0,0,.45)", hi: null },
   teal: { f: ["#3b5a55", "#28403c", "#1a2c29"], e: null, lo: "rgba(255,255,255,.75)", hi: null }
 };
 BB.btnText = (t, x, y, s, st, font = "Lilita One", sub) => {

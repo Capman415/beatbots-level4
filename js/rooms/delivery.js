@@ -22,9 +22,9 @@ const howTo={title:'DELIVERY SHOWDOWN: beat Static Jr.!',steps:['Each box shows 
   words:'ta = 1   ti-ti = 2 quick   tika-tika = 4 quicker   ta-ah = 2 beats   rest = silent beat',example:(x,y,w,h,t)=>{}};
 class DeliveryRoom{constructor(o={}){this.o=o}
   enter(){BB.groove.start(100,'pack');this.n=this.o.startAt||0;this.hp=TOTAL-this.n;this.state='load';this.said={};this.bolts=[];this.fx=[];this.motes=R.motes(10);this.ph=0;this.jrK=null;
-    R.loadImgs([['pack_blur','jpg']]).then(()=>{this.static=R.bake(g=>this.bake(g));this.state='intro';this.st=BB.t;BB.say('jr_boss');this.voEnd=BB.t+3.2;setTimeout(()=>BB.scene===this&&BB.say('dl_intro'),2600)});BB.mic.take();window.__dl=this}
+    R.loadImgs([['pack_blur','jpg'],['dock_bg','jpg']]).then(()=>{this.static=R.bake(g=>this.bake(g));this.state='intro';this.st=BB.t;BB.say('jr_boss');this.voEnd=BB.t+3.2;setTimeout(()=>BB.scene===this&&BB.say('dl_intro'),2600)});BB.mic.take();window.__dl=this}
   exit(){BB.paused=false;BB.fuzz=0}
-  bake(g){const V=BB.V2;if(V.pack_blur){g.filter='brightness(.35) saturate(.6)';g.drawImage(V.pack_blur,0,0,W,H);g.filter='none'}
+  bake(g){const V=BB.V2;if(V.dock_bg){/* v14.2 painted night dock (assets/v2/dock_bg.jpg); hazard stripe lifted to the old y=740 dock edge */g.drawImage(V.dock_bg,0,-90,W,H);g.drawImage(V.dock_bg,0,H-90,W,90,0,H-90,W,90);return}if(V.pack_blur){g.filter='brightness(.35) saturate(.6)';g.drawImage(V.pack_blur,0,0,W,H);g.filter='none'}
     const sky=g.createLinearGradient(0,0,0,240);sky.addColorStop(0,'#0b1030');sky.addColorStop(1,'#1d2550');g.fillStyle=sky;g.fillRect(0,0,W,240);
     for(let i=0;i<90;i++){g.fillStyle=`rgba(255,255,240,${.3+Math.random()*.6})`;g.beginPath();g.arc(Math.random()*W,Math.random()*220,Math.random()*2+.5,0,7);g.fill()}
     const wall=g.createLinearGradient(0,240,0,740);wall.addColorStop(0,'#3a4152');wall.addColorStop(1,'#272c38');g.fillStyle=wall;g.fillRect(0,240,W,500);
@@ -100,7 +100,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
   drawHP(){const x=W-40-400+20,y=78,w=360,f=this.hp/TOTAL;BB.rrect(x-20,y-54,w+40,110,28,'rgba(12,16,28,.85)','#ff8adf',3);BB.text('STATIC JR.',x+w/2,y-24,24,'#ffd6f4',{stroke:0});
     BB.rrect(x,y,w,28,10,'#2a2233',null,0);if(f>0)BB.rrect(x,y,w*f,28,10,BB.lg(y,y+28,['#ff9ad8','#c03a8e']),null,0);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,w,28);for(let i=1;i<TOTAL;i++){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x+i*w/TOTAL-1,y,2,28)}}
   drawLauncher(){const x=LCH.x,y=LCH.y,k=this.state==='throw'?BB.t-this.st:9,rc=k<.25?Math.sin(k/.25*Math.PI)*18:0;
-    if(BB.IMG.sprocket){const im=BB.IMG.sprocket,h=210,w=h*im.width/im.height;ctx.drawImage(im,x-w/2-150,y-h+90,w,h)}
+    if(BB.IMG.sprocket){/* v14.2 bigger, animated Sprocket (same sprite rig as Mine/Packing) */const tk=BB.isTalking&&BB.isTalking('sprocket'),cheer=this.state==='end'||(this.jrK&&this.jrK.ph==='hit'&&BB.t-this.jrK.t<1.2);BB.contactShadow&&BB.contactShadow(x-175,y+100,100,.5);BB.sprite('sprocket',x-175,y+100,330,{squash:(tk?Math.sin(BB.t*16)*.02:Math.sin(BB.t*2)*.006)+(cheer?Math.abs(Math.sin(BB.t*8))*.04:0),rot:Math.sin(BB.t*1.3)*.015})}
     ctx.save();ctx.translate(x-rc,y);ctx.rotate(-.5);BB.rrect(-30,-36,210,72,30,BB.lg(-36,36,['#c9d6de','#7d8c96']),COL.ink,5);for(let i=0;i<3;i++){ctx.strokeStyle='#ffe066';ctx.lineWidth=5;ctx.beginPath();ctx.arc(60+i*40,0,34,-1.2,1.2);ctx.stroke()}ctx.restore();
     BB.rrect(x-70,y-10,140,110,18,BB.lg(y-10,y+100,['#6c7a86','#3d4650']),COL.ink,5);BB.text('BOX LAUNCHER',x,y+122,20,'#fff',{stroke:4})}
   draw(){const t=BB.t,k=t-this.st;if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#111';ctx.fillRect(0,0,W,H)}R.drawMotes(this.motes,BB.dt||.016,t);if(this.state==='load')return;

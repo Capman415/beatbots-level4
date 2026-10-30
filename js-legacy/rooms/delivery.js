@@ -38,7 +38,7 @@
       this.motes = R.motes(10);
       this.ph = 0;
       this.jrK = null;
-      R.loadImgs([["pack_blur", "jpg"]]).then(() => {
+      R.loadImgs([["pack_blur", "jpg"], ["dock_bg", "jpg"]]).then(() => {
         this.static = R.bake((g) => this.bake(g));
         this.state = "intro";
         this.st = BB.t;
@@ -55,6 +55,11 @@
     }
     bake(g) {
       const V = BB.V2;
+      if (V.dock_bg) {
+        g.drawImage(V.dock_bg, 0, -90, W, H);
+        g.drawImage(V.dock_bg, 0, H - 90, W, 90, 0, H - 90, W, 90);
+        return;
+      }
       if (V.pack_blur) {
         g.filter = "brightness(.35) saturate(.6)";
         g.drawImage(V.pack_blur, 0, 0, W, H);
@@ -477,8 +482,9 @@
     drawLauncher() {
       const x = LCH.x, y = LCH.y, k = this.state === "throw" ? BB.t - this.st : 9, rc = k < 0.25 ? Math.sin(k / 0.25 * Math.PI) * 18 : 0;
       if (BB.IMG.sprocket) {
-        const im = BB.IMG.sprocket, h = 210, w = h * im.width / im.height;
-        ctx.drawImage(im, x - w / 2 - 150, y - h + 90, w, h);
+        const tk = BB.isTalking && BB.isTalking("sprocket"), cheer = this.state === "end" || this.jrK && this.jrK.ph === "hit" && BB.t - this.jrK.t < 1.2;
+        BB.contactShadow && BB.contactShadow(x - 175, y + 100, 100, 0.5);
+        BB.sprite("sprocket", x - 175, y + 100, 330, { squash: (tk ? Math.sin(BB.t * 16) * 0.02 : Math.sin(BB.t * 2) * 6e-3) + (cheer ? Math.abs(Math.sin(BB.t * 8)) * 0.04 : 0), rot: Math.sin(BB.t * 1.3) * 0.015 });
       }
       ctx.save();
       ctx.translate(x - rc, y);

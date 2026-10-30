@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.1.2';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.2';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -63,7 +63,7 @@ BB.button=(x,y,w,h,label,o={})=>{
   BB.rrect(x+4,y+8,w,h,o.r||28,'rgba(0,0,0,.35)');
   if(st!=='flat'){BB.rrect(x-4,y-4,w+8,h+8,(o.r||28)+4,BB.lg(y-4,y+h+4,['#f4f7f6','#9aa6a4','#e2e8e6','#6c7775']),'rgba(20,30,30,.7)',2)}// v12.6 chrome bezel
   const R=o.r||28,sheen=()=>{ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(R,h/2));ctx.clip();BB.rrect(x+10,y+6,w-20,h*.4,Math.max(4,R-10),BB.lg(y,y+h*.45,['rgba(255,255,255,.38)','rgba(255,255,255,.04)']));ctx.restore()};
-  if(st==='cream'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#fbf6e6','#e8e2cd','#cbc2a8']),'#8a806b',5);sheen();}
+  if(st==='cream'){/* v14.2 video-style: cream rim, teal enamel face, gold lettering (matches the L1-L3 panels) */BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#fbf6e6','#e8e2cd','#cbc2a8']),'#8a806b',5);BB.rrect(x+9,y+9,w-18,h-18,Math.max(6,R-8),BB.lg(y,y+h,['#2f5a55','#1d3b38','#142826']),'rgba(80,170,160,.9)',2.5);sheen();}
   else if(st==='green'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#6fd884','#3fb45a','#2a8a42']),'#1d5a2c',6);sheen();}
   else if(st==='red'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#f07a6e','#d9483f','#a8302a']),'#6b1d18',6);sheen();}
   else if(st==='teal'){BB.rrect(x,y,w,h,R,BB.lg(y,y+h,['#fbf6e6','#e8e2cd','#cbc2a8']),'#8a806b',5);BB.well(x+12,y+12,w-24,h-24,R-10);}
@@ -78,7 +78,7 @@ BB.button=(x,y,w,h,label,o={})=>{
 /* v12.8 glare pass: even, matte fills (same per-button tint family), faint top lip */
 const BTN_INK={green:{f:['#f1faf2','#e4f8e6','#d3f0da'],e:'#1d5a2c',lo:'rgba(10,50,20,.55)',hi:'rgba(255,255,255,.14)'},
   red:{f:['#fdf1ef','#fde6e2','#f6d0ca'],e:'#6b1d18',lo:'rgba(80,15,10,.55)',hi:'rgba(255,255,255,.14)'},
-  cream:{f:['#3b5a55','#28403c','#1a2c29'],e:null,lo:'rgba(255,255,255,.75)',hi:null},teal:{f:['#3b5a55','#28403c','#1a2c29'],e:null,lo:'rgba(255,255,255,.75)',hi:null}};
+  cream:{f:['#ffe46a','#ffd84a','#f5c83a'],e:'#3a2410',lo:'rgba(0,0,0,.45)',hi:null},teal:{f:['#3b5a55','#28403c','#1a2c29'],e:null,lo:'rgba(255,255,255,.75)',hi:null}};
 BB.btnText=(t,x,y,s,st,font='Lilita One',sub)=>{let k=BTN_INK[st]||BTN_INK.cream;ctx.font=`${s}px '${font}'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
   if(sub&&k.e){k={...k,f:['#ffe46a','#ffdc55','#f5c83a']}}
   if(k.e){ctx.lineWidth=Math.max(3,s*.12);ctx.strokeStyle=k.e;ctx.strokeText(t,x,y+s*.05)}
