@@ -7,7 +7,7 @@ BB.ROOMS=[
   {id:'mine',name:'NOTE MINE',sub:'Dig up whole notes',create:()=>BB.MineRoom&&new BB.MineRoom(),col:'#a0643c'},
   {id:'smasher',name:'NOTE SMASHER',sub:'Meet tika-tika',create:()=>new BB.SmasherRoom(),col:'#5a8cb4'},
   {id:'packing',name:'PACKING STATION',sub:'Cargo Code',create:()=>new BB.PackingRoom(),col:'#c89632'},
-  {id:'label',name:'NAME THAT RHYTHM',sub:'Label Room',create:null,col:'#b45aa0'},
+  {id:'label',name:'NAME THAT RHYTHM',sub:'Label Room',create:()=>BB.LabelRoom&&new BB.LabelRoom(),col:'#b45aa0'},
   {id:'finale',name:'DELIVERY',sub:'Stop Static Jr.!',create:null,col:'#3c5a8c'},
 ];
 const save=JSON.parse(localStorage.getItem('bb4')||'{"done":[]}');BB.save=save;
@@ -153,7 +153,7 @@ async function boot(){ctx.setTransform(1,0,0,1,0,0);
   BB.loadVO(BB.VO_LINES||[]);
   const p=new URLSearchParams(location.search);
   const ro={skipIntro:p.has('skip'),startAt:+p.get('at')||0,auto:p.has('auto')};
-  if(p.get('room')==='mine')BB.go(new BB.MineRoom(ro));else if(p.get('room')==='smasher')BB.go(new BB.SmasherRoom(ro));else if(p.get('room')==='packing')BB.go(new BB.PackingRoom(ro));else if(p.get('room')==='map')BB.go(new MapScene());else if(p.get('room')==='mic')BB.go(new MicScene());else BB.go(new TitleScene());
+  if(p.get('room')==='mine')BB.go(new BB.MineRoom(ro));else if(p.get('room')==='smasher')BB.go(new BB.SmasherRoom(ro));else if(p.get('room')==='packing')BB.go(new BB.PackingRoom(ro));else if(p.get('room')==='label')BB.go(new BB.LabelRoom(ro));else if(p.get('room')==='map')BB.go(new MapScene());else if(p.get('room')==='mic')BB.go(new MicScene());else BB.go(new TitleScene());
   BB.start()}
 boot();
 })();
