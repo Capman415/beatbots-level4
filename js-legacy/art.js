@@ -1513,7 +1513,7 @@ BB.LoudCal = class {
   // defaults: adaptive scale from normal claps
   draw(cx, cy) {
     if (this.ph === "gone") return;
-    const t = BB.t, COL = BB.COL, ctx = BB.ctx, pw = 980, ph = 440, x = cx - pw / 2, y = cy - ph / 2;
+    const t = BB.t, COL = BB.COL, ctx = BB.ctx, pw = 980, ph = 520, x = cx - pw / 2, y = cy - ph / 2;
     BB.panel(x, y, pw, ph, 34);
     BB.text("CLAP CHECK", cx, y + 54, 42, COL.yellow, { font: "Rammetto One", stroke: 6 });
     const soft = this.kind !== "loud", done = this.ph === "done";
@@ -1541,9 +1541,9 @@ BB.LoudCal = class {
       } else if (this.ph === "prep") BB.text("get ready...", cx, y + 225, 40, "rgba(255,255,255,.8)", {});
       else BB.beatPills(cx, y + 235, lit, { pw: 70, gap: 18 });
       const a = this[this.kind] || [];
-      BB.text("".concat(soft ? "soft" : "loud", " claps: ").concat(a.length, " / 8"), cx - 170, y + ph - 50, 34, a.length && this.pop && t - this.pop < 0.3 ? COL.green : "#fff", { stroke: 4 });
-      BB.micMeter(cx - 10, y + ph - 118, { band: soft ? "soft" : "loud" });
-      BB.button(x + pw - 170, y + ph - 80, 150, 60, "Skip", { size: 28, id: "lcskip", onClick: () => this.skip() });
+      BB.text("".concat(soft ? "soft" : "loud", " claps: ").concat(a.length, " / 8"), cx - 335, y + ph - 80, 34, a.length && this.pop && t - this.pop < 0.3 ? COL.green : "#fff", { stroke: 4 });
+      BB.micMeter(cx - 130, y + ph - 148, { band: soft ? "soft" : "loud" });
+      BB.button(x + pw - 190, y + ph - 112, 150, 60, "Skip", { size: 28, id: "lcskip", onClick: () => this.skip() });
     }
   }
 };

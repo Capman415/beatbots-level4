@@ -206,8 +206,8 @@ class MineRoom{
   // v13.2 warm-up: the first FOUR claps in a row on the beat are the count-in; then every on-beat clap is a pickaxe strike
   warmClap(bi){const b=this.beat;b.hits[bi]=1;this.warm=bi===this.warmLast+1?this.warm+1:1;this.warmLast=bi;this.marks=[0,0,0,0];for(let i=0;i<this.warm;i++)this.marks[i]=.01;BB.sfx.tink(undefined,.5,true);
     if(this.warm>=WARM){this.state='dig';this.marks=[0,0,0,0];b.evalM=Math.floor(bi/4)+1;this.warmEnd=bi}}
-  evalMeasures(){const b=this.beat;if(this.state!=='dig')return;const tol=window.GroupGate?GroupGate.tol(b.spb):.17;
-    this.resolveGroup();while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+Math.max(tol,.2)+.03+(window.GroupGate?GroupGate.lat+.03:0)){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
+  evalMeasures(){const b=this.beat;this.resolveGroup();// v13.8: judge pending group claps during the warm-up too (they were never resolved, so warm-up ignored every clap with the mic on)
+    if(this.state!=='dig')return;const tol=window.GroupGate?GroupGate.tol(b.spb):.17;while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+Math.max(tol,.2)+.03+(window.GroupGate?GroupGate.lat+.03:0)){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
       b.evalM++;this.marks=[0,0,0,0];
       if(m<=(this.warmEnd!=null?Math.floor(this.warmEnd/4):0))continue;// the warm-up measure itself is not judged
       if(n>=2){}// strikes already cracked the rock

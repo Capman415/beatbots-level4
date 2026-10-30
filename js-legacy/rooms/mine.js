@@ -707,9 +707,9 @@
     }
     evalMeasures() {
       const b = this.beat;
+      this.resolveGroup();
       if (this.state !== "dig") return;
       const tol = window.GroupGate ? GroupGate.tol(b.spb) : 0.17;
-      this.resolveGroup();
       while (BB.ac.currentTime > b.t0 + (b.evalM * 4 + 3) * b.spb + Math.max(tol, 0.2) + 0.03 + (window.GroupGate ? GroupGate.lat + 0.03 : 0)) {
         const m = b.evalM;
         let n = 0;

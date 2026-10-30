@@ -342,7 +342,7 @@ BB.LoudCal=class{constructor(onDone){this.onDone=onDone;this.SPB=.6;this.soft=[]
     this.ph='done';this.t0=BB.t;BB.say(this.ok?'lc_done':'lc_again');if(this.ok)BB.sfx.ding()}
   retry(){this.prep('soft')}
   skip(){if(this.ph==='gone')return;this.ph='gone';this.onDone&&this.onDone(false)}// defaults: adaptive scale from normal claps
-  draw(cx,cy){if(this.ph==='gone')return;const t=BB.t,COL=BB.COL,ctx=BB.ctx,pw=980,ph=440,x=cx-pw/2,y=cy-ph/2;
+  draw(cx,cy){if(this.ph==='gone')return;const t=BB.t,COL=BB.COL,ctx=BB.ctx,pw=980,ph=520,x=cx-pw/2,y=cy-ph/2;
     BB.panel(x,y,pw,ph,34);BB.text('CLAP CHECK',cx,y+54,42,COL.yellow,{font:'Rammetto One',stroke:6});
     const soft=this.kind!=='loud',done=this.ph==='done';
     if(this.ph==='intro'){BB.text('Teach Sprocket your claps!',cx,y+130,44,'#fff',{stroke:5});
@@ -356,6 +356,6 @@ BB.LoudCal=class{constructor(onDone){this.onDone=onDone;this.SPB=.6;this.soft=[]
       if(bi>=-.2&&bi<4){const n=Math.min(3,Math.max(0,Math.floor(bi+.05)));const ph2=bi-Math.floor(bi);BB.text(['1','2','3','4'][n],cx,y+235,90*(1+Math.max(0,.25-ph2)),COL.yellow,{font:'Rammetto One',stroke:8})}
       else if(this.ph==='prep')BB.text('get ready...',cx,y+225,40,'rgba(255,255,255,.8)',{})
       else BB.beatPills(cx,y+235,lit,{pw:70,gap:18});
-      const a=this[this.kind]||[];BB.text(`${soft?'soft':'loud'} claps: ${a.length} / 8`,cx-170,y+ph-50,34,a.length&&this.pop&&t-this.pop<.3?COL.green:'#fff',{stroke:4});
-      BB.micMeter(cx-10,y+ph-118,{band:soft?'soft':'loud'});
-      BB.button(x+pw-170,y+ph-80,150,60,'Skip',{size:28,id:'lcskip',onClick:()=>this.skip()})}}};
+      const a=this[this.kind]||[];BB.text(`${soft?'soft':'loud'} claps: ${a.length} / 8`,cx-335,y+ph-80,34,a.length&&this.pop&&t-this.pop<.3?COL.green:'#fff',{stroke:4});
+      BB.micMeter(cx-130,y+ph-148,{band:soft?'soft':'loud'});
+      BB.button(x+pw-190,y+ph-112,150,60,'Skip',{size:28,id:'lcskip',onClick:()=>this.skip()})}}};

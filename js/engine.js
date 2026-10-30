@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v13.5';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v13.8';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -270,7 +270,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!BB.pause
 const selfWins=[];BB.selfSound=(t,dur,freqs)=>{selfWins.push({t,e:t+dur,freqs});if(window.ClapDet)ClapDet.TickLat.note(t,dur,freqs);if(selfWins.length>200)selfWins.splice(0,selfWins.length-200)};
 mic.lat=null;
 // v13.1 echo cancellation: on by default on Chromebooks (speaker right next to the mic); ?aec=0/1 or localStorage bb_aec overrides
-{let a=/CrOS/.test(navigator.userAgent);try{const q=new URLSearchParams(location.search).get('aec'),l=localStorage.getItem('bb_aec');if(l!=null)a=l==='1';if(q!=null)a=q==='1'}catch(e){}BB.aec=a}// measured speaker->mic delay (s); null = not calibrated yet
+{let a=false;// v13.8: Chrome's echo canceller ducked claps under our own ticks (teacher laptop: lvl ~0.001, 0/8 claps); EchoGate already removes our output. ?aec=1 still turns it on
+ try{const q=new URLSearchParams(location.search).get('aec'),l=localStorage.getItem('bb_aec');if(l!=null)a=l==='1';if(q!=null)a=q==='1'}catch(e){}BB.aec=a}// measured speaker->mic delay (s); null = not calibrated yet
 BB.micLat=()=>micLat();function micLat(){const TL=window.ClapDet&&ClapDet.TickLat;if(TL&&TL.heard(ac.currentTime))return TL.lat;return mic.lat!=null?mic.lat:(ac.outputLatency||ac.baseLatency||.02)+((MicCore.ctx&&MicCore.ctx.baseLatency)||.01)+.03}
 let fbin=null,nonTonalFloor=1e-9;const ALLF=[880,1320];
 function nonTonalEnergy(freqs){const an=MicCore.an;if(!an)return 0;if(!fbin||fbin.length!==an.frequencyBinCount)fbin=new Float32Array(an.frequencyBinCount);
@@ -341,7 +342,7 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   BB.drawCelebrate&&BB.drawCelebrate();BB.drawParts&&0;
   ctx.restore();
   ctx.save();ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.font='13px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillStyle='rgba(255,255,255,.55)';
-  ctx.fillText(BB.VERSION+' | audio '+ac.state+' '+ac.sampleRate+'Hz'+' | mic '+mic.state+(mic.ok?' '+(mic.track?mic.track.readyState+(mic.track.muted?' MUTED':''):'')+' lvl '+(mic.raw||0).toFixed(4)+(mic.useDefault?' (default)':''):''),cv.width/BB.dpr-6,cv.height/BB.dpr-4);ctx.restore();
+  ctx.fillText(BB.VERSION+(BB.aec?' aec':'')+' | audio '+ac.state+' '+ac.sampleRate+'Hz'+' | mic '+mic.state+(mic.ok?' '+(mic.track?mic.track.readyState+(mic.track.muted?' MUTED':''):'')+' lvl '+(mic.raw||0).toFixed(4)+(mic.useDefault?' (default)':''):''),cv.width/BB.dpr-6,cv.height/BB.dpr-4);ctx.restore();
   dispatchClicks();keys.length=0;
   requestAnimationFrame(frame)}
 BB.start=()=>requestAnimationFrame(frame);

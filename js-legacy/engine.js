@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v13.5";
+BB.VERSION = "v13.8";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -947,7 +947,7 @@ BB.selfSound = (t, dur, freqs) => {
 };
 mic.lat = null;
 {
-  let a = /CrOS/.test(navigator.userAgent);
+  let a = false;
   try {
     const q = new URLSearchParams(location.search).get("aec"), l = localStorage.getItem("bb_aec");
     if (l != null) a = l === "1";
@@ -1186,7 +1186,7 @@ function frame(ts) {
   ctx.textAlign = "right";
   ctx.textBaseline = "bottom";
   ctx.fillStyle = "rgba(255,255,255,.55)";
-  ctx.fillText(BB.VERSION + " | audio " + ac.state + " " + ac.sampleRate + "Hz | mic " + mic.state + (mic.ok ? " " + (mic.track ? mic.track.readyState + (mic.track.muted ? " MUTED" : "") : "") + " lvl " + (mic.raw || 0).toFixed(4) + (mic.useDefault ? " (default)" : "") : ""), cv.width / BB.dpr - 6, cv.height / BB.dpr - 4);
+  ctx.fillText(BB.VERSION + (BB.aec ? " aec" : "") + " | audio " + ac.state + " " + ac.sampleRate + "Hz | mic " + mic.state + (mic.ok ? " " + (mic.track ? mic.track.readyState + (mic.track.muted ? " MUTED" : "") : "") + " lvl " + (mic.raw || 0).toFixed(4) + (mic.useDefault ? " (default)" : "") : ""), cv.width / BB.dpr - 6, cv.height / BB.dpr - 4);
   ctx.restore();
   dispatchClicks();
   keys.length = 0;
