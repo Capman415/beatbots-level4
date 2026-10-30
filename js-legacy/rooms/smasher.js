@@ -840,7 +840,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
     hitBasket(p) {
       var _a;
-      if (Math.abs(p.x - CART.x) < 190 && p.y > CART.base - 260 && p.y < CART.base) return "w";
+      if (Math.abs(p.x - CART.x) < 190 && p.y > CART.base - 322 && p.y < CART.base) return "w";
       for (let i = 0; i < 5; i++) {
         if (i === 4 && !((_a = this.O) == null ? void 0 : _a.rest)) continue;
         if (Math.abs(p.x - BX[i]) < 62 && p.y > BASE - 150 && p.y < BASE + 50) return KINDS[i];

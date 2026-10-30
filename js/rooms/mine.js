@@ -451,7 +451,7 @@ class MineRoom{
         const beatShk=this.beat&&this.state!=='drop'?Math.max(0,1-((this.beatNow()%1)+1)%1*6)*2:0;
         const ry=rail(k)-r*.85+this.rockY;
         if(ry>y-r*2){ctx.save();ctx.beginPath();ctx.rect(1460,y,1880,440);ctx.clip();drawRock(ROCK_X,ry,r,R.kind,this.stage,beatShk+this.shk*10,this.wob,{mixed:R.bonus,k,shadow:this.rockY>-20});ctx.restore()
-          if(this.state==='dig'||this.state==='count')drawPick(ROCK_X+r*1.75,ry-r*.55,r,this.swingT?BB.t-this.swingT:9)}
+          /* v13.8: no floating pickaxe - the miner bot already holds one */}
         if(R.bonus)BB.text('BONUS',ROCK_X,Math.max(y+60,rail(k)-r*1.9+this.rockY),36,COL.yellow,{stroke:6,font:'Rammetto One'})}
       if(this.state==='pop'){const tt=BB.t-this.st,R=this.R,r=150;// halves fly apart
         ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();

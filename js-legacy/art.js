@@ -237,11 +237,6 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           ctx.stroke();
           ctx.restore();
         }
-        const [bx, by] = P(w, h, 0.57, 0.865), k = 0.5 + 0.5 * Math.sin(t * 3.1);
-        ctx.save();
-        ctx.globalAlpha = 0.3 + 0.5 * k;
-        BB.glow(bx, by, w * 0.06, "rgba(255,190,60,A)", 0.9);
-        ctx.restore();
         const [rx, ry] = P(w, h, 0.445, 0.645);
         ctx.save();
         ctx.globalAlpha = 0.6 * (Math.sin(t * 4.2) > 0.3 ? 1 : 0);
@@ -1229,6 +1224,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     BB.button(x + 110, y, 90, 90, "+", { size: 50, id: "sens+", onClick: () => BB.setSens(m.sensIdx + 1) });
   };
   BB.pauseBtn = (onClick, x = W / 2 - 110, y = 24) => {
+    BB.bevel(x - 10, y - 10, 240, 130, 30);
+    BB.well(x - 2, y - 2, 224, 114, 26);
     BB.button(x, y, 220, 110, "PAUSE", {
       style: "teal",
       size: 34,
@@ -1262,22 +1259,26 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     ctx.translate(0, (1 - k) * 30);
     BB.rrect(x + 4, y + 8, w, 96, 48, "rgba(0,0,0,.3)");
     BB.rrect(x, y, w, 96, 48, "#fff", COL.ink, 5);
-    const face = c.who === "jr" ? "tinytv" : "sprocket";
-    const im = BB.IMG[face];
+    const jr = c.who === "jr", im = BB.IMG[jr ? "jr_a" : "sprocket"], pcx = x + 48, pcy = y + 48, pr = 36;
     if (im) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(x + 60, y + 48, 40, 0, 7);
-      ctx.fillStyle = c.who === "jr" ? "#3a2a3a" : "#cdeee0";
+      ctx.arc(pcx, pcy, pr, 0, 7);
+      ctx.fillStyle = jr ? "#3a2a3a" : "#cdeee0";
       ctx.fill();
       ctx.clip();
-      const s = c.who === "jr" ? 70 : 150;
-      ctx.drawImage(im, x + 60 - s * im.width / im.height / 2, y + 48 - s * (c.who === "jr" ? 0.5 : 0.28), s * im.width / im.height, s);
+      if (jr) {
+        const k2 = pr * 2.05 / 360, iw = im.width * k2, ih = im.height * k2;
+        ctx.drawImage(im, pcx - iw / 2, pcy - 135 * k2, iw, ih);
+      } else {
+        const s = 150;
+        ctx.drawImage(im, pcx - s * im.width / im.height / 2, pcy - s * 0.28, s * im.width / im.height, s);
+      }
       ctx.restore();
       ctx.lineWidth = 4;
       ctx.strokeStyle = COL.ink;
       ctx.beginPath();
-      ctx.arc(x + 60, y + 48, 40, 0, 7);
+      ctx.arc(pcx, pcy, pr, 0, 7);
       ctx.stroke();
     }
     BB.text(c.txt, x + w / 2 + 40, y + 50, fs, c.who === "jr" ? "#c0392b" : COL.ink, { maxW: w - 170 });
@@ -1286,12 +1287,12 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   BB.pauseOverlay = (howTo, onResume) => {
     ctx.fillStyle = "rgba(8,18,17,.72)";
     ctx.fillRect(0, 0, W, H);
-    const x = 210, y = 70, w = 1500, h = 900;
+    const x = 210, y = 36, w = 1500, h = 1008;
     BB.panel(x, y, w, h, 40);
     BB.text("HOW TO PLAY", W / 2, y + 85, 62, "#fff", { font: "Rammetto One", stroke: 8 });
     BB.text(howTo.title, W / 2, y + 150, 40, COL.yellow, { stroke: 5 });
     howTo.steps.forEach((s, i) => {
-      const yy = y + 240 + i * 92;
+      const yy = y + 225 + i * 80;
       ctx.fillStyle = COL.green;
       ctx.beginPath();
       ctx.arc(x + 100, yy, 30, 0, 7);
@@ -1299,21 +1300,30 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       BB.text(String(i + 1), x + 100, yy + 2, 36, COL.ink);
       BB.text(s, x + 150, yy + 2, 36, "#fff", { align: "left", maxW: 760 });
     });
-    BB.rrect(x + 950, y + 200, 490, 420, 26, "#0b1917", COL.teal2, 4);
-    howTo.example(x + 950, y + 200, 490, 420, BB.realT());
-    BB.text("Say it:", x + 120, y + h - 170, 34, COL.yellow, { align: "left" });
-    BB.text(howTo.words, x + 240, y + h - 170, 34, "#fff", { align: "left", maxW: 1150 });
+    BB.rrect(x + 950, y + 195, 490, 420, 26, "#0b1917", COL.teal2, 4);
+    howTo.example(x + 950, y + 195, 490, 420, BB.realT());
+    BB.text("Say it:", x + 100, y + h - 300, 34, COL.yellow, { align: "left" });
+    BB.text(howTo.words, x + 220, y + h - 300, 34, "#fff", { align: "left", maxW: 1180 });
     {
-      const m = BB.mic, sx = x + 950, sy = y + 762;
-      BB.text("Clap sensitivity", sx + 245, sy + 18, 30, COL.yellow, { stroke: 4 });
-      BB.button(sx, sy + 42, 80, 80, "\u2212", { size: 46, id: "psens-", onClick: () => BB.setSens(m.sensIdx - 1) });
+      const m = BB.mic, wx = x + w - 560, wy = y + h - 230, sx = wx + 30, sy = wy + 56;
+      BB.well(wx, wy, 520, 180, 26);
+      BB.text("Clap sensitivity", wx + 260, wy + 32, 30, COL.yellow, { stroke: 4 });
+      BB.button(sx, sy + 8, 80, 80, "\u2212", { size: 46, id: "psens-", onClick: () => BB.setSens(m.sensIdx - 1) });
       for (let i = 0; i < 6; i++) {
         const on = i <= m.sensIdx;
-        BB.rrect(sx + 102 + i * 50, sy + 92 - i * 8, 38, 22 + i * 8, 6, on ? i < 2 ? "#6ee678" : i < 4 ? "#ffe066" : "#ff9c5c" : "#2f4242", "rgba(0,0,0,.35)", 2);
+        BB.rrect(sx + 108 + i * 40, sy + 70 - i * 8, 30, 18 + i * 8, 6, on ? i < 2 ? "#6ee678" : i < 4 ? "#ffe066" : "#ff9c5c" : "#2f4242", "rgba(0,0,0,.35)", 2);
       }
-      BB.button(sx + 410, sy + 42, 80, 80, "+", { size: 46, id: "psens+", onClick: () => BB.setSens(m.sensIdx + 1) });
+      BB.button(sx + 380, sy + 8, 80, 80, "+", { size: 46, id: "psens+", onClick: () => BB.setSens(m.sensIdx + 1) });
     }
-    BB.button(W / 2 - 210, y + h - 130, 420, 110, "RESUME", { style: "green", size: 56, id: "resume", onClick: onResume });
+    BB.button(x + 60, y + h - 200, 380, 120, "ROOM SELECT", { size: 40, id: "roomsel", onClick: () => {
+      BB.paused = false;
+      BB.ac.resume().catch(() => {
+      });
+      BB.caption = null;
+      BB.talking = null;
+      BB.go(new BB.MapScene());
+    } });
+    BB.button(W / 2 - 220, y + h - 200, 440, 120, "RESUME", { style: "green", size: 56, id: "resume", onClick: onResume });
   };
   let rt = 0, rl = performance.now();
   BB.realT = () => {

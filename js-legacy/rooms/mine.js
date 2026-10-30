@@ -1629,7 +1629,6 @@
             ctx.clip();
             drawRock(ROCK_X, ry, r, R.kind, this.stage, beatShk + this.shk * 10, this.wob, { mixed: R.bonus, k, shadow: this.rockY > -20 });
             ctx.restore();
-            if (this.state === "dig" || this.state === "count") drawPick(ROCK_X + r * 1.75, ry - r * 0.55, r, this.swingT ? BB.t - this.swingT : 9);
           }
           if (R.bonus) BB.text("BONUS", ROCK_X, Math.max(y + 60, rail(k) - r * 1.9 + this.rockY), 36, COL.yellow, { stroke: 6, font: "Rammetto One" });
         }

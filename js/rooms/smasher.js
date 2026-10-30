@@ -214,7 +214,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
   pdown(p){if(this.state!=='order')return false;const k=this.hitBasket(p);if(!k)return false;this.drag={k,x0:p.x,y0:p.y};return true}
   pup(p){const d=this.drag;this.drag=null;if(!d)return;if(Math.hypot(p.x-d.x0,p.y-d.y0)<30){BB.sfx.click();this.pick(d.k);return}if(d.k!=='w'&&!this.inv[d.k])return;
     if(Math.abs(p.x-PX)<PW/2&&p.y>PT&&p.y<FLOOR)this.toPress(d.k);else if(p.x>TRAY.x&&p.y>TRAY.y-60&&p.y<TRAY.y+TRAY.h)this.toTray(d.k)}
-  hitBasket(p){if(Math.abs(p.x-CART.x)<190&&p.y>CART.base-260&&p.y<CART.base)return 'w';for(let i=0;i<5;i++){if(i===4&&!this.O?.rest)continue;if(Math.abs(p.x-BX[i])<62&&p.y>BASE-150&&p.y<BASE+50)return KINDS[i]}return null}
+  hitBasket(p){if(Math.abs(p.x-CART.x)<190&&p.y>CART.base-322&&p.y<CART.base)return 'w';for(let i=0;i<5;i++){if(i===4&&!this.O?.rest)continue;if(Math.abs(p.x-BX[i])<62&&p.y>BASE-150&&p.y<BASE+50)return KINDS[i]}return null}
   update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
     if(this.state==='intro'){this.intro();if(BB.keys.includes('s'))this.skipIntro()}
     // hammer

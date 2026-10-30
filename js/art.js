@@ -41,7 +41,7 @@ const PARTS=BB.PARTS={
       ringHalf(true);
       const bl=.5+.5*Math.sin(t*2.4),br=h*.02,by=y-L-br*.7;BB.glow(x,by,h*.05,'rgba(255,90,70,A)',.25+.45*bl);const bg=ctx.createRadialGradient(x-br*.35,by-br*.35,br*.1,x,by,br);bg.addColorStop(0,'#ffe0d8');bg.addColorStop(.35,`rgb(${220+35*bl|0},${80+40*bl|0},64)`);bg.addColorStop(1,'#8a2018');ctx.fillStyle=bg;ctx.beginPath();ctx.arc(x,by,br,0,7);ctx.fill();ctx.stroke()},
     post:(w,h)=>{const t=BB.t;for(const[u,v,s]of[[.52,.555,1],[.51,.62,-1]]){const[x,y]=P(w,h,u,v);ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(t*1.3*s)*1.2);ctx.strokeStyle=INK();ctx.lineWidth=Math.max(2,h*.006);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-w*.022);ctx.stroke();ctx.restore()}
-      const[bx,by]=P(w,h,.57,.865),k=.5+.5*Math.sin(t*3.1);ctx.save();ctx.globalAlpha=.3+.5*k;BB.glow(bx,by,w*.06,'rgba(255,190,60,A)',.9);ctx.restore();
+      // v13.8: no pulsing belly/bottom light (matches the video fix)
       const[rx,ry]=P(w,h,.445,.645);ctx.save();ctx.globalAlpha=.6*(Math.sin(t*4.2)>.3?1:0);BB.glow(rx,ry,w*.03,'rgba(255,80,60,A)',.9);ctx.restore()}},
   sorter:{// Sorter Bot: LED sorting bar chases, mast light blinks, star twinkles
     post:(w,h)=>{const t=BB.t,n=8,cols=['255,90,80','255,160,70','255,220,90','150,230,110','110,220,150','90,200,255','90,170,255','120,150,255'];
@@ -260,35 +260,39 @@ BB.micMeter=(x,y,o={})=>{if(BB.listening&&!o._in){const sc=BB.listening===2?1.35
 BB.sensButtons=(x,y)=>{const m=BB.mic;
   BB.button(x,y,90,90,'−',{size:50,id:'sens-',onClick:()=>BB.setSens(m.sensIdx-1)});
   BB.button(x+110,y,90,90,'+',{size:50,id:'sens+',onClick:()=>BB.setSens(m.sensIdx+1)})};
-BB.pauseBtn=(onClick,x=W/2-110,y=24)=>{BB.button(x,y,220,110,'PAUSE',{style:'teal',size:34,id:'pause',onClick,labelDx:24,
+BB.pauseBtn=(onClick,x=W/2-110,y=24)=>{BB.bevel(x-10,y-10,240,130,30);BB.well(x-2,y-2,224,114,26);BB.button(x,y,220,110,'PAUSE',{style:'teal',size:34,id:'pause',onClick,labelDx:24,
   icon:(ix,iy)=>{ix=x+52;ctx.fillStyle=COL.yellow;ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const bx of[ix-14,ix+4]){ctx.fillRect(bx,iy-17,11,34);ctx.strokeRect(bx,iy-17,11,34)}}})};
 BB.overrideBtn=(onClick,o={})=>{const x=W-370,y=H-150;BB.button(x,y,340,125,'MANUAL',{style:'red',size:40,sub:'OVERRIDE',id:'override',onClick,pop:o.pop})};
 BB.captionBox=()=>{const c=BB.caption;if(!c||BB.t>c.until)return;const k=Math.min(1,(BB.t-c.start)*6);
   const cp=(BB.scene&&BB.scene.capPos&&BB.scene.capPos())||{};const fs=38,w=Math.min(cp.maxW||1150,BB.measure(c.txt,fs)+200),x=(cp.cx||W/2)-w/2,y=cp.y!=null?cp.y:H-300;
   ctx.save();ctx.globalAlpha=k;ctx.translate(0,(1-k)*30);
   BB.rrect(x+4,y+8,w,96,48,'rgba(0,0,0,.3)');BB.rrect(x,y,w,96,48,'#fff',COL.ink,5);
-  const face=c.who==='jr'?'tinytv':'sprocket';const im=BB.IMG[face];
-  if(im){ctx.save();ctx.beginPath();ctx.arc(x+60,y+48,40,0,7);ctx.fillStyle=c.who==='jr'?'#3a2a3a':'#cdeee0';ctx.fill();ctx.clip();
-    const s=c.who==='jr'?70:150;ctx.drawImage(im,x+60-s*im.width/im.height/2,y+48-s*(c.who==='jr'?.5:.28),s*im.width/im.height,s);ctx.restore();
-    ctx.lineWidth=4;ctx.strokeStyle=COL.ink;ctx.beginPath();ctx.arc(x+60,y+48,40,0,7);ctx.stroke()}
+  const jr=c.who==='jr',im=BB.IMG[jr?'jr_a':'sprocket'],pcx=x+48,pcy=y+48,pr=36;// v13.8: portrait centred on the bubble's rounded end; current Static Jr. art
+  if(im){ctx.save();ctx.beginPath();ctx.arc(pcx,pcy,pr,0,7);ctx.fillStyle=jr?'#3a2a3a':'#cdeee0';ctx.fill();ctx.clip();
+    if(jr){const k=pr*2.05/360,iw=im.width*k,ih=im.height*k;ctx.drawImage(im,pcx-iw/2,pcy-135*k,iw,ih)}
+    else{const s=150;ctx.drawImage(im,pcx-s*im.width/im.height/2,pcy-s*.28,s*im.width/im.height,s)}ctx.restore();
+    ctx.lineWidth=4;ctx.strokeStyle=COL.ink;ctx.beginPath();ctx.arc(pcx,pcy,pr,0,7);ctx.stroke()}
   BB.text(c.txt,x+w/2+40,y+50,fs,c.who==='jr'?'#c0392b':COL.ink,{maxW:w-170});ctx.restore()};
 // ---------- pause + How to Play ----------
 BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRect(0,0,W,H);
-  const x=210,y=70,w=1500,h=900;BB.panel(x,y,w,h,40);
+  const x=210,y=36,w=1500,h=1008;BB.panel(x,y,w,h,40);// v13.8: taller panel, nothing crosses its border
   BB.text('HOW TO PLAY',W/2,y+85,62,'#fff',{font:'Rammetto One',stroke:8});
   BB.text(howTo.title,W/2,y+150,40,COL.yellow,{stroke:5});
-  howTo.steps.forEach((s,i)=>{const yy=y+240+i*92;ctx.fillStyle=COL.green;ctx.beginPath();ctx.arc(x+100,yy,30,0,7);ctx.fill();
+  howTo.steps.forEach((s,i)=>{const yy=y+225+i*80;ctx.fillStyle=COL.green;ctx.beginPath();ctx.arc(x+100,yy,30,0,7);ctx.fill();
     BB.text(String(i+1),x+100,yy+2,36,COL.ink);BB.text(s,x+150,yy+2,36,'#fff',{align:'left',maxW:760})});
   // small animated example
-  BB.rrect(x+950,y+200,490,420,26,'#0b1917',COL.teal2,4);howTo.example(x+950,y+200,490,420,BB.realT());
-  BB.text('Say it:',x+120,y+h-170,34,COL.yellow,{align:'left'});
-  BB.text(howTo.words,x+240,y+h-170,34,'#fff',{align:'left',maxW:1150});
+  BB.rrect(x+950,y+195,490,420,26,'#0b1917',COL.teal2,4);howTo.example(x+950,y+195,490,420,BB.realT());
+  BB.text('Say it:',x+100,y+h-300,34,COL.yellow,{align:'left'});
+  BB.text(howTo.words,x+220,y+h-300,34,'#fff',{align:'left',maxW:1180});
   // clap sensitivity (also in MIC SETUP): softer claps count when turned up
-  {const m=BB.mic,sx=x+950,sy=y+762;BB.text('Clap sensitivity',sx+245,sy+18,30,COL.yellow,{stroke:4});
-   BB.button(sx,sy+42,80,80,'−',{size:46,id:'psens-',onClick:()=>BB.setSens(m.sensIdx-1)});
-   for(let i=0;i<6;i++){const on=i<=m.sensIdx;BB.rrect(sx+102+i*50,sy+92-i*8,38,22+i*8,6,on?(i<2?'#6ee678':i<4?'#ffe066':'#ff9c5c'):'#2f4242','rgba(0,0,0,.35)',2)}
-   BB.button(sx+410,sy+42,80,80,'+',{size:46,id:'psens+',onClick:()=>BB.setSens(m.sensIdx+1)})}
-  BB.button(W/2-210,y+h-130,420,110,'RESUME',{style:'green',size:56,id:'resume',onClick:onResume})};
+  // v13.8: contained in its own well (bottom-right), clear of RESUME and the panel border
+  {const m=BB.mic,wx=x+w-560,wy=y+h-230,sx=wx+30,sy=wy+56;BB.well(wx,wy,520,180,26);BB.text('Clap sensitivity',wx+260,wy+32,30,COL.yellow,{stroke:4});
+   BB.button(sx,sy+8,80,80,'−',{size:46,id:'psens-',onClick:()=>BB.setSens(m.sensIdx-1)});
+   for(let i=0;i<6;i++){const on=i<=m.sensIdx;BB.rrect(sx+108+i*40,sy+70-i*8,30,18+i*8,6,on?(i<2?'#6ee678':i<4?'#ffe066':'#ff9c5c'):'#2f4242','rgba(0,0,0,.35)',2)}
+   BB.button(sx+380,sy+8,80,80,'+',{size:46,id:'psens+',onClick:()=>BB.setSens(m.sensIdx+1)})}
+  // v13.8: back to the room picker, only from inside the pause menu (hard to hit by accident)
+  BB.button(x+60,y+h-200,380,120,'ROOM SELECT',{size:40,id:'roomsel',onClick:()=>{BB.paused=false;BB.ac.resume().catch(()=>{});BB.caption=null;BB.talking=null;BB.go(new BB.MapScene())}});
+  BB.button(W/2-220,y+h-200,440,120,'RESUME',{style:'green',size:56,id:'resume',onClick:onResume})};
 let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)/1000;rl=n;return rt};
 // room title card
 BB.titleCard=(txt,sub,k)=>{if(k<=0||k>=1)return;const a=k<.15?k/.15:k>.85?(1-k)/.15:1;ctx.save();ctx.globalAlpha=a;
