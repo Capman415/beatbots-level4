@@ -80,10 +80,10 @@ function drawCard(x,y,w,h,seq,o={}){if(o.lit&&o.lit.some(v=>v>0))return drawCard
   ctx.drawImage(c,x-12,y-12,w+24,h+24)}
 /* v14.0.3: robotic rubber-stamp arm (code-drawn), gentle idle stamp every 4s */
 function drawStampArm(t){const X=1300,TOP=110,PAD=398,c=t%4,p=c<3.4?0:c<3.6?(c-3.4)/.2:c<3.75?1:1-(c-3.75)/.25,e=p*p*(3-2*p),ext=30+e*178;ctx.save();
-  BB.rrect(X-120,TOP-40,240,50,10,'#4a5560','#22282e',4);ctx.fillStyle='#f2c230';for(let i=0;i<6;i++)ctx.fillRect(X-110+i*38,TOP-30,18,30);
-  BB.rrect(X-34,TOP,68,90,12,'#6c7a86','#22282e',4);ctx.fillStyle='#ff5a4a';ctx.beginPath();ctx.arc(X,TOP+45,10,0,7);ctx.fill();
-  const y0=TOP+90;BB.rrect(X-16,y0,32,ext,6,'#b8c4cc','#22282e',3);ctx.fillStyle='rgba(0,0,0,.18)';for(let y=y0+14;y<y0+ext-8;y+=22)ctx.fillRect(X-16,y,32,4);
-  const hy=y0+ext;BB.rrect(X-50,hy,100,46,10,'#7a4a2e','#22282e',4);BB.rrect(X-70,hy+46,140,26,6,'#d24a3c','#22282e',4);
+  BB.rrect(X-120,TOP-40,240,50,10,BB.lg(TOP-40,TOP+10,['#6e7a86','#2e363e']),'#22282e',4);ctx.fillStyle='#f2c230';for(let i=0;i<6;i++)ctx.fillRect(X-110+i*38,TOP-30,18,30);
+  BB.rrect(X-34,TOP,68,90,12,BB.lg(TOP,TOP+90,['#a4b2bc','#4e5a64']),'#22282e',4);ctx.fillStyle='#ff5a4a';ctx.beginPath();ctx.arc(X,TOP+45,10,0,7);ctx.fill();
+  const y0=TOP+90;const pg=ctx.createLinearGradient(X-16,0,X+16,0);pg.addColorStop(0,'#7d8a92');pg.addColorStop(.35,'#f2f6f8');pg.addColorStop(1,'#5d6a72');BB.rrect(X-16,y0,32,ext,6,pg,'#22282e',3);ctx.fillStyle='rgba(0,0,0,.18)';for(let y=y0+14;y<y0+ext-8;y+=22)ctx.fillRect(X-16,y,32,4);
+  const hy=y0+ext;BB.rrect(X-50,hy,100,46,10,BB.lg(hy,hy+46,['#a8704a','#5e3620']),'#22282e',4);BB.rrect(X-70,hy+46,140,26,6,BB.lg(hy+46,hy+72,['#e8685a','#9c2e24']),'#22282e',4);
   BB.rrect(X-95,PAD+72,190,70,6,'#efe6d2','#5a5040',3);if(e>.5||c<1.2){ctx.globalAlpha=c<1.2?1-c/1.2*.6:1;ctx.strokeStyle='#d24a3c';ctx.lineWidth=5;ctx.strokeRect(X-60,PAD+84,120,46);BB.text('OK!',X,PAD+108,30,'#d24a3c')}
   ctx.restore()}
 function drawCardRaw(x,y,w,h,seq,o={}){ctx.save();
@@ -107,13 +107,14 @@ class LabelRoom{constructor(o={}){this.o=o}
   bake(){const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
     if(V.mail_bg||V.pack_blur)g.drawImage(V.mail_bg||V.pack_blur,0,0,W,H);g.fillStyle='rgba(8,18,17,.28)';g.fillRect(0,0,W,H);
     // v14.0 LABEL ROOM stage: plum riveted wall, label rail with hanging tags, printer hatch sign, checker floor strip
-    {// v14.0.2 robot mailing room: painted assets/v2/mail_bg.jpg (cubbies, parcels, pneumatic tube, stamp arm)
+    R.paint(g,()=>{const g=BB.ctx;{// v14.0.2 robot mailing room: painted assets/v2/mail_bg.jpg (cubbies, parcels, pneumatic tube, stamp arm)
      g.save();g.translate(W-250,300);g.fillStyle='#1e2b29';g.beginPath();g.roundRect(-190,-70,380,120,22);g.fill();g.strokeStyle='#ff8adf';g.lineWidth=6;g.shadowColor='#ff8adf';g.shadowBlur=24;g.beginPath();g.roundRect(-176,-56,352,92,16);g.stroke();g.shadowBlur=0;
        g.fillStyle='#ffd6f4';g.font='44px "Rammetto One"';g.textAlign='center';g.textBaseline='middle';g.fillText('LABEL ROOM',0,-10);g.restore();
      for(let x=0;x<W;x+=60){g.fillStyle=(x/60)%2?'#ffe066':'#1e2b29';g.fillRect(x,H-36,60,14)}}
     // conveyor frame (belt surface + rollers drawn live)
     R.shadow(g,780,BELT_Y+120,760,.55);const fr=g.createLinearGradient(0,BELT_Y+24,0,BELT_Y+80);fr.addColorStop(0,'#c9d2d3');fr.addColorStop(.5,'#8a9798');fr.addColorStop(1,'#56625f');g.fillStyle=fr;g.fillRect(40,BELT_Y+24,1440,56);
     g.fillStyle='rgba(0,0,0,.3)';g.fillRect(40,BELT_Y+80,1440,8);for(const x of [120,760,1400]){const lg=g.createLinearGradient(x,0,x+44,0);lg.addColorStop(0,'#5d696b');lg.addColorStop(.5,'#aab4b5');lg.addColorStop(1,'#4d585a');g.fillStyle=lg;g.fillRect(x,BELT_Y+88,44,60)}
+    });
     return c}
   // beat clock = the groove's grid (one shared grid for music, playback, lights and clap-back)
   beatV(){const gr=BB.groove;return gr&&gr.on?(ac.currentTime-BB.visLat()-gr.t0)/gr.spb:BB.t/.6}
@@ -172,8 +173,7 @@ class LabelRoom{constructor(o={}){this.o=o}
     this.lit=lam;if(this.cb)this.cb.update&&this.cb.update(dt);else BB.mic.take()}
   draw(){const t=BB.t,[sx,sy]=BB.shakeXY;ctx.save();ctx.translate(sx,sy);
     if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#2a3a38';ctx.fillRect(0,0,W,H)}
-    this.drawBelt(t);
-    drawStampArm(t);
+    R.paint(ctx,()=>{this.drawBelt(t);drawStampArm(t)});
     if(this.state!=='intro'&&this.state!=='load'&&this.state!=='end'){const sh=this.shakeT&&t-this.shakeT<.35?Math.sin((t-this.shakeT)*60)*8*(1-(t-this.shakeT)/.35):0;
       const lbl=(this.state==='slap'||this.state==='ship'||this.state==='clap')?this.ans:null,bx=this.boxX-BOX_W/2+sh,by=BELT_Y-BOX_H;
       ctx.save();if(sh){ctx.translate(this.boxX,BELT_Y);ctx.rotate(sh*.006);ctx.translate(-this.boxX,-BELT_Y)}
@@ -181,7 +181,7 @@ class LabelRoom{constructor(o={}){this.o=o}
       if(this.state==='pick')BB.button(bx,by,BOX_W,BOX_H,'',{style:'none',id:'box',onClick:()=>this.tapBox()});
       if(this.state==='pick'&&(!this.pb||ac.currentTime>this.pb.end)){const pu=.5+.5*Math.sin(t*5);BB.plaque(this.boxX,by-46,270,50,'TAP TO SHAKE!',24,'#28403c',{cols:pu>.5?['#fff8d0','#ffe680','#e8b830']:undefined})}
       else if(this.state==='pick'&&this.pb&&ac.currentTime<this.pb.end)BB.plaque(this.boxX,by-46,270,50,this.pb.spb>.9?'\u266A SLOW...':'\u266A LISTEN...',24,'#28403c')}
-    this.drawPrinter(t);this.drawSprocket(t);
+    R.paint(ctx,()=>this.drawPrinter(t));this.drawSprocket(t);
     if(this.ijr)BB.staticJr(this.ijr.x,BELT_Y-4,120,{run:this.ijr.ph!=='zap'?1:0,glitch:this.ijr.ph==='zap'?.6:0,spd:this.ijr.ph==='out'?900:600,flip:this.ijr.ph==='zap'});
     if(this.ijr&&this.ijr.ph==='zap'){ctx.save();ctx.strokeStyle=Math.sin(t*40)>0?'#bff':'#fff';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();let x=this.ijr.x-40,y=BELT_Y-90;ctx.moveTo(x,y);for(let i=1;i<=5;i++){const tx=lerp(x,PR.x+PR.w-10,i/5),ty=lerp(y,PR.y+80,i/5)+(i<5?(Math.random()-.5)*40:0);ctx.lineTo(tx,ty)}ctx.stroke();ctx.restore()}
     if(this.pop){const pp=this.pop,a=BB.t-pp.t;if(a<1.8){const k=a<.3?ease.out(a/.3):a>1.5?1-(a-1.5)/.3:1;BB.staticJr(520,BELT_Y-4,110*Math.max(.01,k),{glitch:.3});if(a>.2&&a<1.5)R.bubble(520,BELT_Y-250,pp.txt)}else this.pop=null}

@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.0.3";
+BB.VERSION = "v14.1";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -648,7 +648,7 @@ function noise(t, dur, peak, ftype, f, q = 1, f2) {
 }
 const now = () => ac.currentTime;
 const DR = {};
-["kick", "snare", "hat", "tom", "tomlo"].forEach((n) => fetch("assets/drums/" + n + ".mp3").then((r) => r.arrayBuffer()).then((b) => ac.decodeAudioData(b)).then((x) => DR[n] = x).catch(() => {
+["kick", "snare", "hat", "tom", "tomlo", "box", "boxtap", "boxlo"].forEach((n) => fetch("assets/drums/" + n + ".mp3").then((r) => r.arrayBuffer()).then((b) => ac.decodeAudioData(b)).then((x) => DR[n] = x).catch(() => {
 }));
 function drum(n, t, v = 1, rate = 1) {
   const b = DR[n];
@@ -658,7 +658,11 @@ function drum(n, t, v = 1, rate = 1) {
   s.buffer = b;
   s.playbackRate.value = rate;
   g.gain.value = v * (BB.boxVol || 1);
-  s.connect(g).connect(sfxBus);
+  const sh = ac.createBiquadFilter();
+  sh.type = "highshelf";
+  sh.frequency.value = 3500;
+  sh.gain.value = /^box/.test(n) ? -2 : -8;
+  s.connect(sh).connect(g).connect(sfxBus);
   s.start(t);
   return true;
 }
@@ -666,18 +670,21 @@ BB.drum = drum;
 BB.sfx = {
   // v13.0 packing playback voices (robot/factory): ka-chunk ta, double blips ti-ti, quad blips tika-tika, hum for long notes, soft hiss rest
   pkTa: (t = now()) => {
+    if (drum("box", t, 1.1)) return;
     if (drum("kick", t, 0.9)) {
-      drum("snare", t, 0.35);
+      drum("snare", t, 0.3);
       return;
     }
     noise(t, 0.07, 0.35, "lowpass", 2200, 1, 300);
     osc("square", 120, t, 0.13, 0.16, 60);
   },
   pkBlip: (t = now(), f = 1100) => {
-    if (drum("hat", t, 0.8, f / 1100)) return;
+    if (drum("boxtap", t, 1, Math.min(1.25, Math.max(0.85, f / 1100)))) return;
+    if (drum("hat", t, 0.6, f / 1100)) return;
     osc("square", f, t, 0.05, 0.09, f * 0.8);
   },
   pkHum: (t = now(), d = 0.6) => {
+    if (drum("boxlo", t, 1.1)) return;
     if (drum("tomlo", t, 0.8)) return;
     noise(t, 0.06, 0.3, "lowpass", 2e3, 1, 300);
     osc("sawtooth", 196, t, d, 0.07, 180);

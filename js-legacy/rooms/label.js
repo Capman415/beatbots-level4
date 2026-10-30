@@ -250,21 +250,25 @@
   function drawStampArm(t) {
     const X = 1300, TOP = 110, PAD = 398, c = t % 4, p = c < 3.4 ? 0 : c < 3.6 ? (c - 3.4) / 0.2 : c < 3.75 ? 1 : 1 - (c - 3.75) / 0.25, e = p * p * (3 - 2 * p), ext = 30 + e * 178;
     ctx.save();
-    BB.rrect(X - 120, TOP - 40, 240, 50, 10, "#4a5560", "#22282e", 4);
+    BB.rrect(X - 120, TOP - 40, 240, 50, 10, BB.lg(TOP - 40, TOP + 10, ["#6e7a86", "#2e363e"]), "#22282e", 4);
     ctx.fillStyle = "#f2c230";
     for (let i = 0; i < 6; i++) ctx.fillRect(X - 110 + i * 38, TOP - 30, 18, 30);
-    BB.rrect(X - 34, TOP, 68, 90, 12, "#6c7a86", "#22282e", 4);
+    BB.rrect(X - 34, TOP, 68, 90, 12, BB.lg(TOP, TOP + 90, ["#a4b2bc", "#4e5a64"]), "#22282e", 4);
     ctx.fillStyle = "#ff5a4a";
     ctx.beginPath();
     ctx.arc(X, TOP + 45, 10, 0, 7);
     ctx.fill();
     const y0 = TOP + 90;
-    BB.rrect(X - 16, y0, 32, ext, 6, "#b8c4cc", "#22282e", 3);
+    const pg = ctx.createLinearGradient(X - 16, 0, X + 16, 0);
+    pg.addColorStop(0, "#7d8a92");
+    pg.addColorStop(0.35, "#f2f6f8");
+    pg.addColorStop(1, "#5d6a72");
+    BB.rrect(X - 16, y0, 32, ext, 6, pg, "#22282e", 3);
     ctx.fillStyle = "rgba(0,0,0,.18)";
     for (let y = y0 + 14; y < y0 + ext - 8; y += 22) ctx.fillRect(X - 16, y, 32, 4);
     const hy = y0 + ext;
-    BB.rrect(X - 50, hy, 100, 46, 10, "#7a4a2e", "#22282e", 4);
-    BB.rrect(X - 70, hy + 46, 140, 26, 6, "#d24a3c", "#22282e", 4);
+    BB.rrect(X - 50, hy, 100, 46, 10, BB.lg(hy, hy + 46, ["#a8704a", "#5e3620"]), "#22282e", 4);
+    BB.rrect(X - 70, hy + 46, 140, 26, 6, BB.lg(hy + 46, hy + 72, ["#e8685a", "#9c2e24"]), "#22282e", 4);
     BB.rrect(X - 95, PAD + 72, 190, 70, 6, "#efe6d2", "#5a5040", 3);
     if (e > 0.5 || c < 1.2) {
       ctx.globalAlpha = c < 1.2 ? 1 - c / 1.2 * 0.6 : 1;
@@ -366,49 +370,52 @@
       if (V.mail_bg || V.pack_blur) g.drawImage(V.mail_bg || V.pack_blur, 0, 0, W, H);
       g.fillStyle = "rgba(8,18,17,.28)";
       g.fillRect(0, 0, W, H);
-      {
-        g.save();
-        g.translate(W - 250, 300);
-        g.fillStyle = "#1e2b29";
-        g.beginPath();
-        g.roundRect(-190, -70, 380, 120, 22);
-        g.fill();
-        g.strokeStyle = "#ff8adf";
-        g.lineWidth = 6;
-        g.shadowColor = "#ff8adf";
-        g.shadowBlur = 24;
-        g.beginPath();
-        g.roundRect(-176, -56, 352, 92, 16);
-        g.stroke();
-        g.shadowBlur = 0;
-        g.fillStyle = "#ffd6f4";
-        g.font = '44px "Rammetto One"';
-        g.textAlign = "center";
-        g.textBaseline = "middle";
-        g.fillText("LABEL ROOM", 0, -10);
-        g.restore();
-        for (let x = 0; x < W; x += 60) {
-          g.fillStyle = x / 60 % 2 ? "#ffe066" : "#1e2b29";
-          g.fillRect(x, H - 36, 60, 14);
+      R.paint(g, () => {
+        const g2 = BB.ctx;
+        {
+          g2.save();
+          g2.translate(W - 250, 300);
+          g2.fillStyle = "#1e2b29";
+          g2.beginPath();
+          g2.roundRect(-190, -70, 380, 120, 22);
+          g2.fill();
+          g2.strokeStyle = "#ff8adf";
+          g2.lineWidth = 6;
+          g2.shadowColor = "#ff8adf";
+          g2.shadowBlur = 24;
+          g2.beginPath();
+          g2.roundRect(-176, -56, 352, 92, 16);
+          g2.stroke();
+          g2.shadowBlur = 0;
+          g2.fillStyle = "#ffd6f4";
+          g2.font = '44px "Rammetto One"';
+          g2.textAlign = "center";
+          g2.textBaseline = "middle";
+          g2.fillText("LABEL ROOM", 0, -10);
+          g2.restore();
+          for (let x = 0; x < W; x += 60) {
+            g2.fillStyle = x / 60 % 2 ? "#ffe066" : "#1e2b29";
+            g2.fillRect(x, H - 36, 60, 14);
+          }
         }
-      }
-      R.shadow(g, 780, BELT_Y + 120, 760, 0.55);
-      const fr = g.createLinearGradient(0, BELT_Y + 24, 0, BELT_Y + 80);
-      fr.addColorStop(0, "#c9d2d3");
-      fr.addColorStop(0.5, "#8a9798");
-      fr.addColorStop(1, "#56625f");
-      g.fillStyle = fr;
-      g.fillRect(40, BELT_Y + 24, 1440, 56);
-      g.fillStyle = "rgba(0,0,0,.3)";
-      g.fillRect(40, BELT_Y + 80, 1440, 8);
-      for (const x of [120, 760, 1400]) {
-        const lg = g.createLinearGradient(x, 0, x + 44, 0);
-        lg.addColorStop(0, "#5d696b");
-        lg.addColorStop(0.5, "#aab4b5");
-        lg.addColorStop(1, "#4d585a");
-        g.fillStyle = lg;
-        g.fillRect(x, BELT_Y + 88, 44, 60);
-      }
+        R.shadow(g2, 780, BELT_Y + 120, 760, 0.55);
+        const fr = g2.createLinearGradient(0, BELT_Y + 24, 0, BELT_Y + 80);
+        fr.addColorStop(0, "#c9d2d3");
+        fr.addColorStop(0.5, "#8a9798");
+        fr.addColorStop(1, "#56625f");
+        g2.fillStyle = fr;
+        g2.fillRect(40, BELT_Y + 24, 1440, 56);
+        g2.fillStyle = "rgba(0,0,0,.3)";
+        g2.fillRect(40, BELT_Y + 80, 1440, 8);
+        for (const x of [120, 760, 1400]) {
+          const lg = g2.createLinearGradient(x, 0, x + 44, 0);
+          lg.addColorStop(0, "#5d696b");
+          lg.addColorStop(0.5, "#aab4b5");
+          lg.addColorStop(1, "#4d585a");
+          g2.fillStyle = lg;
+          g2.fillRect(x, BELT_Y + 88, 44, 60);
+        }
+      });
       return c;
     }
     // beat clock = the groove's grid (one shared grid for music, playback, lights and clap-back)
@@ -742,8 +749,10 @@
         ctx.fillStyle = "#2a3a38";
         ctx.fillRect(0, 0, W, H);
       }
-      this.drawBelt(t);
-      drawStampArm(t);
+      R.paint(ctx, () => {
+        this.drawBelt(t);
+        drawStampArm(t);
+      });
       if (this.state !== "intro" && this.state !== "load" && this.state !== "end") {
         const sh = this.shakeT && t - this.shakeT < 0.35 ? Math.sin((t - this.shakeT) * 60) * 8 * (1 - (t - this.shakeT) / 0.35) : 0;
         const lbl = this.state === "slap" || this.state === "ship" || this.state === "clap" ? this.ans : null, bx = this.boxX - BOX_W / 2 + sh, by = BELT_Y - BOX_H;
@@ -761,7 +770,7 @@
           BB.plaque(this.boxX, by - 46, 270, 50, "TAP TO SHAKE!", 24, "#28403c", { cols: pu > 0.5 ? ["#fff8d0", "#ffe680", "#e8b830"] : void 0 });
         } else if (this.state === "pick" && this.pb && ac.currentTime < this.pb.end) BB.plaque(this.boxX, by - 46, 270, 50, this.pb.spb > 0.9 ? "\u266A SLOW..." : "\u266A LISTEN...", 24, "#28403c");
       }
-      this.drawPrinter(t);
+      R.paint(ctx, () => this.drawPrinter(t));
       this.drawSprocket(t);
       if (this.ijr) BB.staticJr(this.ijr.x, BELT_Y - 4, 120, { run: this.ijr.ph !== "zap" ? 1 : 0, glitch: this.ijr.ph === "zap" ? 0.6 : 0, spd: this.ijr.ph === "out" ? 900 : 600, flip: this.ijr.ph === "zap" });
       if (this.ijr && this.ijr.ph === "zap") {

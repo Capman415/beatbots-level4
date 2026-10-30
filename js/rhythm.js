@@ -187,3 +187,18 @@ R.bubble=(x,y,txt,col='#c0392b')=>{const w=BB.measure(txt,30)+50;BB.rrect(x-w/2+
   ctx.fillStyle='#fff';ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x-12,y+32);ctx.lineTo(x,y+56);ctx.lineTo(x+14,y+32);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillRect(x-14,y+26,30,8);BB.text(txt,x,y+2,30,col)};
 R.loadImgs=names=>Promise.all(names.map(([n,e])=>BB.V2[n]?0:new Promise(r=>{const i=new Image();i.onload=()=>{BB.V2[n]=i;(i.decode?i.decode().catch(()=>{}):Promise.resolve()).then(r)};i.onerror=()=>r();i.src='assets/v2/'+n+'.'+e+'?v='+BB.VERSION})));
 })();
+// v14.1 painted-look pass for code-drawn props: draw into a layer, then add grain texture, a top-left key light,
+// a soft bottom occlusion and a warm grade so vector shapes sit in the painted backgrounds. tier 0 = plain draw.
+(()=>{const R=BB.R;let L=null,grain=null;
+function grainPat(g){if(grain)return g.createPattern(grain,'repeat');const c=document.createElement('canvas');c.width=c.height=160;const x=c.getContext('2d');const d=x.createImageData(160,160);
+  for(let i=0;i<d.data.length;i+=4){const w=Math.random()<.5;d.data[i]=d.data[i+1]=d.data[i+2]=w?255:0;d.data[i+3]=Math.random()*90}x.putImageData(d,0,0);
+  x.globalAlpha=.25;for(let i=0;i<260;i++){x.strokeStyle=Math.random()<.5?'#fff':'#000';x.lineWidth=1+Math.random()*2;const a=Math.random()*7,l=6+Math.random()*16,px=Math.random()*160,py=Math.random()*160;x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.cos(a)*l,py+Math.sin(a)*l);x.stroke()}
+  grain=c;return g.createPattern(c,'repeat')}
+R.paint=(target,fn,o={})=>{if(!BB.tier){BB.withCtx(target,fn);return}const cw=target.canvas.width,ch=target.canvas.height;
+  if(!L||L.width!==cw||L.height!==ch){L=document.createElement('canvas');L.width=cw;L.height=ch}const g=L.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cw,ch);
+  g.setTransform(target.getTransform());BB.withCtx(g,fn);g.setTransform(1,0,0,1,0,0);
+  g.save();g.globalCompositeOperation='source-atop';
+  g.globalAlpha=o.grain??.55;g.fillStyle=grainPat(g);g.fillRect(0,0,cw,ch);
+  g.globalAlpha=1;const lg=g.createLinearGradient(0,0,cw*.35,ch);lg.addColorStop(0,'rgba(255,236,200,.16)');lg.addColorStop(.55,'rgba(255,220,170,0)');lg.addColorStop(1,'rgba(30,18,10,.22)');g.fillStyle=lg;g.fillRect(0,0,cw,ch);
+  g.fillStyle=o.tint||'rgba(255,170,100,.09)';g.fillRect(0,0,cw,ch);g.restore();
+  target.save();target.setTransform(1,0,0,1,0,0);if(o.shadow!==false){target.shadowColor='rgba(10,6,2,.45)';target.shadowBlur=18*cw/1920;target.shadowOffsetY=8*cw/1920;target.shadowOffsetX=5*cw/1920}target.drawImage(L,0,0);target.restore()}})();

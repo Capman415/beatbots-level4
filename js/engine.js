@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.0.3';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.1';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -182,14 +182,14 @@ function osc(type,f,t,dur,peak,f2,dest=sfxBus){BB.selfSound(t,dur,(type==='sine'
 function noise(t,dur,peak,ftype,f,q=1,f2){BB.selfSound(t,dur,null);const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=noiseBuf;fl.type=ftype;fl.frequency.setValueAtTime(f,t);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+dur);fl.Q.value=q;env(g,t,.003,peak,dur);s.connect(fl).connect(g).connect(sfxBus);s.start(t,Math.random()*.5);s.stop(t+dur+.05)}
 const now=()=>ac.currentTime;
 // v14.0 real drum one-shots (CC0, assets/drums/LICENSE.txt) replace the synth ka-chunks/cracks; synth is the fallback until loaded
-const DR={};['kick','snare','hat','tom','tomlo'].forEach(n=>fetch('assets/drums/'+n+'.mp3').then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).then(x=>DR[n]=x).catch(()=>{}));
-function drum(n,t,v=1,rate=1){const b=DR[n];if(!b)return false;BB.selfSound(t,Math.min(.5,b.duration),null);const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;s.playbackRate.value=rate;g.gain.value=v*(BB.boxVol||1);s.connect(g).connect(sfxBus);s.start(t);return true}
+const DR={};['kick','snare','hat','tom','tomlo','box','boxtap','boxlo'].forEach(n=>fetch('assets/drums/'+n+'.mp3').then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).then(x=>DR[n]=x).catch(()=>{}));
+function drum(n,t,v=1,rate=1){const b=DR[n];if(!b)return false;BB.selfSound(t,Math.min(.5,b.duration),null);const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;s.playbackRate.value=rate;g.gain.value=v*(BB.boxVol||1);const sh=ac.createBiquadFilter();sh.type='highshelf';sh.frequency.value=3500;sh.gain.value=/^box/.test(n)?-2:-8;s.connect(sh).connect(g).connect(sfxBus);/* v14.1 tame harsh highs */s.start(t);return true}
 BB.drum=drum;
 BB.sfx={
   // v13.0 packing playback voices (robot/factory): ka-chunk ta, double blips ti-ti, quad blips tika-tika, hum for long notes, soft hiss rest
-  pkTa:(t=now())=>{if(drum('kick',t,.9)){drum('snare',t,.35);return}noise(t,.07,.35,'lowpass',2200,1,300);osc('square',120,t,.13,.16,60)},
-  pkBlip:(t=now(),f=1100)=>{if(drum('hat',t,.8,f/1100))return;osc('square',f,t,.05,.09,f*.8)},
-  pkHum:(t=now(),d=.6)=>{if(drum('tomlo',t,.8))return;noise(t,.06,.3,'lowpass',2000,1,300);osc('sawtooth',196,t,d,.07,180);osc('square',98,t,d*.8,.05)},
+  pkTa:(t=now())=>{if(drum('box',t,1.1))return;if(drum('kick',t,.9)){drum('snare',t,.3);return}noise(t,.07,.35,'lowpass',2200,1,300);osc('square',120,t,.13,.16,60)},
+  pkBlip:(t=now(),f=1100)=>{if(drum('boxtap',t,1,Math.min(1.25,Math.max(.85,f/1100))))return;if(drum('hat',t,.6,f/1100))return;osc('square',f,t,.05,.09,f*.8)},
+  pkHum:(t=now(),d=.6)=>{if(drum('boxlo',t,1.1))return;if(drum('tomlo',t,.8))return;noise(t,.06,.3,'lowpass',2000,1,300);osc('sawtooth',196,t,d,.07,180);osc('square',98,t,d*.8,.05)},
   pkHiss:(t=now(),d=.4)=>{noise(t,d,.035,'highpass',5000,1)},
   click:(t=now())=>{osc('square',900,t,.05,.08,600)},
   tick:(t=now(),acc=false,v=1)=>{osc('sine',acc?1320:880,t,.06,.18*v)},// pure tone so the mic can tell it apart from claps,
