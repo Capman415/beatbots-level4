@@ -5,7 +5,7 @@
 // clapnet96 = same tiny MLP as v13.3, retrained only on license-checked FSD50K CC0/CC-BY clips + the app's own audio.
 // Nothing is recorded or stored: audio lives in a 2 s RAM ring and is overwritten.
 (function(root){
-var NF=1024,NB=24,P={k:.2,A:1,B:.6,C:1.5,TAILW:.25,MINSEP:.07,OVER:3,PRE:.06};
+var NF=1024,NB=24,P={k:.2,A:1,B:.6,C:1.5,TAILW:.25,MINSEP:.07,OVER:3,PRE:.06,FG:.16,CF:.3,PREF:.45};
 function edges(){var e=[],lo=Math.log(700),hi=Math.log(12000);for(var i=0;i<=NB;i++)e.push(Math.exp(lo+(hi-lo)*i/NB));return e}
 // ---- pure core (also used by tools/c96sim.js in node) ----
 var Core={P:P,NF:NF,NB:NB,
@@ -20,12 +20,12 @@ var Core={P:P,NF:NF,NB:NB,
  _L:function(Pm,R,g,i){if(i<0||!Pm[i])return null;var o=new Float32Array(NB),p=Pm[i],r=R?R[i]:null;for(var b=0;b<NB;b++){var v=p[b]-(r?P.OVER*g[b]*r[b]:0);o[b]=Math.log(1+1e4*(v>0?v:0))}return o},
  pct:function(a,q){var s=Array.prototype.slice.call(a).sort(function(x,y){return x-y});if(!s.length)return 0;var p=(s.length-1)*q/100,i=Math.floor(p),f=p-i;return i+1<s.length?s[i]*(1-f)+s[i+1]*f:s[i]},
  // one note decision. st = {got:[],vals:[],ref:[]} running state; nov/ts arrays; pfn(t)->P(clap)
- decide:function(st,nov,ts,te,lat,gap,floor,pfn){var post=Math.min(.1,.5*gap),c=te+lat,i0=Core.idx(ts,c-P.PRE),i1=Core.idx(ts,c+post);
+ decide:function(st,nov,ts,te,lat,gap,floor,pfn){var post=Math.min(.1,.5*gap),fast=gap<P.FG,pre=fast?Math.min(P.PRE,P.PREF*gap):P.PRE,Cw=fast?P.C*P.CF:P.C,c=te+lat,i0=Core.idx(ts,c-pre),i1=Core.idx(ts,c+post);
   if(i1<=i0){st.got.push(null);st.vals.push(0);return null}var j=i0;for(var i=i0;i<i1;i++)if(nov[i]>nov[j])j=i;var v=nov[j];
   var edge=(j===i0&&nov[Math.max(0,j-1)]>=v)||j===i1-1,near=false,G=st.got;for(i=Math.max(0,G.length-2);i<G.length;i++)if(G[i]!=null&&ts[j]-G[i]<P.MINSEP)near=true;
   var ok=false;if(v>floor&&!edge&&!near){var r=st.ref.length>=3?Core.pct(st.ref.slice(-12),50):v,p=Math.min(Math.max(pfn(ts[j]),1e-4),1-1e-4),pv=0;
    for(i=Math.max(0,G.length-2);i<G.length;i++)if(G[i]!=null&&ts[j]-G[i]<P.TAILW)pv=Math.max(pv,st.vals[i]);
-   var s=P.A*Math.log(v/Math.max(P.k*r,floor))+P.B*Math.log(p/(1-p));if(pv)s+=P.C*Math.min(0,Math.log(v/pv));ok=s>0;st.last={v:v,p:p,s:s}}
+   var s=P.A*Math.log(v/Math.max(P.k*r,floor))+P.B*Math.log(p/(1-p));if(pv)s+=Cw*Math.min(0,Math.log(v/pv));ok=s>0;st.last={v:v,p:p,s:s}}
   if(ok)st.ref.push(v);st.got.push(ok?ts[j]:null);st.vals.push(v);return ok?ts[j]:null},
  estLat:function(nov,ts,notes,L0){var b=[0,L0];for(var L=L0-.04;L<L0+.04-1e-9;L+=.005){var s=0;for(var i=0;i<notes.length;i++)s+=nov[Math.min(nov.length-1,Core.idx(ts,notes[i]+L))];if(s>b[0])b=[s,L]}return b[1]},
  idx:function(ts,t){var lo=0,hi=ts.length;while(lo<hi){var m=(lo+hi)>>1;if(ts[m]<t)lo=m+1;else hi=m}return lo}};
