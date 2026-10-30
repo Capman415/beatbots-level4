@@ -39,7 +39,11 @@
   };
   const SYL = { q: "ta", e: "tee-tee", s: "tika-tika", a: "tee-tika", b: "tika-tee", h: "ta-ah", r: "(rest)" };
   BB.VO_LINES = (BB.VO_LINES || []).concat([
-    ["lb_intro", "Uh oh! I bumped the label printer, and it mixed up all the shipping labels! Every box hides a rhythm. Rhythm Engineers, help me fix them!", "sprocket"],
+    ["lb_intro", "Oh no! Static Jr. zapped the label printer and scrambled all the shipping labels!", "sprocket"],
+    ["lb_intro2", "Every box hides a rhythm. Rhythm Engineers, listen closely and help me fix them!", "sprocket"],
+    ["jr_lbl", "Hee hee! I scrambled all the labels!", "jr"],
+    ["jr_lwrong", "Wrong label! Hee hee!", "jr"],
+    ["jr_lstreak", "No fair! You're too good!", "jr"],
     ["lb_how", "Tap the box to hear what's inside. Then pick the label that matches!", "sprocket"],
     ["lb_right", "That's the one! Label on, ship it out!", "sprocket"],
     ["lb_right2", "Perfect match! Off it goes!", "sprocket"],
@@ -47,7 +51,8 @@
     ["lb_hint", "Here's a hint!", "sprocket"],
     ["lb_faster", "Great streak! The labels are getting trickier!", "sprocket"],
     ["lb_clap", "Now clap the rhythm back to me!", "sprocket"],
-    ["lb_done", "Every box is labeled and shipped! Room four complete! Next stop, the delivery dock!", "sprocket"],
+    ["lb_done", "Every box is labeled and shipped! Room four complete!", "sprocket"],
+    ["lb_done2", "Next stop, the delivery dock!", "sprocket"],
     ["syl_q", "ta", "sprocket"],
     ["syl_e", "tee-tee", "sprocket"],
     ["syl_s", "tika-tika", "sprocket"],
@@ -150,7 +155,7 @@
     return out;
   }
   const howTo = {
-    title: "LABEL ROOM: find the label that matches the box!",
+    title: "LABEL ROOM: Static Jr. scrambled the labels!",
     steps: ["Tap the box to shake it and hear its rhythm.", "Pick the label card with the matching notes.", "Stuck? Tap HINT (each hint costs a point).", "Right label = it ships down the conveyor!", "TEACHER picks which notes can appear."],
     words: "ta = 1 sound   ti-ti = 2   tika-tika = 4   rest = silence   (all 1 beat)",
     example: (x, y, w, h, t) => {
@@ -162,6 +167,7 @@
       ctx.restore();
     }
   };
+  const PR = { x: 70, y: 300, w: 250, h: 220 };
   const BELT_Y = 560, BOX_X = 880, BOX_W = 300, BOX_H = 230;
   function drawBox(x, y, w, h, lbl, t, o = {}) {
     const im = BB.V2.crate;
@@ -318,16 +324,54 @@
       const k = Math.ceil((ac.currentTime + 0.2 - gr.t0) / gr.spb);
       return { t: gr.t0 + k * gr.spb, spb: gr.spb };
     }
+    // intro: Static Jr. runs in, zaps the label printer, labels spew out and tumble, he runs off; then Sprocket asks for help
     startIntro() {
       this.state = "intro";
       this.st = BB.t;
       this.flurry = [];
-      for (let i = 0; i < 10; i++) this.flurry.push({ x: W / 2 + (Math.random() - 0.5) * 400, y: -100 - Math.random() * 400, vx: (Math.random() - 0.5) * 300, vy: 200 + Math.random() * 200, r: Math.random() * 6, vr: (Math.random() - 0.5) * 6, s: genRhythm(["q", "e", "r"], null) });
-      BB.sfx.glitch();
-      setTimeout(() => BB.scene === this && this.state === "intro" && (this.voEnd = BB.t + BB.say("lb_intro")), 700);
+      this.ijr = { x: -160, ph: "in" };
+    }
+    introJr(dt) {
+      const t = BB.t - this.st, j = this.ijr;
+      if (!j) return;
+      if (j.ph === "in") {
+        j.x = lerp(-160, PR.x + PR.w + 90, ease.out(clamp(t / 1.2, 0, 1)));
+        if (t > 1.2) {
+          j.ph = "zap";
+          BB.sfx.glitch();
+          BB.sfx.zap && BB.sfx.zap();
+          BB.shake(5);
+          BB.say("jr_lbl", { overlap: true });
+        }
+      } else if (j.ph === "zap") {
+        if (Math.random() < 0.5) BB.burst(PR.x + PR.w - 20, PR.y + 60, 3, { cols: ["#9ff", "#fff", "#ffe066"], kind: "spark", size: 10, speed: 600, g: 200, life: 0.4 });
+        if (t > 2.4) {
+          j.ph = "out";
+          this.zapEnd = BB.t;
+          setTimeout(() => {
+            if (BB.scene !== this || this.state !== "intro") return;
+            const d = BB.say("lb_intro");
+            setTimeout(() => {
+              if (BB.scene === this && this.state === "intro") this.voEnd = BB.t + BB.say("lb_intro2");
+            }, (d + 0.25) * 1e3);
+          }, 300);
+        }
+      } else if (j.ph === "out") {
+        j.x += dt * 900;
+        if (j.x > W + 200) this.ijr = null;
+      }
+      if (t > 1.5 && this.flurry.length < 10 && BB.t - (this.lastFlake || 0) > 0.28) {
+        this.lastFlake = BB.t;
+        this.flurry.push(this.flake(PR.y + 40, true));
+        BB.sfx.pop();
+      }
+    }
+    flake(y, fromPr) {
+      return { x: fromPr ? PR.x + PR.w / 2 : 260 + Math.random() * 1200, vx: fromPr ? 250 + Math.random() * 700 : 0, y, vy: fromPr ? -120 - Math.random() * 120 : 150 + Math.random() * 70, p: Math.random() * 6, r: (Math.random() - 0.5) * 0.6, vr: (Math.random() - 0.5) * 1.6, s: genRhythm(["q", "e", "r"], null) };
     }
     skipIntro() {
       this.flurry = null;
+      this.ijr = null;
       BB.talking = null;
       BB.caption = null;
       this.newBox(true);
@@ -439,7 +483,11 @@
       c.shake = BB.t;
       this.streak = 0;
       BB.sfx.bonk();
-      BB.say("lb_wrong");
+      if (this.tries === 1 && Math.random() < 0.6 && !this.pop) {
+        this.pop = { t: BB.t, txt: "wrong label! hee hee" };
+        BB.say("jr_lwrong", { overlap: true });
+        setTimeout(() => BB.scene === this && BB.say("lb_wrong"), 1100);
+      } else BB.say("lb_wrong");
       setTimeout(() => BB.scene === this && this.state === "pick" && this.play(false), 1400);
     }
     points() {
@@ -457,6 +505,11 @@
       this.best = Math.max(this.best, this.streak);
       BB.sfx.ding();
       BB.say(this.streak % 2 ? "lb_right" : "lb_right2");
+      if (this.streak === 3 || this.streak === 6) setTimeout(() => {
+        if (BB.scene !== this) return;
+        this.pop = { t: BB.t, txt: "no fair!" };
+        BB.say("jr_lstreak", { overlap: true });
+      }, 1500);
       if (this.streak === 4) setTimeout(() => BB.scene === this && BB.say("lb_faster", { overlap: false }), 1800);
     }
     slapped() {
@@ -509,14 +562,20 @@
       }
       if (this.state === "intro") {
         const t = BB.t - this.st;
+        this.introJr(dt);
         for (const f of this.flurry) {
-          f.vy += 300 * dt;
-          f.x += f.vx * dt;
+          f.vy = Math.min(f.vy + 500 * dt, 170);
+          f.vx *= 1 - dt * 1.2;
           f.y += f.vy * dt;
+          f.x += f.vx * dt + Math.sin(BB.t * 1.6 + f.p) * 70 * dt;
           f.r += f.vr * dt;
+          if (f.y > BELT_Y - 60) {
+            Object.assign(f, this.flake(-90));
+          }
+          if (f.x > 1450) f.x = 1450;
         }
         if (BB.keys.includes("s")) this.skipIntro();
-        if (t > 2 && BB.t > (this.voEnd || 1e9) + 0.2) this.skipIntro();
+        if (t > 2 && this.voEnd && BB.t > this.voEnd + 0.4) this.skipIntro();
         if (t > 14) this.skipIntro();
       }
       const bv = this.beatV();
@@ -541,7 +600,10 @@
           if (this.shipped >= BOXES) {
             this.state = "end";
             this.st = BB.t;
-            BB.say("lb_done");
+            {
+              const d = BB.say("lb_done");
+              setTimeout(() => BB.scene === this && BB.say("lb_done2"), (d + 0.2) * 1e3);
+            }
             BB.celebrate({ next: "DELIVERY" });
             if (!BB.save.done.includes("label")) {
               BB.save.done.push("label");
@@ -592,21 +654,54 @@
           BB.plaque(this.boxX, by - 46, 270, 50, "TAP TO SHAKE!", 24, "#28403c", { cols: pu > 0.5 ? ["#fff8d0", "#ffe680", "#e8b830"] : void 0 });
         } else if (this.state === "pick" && this.pb && ac.currentTime < this.pb.end) BB.plaque(this.boxX, by - 46, 270, 50, this.pb.spb > 0.9 ? "\u266A SLOW..." : "\u266A LISTEN...", 24, "#28403c");
       }
+      this.drawPrinter(t);
       this.drawSprocket(t);
-      if (this.flurry) for (const f of this.flurry) {
+      if (this.ijr) BB.staticJr(this.ijr.x, BELT_Y - 4, 120, { run: this.ijr.ph !== "zap" ? 1 : 0, glitch: this.ijr.ph === "zap" ? 0.6 : 0, spd: this.ijr.ph === "out" ? 900 : 600, flip: this.ijr.ph === "zap" });
+      if (this.ijr && this.ijr.ph === "zap") {
         ctx.save();
-        ctx.translate(f.x, f.y);
-        ctx.rotate(f.r);
-        drawCard(-110, -70, 220, 140, f.s, { mini: 1 });
+        ctx.strokeStyle = Math.sin(t * 40) > 0 ? "#bff" : "#fff";
+        ctx.lineWidth = 6;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        let x = this.ijr.x - 40, y = BELT_Y - 90;
+        ctx.moveTo(x, y);
+        for (let i = 1; i <= 5; i++) {
+          const tx = lerp(x, PR.x + PR.w - 10, i / 5), ty = lerp(y, PR.y + 80, i / 5) + (i < 5 ? (Math.random() - 0.5) * 40 : 0);
+          ctx.lineTo(tx, ty);
+        }
+        ctx.stroke();
         ctx.restore();
       }
+      if (this.pop) {
+        const pp = this.pop, a = BB.t - pp.t;
+        if (a < 1.8) {
+          const k = a < 0.3 ? ease.out(a / 0.3) : a > 1.5 ? 1 - (a - 1.5) / 0.3 : 1;
+          BB.staticJr(520, BELT_Y - 4, 110 * Math.max(0.01, k), { glitch: 0.3 });
+          if (a > 0.2 && a < 1.5) R.bubble(520, BELT_Y - 250, pp.txt);
+        } else this.pop = null;
+      }
+      if (this.flurry) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 170, 1500, BELT_Y - 170);
+        ctx.clip();
+      }
+      if (this.flurry) for (const f of this.flurry) {
+        ctx.save();
+        ctx.globalAlpha = clamp((BELT_Y - 60 - f.y) / 120, 0, 1);
+        ctx.translate(f.x, f.y);
+        ctx.rotate(f.r);
+        drawCard(-120, -70, 240, 140, f.s, {});
+        ctx.restore();
+      }
+      if (this.flurry) ctx.restore();
       ctx.restore();
       R.drawMotes(this.motes, BB.paused ? 0 : Math.min(0.05, BB.dt || 0.016), t);
       BB.drawParts();
       if (this.cards && ["pick", "fly", "slap", "clap", "ship", "enter"].includes(this.state)) this.drawCards(t);
       this.drawHUD(t);
       BB.captionBox();
-      if (this.state === "enter" && this.cardT && t - this.cardT < 2.6) BB.titleCard("ROOM 4: LABEL ROOM", "Sprocket mixed up the labels. Match them!", (t - this.cardT) / 2.6);
+      if (this.state === "enter" && this.cardT && t - this.cardT < 2.6) BB.titleCard("ROOM 4: LABEL ROOM", "Static Jr. scrambled the labels. Match them!", (t - this.cardT) / 2.6);
       if (this.state === "end") this.drawEnd();
       if (this.teacher) this.drawTeacher();
       if (BB.paused) BB.pauseOverlay(howTo, () => this.resume());
@@ -635,6 +730,21 @@
         ctx.fill();
         if (on && fl > 0.2 && BB.tier > 0) BB.glow(lx, ly, 34, "rgba(255,220,120,A)", fl * 0.5);
       }
+    }
+    drawPrinter(t) {
+      const { x, y, w, h } = PR, zap = this.ijr && this.ijr.ph === "zap", jit = zap ? Math.sin(t * 50) * 3 : 0;
+      ctx.save();
+      ctx.translate(jit, 0);
+      BB.rrect(x + 6, y + 10, w, h, 16, "rgba(0,0,0,.3)");
+      BB.rrect(x, y, w, h, 16, BB.lg(y, y + h, ["#d9e4e2", "#a7b6b4", "#6f7f7d"]), "#2b3534", 4);
+      BB.rrect(x + 20, y + 24, w - 40, 70, 10, "#132322", "#50aaa0", 3);
+      const scr = zap || this.state === "intro" && this.flurry && this.flurry.length ? Math.sin(t * 14) > 0 ? "#e65046" : "#ffe066" : "#6ee678";
+      BB.text(zap ? "ZZZT!" : this.state === "intro" ? "ERROR" : "READY", x + w / 2, y + 60, 30, scr, { font: "Rammetto One" });
+      BB.rrect(x + 30, y + h - 60, w - 60, 22, 8, "#1b2322");
+      ctx.fillStyle = "#fbf6e6";
+      ctx.fillRect(x + 40, y + h - 52, w - 80, 6);
+      BB.plaque(x + w / 2, y - 26, 220, 44, "LABEL PRINTER", 20, "#28403c");
+      ctx.restore();
     }
     drawSprocket(t) {
       const x = 1690, base = 700;
@@ -673,6 +783,7 @@
       });
     }
     drawHUD(t) {
+      if (this.state === "end") return;
       BB.panel(40, 24, 560, 130, 30);
       BB.text("BOXES SHIPPED", 70, 58, 32, COL.yellow, { align: "left", stroke: 4 });
       BB.text("".concat(this.shipped, " of ").concat(BOXES), 70, 104, 30, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
@@ -744,24 +855,27 @@
         this.teacher = false;
       } });
     }
+    capPos() {
+      return this.state === "end" ? { y: 722, maxW: 1150 } : { y: 942, maxW: 1100 };
+    }
     drawEnd() {
       const t = BB.t - this.st;
       if (t < 0.4) return;
       const k = ease.back(clamp((t - 0.4) / 0.6, 0, 1));
-      ctx.fillStyle = "rgba(8,18,17,".concat(0.5 * clamp(t, 0, 1), ")");
+      ctx.fillStyle = "rgba(8,18,17,".concat(0.6 * clamp(t, 0, 1), ")");
       ctx.fillRect(0, 0, W, H);
       ctx.save();
-      ctx.translate(W / 2, 360);
+      ctx.translate(W / 2, 370);
       ctx.scale(k, k);
-      BB.panel(-600, -260, 1200, 520, 44);
-      BB.text("ROOM 4 COMPLETE!", 0, -170, 72, "#fff", { font: "Rammetto One", stroke: 9 });
-      drawCard(-260, -110, 520, 170, ["q", "e", "s", "q"], {});
-      BB.text(BOXES + " boxes labeled  \u2022  " + this.score + " points  \u2022  best streak " + this.best, 0, 110, 36, COL.yellow, { stroke: 5, maxW: 1100 });
-      BB.text("Next: DELIVERY (coming soon)", 0, 175, 34, "#fff", { stroke: 5 });
+      BB.panel(-600, -195, 1200, 390, 44);
+      BB.text("ROOM 4 COMPLETE!", 0, -130, 68, "#fff", { font: "Rammetto One", stroke: 9 });
+      drawCard(-230, -80, 460, 140, ["q", "e", "s", "q"], {});
+      BB.text(BOXES + " boxes labeled  \u2022  " + this.score + " points  \u2022  best streak " + this.best, 0, 100, 34, COL.yellow, { stroke: 5, maxW: 1100 });
+      BB.text("Next: DELIVERY (coming soon)", 0, 150, 30, "#fff", { stroke: 5 });
       ctx.restore();
       if (t > 1.6) {
-        BB.button(W / 2 - 520, 700, 480, 130, "ROOM MAP", { style: "green", size: 56, id: "tomap", onClick: () => BB.roomDone("label") });
-        BB.button(W / 2 + 40, 700, 480, 130, "PLAY AGAIN", { size: 50, id: "again", onClick: () => BB.go(new LabelRoom()) });
+        BB.button(W / 2 - 520, 590, 480, 110, "ROOM MAP", { style: "green", size: 52, id: "tomap", onClick: () => BB.roomDone("label") });
+        BB.button(W / 2 + 40, 590, 480, 110, "PLAY AGAIN", { size: 46, id: "again", onClick: () => BB.go(new LabelRoom()) });
       }
     }
   }

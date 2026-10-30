@@ -1175,7 +1175,7 @@
       R.crateDraw("s", 200, -100, 140, 120);
       R.crateDraw("r", 360, -100, 100, 120, { tag: false });
       BB.text(ROUNDS.length + " orders packed and sealed!", 0, 80, 40, COL.yellow, { stroke: 5 });
-      BB.text("Next: the LABEL ROOM (coming soon)", 0, 150, 36, "#fff", { stroke: 5 });
+      BB.text("Next: the LABEL ROOM!", 0, 150, 36, "#fff", { stroke: 5 });
       ctx.restore();
       if (t > 1.6) {
         BB.button(W / 2 - 520, 700, 480, 130, "ROOM MAP", { style: "green", size: 56, id: "tomap", onClick: () => BB.roomDone("packing") });

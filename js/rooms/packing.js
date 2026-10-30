@@ -269,7 +269,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     ctx.save();ctx.translate(W/2,360);ctx.scale(k,k);BB.panel(-600,-260,1200,520,44);
     BB.text('ROOM 3 COMPLETE!',0,-170,72,'#fff',{font:'Rammetto One',stroke:9});
     R.crateDraw('h',-440,-100,300,120);R.crateDraw('q',-120,-100,140,120);R.crateDraw('e',40,-100,140,120);R.crateDraw('s',200,-100,140,120);R.crateDraw('r',360,-100,100,120,{tag:false});
-    BB.text(ROUNDS.length+' orders packed and sealed!',0,80,40,COL.yellow,{stroke:5});BB.text('Next: the LABEL ROOM (coming soon)',0,150,36,'#fff',{stroke:5});ctx.restore();
+    BB.text(ROUNDS.length+' orders packed and sealed!',0,80,40,COL.yellow,{stroke:5});BB.text('Next: the LABEL ROOM!',0,150,36,'#fff',{stroke:5});ctx.restore();
     if(t>1.6){BB.button(W/2-520,700,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('packing')});
       BB.button(W/2+40,700,480,130,'PLAY AGAIN',{size:50,id:'again',onClick:()=>BB.go(new PackingRoom())})}}
 }
