@@ -204,7 +204,41 @@
       ctx.fill();
     }
   }
+  const CARDC = /* @__PURE__ */ new Map(), PANC = /* @__PURE__ */ new Map();
+  function PANEL(x, y, w, h, r = 30) {
+    const k = w + "|" + h + "|" + r + "|" + BB.tier;
+    let c = PANC.get(k);
+    const M = 48;
+    if (!c) {
+      c = document.createElement("canvas");
+      c.width = w + M * 2;
+      c.height = h + M * 2;
+      const g = c.getContext("2d");
+      g.translate(M - x, M - y);
+      BB.withCtx(g, () => BB.panel(x, y, w, h, r));
+      PANC.set(k, c);
+    }
+    ctx.drawImage(c, x - M, y - M);
+  }
   function drawCard(x, y, w, h, seq, o = {}) {
+    if (o.lit && o.lit.some((v) => v > 0)) return drawCardRaw(x, y, w, h, seq, o);
+    const k = seq.join("") + "|" + w + "|" + h + "|" + (o.badge || "") + "|" + (o.hl ? 1 : 0) + (o.mini ? 1 : 0) + (o.syl ? 1 : 0) + (o.x ? 1 : 0) + "|" + BB.tier;
+    let c = CARDC.get(k);
+    if (!c) {
+      if (CARDC.size > 160) CARDC.clear();
+      const P = 12, sc = BB.q ? 1 : 0.5;
+      c = document.createElement("canvas");
+      c.width = Math.ceil((w + P * 2) * sc);
+      c.height = Math.ceil((h + P * 2) * sc);
+      const g = c.getContext("2d");
+      g.scale(sc, sc);
+      g.translate(P - x, P - y);
+      BB.withCtx(g, () => drawCardRaw(x, y, w, h, seq, o));
+      CARDC.set(k, c);
+    }
+    ctx.drawImage(c, x - 12, y - 12, w + 24, h + 24);
+  }
+  function drawCardRaw(x, y, w, h, seq, o = {}) {
     ctx.save();
     if (!o.mini) BB.rrect(x + 5, y + 8, w, h, 12, "rgba(0,0,0,.35)");
     BB.rrect(x, y, w, h, 12, BB.lg(y, y + h, ["#fffaf0", "#f1e8d2", "#ddd0b2"]));
@@ -684,7 +718,8 @@
         ctx.save();
         ctx.beginPath();
         ctx.rect(0, 170, 1500, BELT_Y - 170);
-        ctx.clip();
+        ctx.rect(PR.x - 30, 170, PR.w + 60, BELT_Y - 170);
+        ctx.clip("evenodd");
       }
       if (this.flurry) for (const f of this.flurry) {
         ctx.save();
@@ -784,11 +819,11 @@
     }
     drawHUD(t) {
       if (this.state === "end") return;
-      BB.panel(40, 24, 560, 130, 30);
+      PANEL(40, 24, 560, 130, 30);
       BB.text("BOXES SHIPPED", 70, 58, 32, COL.yellow, { align: "left", stroke: 4 });
       BB.text("".concat(this.shipped, " of ").concat(BOXES), 70, 104, 30, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
       for (let i = 0; i < BOXES; i++) BB.rrect(300 + i * 34, 64, 26, 44, 8, i < this.shipped ? BB.lg(64, 108, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
-      BB.panel(W - 620, 24, 330, 130, 30);
+      PANEL(W - 620, 24, 330, 130, 30);
       BB.text("POINTS " + this.score, W - 455, 62, 32, "#fff", { stroke: 4, maxW: 290 });
       BB.text("STREAK " + this.streak + (this.streak >= 3 ? " \u2605" : ""), W - 455, 108, 28, COL.yellow, { stroke: 4, maxW: 290 });
       if (this.gain && t - this.gain.t < 1.4) {
@@ -808,7 +843,7 @@
         return;
       }
       const HX = 1520, HY = 700, on = this.state === "pick", names = ["SLOW REPLAY", "BEAT LIGHTS", "FIRST BEAT", "REMOVE A CARD", "SHOW ANSWER"];
-      BB.panel(HX, HY, 360, 230, 28);
+      PANEL(HX, HY, 360, 230, 28);
       BB.text("HINTS USED " + this.hint + "/5", HX + 180, HY + 40, 26, COL.yellow, { stroke: 4 });
       BB.text(this.hint < 5 ? "next: " + names[this.hint] : "answer shown", HX + 180, HY + 76, 22, "#d8efe9", { maxW: 320 });
       BB.button(HX + 20, HY + 100, 150, 70, "HINT", { style: "cream", size: 32, id: "hint", disabled: !on || this.hint >= 5, onClick: () => this.doHint() });
@@ -824,7 +859,7 @@
       ctx.fillStyle = "rgba(8,18,17,.78)";
       ctx.fillRect(0, 0, W, H);
       const x = W / 2 - 560, y = 150, w = 1120, h = 780;
-      BB.panel(x, y, w, h, 40);
+      PANEL(x, y, w, h, 40);
       BB.text("TEACHER SETTINGS", W / 2, y + 70, 52, "#fff", { font: "Rammetto One", stroke: 7 });
       BB.text("Notes allowed on the labels (higher streaks unlock more of these)", W / 2, y + 130, 28, COL.yellow, { stroke: 4, maxW: w - 80 });
       ALL.forEach((k, i) => {
@@ -867,7 +902,7 @@
       ctx.save();
       ctx.translate(W / 2, 370);
       ctx.scale(k, k);
-      BB.panel(-600, -195, 1200, 390, 44);
+      PANEL(-600, -195, 1200, 390, 44);
       BB.text("ROOM 4 COMPLETE!", 0, -130, 68, "#fff", { font: "Rammetto One", stroke: 9 });
       drawCard(-230, -80, 460, 140, ["q", "e", "s", "q"], {});
       BB.text(BOXES + " boxes labeled  \u2022  " + this.score + " points  \u2022  best streak " + this.best, 0, 100, 34, COL.yellow, { stroke: 5, maxW: 1100 });

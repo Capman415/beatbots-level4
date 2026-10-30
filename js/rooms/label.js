@@ -67,7 +67,17 @@ function drawBox(x,y,w,h,lbl,t,o={}){const im=BB.V2.crate;BB.rrect(x+6,y+10,w,h,
     else BB.text('?',lx+lw/2,ly+lh/2,lh*.6,'rgba(255,240,210,.85)',{font:'Rammetto One'})}
   // beat lamps on the box lid (lit during hint 2)
   if(o.lamps)for(let i=0;i<4;i++){const cx=x+w*.2+i*w*.2,cy=y+h*.22,l=o.lamps[i]||0;ctx.fillStyle='#2a1a0a';ctx.beginPath();ctx.arc(cx,cy,15,0,7);ctx.fill();ctx.fillStyle=l>0?`rgba(255,${200+55*l|0},90,${.4+.6*l})`:'#5a4a2a';ctx.beginPath();ctx.arc(cx,cy,11,0,7);ctx.fill()}}
-function drawCard(x,y,w,h,seq,o={}){ctx.save();
+const CARDC=new Map(),PANC=new Map();
+// cached BB.panel (bevel shadowBlur 22 re-rasterised every frame was the other big tier>0 cost)
+function PANEL(x,y,w,h,r=30){const k=w+'|'+h+'|'+r+'|'+BB.tier;let c=PANC.get(k);const M=48;
+  if(!c){c=document.createElement('canvas');c.width=w+M*2;c.height=h+M*2;const g=c.getContext('2d');g.translate(M-x,M-y);BB.withCtx(g,()=>BB.panel(x,y,w,h,r));PANC.set(k,c)}
+  ctx.drawImage(c,x-M,y-M)}
+// cached card sprites: live shadowBlur/gradients/paper per card per frame were the main raster cost at tier>0
+function drawCard(x,y,w,h,seq,o={}){if(o.lit&&o.lit.some(v=>v>0))return drawCardRaw(x,y,w,h,seq,o);
+  const k=seq.join('')+'|'+w+'|'+h+'|'+(o.badge||'')+'|'+(o.hl?1:0)+(o.mini?1:0)+(o.syl?1:0)+(o.x?1:0)+'|'+BB.tier;let c=CARDC.get(k);
+  if(!c){if(CARDC.size>160)CARDC.clear();const P=12,sc=BB.q?1:.5;c=document.createElement('canvas');c.width=Math.ceil((w+P*2)*sc);c.height=Math.ceil((h+P*2)*sc);const g=c.getContext('2d');g.scale(sc,sc);g.translate(P-x,P-y);BB.withCtx(g,()=>drawCardRaw(x,y,w,h,seq,o));CARDC.set(k,c)}
+  ctx.drawImage(c,x-12,y-12,w+24,h+24)}
+function drawCardRaw(x,y,w,h,seq,o={}){ctx.save();
   if(!o.mini)BB.rrect(x+5,y+8,w,h,12,'rgba(0,0,0,.35)');
   BB.rrect(x,y,w,h,12,BB.lg(y,y+h,['#fffaf0','#f1e8d2','#ddd0b2']));R.paper(x,y,w,h);BB.rrect(x,y,w,h,12,null,o.hl?COL.yellow:'rgba(110,95,70,.7)',o.hl?6:2);
   const hh=o.mini?0:Math.min(40,h*.2);if(hh){ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,hh+4,[12,12,0,0]);ctx.clip();ctx.fillStyle='#d24a3c';ctx.fillRect(x,y,w,hh+4);ctx.restore();
@@ -160,7 +170,7 @@ class LabelRoom{constructor(o={}){this.o=o}
     if(this.ijr)BB.staticJr(this.ijr.x,BELT_Y-4,120,{run:this.ijr.ph!=='zap'?1:0,glitch:this.ijr.ph==='zap'?.6:0,spd:this.ijr.ph==='out'?900:600,flip:this.ijr.ph==='zap'});
     if(this.ijr&&this.ijr.ph==='zap'){ctx.save();ctx.strokeStyle=Math.sin(t*40)>0?'#bff':'#fff';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();let x=this.ijr.x-40,y=BELT_Y-90;ctx.moveTo(x,y);for(let i=1;i<=5;i++){const tx=lerp(x,PR.x+PR.w-10,i/5),ty=lerp(y,PR.y+80,i/5)+(i<5?(Math.random()-.5)*40:0);ctx.lineTo(tx,ty)}ctx.stroke();ctx.restore()}
     if(this.pop){const pp=this.pop,a=BB.t-pp.t;if(a<1.8){const k=a<.3?ease.out(a/.3):a>1.5?1-(a-1.5)/.3:1;BB.staticJr(520,BELT_Y-4,110*Math.max(.01,k),{glitch:.3});if(a>.2&&a<1.5)R.bubble(520,BELT_Y-250,pp.txt)}else this.pop=null}
-    if(this.flurry){ctx.save();ctx.beginPath();ctx.rect(0,170,1500,BELT_Y-170);ctx.clip()}if(this.flurry)for(const f of this.flurry){ctx.save();ctx.globalAlpha=clamp((BELT_Y-60-f.y)/120,0,1);ctx.translate(f.x,f.y);ctx.rotate(f.r);drawCard(-120,-70,240,140,f.s,{});ctx.restore()}if(this.flurry)ctx.restore();
+    if(this.flurry){ctx.save();ctx.beginPath();ctx.rect(0,170,1500,BELT_Y-170);ctx.rect(PR.x-30,170,PR.w+60,BELT_Y-170);ctx.clip('evenodd')}if(this.flurry)for(const f of this.flurry){ctx.save();ctx.globalAlpha=clamp((BELT_Y-60-f.y)/120,0,1);ctx.translate(f.x,f.y);ctx.rotate(f.r);drawCard(-120,-70,240,140,f.s,{});ctx.restore()}if(this.flurry)ctx.restore();
     ctx.restore();R.drawMotes(this.motes,BB.paused?0:Math.min(.05,BB.dt||.016),t);BB.drawParts();
     if(this.cards&&['pick','fly','slap','clap','ship','enter'].includes(this.state))this.drawCards(t);
     this.drawHUD(t);BB.captionBox();
@@ -188,22 +198,22 @@ class LabelRoom{constructor(o={}){this.o=o}
     const sh=c.shake&&t-c.shake<.4?Math.sin((t-c.shake)*50)*10:0;ctx.save();ctx.globalAlpha=a;
     drawCard(x+sh,y,w,h,c.s,{badge:fl&&fl.i===i?null:'ABCD'[i],x:c.x,syl:this.revealed&&c.s===this.ans,hl:this.revealed&&c.s===this.ans&&Math.sin(t*6)>0});ctx.restore();
     if(this.state==='pick'&&!c.out)BB.button(r.x,r.y,r.w,r.h,'',{style:'none',id:'card'+i,onClick:()=>this.pick(c)})})}
-  drawHUD(t){if(this.state==='end')return;BB.panel(40,24,560,130,30);BB.text('BOXES SHIPPED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.shipped} of ${BOXES}`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+  drawHUD(t){if(this.state==='end')return;PANEL(40,24,560,130,30);BB.text('BOXES SHIPPED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.shipped} of ${BOXES}`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
     for(let i=0;i<BOXES;i++)BB.rrect(300+i*34,64,26,44,8,i<this.shipped?BB.lg(64,108,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
-    BB.panel(W-620,24,330,130,30);BB.text('POINTS '+this.score,W-455,62,32,'#fff',{stroke:4,maxW:290});BB.text('STREAK '+this.streak+(this.streak>=3?' \u2605':''),W-455,108,28,COL.yellow,{stroke:4,maxW:290});
+    PANEL(W-620,24,330,130,30);BB.text('POINTS '+this.score,W-455,62,32,'#fff',{stroke:4,maxW:290});BB.text('STREAK '+this.streak+(this.streak>=3?' \u2605':''),W-455,108,28,COL.yellow,{stroke:4,maxW:290});
     if(this.gain&&t-this.gain.t<1.4){const k=(t-this.gain.t)/1.4;ctx.save();ctx.globalAlpha=1-k;BB.text('+'+this.gain.p,W-455,170-k*40,44,COL.green,{font:'Rammetto One',stroke:6});ctx.restore()}
     BB.button(W-270,24,230,76,'TEACHER',{size:30,id:'teacher',onClick:()=>{this.teacher=true}});
     BB.pauseBtn(()=>this.pause());
     if(this.state==='end')return;if(this.state==='intro'){BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});return}
     // hint ladder (right column under Sprocket)
     const HX=1520,HY=700,on=this.state==='pick',names=['SLOW REPLAY','BEAT LIGHTS','FIRST BEAT','REMOVE A CARD','SHOW ANSWER'];
-    BB.panel(HX,HY,360,230,28);BB.text('HINTS USED '+this.hint+'/5',HX+180,HY+40,26,COL.yellow,{stroke:4});
+    PANEL(HX,HY,360,230,28);BB.text('HINTS USED '+this.hint+'/5',HX+180,HY+40,26,COL.yellow,{stroke:4});
     BB.text(this.hint<5?'next: '+names[this.hint]:'answer shown',HX+180,HY+76,22,'#d8efe9',{maxW:320});
     BB.button(HX+20,HY+100,150,70,'HINT',{style:'cream',size:32,id:'hint',disabled:!on||this.hint>=5,onClick:()=>this.doHint()});
     BB.button(HX+190,HY+100,150,70,'REPLAY',{style:'teal',size:28,id:'replay',disabled:!on,onClick:()=>this.tapBox()});
     BB.text('worth '+(on?this.points():'-')+' pts',HX+180,HY+200,24,'#fff',{stroke:4});
     BB.micMeter(40,H-150);if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});this.cb.draw(W/2,H-90)}}
-  drawTeacher(){ctx.fillStyle='rgba(8,18,17,.78)';ctx.fillRect(0,0,W,H);const x=W/2-560,y=150,w=1120,h=780;BB.panel(x,y,w,h,40);
+  drawTeacher(){ctx.fillStyle='rgba(8,18,17,.78)';ctx.fillRect(0,0,W,H);const x=W/2-560,y=150,w=1120,h=780;PANEL(x,y,w,h,40);
     BB.text('TEACHER SETTINGS',W/2,y+70,52,'#fff',{font:'Rammetto One',stroke:7});BB.text('Notes allowed on the labels (higher streaks unlock more of these)',W/2,y+130,28,COL.yellow,{stroke:4,maxW:w-80});
     ALL.forEach((k,i)=>{const cx=x+90+(i%4)*240,cy=y+180+Math.floor(i/4)*220,on=this.allowed.includes(k);
       BB.rrect(cx,cy,210,190,20,on?BB.lg(cy,cy+190,['#fffaf0','#e8e2cd']):'#2d4744',on?'#3fb45a':'#5d6866',on?6:3);R.tile(k,cx+20,cy+10,170,120,{shadow:false,alpha:on?1:.4});BB.text(R.NAME[k],cx+105,cy+160,26,on?COL.ink:'#9fb3ae',{maxW:190});
@@ -213,7 +223,7 @@ class LabelRoom{constructor(o={}){this.o=o}
     BB.button(W/2-160,y+h-120,320,96,'DONE',{style:'green',size:44,id:'tdone',onClick:()=>{this.teacher=false}})}
   capPos(){return this.state==='end'?{y:722,maxW:1150}:{y:942,maxW:1100}}
   drawEnd(){const t=BB.t-this.st;if(t<.4)return;const k=ease.back(clamp((t-.4)/.6,0,1));ctx.fillStyle=`rgba(8,18,17,${.6*clamp(t,0,1)})`;ctx.fillRect(0,0,W,H);
-    ctx.save();ctx.translate(W/2,370);ctx.scale(k,k);BB.panel(-600,-195,1200,390,44);BB.text('ROOM 4 COMPLETE!',0,-130,68,'#fff',{font:'Rammetto One',stroke:9});
+    ctx.save();ctx.translate(W/2,370);ctx.scale(k,k);PANEL(-600,-195,1200,390,44);BB.text('ROOM 4 COMPLETE!',0,-130,68,'#fff',{font:'Rammetto One',stroke:9});
     drawCard(-230,-80,460,140,['q','e','s','q'],{});BB.text(BOXES+' boxes labeled  \u2022  '+this.score+' points  \u2022  best streak '+this.best,0,100,34,COL.yellow,{stroke:5,maxW:1100});BB.text('Next: DELIVERY (coming soon)',0,150,30,'#fff',{stroke:5});ctx.restore();
     if(t>1.6){BB.button(W/2-520,590,480,110,'ROOM MAP',{style:'green',size:52,id:'tomap',onClick:()=>BB.roomDone('label')});BB.button(W/2+40,590,480,110,'PLAY AGAIN',{size:46,id:'again',onClick:()=>BB.go(new LabelRoom())})}}
 }
