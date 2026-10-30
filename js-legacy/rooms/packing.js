@@ -1268,17 +1268,17 @@
     }
     drawHUD() {
       const t = BB.t;
-      BB.panel(40, 24, 560, 130, 30);
-      BB.text("ORDERS PACKED", 70, 58, 32, COL.yellow, { align: "left", stroke: 4 });
-      BB.text("".concat(this.packed, " of ").concat(ROUNDS.length), 70, 104, 30, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
-      for (let i = 0; i < ROUNDS.length; i++) BB.rrect(330 + i * 42, 60, 32, 52, 9, i < this.packed ? BB.lg(60, 112, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
+      BB.panel(40, 24, 420, 110, 28);
+      BB.text("ORDERS PACKED", 64, 52, 30, COL.yellow, { align: "left", stroke: 4 });
+      BB.text("".concat(this.packed, " of ").concat(ROUNDS.length), 64, 98, 28, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
+      for (let i = 0; i < ROUNDS.length; i++) BB.rrect(196 + i * 38, 80, 30, 36, 8, i < this.packed ? BB.lg(80, 116, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
       BB.pauseBtn(() => this.pause());
-      if (this.state === "intro") BB.button(W - 300, H - 130, 260, 100, "SKIP INTRO", { size: 36, id: "skip", onClick: () => this.skipIntro() });
+      if (this.state === "intro") BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
       else {
         BB.micMeter(40, H - 150);
         BB.overrideBtn(() => this.manualOverride(), { pop: this.ovPop && t - this.ovPop < 0.3 ? 1.08 : 1 });
       }
-      if (this.cb && this.state === "clap") this.cb.draw(W / 2, H - 90);
+      if (this.cb && this.state === "clap") this.cb.draw(W / 2, H - 95);
       if (this.cb && this.cb.few && t - this.cb.few < 1.2) R.bubble(W / 2, H - 300, "Everyone together!", COL.ink);
     }
     drawEnd() {

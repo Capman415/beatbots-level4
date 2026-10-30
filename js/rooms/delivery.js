@@ -97,7 +97,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       BB.rrect(x-150,y-345,300,44,14,'rgba(10,30,40,.85)','#7ef0ff',3);BB.text(this.shield===2?'SHIELD: PERFECT CLAP!':'SHIELD CRACKED!',x,y-323,22,'#bff8ff',{stroke:0})}
     let bub=null;if(ph==='dodge'&&k<1.6)bub='missed me! hee hee!';else if(ph==='laugh'&&k<1.6)bub='hee hee hee!';else if(ph==='hit'&&k<1.4)bub='OOF!';else if(this.state==='intro')bub="you'll never deliver these!";
     if(bub&&!this.shield)R.bubble(x-300,y-250,bub)}/* v14.1.1 beside his head, clear of the HP panel */
-  drawHP(){const x=JR.x-190,y=84,w=380,f=this.hp/TOTAL;BB.rrect(x-10,y-60,w+20,130,24,'rgba(12,16,28,.85)','#ff8adf',3);BB.text('STATIC JR.',x+w/2,y-24,24,'#ffd6f4',{stroke:0});
+  drawHP(){const x=W-40-400+20,y=78,w=360,f=this.hp/TOTAL;BB.rrect(x-20,y-54,w+40,110,28,'rgba(12,16,28,.85)','#ff8adf',3);BB.text('STATIC JR.',x+w/2,y-24,24,'#ffd6f4',{stroke:0});
     BB.rrect(x,y,w,28,10,'#2a2233',null,0);if(f>0)BB.rrect(x,y,w*f,28,10,BB.lg(y,y+28,['#ff9ad8','#c03a8e']),null,0);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,w,28);for(let i=1;i<TOTAL;i++){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x+i*w/TOTAL-1,y,2,28)}}
   drawLauncher(){const x=LCH.x,y=LCH.y,k=this.state==='throw'?BB.t-this.st:9,rc=k<.25?Math.sin(k/.25*Math.PI)*18:0;
     if(BB.IMG.sprocket){const im=BB.IMG.sprocket,h=210,w=h*im.width/im.height;ctx.drawImage(im,x-w/2-150,y-h+90,w,h)}
@@ -126,9 +126,9 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     if(this.face){const f=this.face,s=95;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.drag?0:Math.sin(t*3)*.1);BB.rrect(-s,-s,s*2,s*2,16,BB.lg(-s,s,['#9b8fe0','#4b3f8f']),COL.ink,6);ctx.save();ctx.beginPath();ctx.roundRect(-s+5,-s+5,s*2-10,s*2-10,12);ctx.clip();BB.staticJr(0,s*1.25,s*2.1,{});ctx.restore();
       BB.rrect(-90,s+6,180,34,10,'rgba(12,28,26,.85)',COL.yellow,2);BB.text(f.drag?'DROP ON HIS HEAD!':'DRAG ME TO HIM!',0,s+23,18,'#fff',{maxW:170});ctx.restore();
       if(!f.drag){ctx.save();ctx.globalAlpha=.5+.4*Math.sin(t*8);ctx.strokeStyle=COL.yellow;ctx.lineWidth=6;ctx.setLineDash([14,10]);ctx.beginPath();ctx.moveTo(f.x,f.y-s);ctx.quadraticCurveTo((f.x+JR.x)/2,Math.min(f.y,JR.y)-260,JR.x,JR.y-230);ctx.stroke();ctx.restore()}}
-    if(!end){BB.panel(40,24,560,130,30);BB.text('TRUCK LOAD  '+fill+' of '+TOTAL,70,58,30,COL.yellow,{align:'left',stroke:4});for(let i=0;i<TOTAL;i++)BB.rrect(70+i*62,84,50,40,8,i<fill?BB.lg(84,124,['#e2b272','#b07a40']):'#2d4744','#fff',3);
+    if(!end){BB.panel(40,24,400,110,28);BB.text('TRUCK LOAD  '+fill+' of '+TOTAL,64,52,28,COL.yellow,{align:'left',stroke:4});for(let i=0;i<TOTAL;i++)BB.rrect(64+i*44,78,36,36,8,i<fill?BB.lg(78,114,['#e2b272','#b07a40']):'#2d4744','#fff',3);
       if(this.phT&&t-this.phT<2.4)BB.text(this.ph===1?'PHASE 2: FASTER!':'PHASE 3: WILD STATIC!',W/2,200,64,'#ff8adf',{font:'Rammetto One',stroke:8})}
-    BB.pauseBtn(()=>this.pause());BB.micMeter(40,H-150);if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});if(BB.fuzz){ctx.save();ctx.translate((Math.random()-.5)*10,(Math.random()-.5)*4)}this.cb.draw(W/2,H-90);if(BB.fuzz)ctx.restore()}
+    BB.pauseBtn(()=>this.pause());BB.micMeter(40,H-150);if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});if(BB.fuzz){ctx.save();ctx.translate((Math.random()-.5)*10,(Math.random()-.5)*4)}this.cb.draw(W/2,H-95);if(BB.fuzz)ctx.restore()}
     // screen fuzz (brief, translucent: rhythm stays readable)
     if(BB.fuzz){ctx.save();ctx.globalAlpha=.22;for(let i=0;i<70;i++){ctx.fillStyle=Math.random()<.5?'#fff':'#7ef0ff';ctx.fillRect(Math.random()*W,Math.random()*H,40+Math.random()*260,2+Math.random()*5)}ctx.restore()}
     if(this.state==='intro'&&k<2.6)BB.titleCard('ROOM 5: DELIVERY SHOWDOWN','Clap the boxes. Beat Static Jr.!',k/2.6);

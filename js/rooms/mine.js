@@ -490,32 +490,33 @@ class MineRoom{
   drawHUD(){const R=this.R||ROCKS[0],F=FLOORS[R.f];
     // cart meter: WHOLE NOTES n of 8
     const mp=this.meterPop&&BB.t-this.meterPop<.5?1+.12*Math.sin((BB.t-this.meterPop)*Math.PI*2):1;
-    {const cp=this.chipPop&&BB.t-this.chipPop<.6?1+.15*Math.sin((BB.t-this.chipPop)/.6*Math.PI):1,im=BB.V2.chip;ctx.save();ctx.translate(821,89);ctx.scale(cp,cp);BB.panel(-64,-65,128,130,28);
-      if(im){const h=78,w=im.width*h/im.height;if(this.chip){BB.glow(0,0,70,'rgba(255,220,120,A)',.35+.1*Math.sin(BB.t*3));ctx.drawImage(im,-w/2,-h/2-6,w,h)}else{ctx.globalAlpha=.22;ctx.drawImage(im,-w/2,-h/2-6,w,h);ctx.globalAlpha=1}}
-      BB.text('BEAT CHIP',0,48,17,this.chip?COL.yellow:'#8fb5ad',{stroke:3});ctx.restore()}
-    ctx.save();ctx.translate(40,24);ctx.scale(mp,mp);BB.panel(0,0,640,130,30);
-    BB.text('WHOLE NOTES',40,52,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.count} of 8`,40,92,28,'#fff',{align:'left',font:'Rammetto One',stroke:4});
-    for(let i=0;i<8;i++){const on=i<this.count;BB.wholeNote(300+i*40,72,15,{fill:on?'#6ee678':'#2d4744',ring:on?COL.ink:'#22383a'})}
+    {const cp=this.chipPop&&BB.t-this.chipPop<.6?1+.15*Math.sin((BB.t-this.chipPop)/.6*Math.PI):1,im=BB.V2.chip;ctx.save();ctx.translate(752,79);ctx.scale(cp,cp);BB.panel(-55,-55,110,110,26);
+      if(im){const h=60,w=im.width*h/im.height;if(this.chip){BB.glow(0,0,70,'rgba(255,220,120,A)',.35+.1*Math.sin(BB.t*3));ctx.drawImage(im,-w/2,-h/2-6,w,h)}else{ctx.globalAlpha=.22;ctx.drawImage(im,-w/2,-h/2-6,w,h);ctx.globalAlpha=1}}
+      BB.text('BEAT CHIP',0,38,15,this.chip?COL.yellow:'#8fb5ad',{stroke:3});ctx.restore()}
+    ctx.save();ctx.translate(40,24);ctx.scale(mp,mp);BB.panel(0,0,480,110,28);
+    BB.text('WHOLE NOTES',24,30,30,COL.yellow,{align:'left',stroke:4});BB.text(`${this.count} of 8`,24,76,26,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+    for(let i=0;i<8;i++){const on=i<this.count;BB.wholeNote(206+i*32,76,12,{fill:on?'#6ee678':'#2d4744',ring:on?COL.ink:'#22383a'})}
     ctx.restore();
     // tempo / dynamics sign with Italian word
-    const sg=R.sign||[F.name,F.mean],icons=R.icons||(F.icon?[F.icon]:[]);BB.panel(W-640,24,600,130,30);
-    icons.forEach((ic,i)=>BB.sprite(ic,W-562+i*70,134,86,{shadow:false})/* inside border */);
-    BB.text(sg[0],W-560+icons.length*70+(icons.length?0:-20),70,sg[0].length>10?34:46,'#fff',{align:'left',font:'Rammetto One',stroke:5,maxW:420-icons.length*70});
-    BB.text(sg[1]+(R.dyn==='p'?'  (p)':R.dyn==='f'?'  (f)':'')+`  ·  ${R.bpm} bpm`,W-560+icons.length*70+(icons.length?0:-20),118,28,COL.yellow,{align:'left',stroke:4});
-    BB.pauseBtn(()=>this.pause(),962);
+    const sg=R.sign||[F.name,F.mean],icons=R.icons||(F.icon?[F.icon]:[]);BB.panel(W-520,24,480,110,28);/* v14.1.2 mirrors WHOLE NOTES */
+    icons.forEach((ic,i)=>BB.sprite(ic,W-470+i*70,124,76,{shadow:false})/* inside border */);
+    BB.text(sg[0],W-500+icons.length*70,60,sg[0].length>10?32:40,'#fff',{align:'left',font:'Rammetto One',stroke:5,maxW:440-icons.length*70});
+    BB.text(sg[1]+(R.dyn==='p'?'  (p)':R.dyn==='f'?'  (f)':'')+`  ·  ${R.bpm} bpm`,W-500+icons.length*70,104,24,COL.yellow,{align:'left',stroke:4,maxW:440-icons.length*70});
+    BB.pauseBtn(()=>this.pause(),984);
     // beat lights (the green lights keep the beat)
     const lit=[0,0,0,0];let count=false;
     if(this.beat){const bn=this.beatNow()-BB.visLat()/this.beat.spb;if(bn>=0){const bi=Math.floor(bn),f=bn-bi;lit[bi%4]=Math.max(.25,1-f*.9);count=this.state==='count'}}
-    BB.beatPills(W/2,H-140,lit,{marks:this.marks,wobble:this.wob*(this.prank&&this.prank.ph==='throw'?1:.4)});
-    if(count){BB.text(this.warm>0?this.warm+' ...':'WARM UP: clap 4 in a row!',W/2,H-265,this.warm>0?70:44,COL.yellow,{font:'Rammetto One',stroke:8})}
-    else if(this.state==='dig'){BB.text(R.dyn==='p'?'soft claps!':R.dyn==='f'?'LOUD claps!':(strikesFor(R)+' strikes break the rock!'),W/2,H-230,34,'#fff',{stroke:6})}
+    const need=strikesFor(this.R),pw=need>6?26:34,sw=need*pw-8+40,gx=W/2-(392+20+sw)/2;/* v14.1.2 lights+STRIKES centred group, level with MIC/MANUAL */
+    BB.beatPills(gx+196,H-95,lit,{marks:this.marks,wobble:this.wob*(this.prank&&this.prank.ph==='throw'?1:.4)});
+    if(count){BB.text(this.warm>0?this.warm+' ...':'WARM UP: clap 4 in a row!',W/2,H-200,this.warm>0?70:44,COL.yellow,{font:'Rammetto One',stroke:8})}
+    else if(this.state==='dig'){BB.text(R.dyn==='p'?'soft claps!':R.dyn==='f'?'LOUD claps!':(strikesFor(R)+' strikes break the rock!'),W/2,H-185,34,'#fff',{stroke:6})}
     if(this.pebbles){ctx.fillStyle='#8a7060';ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const q of this.pebbles){ctx.beginPath();ctx.ellipse(q.x,q.y,14,10,q.x,0,7);ctx.fill();ctx.stroke()}}
     // crack progress chips next to the lights
-    const need=strikesFor(this.R),pw=need>6?28:38;for(let i=0;i<need;i++){const on=this.state==='pop'||i<(this.strikes||0);BB.rrect(W/2+400+i*pw,H-162,pw-10,44,8,on?COL.yellow:'#3a4a48','#fff',2)}
-    BB.text('STRIKES',W/2+400+need*pw/2-5,H-190,22,'#fff',{stroke:4});
+    BB.panel(gx+412,H-150,sw,110,26);for(let i=0;i<need;i++){const on=this.state==='pop'||i<(this.strikes||0);BB.rrect(gx+432+i*pw,H-90,pw-8,36,8,on?COL.yellow:'#3a4a48','#fff',2)}
+    BB.text('STRIKES',gx+412+sw/2,H-118,20,'#fff',{stroke:4});
     BB.micMeter(40,H-150,{band:R.dyn==='p'?'soft':R.dyn==='f'?'loud':null});
     BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&BB.t-this.ovPop<.3?1.08:1})}
-  drawIntroHUD(){BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});BB.pauseBtn(()=>this.pause(),962)}
+  drawIntroHUD(){BB.button(W-370,H-150,330,110,'SKIP INTRO',{size:34,id:'skip',onClick:()=>this.skipIntro()});BB.pauseBtn(()=>this.pause(),984)}
   drawEnd(){const t=BB.t-this.st;if(t<7.4)return;const k=ease.back(clamp((t-7.4)/.6,0,1));// after Sorter Bot rolls off at the surface
     ctx.save();ctx.translate(W/2,330);ctx.scale(k,k);BB.panel(-560,-250,1120,500,44);
     BB.text('ROOM 1 COMPLETE!',0,-160,72,'#fff',{font:'Rammetto One',stroke:9});

@@ -176,8 +176,8 @@
       ctx.restore();
     }
   };
-  const PR = { x: 70, y: 330, w: 250, h: 220 };
-  const BELT_Y = 560, BOX_X = 880, BOX_W = 264, BOX_H = 250;
+  const PR = { x: 80, y: 370, w: 216, h: 180 };
+  const BELT_Y = 560, BOX_X = 880, BOX_W = 224, BOX_H = 206;
   function drawBox(x, y, w, h, lbl, t, o = {}) {
     const im = BB.V2.crate;
     BB.rrect(x + 6, y + 10, w, h, 12, "rgba(0,0,0,.3)");
@@ -772,7 +772,7 @@
         if (this.state === "pick") BB.button(bx, by, BOX_W, BOX_H, "", { style: "none", id: "box", onClick: () => this.tapBox() });
         if (this.state === "pick" && (!this.pb || ac.currentTime > this.pb.end)) {
           const pu = 0.5 + 0.5 * Math.sin(t * 5);
-          BB.plaque(this.boxX, by - 46, 270, 50, "TAP TO SHAKE!", 24, "#28403c", { cols: pu > 0.5 ? ["#fff8d0", "#ffe680", "#e8b830"] : void 0 });
+          BB.plaque(this.boxX, by - 40, 224, 44, "TAP TO SHAKE!", 22, "#28403c", { cols: pu > 0.5 ? ["#fff8d0", "#ffe680", "#e8b830"] : void 0 });
         } else if (this.state === "pick" && this.pb && ac.currentTime < this.pb.end) BB.plaque(this.boxX, by - 46, 270, 50, this.pb.spb > 0.9 ? "\u266A SLOW..." : "\u266A LISTEN...", 24, "#28403c");
       }
       R.paint(ctx, () => this.drawPrinter(t));
@@ -913,33 +913,33 @@
     }
     drawHUD(t) {
       if (this.state === "end") return;
-      PANEL(40, 24, 640, 130, 30);
-      BB.text("BOXES SHIPPED", 70, 58, 32, COL.yellow, { align: "left", stroke: 4 });
-      BB.text("".concat(this.shipped, " of ").concat(BOXES), 70, 104, 30, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
-      for (let i = 0; i < BOXES; i++) BB.rrect(300 + i * 34, 64, 26, 44, 8, i < this.shipped ? BB.lg(64, 108, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
-      PANEL(1186, 24, 330, 130, 30);
-      BB.text("POINTS " + this.score, 1351, 62, 32, "#fff", { stroke: 4, maxW: 290 });
-      BB.text("STREAK " + this.streak + (this.streak >= 3 ? " \u2605" : ""), 1351, 108, 28, COL.yellow, { stroke: 4, maxW: 290 });
+      PANEL(40, 24, 470, 110, 28);
+      BB.text("BOXES SHIPPED", 64, 52, 30, COL.yellow, { align: "left", stroke: 4 });
+      BB.text("".concat(this.shipped, " of ").concat(BOXES), 64, 98, 28, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
+      for (let i = 0; i < BOXES; i++) BB.rrect(196 + i * 28, 82, 22, 32, 6, i < this.shipped ? BB.lg(82, 114, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
+      PANEL(1196, 24, 260, 110, 28);
+      BB.text("POINTS " + this.score, 1326, 56, 30, "#fff", { stroke: 4, maxW: 224 });
+      BB.text("STREAK " + this.streak + (this.streak >= 3 ? " \u2605" : ""), 1326, 100, 26, COL.yellow, { stroke: 4, maxW: 290 });
       if (this.gain && t - this.gain.t < 1.4) {
         const k = (t - this.gain.t) / 1.4;
         ctx.save();
         ctx.globalAlpha = 1 - k;
-        BB.text("+" + this.gain.p, 1351, 170 - k * 40, 44, COL.green, { font: "Rammetto One", stroke: 6 });
+        BB.text("+" + this.gain.p, 1326, 170 - k * 40, 44, COL.green, { font: "Rammetto One", stroke: 6 });
         ctx.restore();
       }
-      BB.button(1650, 24, 230, 130, "TEACHER", { size: 32, id: "teacher", onClick: () => {
+      BB.button(1680, 24, 200, 110, "TEACHER", { size: 30, id: "teacher", onClick: () => {
         this.teacher = true;
       } });
-      BB.pauseBtn(() => this.pause(), 813);
+      BB.pauseBtn(() => this.pause(), 738);
       if (this.state === "end") return;
       if (this.state === "intro") {
-        BB.button(W - 300, H - 130, 260, 100, "SKIP INTRO", { size: 36, id: "skip", onClick: () => this.skipIntro() });
+        BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
         return;
       }
       BB.micMeter(40, H - 150);
       if (this.cb) {
         BB.overrideBtn(() => this.manualOverride(), { pop: this.ovPop && t - this.ovPop < 0.3 ? 1.08 : 1 });
-        this.cb.draw(W / 2, H - 90);
+        this.cb.draw(W / 2, H - 95);
       }
     }
     drawTeacher() {

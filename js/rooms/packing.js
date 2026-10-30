@@ -282,12 +282,12 @@ class PackingRoom{constructor(o={}){this.o=o}
       BB.text(Math.ceil(left)+' beats',x+w-20,y+28,24,'#fff',{align:'right',stroke:3});BB.rrect(x+20,y+50,w-40,20,10,'#2d4744');if(f>0)BB.rrect(x+20,y+50,(w-40)*f,20,10,f<.25?'#e65046':'#ffe066')}
     else if(st){BB.rrect(x,y,w,60,18,'rgba(12,28,26,.88)',COL.teal2,4);BB.text('BONUS STARS: '+'\u2605'.repeat(st),x+w/2,y+30,26,COL.yellow,{stroke:3})}}
   capPos(){return this.state==='clap'&&this.cb?{y:250,maxW:1140}:{y:H-114,maxW:1140}}
-  drawHUD(){const t=BB.t;BB.panel(40,24,560,130,30);BB.text('ORDERS PACKED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.packed} of ${ROUNDS.length}`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
-    for(let i=0;i<ROUNDS.length;i++)BB.rrect(330+i*42,60,32,52,9,i<this.packed?BB.lg(60,112,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
+  drawHUD(){const t=BB.t;BB.panel(40,24,420,110,28);BB.text('ORDERS PACKED',64,52,30,COL.yellow,{align:'left',stroke:4});BB.text(`${this.packed} of ${ROUNDS.length}`,64,98,28,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+    for(let i=0;i<ROUNDS.length;i++)BB.rrect(196+i*38,80,30,36,8,i<this.packed?BB.lg(80,116,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
     BB.pauseBtn(()=>this.pause());
-    if(this.state==='intro')BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});
+    if(this.state==='intro')BB.button(W-370,H-150,330,110,'SKIP INTRO',{size:34,id:'skip',onClick:()=>this.skipIntro()});
     else{BB.micMeter(40,H-150);BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1})}
-    if(this.cb&&this.state==='clap')this.cb.draw(W/2,H-90);
+    if(this.cb&&this.state==='clap')this.cb.draw(W/2,H-95);
     if(this.cb&&this.cb.few&&t-this.cb.few<1.2)R.bubble(W/2,H-300,'Everyone together!',COL.ink)}
   drawEnd(){const t=BB.t-this.st;if(t<.4)return;const k=ease.back(clamp((t-.4)/.6,0,1));ctx.fillStyle=`rgba(8,18,17,${.5*clamp(t,0,1)})`;ctx.fillRect(0,0,W,H);
     ctx.save();ctx.translate(W/2,360);ctx.scale(k,k);BB.panel(-600,-260,1200,520,44);

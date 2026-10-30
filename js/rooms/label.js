@@ -54,8 +54,8 @@ const howTo={title:'LABEL ROOM: Static Jr. scrambled the labels!',
   example:(x,y,w,h,t)=>{ctx.save();ctx.translate(x+w/2,y+h/2);const sh=Math.sin(t*20)*(t%2<.5?6:0);drawBox(-90+sh,-160,180,150,null,t);
     [['q','e','q','q'],['q','q','e','q']].forEach((s,i)=>drawCard(-220+i*230,40,210,140,s,{badge:'AB'[i],hl:i===1&&t%3>1.5}));ctx.restore()}};
 // ---- drawing helpers ----
-const PR={x:70,y:330,w:250,h:220}/* v14.1.1 sits on the belt end */;
-const BELT_Y=560,BOX_X=880,BOX_W=264,BOX_H=250;/* v14.1.1 squarer box */
+const PR={x:80,y:370,w:216,h:180}/* v14.1.2 snug *//* v14.1.1 sits on the belt end */;
+const BELT_Y=560,BOX_X=880,BOX_W=224,BOX_H=206;/* v14.1.2 snug *//* v14.1.1 squarer box */
 function drawBox(x,y,w,h,lbl,t,o={}){const im=BB.V2.crate;BB.rrect(x+6,y+10,w,h,12,'rgba(0,0,0,.3)');
   const gr=BB.lg(y,y+h,['#e2a868','#c08446','#93582a']);BB.rrect(x,y,w,h,12,gr,'#4a2e12',4);
   ctx.fillStyle='rgba(255,240,210,.3)';ctx.fillRect(x+6,y+6,w-12,6);ctx.fillStyle='rgba(240,220,170,.85)';ctx.fillRect(x+w/2-16,y,32,h*.38);// tape
@@ -179,7 +179,7 @@ class LabelRoom{constructor(o={}){this.o=o}
       ctx.save();if(sh){ctx.translate(this.boxX,BELT_Y);ctx.rotate(sh*.006);ctx.translate(-this.boxX,-BELT_Y)}
       drawBox(bx,by,BOX_W,BOX_H,lbl,t,{lamps:this.hint>=2&&this.state==='pick'?this.lit:null,first:this.hint>=3&&!lbl?this.ans[0]:null});ctx.restore();
       if(this.state==='pick')BB.button(bx,by,BOX_W,BOX_H,'',{style:'none',id:'box',onClick:()=>this.tapBox()});
-      if(this.state==='pick'&&(!this.pb||ac.currentTime>this.pb.end)){const pu=.5+.5*Math.sin(t*5);BB.plaque(this.boxX,by-46,270,50,'TAP TO SHAKE!',24,'#28403c',{cols:pu>.5?['#fff8d0','#ffe680','#e8b830']:undefined})}
+      if(this.state==='pick'&&(!this.pb||ac.currentTime>this.pb.end)){const pu=.5+.5*Math.sin(t*5);BB.plaque(this.boxX,by-40,224,44,'TAP TO SHAKE!',22,'#28403c',{cols:pu>.5?['#fff8d0','#ffe680','#e8b830']:undefined})}
       else if(this.state==='pick'&&this.pb&&ac.currentTime<this.pb.end)BB.plaque(this.boxX,by-46,270,50,this.pb.spb>.9?'\u266A SLOW...':'\u266A LISTEN...',24,'#28403c')}
     R.paint(ctx,()=>this.drawPrinter(t));this.drawSprocket(t);
     if(this.ijr)BB.staticJr(this.ijr.x,BELT_Y-4,120,{run:this.ijr.ph!=='zap'?1:0,glitch:this.ijr.ph==='zap'?.6:0,spd:this.ijr.ph==='out'?900:600,flip:this.ijr.ph==='zap'});
@@ -213,15 +213,15 @@ class LabelRoom{constructor(o={}){this.o=o}
     const sh=c.shake&&t-c.shake<.4?Math.sin((t-c.shake)*50)*10:0;ctx.save();ctx.globalAlpha=a;
     drawCard(x+sh,y,w,h,c.s,{badge:fl&&fl.i===i?null:'ABCD'[i],x:c.x,syl:this.revealed&&c.s===this.ans,hl:this.revealed&&c.s===this.ans&&Math.sin(t*6)>0});ctx.restore();
     if(this.state==='pick'&&!c.out)BB.button(r.x,r.y,r.w,r.h,'',{style:'none',id:'card'+i,onClick:()=>this.pick(c)})})}
-  drawHUD(t){if(this.state==='end')return;PANEL(40,24,640,130,30);BB.text('BOXES SHIPPED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.shipped} of ${BOXES}`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
-    for(let i=0;i<BOXES;i++)BB.rrect(300+i*34,64,26,44,8,i<this.shipped?BB.lg(64,108,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
-    PANEL(1186,24,330,130,30);BB.text('POINTS '+this.score,1351,62,32,'#fff',{stroke:4,maxW:290});BB.text('STREAK '+this.streak+(this.streak>=3?' \u2605':''),1351,108,28,COL.yellow,{stroke:4,maxW:290});
-    if(this.gain&&t-this.gain.t<1.4){const k=(t-this.gain.t)/1.4;ctx.save();ctx.globalAlpha=1-k;BB.text('+'+this.gain.p,1351,170-k*40,44,COL.green,{font:'Rammetto One',stroke:6});ctx.restore()}
-    BB.button(1650,24,230,130,'TEACHER',{size:32,id:'teacher',onClick:()=>{this.teacher=true}});
-    BB.pauseBtn(()=>this.pause(),813)/* v14.1 top row: 40|813|1186|1650, even 133 gaps */;
-    if(this.state==='end')return;if(this.state==='intro'){BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});return}
+  drawHUD(t){if(this.state==='end')return;PANEL(40,24,470,110,28);BB.text('BOXES SHIPPED',64,52,30,COL.yellow,{align:'left',stroke:4});BB.text(`${this.shipped} of ${BOXES}`,64,98,28,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+    for(let i=0;i<BOXES;i++)BB.rrect(196+i*28,82,22,32,6,i<this.shipped?BB.lg(82,114,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
+    PANEL(1196,24,260,110,28);BB.text('POINTS '+this.score,1326,56,30,'#fff',{stroke:4,maxW:224});BB.text('STREAK '+this.streak+(this.streak>=3?' \u2605':''),1326,100,26,COL.yellow,{stroke:4,maxW:290});
+    if(this.gain&&t-this.gain.t<1.4){const k=(t-this.gain.t)/1.4;ctx.save();ctx.globalAlpha=1-k;BB.text('+'+this.gain.p,1326,170-k*40,44,COL.green,{font:'Rammetto One',stroke:6});ctx.restore()}
+    BB.button(1680,24,200,110,'TEACHER',{size:30,id:'teacher',onClick:()=>{this.teacher=true}});
+    BB.pauseBtn(()=>this.pause(),738)/* v14.1.2 top row: 40|738|1196|1680, widths 470/240/260/200, even ~218 gaps, all 110 tall */;
+    if(this.state==='end')return;if(this.state==='intro'){BB.button(W-370,H-150,330,110,'SKIP INTRO',{size:34,id:'skip',onClick:()=>this.skipIntro()});return}
     // v14.0.2: hint panel removed (teacher); tap the box to hear it again
-    BB.micMeter(40,H-150);if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});this.cb.draw(W/2,H-90)}}
+    BB.micMeter(40,H-150);if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});this.cb.draw(W/2,H-95)}}
   drawTeacher(){ctx.fillStyle='rgba(8,18,17,.78)';ctx.fillRect(0,0,W,H);const x=W/2-560,y=150,w=1120,h=780;PANEL(x,y,w,h,40);
     BB.text('TEACHER SETTINGS',W/2,y+70,52,'#fff',{font:'Rammetto One',stroke:7});BB.text('Notes allowed on the labels (higher streaks unlock more of these)',W/2,y+130,28,COL.yellow,{stroke:4,maxW:w-80});
     ALL.forEach((k,i)=>{const cx=x+90+(i%4)*240,cy=y+180+Math.floor(i/4)*220,on=this.allowed.includes(k);

@@ -461,8 +461,8 @@
     }
     /* v14.1.1 beside his head, clear of the HP panel */
     drawHP() {
-      const x = JR.x - 190, y = 84, w = 380, f = this.hp / TOTAL;
-      BB.rrect(x - 10, y - 60, w + 20, 130, 24, "rgba(12,16,28,.85)", "#ff8adf", 3);
+      const x = W - 40 - 400 + 20, y = 78, w = 360, f = this.hp / TOTAL;
+      BB.rrect(x - 20, y - 54, w + 40, 110, 28, "rgba(12,16,28,.85)", "#ff8adf", 3);
       BB.text("STATIC JR.", x + w / 2, y - 24, 24, "#ffd6f4", { stroke: 0 });
       BB.rrect(x, y, w, 28, 10, "#2a2233", null, 0);
       if (f > 0) BB.rrect(x, y, w * f, 28, 10, BB.lg(y, y + 28, ["#ff9ad8", "#c03a8e"]), null, 0);
@@ -638,9 +638,9 @@
         }
       }
       if (!end) {
-        BB.panel(40, 24, 560, 130, 30);
-        BB.text("TRUCK LOAD  " + fill + " of " + TOTAL, 70, 58, 30, COL.yellow, { align: "left", stroke: 4 });
-        for (let i = 0; i < TOTAL; i++) BB.rrect(70 + i * 62, 84, 50, 40, 8, i < fill ? BB.lg(84, 124, ["#e2b272", "#b07a40"]) : "#2d4744", "#fff", 3);
+        BB.panel(40, 24, 400, 110, 28);
+        BB.text("TRUCK LOAD  " + fill + " of " + TOTAL, 64, 52, 28, COL.yellow, { align: "left", stroke: 4 });
+        for (let i = 0; i < TOTAL; i++) BB.rrect(64 + i * 44, 78, 36, 36, 8, i < fill ? BB.lg(78, 114, ["#e2b272", "#b07a40"]) : "#2d4744", "#fff", 3);
         if (this.phT && t - this.phT < 2.4) BB.text(this.ph === 1 ? "PHASE 2: FASTER!" : "PHASE 3: WILD STATIC!", W / 2, 200, 64, "#ff8adf", { font: "Rammetto One", stroke: 8 });
       }
       BB.pauseBtn(() => this.pause());
@@ -651,7 +651,7 @@
           ctx.save();
           ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 4);
         }
-        this.cb.draw(W / 2, H - 90);
+        this.cb.draw(W / 2, H - 95);
         if (BB.fuzz) ctx.restore();
       }
       if (BB.fuzz) {

@@ -82,7 +82,7 @@ R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
   if(o.beats){BB.text(String(R.BEATS[k]),x+w-18,y+h-18,22,'#fff',{stroke:4})}
   ctx.restore()};
 // segmented beat pills: one cell per beat; ti-ti = 2 segments, tika-tika = 4, half/whole stretch over cells
-R.pills=(cx,y,seq,st={})=>{const L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0)),gap=st.gap||(L>4?14:24),bw=st.bw||(L>4?Math.floor((672-(L-1)*gap)/L):150),ph=50,tot=L*bw+(L-1)*gap;BB.rrect(cx-tot/2-28,y-40,tot+56,100,30,'rgba(0,0,0,.25)');BB.well(cx-tot/2-30,y-50,tot+60,100,30);
+R.pills=(cx,y,seq,st={})=>{const L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0)),gap=st.gap||(L>4?14:24),bw=st.bw||(L>4?Math.floor((560-(L-1)*gap)/L):120),ph=50,tot=L*bw+(L-1)*gap;BB.rrect(cx-tot/2-18,y-45,tot+36,110,26,'rgba(0,0,0,.25)');BB.well(cx-tot/2-20,y-55,tot+40,110,26);/* v14.1.2 snug */
   let b=0,si=0;seq.forEach((k,i)=>{const n=R.BEATS[k],x=cx-tot/2+b*(bw+gap),w=n*bw+(n-1)*gap,subs=R.SUB[k];
     if(k==='r'){BB.rrect(x,y-ph/2,w,ph,14,'#1b2a29','rgba(235,245,240,.4)',3);R.glyph('r',x+w/2,y+ph*.62,9,'rgba(235,245,240,.7)')}
     else{const sg=subs.length===1?[[0,1]]:subs.map((f,j)=>[f,f+1/subs.length]);const sgap=k==='s'?6:8;
@@ -152,7 +152,7 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     else if(ph==='listen')msg=this.read?'READ IT... (silently)':'MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-this.L)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
     if(msg)BB.text(msg,cx,y-125,ph==='ready'?56:40,ph==='clap'||msg==='GO!'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
     // beat dots under the pills
-    if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*150+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
+    if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*120+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
 R.ClapBack=ClapBack;
 // v12.6: paper fibre texture (cached pattern) for tickets
 let paperPat=null;R.paper=(x,y,w,h)=>{if(!paperPat){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');for(let i=0;i<1400;i++){const v=Math.random();g.fillStyle=v<.5?`rgba(120,95,60,${Math.random()*.06})`:`rgba(255,255,255,${Math.random()*.12})`;g.fillRect(Math.random()*128,Math.random()*128,1+Math.random()*3,1)}paperPat=ctx.createPattern(c,'repeat')}

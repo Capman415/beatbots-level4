@@ -240,11 +240,11 @@ BB.wholeNote=(x,y,s,o={})=>{ctx.save();ctx.translate(x,y);ctx.rotate(o.rot||0);
   ctx.fillStyle=o.fill||'#fff';ctx.beginPath();ctx.ellipse(0,0,s*.5,s*.3,-.75,0,7);ctx.fill();ctx.restore()};
 // ---------- HUD ----------
 // green beat-light pills. lit: per-pill brightness 0..1, marks: per-pill clap star
-BB.beatPills=(cx,y,lit,o={})=>{const n=lit.length,pw=o.pw||120,gap=o.gap||30,ph=50,tot=n*pw+(n-1)*gap;
+BB.beatPills=(cx,y,lit,o={})=>{const n=lit.length,pw=o.pw||76,gap=o.gap||16,ph=o.ph||64,tot=n*pw+(n-1)*gap;/* v14.1.2 snug: squarer lights, 20px padding, 110 tall like MIC */
   const wob=o.wobble||0;
-  BB.rrect(cx-tot/2-28,y-40,tot+56,100,30,'rgba(0,0,0,.25)');BB.well(cx-tot/2-30,y-50,tot+60,100,30);
+  BB.rrect(cx-tot/2-18,y-45,tot+36,110,26,'rgba(0,0,0,.25)');BB.well(cx-tot/2-20,y-55,tot+40,110,26);
   for(let i=0;i<n;i++){const x=cx-tot/2+i*(pw+gap)+Math.sin(BB.t*20+i*2)*wob*14,yy=y-ph/2+Math.cos(BB.t*17+i)*wob*10,l=lit[i];
-    if(l>.01){ctx.save();ctx.globalAlpha=l*.85;BB.glow(x+pw/2,y,90,'rgba(110,230,120,A)',.7);ctx.restore()}
+    if(l>.01){ctx.save();ctx.globalAlpha=l*.85;BB.glow(x+pw/2,y,62,'rgba(110,230,120,A)',.7);ctx.restore()}
     const g=Math.round(40+l*70),gg=Math.round(60+l*170),bb=Math.round(60+l*60);
     BB.rrect(x,yy,pw,ph,14,BB.lg(yy,yy+ph,[`rgb(${g+40},${Math.min(255,gg+40)},${bb+30})`,`rgb(${g},${gg},${bb})`,`rgb(${g*.7|0},${gg*.75|0},${bb*.75|0})`]),'rgba(235,245,240,.85)',3);ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.roundRect(x+8,yy+5,pw-16,12,6);ctx.fill();
     if(o.marks&&o.marks[i]){const m=o.marks[i];BB.star(x+pw/2,yy+ph/2,16*BB.ease.back(Math.min(1,m)),COL.yellow,BB.t)}}};
@@ -260,9 +260,9 @@ BB.micMeter=(x,y,o={})=>{if(BB.listening&&!o._in){const sc=BB.listening===2?1.35
 BB.sensButtons=(x,y)=>{const m=BB.mic;
   BB.button(x,y,90,90,'−',{size:50,id:'sens-',onClick:()=>BB.setSens(m.sensIdx-1)});
   BB.button(x+110,y,90,90,'+',{size:50,id:'sens+',onClick:()=>BB.setSens(m.sensIdx+1)})};
-BB.pauseBtn=(onClick,x=W/2-120,y=24)=>{/* v14.1: plain HUD button, same size/border as TEACHER (no bevel/well double outline) */BB.button(x,y,240,130,'PAUSE',{size:34,id:'pause',onClick,labelDx:22,
+BB.pauseBtn=(onClick,x=W/2-120,y=24)=>{/* v14.1: plain HUD button, same size/border as TEACHER (no bevel/well double outline) */BB.button(x,y,240,110,'PAUSE',{size:34,id:'pause',onClick,labelDx:22,
   icon:(ix,iy)=>{ix=x+48;ctx.fillStyle=COL.ink;for(const bx of[ix-13,ix+4])ctx.fillRect(bx,iy-16,10,32)}})};
-BB.overrideBtn=(onClick,o={})=>{const x=W-370,y=H-150;BB.button(x,y,340,125,'MANUAL',{style:'red',size:40,sub:'OVERRIDE',id:'override',onClick,pop:o.pop})};
+BB.overrideBtn=(onClick,o={})=>{const x=W-370,y=H-150;BB.button(x,y,330,110,'MANUAL',{style:'red',size:40,sub:'OVERRIDE',id:'override',onClick,pop:o.pop})};
 BB.captionBox=()=>{const c=BB.caption;if(!c||BB.t>c.until)return;const k=Math.min(1,(BB.t-c.start)*6);
   const cp=(BB.scene&&BB.scene.capPos&&BB.scene.capPos())||{};const fs=38,w=Math.min(cp.maxW||1150,BB.measure(c.txt,fs)+200),x=(cp.cx||W/2)-w/2,y=cp.y!=null?cp.y:H-300;
   ctx.save();ctx.globalAlpha=k;ctx.translate(0,(1-k)*30);

@@ -1154,16 +1154,16 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     ctx.restore();
   };
   BB.beatPills = (cx, y, lit, o = {}) => {
-    const n = lit.length, pw = o.pw || 120, gap = o.gap || 30, ph = 50, tot = n * pw + (n - 1) * gap;
+    const n = lit.length, pw = o.pw || 76, gap = o.gap || 16, ph = o.ph || 64, tot = n * pw + (n - 1) * gap;
     const wob = o.wobble || 0;
-    BB.rrect(cx - tot / 2 - 28, y - 40, tot + 56, 100, 30, "rgba(0,0,0,.25)");
-    BB.well(cx - tot / 2 - 30, y - 50, tot + 60, 100, 30);
+    BB.rrect(cx - tot / 2 - 18, y - 45, tot + 36, 110, 26, "rgba(0,0,0,.25)");
+    BB.well(cx - tot / 2 - 20, y - 55, tot + 40, 110, 26);
     for (let i = 0; i < n; i++) {
       const x = cx - tot / 2 + i * (pw + gap) + Math.sin(BB.t * 20 + i * 2) * wob * 14, yy = y - ph / 2 + Math.cos(BB.t * 17 + i) * wob * 10, l = lit[i];
       if (l > 0.01) {
         ctx.save();
         ctx.globalAlpha = l * 0.85;
-        BB.glow(x + pw / 2, y, 90, "rgba(110,230,120,A)", 0.7);
+        BB.glow(x + pw / 2, y, 62, "rgba(110,230,120,A)", 0.7);
         ctx.restore();
       }
       const g = Math.round(40 + l * 70), gg = Math.round(60 + l * 170), bb = Math.round(60 + l * 60);
@@ -1224,7 +1224,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     BB.button(x + 110, y, 90, 90, "+", { size: 50, id: "sens+", onClick: () => BB.setSens(m.sensIdx + 1) });
   };
   BB.pauseBtn = (onClick, x = W / 2 - 120, y = 24) => {
-    BB.button(x, y, 240, 130, "PAUSE", {
+    BB.button(x, y, 240, 110, "PAUSE", {
       size: 34,
       id: "pause",
       onClick,
@@ -1238,7 +1238,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   };
   BB.overrideBtn = (onClick, o = {}) => {
     const x = W - 370, y = H - 150;
-    BB.button(x, y, 340, 125, "MANUAL", { style: "red", size: 40, sub: "OVERRIDE", id: "override", onClick, pop: o.pop });
+    BB.button(x, y, 330, 110, "MANUAL", { style: "red", size: 40, sub: "OVERRIDE", id: "override", onClick, pop: o.pop });
   };
   BB.captionBox = () => {
     const c = BB.caption;

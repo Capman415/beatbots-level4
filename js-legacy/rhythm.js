@@ -278,9 +278,9 @@
     ctx.restore();
   };
   R.pills = (cx, y, seq, st = {}) => {
-    const L = Math.max(4, seq.reduce((a, k) => a + R.BEATS[k], 0)), gap = st.gap || (L > 4 ? 14 : 24), bw = st.bw || (L > 4 ? Math.floor((672 - (L - 1) * gap) / L) : 150), ph = 50, tot = L * bw + (L - 1) * gap;
-    BB.rrect(cx - tot / 2 - 28, y - 40, tot + 56, 100, 30, "rgba(0,0,0,.25)");
-    BB.well(cx - tot / 2 - 30, y - 50, tot + 60, 100, 30);
+    const L = Math.max(4, seq.reduce((a, k) => a + R.BEATS[k], 0)), gap = st.gap || (L > 4 ? 14 : 24), bw = st.bw || (L > 4 ? Math.floor((560 - (L - 1) * gap) / L) : 120), ph = 50, tot = L * bw + (L - 1) * gap;
+    BB.rrect(cx - tot / 2 - 18, y - 45, tot + 36, 110, 26, "rgba(0,0,0,.25)");
+    BB.well(cx - tot / 2 - 20, y - 55, tot + 40, 110, 26);
     let b = 0, si = 0;
     seq.forEach((k, i) => {
       const n = R.BEATS[k], x = cx - tot / 2 + b * (bw + gap), w = n * bw + (n - 1) * gap, subs = R.SUB[k];
@@ -585,7 +585,7 @@
       } else if (ph === "clap") msg = "YOUR TURN: clap it!";
       if (msg) BB.text(msg, cx, y - 125, ph === "ready" ? 56 : 40, ph === "clap" || msg === "GO!" ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 7 });
       if (ph !== "end" && bn >= 0) {
-        const rd = ph === "ready", nd = rd ? 4 : this.L, tot = 4 * 150 + 3 * 24, step = (tot - 150) / (nd - 1), rel = bn - this.base, bi = rd ? Math.floor(rel - this.L) : ph === "clap" ? Math.floor(rel - this.L - 4) : ph === "listen" ? Math.floor(rel) : Math.floor(bn) % 4;
+        const rd = ph === "ready", nd = rd ? 4 : this.L, tot = 4 * 120 + 3 * 24, step = (tot - 150) / (nd - 1), rel = bn - this.base, bi = rd ? Math.floor(rel - this.L) : ph === "clap" ? Math.floor(rel - this.L - 4) : ph === "listen" ? Math.floor(rel) : Math.floor(bn) % 4;
         for (let i = 0; i < nd; i++) {
           const on = rd ? i <= bi : i === bi;
           ctx.fillStyle = on ? rd ? COL.green : COL.yellow : "rgba(255,255,255,.25)";
