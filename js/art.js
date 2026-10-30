@@ -328,7 +328,7 @@ BB.LoudCal=class{constructor(onDone){this.onDone=onDone;this.SPB=.6;this.soft=[]
     for(let i=0;i<12;i++)BB.sfx.tick(tA+i*S,i===0||i===4||i===8,i<4?1:(this.kind==='soft'?.6:1))}
   beatIdx(){return(BB.ac.currentTime-this.tA)/this.SPB}
   update(){const t=BB.t;if(this.ph==='gone')return;BB.dynMode=t;// don't teach the normal-clap scale
-    if(this.kind==='soft'&&this.ph==='run')BB.softClap=t;
+    if(this.kind==='soft'&&this.ph==='run')BB.softClap=t;if(BB.MLP&&BB.MLP.on&&this.ph==='run')BB.MLP.micWant();
     const os=BB.mic.take();
     if(this.ph==='intro'&&t-this.t0>this.wait)this.prep('soft');
     else if(this.ph==='prep'&&t-this.t0>this.wait)this.run();

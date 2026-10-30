@@ -888,6 +888,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         }
       }
       const ons = this.state === "clap" ? [] : BB.mic.take();
+      if (BB.MLP && BB.MLP.on && this.state === "order" && this.anvil && !this.hamV && BB.t - this.anvil.t > 0.4) BB.MLP.micWant();
       if (this.state === "order" && this.anvil && !this.hamV && BB.t - this.anvil.t > 0.4) {
         const G = window.GroupGate;
         for (const o of ons) {

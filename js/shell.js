@@ -44,7 +44,7 @@ class TitleScene{enter(){this.t0=BB.t}
     BB.rrect(W/2-560,1018,1120,50,25,'rgba(15,25,24,.7)');BB.text('Best on a big screen. Tap full screen (top right) for the whole board.',W/2,1045,28,'#fff',{stroke:4})}}
 // ---- Mic setup ----
 class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)this.state='on';setTimeout(()=>BB.say('mic'),300)}
-  update(dt){if(this.lc){this.lc.update();return}const o=BB.mic.take();if(o.length){this.heard+=o.length;this.flash=BB.t;BB.burst(W/2,560,18,{cols:['#ffe066','#6ee678','#fff'],kind:'star',size:14,g:300})}}
+  update(dt){if(BB.MLP&&BB.MLP.on&&(this.state==='on'||this.state==='calib'||this.state==='gcal'||this.lc||this.mlCal))BB.MLP.micWant();if(this.lc){this.lc.update();return}const o=BB.mic.take();if(o.length){this.heard+=o.length;this.flash=BB.t;BB.burst(W/2,560,18,{cols:['#ffe066','#6ee678','#fff'],kind:'star',size:14,g:300})}}
   async turnOn(){this.state='asking';const ok=await BB.startMic();
     if(ok){this.state='calib';// measure how loud our own click track is in the mic so it is not mistaken for claps
       // latency calibration: play 4 beeps, measure when the mic hears each one
@@ -84,7 +84,7 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
       BB.micMeter(CX-165,462);// meter (346 wide) centred over the Sensitivity + CONTINUE row
       BB.text('Sensitivity',1075+100,630,28,'#fff');BB.sensButtons(1075,652);
       BB.button(1310,630,275,124,'CONTINUE',{style:'green',size:44,id:'cont',onClick:()=>BB.go(new MapScene())});// inside the frame (well ends at 1642)
-      BB.button(1075,780,245,76,'Class clap check',{size:27,id:'gcal',onClick:()=>this.groupCal()});BB.button(1340,780,245,76,'Soft / loud check',{size:27,id:'lcal',onClick:()=>this.loudCal()});
+      BB.button(1075,780,245,76,'Class clap check',{size:27,id:'gcal',onClick:()=>this.groupCal()});BB.button(1340,780,245,76,'Soft / loud check',{size:27,id:'lcal',onClick:()=>this.loudCal()});if(BB.MLP&&BB.MLP.on&&window.ClapNet&&ClapNet.ready){BB.button(1075,870,510,60,this.mlCal?'Clap 8 times with the ticks...':(this.mlRes||'Clap model: clap 8 times'),{size:24,id:'mlcal',onClick:()=>{if(this.mlCal)return;this.mlCal=1;BB.MLP.calibrate((ok,n)=>{this.mlCal=0;this.mlRes=ok?'Clap model tuned to this room ('+n+' claps)':'Heard only '+(n||0)+' claps - try again'})}})}
       const rs=[this.gRes,this.lcRes].filter(Boolean).join('  ');if(rs)BB.text(rs,CX,885,24,COL.green,{maxW:600})}
     if(this.lc){ctx.fillStyle='rgba(10,20,20,.55)';ctx.fillRect(0,0,W,H);this.lc.draw(W/2,H/2-40)}
     BB.captionBox()}}

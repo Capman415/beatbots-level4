@@ -1460,6 +1460,7 @@ BB.LoudCal = class {
     if (this.ph === "gone") return;
     BB.dynMode = t;
     if (this.kind === "soft" && this.ph === "run") BB.softClap = t;
+    if (BB.MLP && BB.MLP.on && this.ph === "run") BB.MLP.micWant();
     const os = BB.mic.take();
     if (this.ph === "intro" && t - this.t0 > this.wait) this.prep("soft");
     else if (this.ph === "prep" && t - this.t0 > this.wait) this.run();

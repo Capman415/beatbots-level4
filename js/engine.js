@@ -10,7 +10,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v13.2';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v13.3';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -242,7 +242,7 @@ BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoSupport'};
     const st=await MicCore.start(true,BB.aec);mic.ac=MicCore.ctx;mic.stream=st;mic.track=MicCore.track();try{if(mic.lat==null&&window.GroupGate){const ts=mic.track&&mic.track.getSettings?mic.track.getSettings():{};mic.latEst=(ts.latency||0)+micLat();GroupGate.setLat(mic.latEst)}}catch(e){}// v13.2: no beep test yet -> seed latency from the browser's own numbers (USB mics add 50-150 ms); Mine refines it livemic.floor=.003;mic.prev=0;
     if(mic.track)mic.track.onended=()=>{mic.ok=false;mic.state='lost';mic.err='Microphone disconnected. Tap MIC SETUP to turn it back on.'};
-    mic.ok=true;mic.state='on';return true}
+    mic.ok=true;mic.state='on';if(BB.MLP&&BB.MLP.on)BB.MLP.init();return true}
   catch(e){const n=e&&e.name;mic.ok=false;
     mic.state=(n==='NotFoundError'||n==='DevicesNotFoundError')?'nodevice':(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError')?'denied':'error';
     mic.err=mic.state==='denied'?'Mic permission is blocked. Click the mic/lock icon in the address bar, choose Allow, then reload.':
@@ -261,7 +261,7 @@ const selfWins=[];BB.selfSound=(t,dur,freqs)=>{selfWins.push({t,e:t+dur,freqs});
 mic.lat=null;
 // v13.1 echo cancellation: on by default on Chromebooks (speaker right next to the mic); ?aec=0/1 or localStorage bb_aec overrides
 {let a=/CrOS/.test(navigator.userAgent);try{const q=new URLSearchParams(location.search).get('aec'),l=localStorage.getItem('bb_aec');if(l!=null)a=l==='1';if(q!=null)a=q==='1'}catch(e){}BB.aec=a}// measured speaker->mic delay (s); null = not calibrated yet
-function micLat(){const TL=window.ClapDet&&ClapDet.TickLat;if(TL&&TL.heard(ac.currentTime))return TL.lat;return mic.lat!=null?mic.lat:(ac.outputLatency||ac.baseLatency||.02)+((MicCore.ctx&&MicCore.ctx.baseLatency)||.01)+.03}
+BB.micLat=()=>micLat();function micLat(){const TL=window.ClapDet&&ClapDet.TickLat;if(TL&&TL.heard(ac.currentTime))return TL.lat;return mic.lat!=null?mic.lat:(ac.outputLatency||ac.baseLatency||.02)+((MicCore.ctx&&MicCore.ctx.baseLatency)||.01)+.03}
 let fbin=null,nonTonalFloor=1e-9;const ALLF=[880,1320];
 function nonTonalEnergy(freqs){const an=MicCore.an;if(!an)return 0;if(!fbin||fbin.length!==an.frequencyBinCount)fbin=new Float32Array(an.frequencyBinCount);
   an.getFloatFrequencyData(fbin);const hz=MicCore.ctx.sampleRate/an.fftSize;let e=0,tot=0;
@@ -302,7 +302,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
     if(CD){if(ok){if(gap!==2&&CD.fired)CD.fired(mic,x);mic.up=gap===2;mic.lastX=gap===2?Math.max(mic.lastX||0,x):x}else mic.lastOn=prevOn}// a rejected onset must not start a refractory window
     if(mic.calib)mic.calib.push(tNow);
     if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'',sg?[+sg.hfr.toFixed(2),+sg.flat.toFixed(2),+sg.imp.toFixed(1)]:'',gap]);
-    if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;mic.onsets.push({t:tNow,lvl:lv,rms,up:gap===2?1:0});mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
+    if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;{const on={t:tNow,lvl:lv,rms,up:gap===2?1:0};if(!BB.MLP||!BB.MLP.on||BB.MLP.submit(on,tNow))mic.onsets.push(on)}mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
   else if(x<thr){const nf=lerp(mic.floor,Math.min(x,.05),dt*.8);mic.floor=CD&&CD.active&&CD.active(tNow)&&tNow-mic.lastOn<.35?Math.min(mic.floor,nf):nf}// v13.3: claps' reverb tails between fast claps must not lift the floor
   if(CD&&CD.track)CD.track(mic,x,tNow);
   if(x<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(x,(mic.prev||0)*(window.GroupGate?GroupGate.adaptDecay():.6));mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
@@ -327,7 +327,7 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   ctx.setTransform(SC*BB.dpr,0,0,SC*BB.dpr,OX*BB.dpr,OY*BB.dpr);ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
   shakeAmt*=Math.pow(.02,dt);const sx=(Math.random()-.5)*2*shakeAmt,sy=(Math.random()-.5)*2*shakeAmt;
   BB.shakeXY=[sx,sy];
-  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt)}BB.scene.draw(ctx)}
+  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
   BB.drawCelebrate&&BB.drawCelebrate();BB.drawParts&&0;
   ctx.restore();
   ctx.save();ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.font='13px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillStyle='rgba(255,255,255,.55)';

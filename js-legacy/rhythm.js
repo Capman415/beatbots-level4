@@ -473,6 +473,10 @@
         if (this.marks[i]) this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
       }
       const ons = BB.mic.take(), C = T0 + (this.L + 4) * spb;
+      if (BB.MLP && BB.MLP.on) {
+        const bs = this.snd.map((x) => x.b);
+        BB.MLP.openWin("rhythm", C + Math.min(...bs) * spb - 0.12, C + Math.max(...bs) * spb + 0.18);
+      }
       const G = window.GroupGate, gated = BB.mic.ok && G && !BB.debug;
       if (window.ClapDet && this.seq.includes("s")) ClapDet.fastUntil = ac.currentTime + 0.5;
       if (window.ClapDet && ClapDet.expect && !this._gap) {

@@ -48,7 +48,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v13.2";
+BB.VERSION = "v13.3";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -883,6 +883,7 @@ BB.startMic = async () => {
       };
       mic.ok = true;
       mic.state = "on";
+      if (BB.MLP && BB.MLP.on) BB.MLP.init();
       return true;
     } catch (e) {
       const n = e && e.name;
@@ -923,6 +924,7 @@ mic.lat = null;
   }
   BB.aec = a;
 }
+BB.micLat = () => micLat();
 function micLat() {
   const TL = window.ClapDet && ClapDet.TickLat;
   if (TL && TL.heard(ac.currentTime)) return TL.lat;
@@ -1037,7 +1039,10 @@ mic.update = (dt) => {
     if (BB.debugMic) (mic.log = mic.log || []).push([+tNow.toFixed(3), chk === "hard" ? "hard" : chk ? "tone" : "none", ok, +(chk && chk !== "hard" ? (nonTonalEnergy(chk), nonTonalEnergy.frac) : 0).toFixed(2), BB.talking && BB.t < BB.talking.until ? "vo" : "", sg ? [+sg.hfr.toFixed(2), +sg.flat.toFixed(2), +sg.imp.toFixed(1)] : "", gap]);
     if (ok) {
       const lv = window.GroupGate ? (BB.dynMode && BB.t - BB.dynMode < 0.5 || GroupGate.notePeak(rms), GroupGate.lvl(rms, sens)) : lvl;
-      mic.onsets.push({ t: tNow, lvl: lv, rms, up: gap === 2 ? 1 : 0 });
+      {
+        const on = { t: tNow, lvl: lv, rms, up: gap === 2 ? 1 : 0 };
+        if (!BB.MLP || !BB.MLP.on || BB.MLP.submit(on, tNow)) mic.onsets.push(on);
+      }
       mic.peak = lvl;
       mic.hold = 0.6;
     } else mic.rejected = (mic.rejected || 0) + 1;
@@ -1135,8 +1140,10 @@ function frame(ts) {
     if (!BB.paused) {
       BB.listening = 0;
       BB.scene.update(dt);
+      if (BB.MLP && BB.MLP.on && mic.ok) BB.MLP.frame();
     }
     BB.scene.draw(ctx);
+    if (BB.MLP && BB.MLP.dbg) BB.MLP.draw(ctx);
   }
   BB.drawCelebrate && BB.drawCelebrate();
   BB.drawParts && 0;

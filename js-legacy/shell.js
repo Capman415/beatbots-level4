@@ -128,6 +128,7 @@
       setTimeout(() => BB.say("mic"), 300);
     }
     update(dt) {
+      if (BB.MLP && BB.MLP.on && (this.state === "on" || this.state === "calib" || this.state === "gcal" || this.lc || this.mlCal)) BB.MLP.micWant();
       if (this.lc) {
         this.lc.update();
         return;
@@ -240,6 +241,16 @@
         BB.button(1310, 630, 275, 124, "CONTINUE", { style: "green", size: 44, id: "cont", onClick: () => BB.go(new MapScene()) });
         BB.button(1075, 780, 245, 76, "Class clap check", { size: 27, id: "gcal", onClick: () => this.groupCal() });
         BB.button(1340, 780, 245, 76, "Soft / loud check", { size: 27, id: "lcal", onClick: () => this.loudCal() });
+        if (BB.MLP && BB.MLP.on && window.ClapNet && ClapNet.ready) {
+          BB.button(1075, 870, 510, 60, this.mlCal ? "Clap 8 times with the ticks..." : this.mlRes || "Clap model: clap 8 times", { size: 24, id: "mlcal", onClick: () => {
+            if (this.mlCal) return;
+            this.mlCal = 1;
+            BB.MLP.calibrate((ok, n) => {
+              this.mlCal = 0;
+              this.mlRes = ok ? "Clap model tuned to this room (" + n + " claps)" : "Heard only " + (n || 0) + " claps - try again";
+            });
+          } });
+        }
         const rs = [this.gRes, this.lcRes].filter(Boolean).join("  ");
         if (rs) BB.text(rs, CX, 885, 24, COL.green, { maxW: 600 });
       }

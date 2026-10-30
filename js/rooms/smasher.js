@@ -225,7 +225,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
       if(now>=nb-.17&&this.lastBeat!==nb){this.lastBeat=nb;if(this.anvil&&BB.t-this.anvil.t>.05)this.smash();else{this.hamV={t:BB.t,d:.16,k:null,empty:1};BB.sfx.piston()}}}}
     // clap to smash (group-gated with a live mic) - still works as an instant smash between beats
     const ons=this.state==='clap'?[]:BB.mic.take();
-    if(this.state==='order'&&this.anvil&&!this.hamV&&BB.t-this.anvil.t>.4){const G=window.GroupGate;
+    if(BB.MLP&&BB.MLP.on&&this.state==='order'&&this.anvil&&!this.hamV&&BB.t-this.anvil.t>.4)BB.MLP.micWant();if(this.state==='order'&&this.anvil&&!this.hamV&&BB.t-this.anvil.t>.4){const G=window.GroupGate;
       for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;if(BB.mic.ok&&G&&!BB.debug&&!o.sim){this.pendSmash=o.t;break}this.smash();break}}
     if(this.pendSmash&&BB.ac.currentTime-.02>this.pendSmash+.2){const m=window.GroupGate.judge(this.pendSmash);this.pendSmash=null;if(m.ok)this.smash();else this.few=BB.t}
     

@@ -183,7 +183,7 @@ class MineRoom{
   autoLat(dt){const G=window.GroupGate,a=this._dts=this._dts||[];a.push(dt);if(a.length>16)a.shift();if(a.length<6||a.length%2)return;
     const m=a.slice().sort((x,y)=>x-y)[a.length>>1],TL=window.ClapDet&&ClapDet.TickLat,tb=TL&&TL.heard(BB.ac.currentTime)?Math.max(0,TL.lat-G.LAT_BASE):null,tg=Math.min(.25,Math.max(tb!=null?tb-.03:0,Math.min(tb!=null?tb+.12:1,m)));// ticks heard: kids may drag, but never clap before the tick reached them
     if(Math.abs(tg-G.lat)>.015)G.lat+=(tg-G.lat)*.5}
-  handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||(this.state!=='dig'&&this.state!=='count'))return;if(window.ClapDet&&ClapDet.expect)ClapDet.expect(b.spb,BB.ac.currentTime+.5);if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p'){BB.softClap=BB.t;if(b.spb<.5)BB.fastSoft=BB.t}
+  handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||(this.state!=='dig'&&this.state!=='count'))return;if(window.ClapDet&&ClapDet.expect)ClapDet.expect(b.spb,BB.ac.currentTime+.5);if(BB.MLP&&BB.MLP.on)BB.MLP.openWin('mine',b.t0+3*b.spb-.12,BB.ac.currentTime+.3);if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p'){BB.softClap=BB.t;if(b.spb<.5)BB.fastSoft=BB.t}
     const G=window.GroupGate,tol=G?G.tol(b.spb):Math.min(.17,b.spb*.4);
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;// ignore our own voice lines
       const bi=Math.round((o.t-b.t0-(G?G.lat:0))/b.spb),dt=o.t-(b.t0+bi*b.spb),inT=G?G.inTol(dt,b.spb):Math.abs(dt)<=tol;
