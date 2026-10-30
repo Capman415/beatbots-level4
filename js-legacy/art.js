@@ -1223,24 +1223,16 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     BB.button(x, y, 90, 90, "\u2212", { size: 50, id: "sens-", onClick: () => BB.setSens(m.sensIdx - 1) });
     BB.button(x + 110, y, 90, 90, "+", { size: 50, id: "sens+", onClick: () => BB.setSens(m.sensIdx + 1) });
   };
-  BB.pauseBtn = (onClick, x = W / 2 - 110, y = 24) => {
-    BB.bevel(x - 10, y - 10, 240, 130, 30);
-    BB.well(x - 2, y - 2, 224, 114, 26);
-    BB.button(x, y, 220, 110, "PAUSE", {
-      style: "teal",
+  BB.pauseBtn = (onClick, x = W / 2 - 120, y = 24) => {
+    BB.button(x, y, 240, 130, "PAUSE", {
       size: 34,
       id: "pause",
       onClick,
-      labelDx: 24,
+      labelDx: 22,
       icon: (ix, iy) => {
-        ix = x + 52;
-        ctx.fillStyle = COL.yellow;
-        ctx.strokeStyle = COL.ink;
-        ctx.lineWidth = 3;
-        for (const bx of [ix - 14, ix + 4]) {
-          ctx.fillRect(bx, iy - 17, 11, 34);
-          ctx.strokeRect(bx, iy - 17, 11, 34);
-        }
+        ix = x + 48;
+        ctx.fillStyle = COL.ink;
+        for (const bx of [ix - 13, ix + 4]) ctx.fillRect(bx, iy - 16, 10, 32);
       }
     });
   };

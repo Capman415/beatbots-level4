@@ -213,12 +213,12 @@ class LabelRoom{constructor(o={}){this.o=o}
     const sh=c.shake&&t-c.shake<.4?Math.sin((t-c.shake)*50)*10:0;ctx.save();ctx.globalAlpha=a;
     drawCard(x+sh,y,w,h,c.s,{badge:fl&&fl.i===i?null:'ABCD'[i],x:c.x,syl:this.revealed&&c.s===this.ans,hl:this.revealed&&c.s===this.ans&&Math.sin(t*6)>0});ctx.restore();
     if(this.state==='pick'&&!c.out)BB.button(r.x,r.y,r.w,r.h,'',{style:'none',id:'card'+i,onClick:()=>this.pick(c)})})}
-  drawHUD(t){if(this.state==='end')return;PANEL(40,24,560,130,30);BB.text('BOXES SHIPPED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.shipped} of ${BOXES}`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+  drawHUD(t){if(this.state==='end')return;PANEL(40,24,640,130,30);BB.text('BOXES SHIPPED',70,58,32,COL.yellow,{align:'left',stroke:4});BB.text(`${this.shipped} of ${BOXES}`,70,104,30,'#fff',{align:'left',font:'Rammetto One',stroke:4});
     for(let i=0;i<BOXES;i++)BB.rrect(300+i*34,64,26,44,8,i<this.shipped?BB.lg(64,108,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
-    PANEL(W-620,24,330,130,30);BB.text('POINTS '+this.score,W-455,62,32,'#fff',{stroke:4,maxW:290});BB.text('STREAK '+this.streak+(this.streak>=3?' \u2605':''),W-455,108,28,COL.yellow,{stroke:4,maxW:290});
-    if(this.gain&&t-this.gain.t<1.4){const k=(t-this.gain.t)/1.4;ctx.save();ctx.globalAlpha=1-k;BB.text('+'+this.gain.p,W-455,170-k*40,44,COL.green,{font:'Rammetto One',stroke:6});ctx.restore()}
-    BB.button(W-270,24,230,76,'TEACHER',{size:30,id:'teacher',onClick:()=>{this.teacher=true}});
-    BB.pauseBtn(()=>this.pause());
+    PANEL(1186,24,330,130,30);BB.text('POINTS '+this.score,1351,62,32,'#fff',{stroke:4,maxW:290});BB.text('STREAK '+this.streak+(this.streak>=3?' \u2605':''),1351,108,28,COL.yellow,{stroke:4,maxW:290});
+    if(this.gain&&t-this.gain.t<1.4){const k=(t-this.gain.t)/1.4;ctx.save();ctx.globalAlpha=1-k;BB.text('+'+this.gain.p,1351,170-k*40,44,COL.green,{font:'Rammetto One',stroke:6});ctx.restore()}
+    BB.button(1650,24,230,130,'TEACHER',{size:32,id:'teacher',onClick:()=>{this.teacher=true}});
+    BB.pauseBtn(()=>this.pause(),813)/* v14.1 top row: 40|813|1186|1650, even 133 gaps */;
     if(this.state==='end')return;if(this.state==='intro'){BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});return}
     // v14.0.2: hint panel removed (teacher); tap the box to hear it again
     BB.micMeter(40,H-150);if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});this.cb.draw(W/2,H-90)}}

@@ -260,8 +260,8 @@ BB.micMeter=(x,y,o={})=>{if(BB.listening&&!o._in){const sc=BB.listening===2?1.35
 BB.sensButtons=(x,y)=>{const m=BB.mic;
   BB.button(x,y,90,90,'−',{size:50,id:'sens-',onClick:()=>BB.setSens(m.sensIdx-1)});
   BB.button(x+110,y,90,90,'+',{size:50,id:'sens+',onClick:()=>BB.setSens(m.sensIdx+1)})};
-BB.pauseBtn=(onClick,x=W/2-110,y=24)=>{BB.bevel(x-10,y-10,240,130,30);BB.well(x-2,y-2,224,114,26);BB.button(x,y,220,110,'PAUSE',{style:'teal',size:34,id:'pause',onClick,labelDx:24,
-  icon:(ix,iy)=>{ix=x+52;ctx.fillStyle=COL.yellow;ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const bx of[ix-14,ix+4]){ctx.fillRect(bx,iy-17,11,34);ctx.strokeRect(bx,iy-17,11,34)}}})};
+BB.pauseBtn=(onClick,x=W/2-120,y=24)=>{/* v14.1: plain HUD button, same size/border as TEACHER (no bevel/well double outline) */BB.button(x,y,240,130,'PAUSE',{size:34,id:'pause',onClick,labelDx:22,
+  icon:(ix,iy)=>{ix=x+48;ctx.fillStyle=COL.ink;for(const bx of[ix-13,ix+4])ctx.fillRect(bx,iy-16,10,32)}})};
 BB.overrideBtn=(onClick,o={})=>{const x=W-370,y=H-150;BB.button(x,y,340,125,'MANUAL',{style:'red',size:40,sub:'OVERRIDE',id:'override',onClick,pop:o.pop})};
 BB.captionBox=()=>{const c=BB.caption;if(!c||BB.t>c.until)return;const k=Math.min(1,(BB.t-c.start)*6);
   const cp=(BB.scene&&BB.scene.capPos&&BB.scene.capPos())||{};const fs=38,w=Math.min(cp.maxW||1150,BB.measure(c.txt,fs)+200),x=(cp.cx||W/2)-w/2,y=cp.y!=null?cp.y:H-300;
