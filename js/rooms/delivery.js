@@ -96,7 +96,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       ctx.strokeStyle='#fff';ctx.lineWidth=3;for(let i=0;i<7;i++){const a0=Math.random()*7;ctx.beginPath();ctx.moveTo(x+Math.cos(a0)*r,y-120+Math.sin(a0)*r);ctx.lineTo(x+Math.cos(a0+.2)*(r-30),y-120+Math.sin(a0+.2)*(r-30));ctx.stroke()}ctx.restore();
       BB.rrect(x-150,y-345,300,44,14,'rgba(10,30,40,.85)','#7ef0ff',3);BB.text(this.shield===2?'SHIELD: PERFECT CLAP!':'SHIELD CRACKED!',x,y-323,22,'#bff8ff',{stroke:0})}
     let bub=null;if(ph==='dodge'&&k<1.6)bub='missed me! hee hee!';else if(ph==='laugh'&&k<1.6)bub='hee hee hee!';else if(ph==='hit'&&k<1.4)bub='OOF!';else if(this.state==='intro')bub="you'll never deliver these!";
-    if(bub&&!this.shield)R.bubble(x,y-330,bub)}
+    if(bub&&!this.shield)R.bubble(x-300,y-250,bub)}/* v14.1.1 beside his head, clear of the HP panel */
   drawHP(){const x=JR.x-190,y=84,w=380,f=this.hp/TOTAL;BB.rrect(x-10,y-60,w+20,130,24,'rgba(12,16,28,.85)','#ff8adf',3);BB.text('STATIC JR.',x+w/2,y-24,24,'#ffd6f4',{stroke:0});
     BB.rrect(x,y,w,28,10,'#2a2233',null,0);if(f>0)BB.rrect(x,y,w*f,28,10,BB.lg(y,y+28,['#ff9ad8','#c03a8e']),null,0);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,w,28);for(let i=1;i<TOTAL;i++){ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(x+i*w/TOTAL-1,y,2,28)}}
   drawLauncher(){const x=LCH.x,y=LCH.y,k=this.state==='throw'?BB.t-this.st:9,rc=k<.25?Math.sin(k/.25*Math.PI)*18:0;

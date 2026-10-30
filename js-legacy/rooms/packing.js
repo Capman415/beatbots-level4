@@ -15,7 +15,7 @@
     ["pk_done", "All orders packed! Room three complete! Next stop, the Label Room!", "sprocket"],
     ["jr_fit", "Wrong fit! Hee hee!", "jr"]
   ]);
-  const FLOOR = 947, CX0 = 640, CTOP = 172, ROWY = 575, CH = 128;
+  const FLOOR = 947, CX0 = 640, CTOP = 262, ROWY = 575, CH = 128;
   let NB = 4, CW = 160;
   const setNB = (n) => {
     NB = n;

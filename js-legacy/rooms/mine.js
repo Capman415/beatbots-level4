@@ -1848,11 +1848,11 @@
           count = this.state === "count";
         }
       }
-      BB.beatPills(W / 2, H - 90, lit, { marks: this.marks, wobble: this.wob * (this.prank && this.prank.ph === "throw" ? 1 : 0.4) });
+      BB.beatPills(W / 2, H - 140, lit, { marks: this.marks, wobble: this.wob * (this.prank && this.prank.ph === "throw" ? 1 : 0.4) });
       if (count) {
-        BB.text(this.warm > 0 ? this.warm + " ..." : "WARM UP: clap 4 in a row!", W / 2, H - 215, this.warm > 0 ? 70 : 44, COL.yellow, { font: "Rammetto One", stroke: 8 });
+        BB.text(this.warm > 0 ? this.warm + " ..." : "WARM UP: clap 4 in a row!", W / 2, H - 265, this.warm > 0 ? 70 : 44, COL.yellow, { font: "Rammetto One", stroke: 8 });
       } else if (this.state === "dig") {
-        BB.text(R.dyn === "p" ? "soft claps!" : R.dyn === "f" ? "LOUD claps!" : strikesFor(R) + " strikes break the rock!", W / 2, H - 180, 34, "#fff", { stroke: 6 });
+        BB.text(R.dyn === "p" ? "soft claps!" : R.dyn === "f" ? "LOUD claps!" : strikesFor(R) + " strikes break the rock!", W / 2, H - 230, 34, "#fff", { stroke: 6 });
       }
       if (this.pebbles) {
         ctx.fillStyle = "#8a7060";
@@ -1868,9 +1868,9 @@
       const need = strikesFor(this.R), pw = need > 6 ? 28 : 38;
       for (let i = 0; i < need; i++) {
         const on = this.state === "pop" || i < (this.strikes || 0);
-        BB.rrect(W / 2 + 400 + i * pw, H - 112, pw - 10, 44, 8, on ? COL.yellow : "#3a4a48", "#fff", 2);
+        BB.rrect(W / 2 + 400 + i * pw, H - 162, pw - 10, 44, 8, on ? COL.yellow : "#3a4a48", "#fff", 2);
       }
-      BB.text("STRIKES", W / 2 + 400 + need * pw / 2 - 5, H - 140, 22, "#fff", { stroke: 4 });
+      BB.text("STRIKES", W / 2 + 400 + need * pw / 2 - 5, H - 190, 22, "#fff", { stroke: 4 });
       BB.micMeter(40, H - 150, { band: R.dyn === "p" ? "soft" : R.dyn === "f" ? "loud" : null });
       BB.overrideBtn(() => this.manualOverride(), { pop: this.ovPop && BB.t - this.ovPop < 0.3 ? 1.08 : 1 });
     }

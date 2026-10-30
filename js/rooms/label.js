@@ -54,8 +54,8 @@ const howTo={title:'LABEL ROOM: Static Jr. scrambled the labels!',
   example:(x,y,w,h,t)=>{ctx.save();ctx.translate(x+w/2,y+h/2);const sh=Math.sin(t*20)*(t%2<.5?6:0);drawBox(-90+sh,-160,180,150,null,t);
     [['q','e','q','q'],['q','q','e','q']].forEach((s,i)=>drawCard(-220+i*230,40,210,140,s,{badge:'AB'[i],hl:i===1&&t%3>1.5}));ctx.restore()}};
 // ---- drawing helpers ----
-const PR={x:70,y:300,w:250,h:220};
-const BELT_Y=560,BOX_X=880,BOX_W=300,BOX_H=230;
+const PR={x:70,y:330,w:250,h:220}/* v14.1.1 sits on the belt end */;
+const BELT_Y=560,BOX_X=880,BOX_W=264,BOX_H=250;/* v14.1.1 squarer box */
 function drawBox(x,y,w,h,lbl,t,o={}){const im=BB.V2.crate;BB.rrect(x+6,y+10,w,h,12,'rgba(0,0,0,.3)');
   const gr=BB.lg(y,y+h,['#e2a868','#c08446','#93582a']);BB.rrect(x,y,w,h,12,gr,'#4a2e12',4);
   ctx.fillStyle='rgba(255,240,210,.3)';ctx.fillRect(x+6,y+6,w-12,6);ctx.fillStyle='rgba(240,220,170,.85)';ctx.fillRect(x+w/2-16,y,32,h*.38);// tape
@@ -84,7 +84,7 @@ function drawStampArm(t){const X=1300,TOP=110,PAD=398,c=t%4,p=c<3.4?0:c<3.6?(c-3
   BB.rrect(X-34,TOP,68,90,12,BB.lg(TOP,TOP+90,['#a4b2bc','#4e5a64']),'#22282e',4);ctx.fillStyle='#ff5a4a';ctx.beginPath();ctx.arc(X,TOP+45,10,0,7);ctx.fill();
   const y0=TOP+90;const pg=ctx.createLinearGradient(X-16,0,X+16,0);pg.addColorStop(0,'#7d8a92');pg.addColorStop(.35,'#f2f6f8');pg.addColorStop(1,'#5d6a72');BB.rrect(X-16,y0,32,ext,6,pg,'#22282e',3);ctx.fillStyle='rgba(0,0,0,.18)';for(let y=y0+14;y<y0+ext-8;y+=22)ctx.fillRect(X-16,y,32,4);
   const hy=y0+ext;BB.rrect(X-50,hy,100,46,10,BB.lg(hy,hy+46,['#a8704a','#5e3620']),'#22282e',4);BB.rrect(X-70,hy+46,140,26,6,BB.lg(hy+46,hy+72,['#e8685a','#9c2e24']),'#22282e',4);
-  BB.rrect(X-95,PAD+72,190,70,6,'#efe6d2','#5a5040',3);if(e>.5||c<1.2){ctx.globalAlpha=c<1.2?1-c/1.2*.6:1;ctx.strokeStyle='#d24a3c';ctx.lineWidth=5;ctx.strokeRect(X-60,PAD+84,120,46);BB.text('OK!',X,PAD+108,30,'#d24a3c')}
+  {const py=PAD+66;BB.rrect(X-100,py,200,90,8,BB.lg(py,py+90,['#d8a466','#9a6430']),'#4a2e12',4);ctx.fillStyle='rgba(240,220,170,.8)';ctx.fillRect(X-14,py,28,90)}/* v14.1.1 stamps a parcel, not a blank label */if(e>.5||c<1.2){ctx.globalAlpha=c<1.2?1-c/1.2*.6:1;ctx.strokeStyle='#d24a3c';ctx.lineWidth=5;ctx.strokeRect(X-60,PAD+84,120,46);BB.text('OK!',X,PAD+108,30,'#d24a3c')}
   ctx.restore()}
 function drawCardRaw(x,y,w,h,seq,o={}){ctx.save();
   if(!o.mini)BB.rrect(x+5,y+8,w,h,12,'rgba(0,0,0,.35)');
@@ -206,7 +206,7 @@ class LabelRoom{constructor(o={}){this.o=o}
     BB.text(zap?'ZZZT!':this.state==='intro'?'ERROR':'READY',x+w/2,y+60,30,scr,{font:'Rammetto One'});
     BB.rrect(x+30,y+h-60,w-60,22,8,'#1b2322');ctx.fillStyle='#fbf6e6';ctx.fillRect(x+40,y+h-52,w-80,6);
     BB.plaque(x+w/2,y-26,220,44,'LABEL PRINTER',20,'#28403c');ctx.restore()}
-  drawSprocket(t){const x=1690,base=700;BB.contactShadow(x,base,110,.5);BB.sprite('sprocket',x,base,300,{squash:BB.isTalking('sprocket')?Math.sin(t*18)*.015:Math.sin(t*2)*.006})}
+  drawSprocket(t){const x=1720,base=712;/* v14.1.1 stands on a parcel stack that reaches the floor */R.paint(ctx,()=>{for(const [y,h,w] of[[712,100,190],[812,96,206]]){BB.rrect(x-w/2,y,w,h,8,BB.lg(y,y+h,['#d8a466','#9a6430']),'#4a2e12',4);ctx.fillStyle='rgba(240,220,170,.8)';ctx.fillRect(x-14,y,28,h)}});BB.contactShadow(x,base,90,.4);BB.sprite('sprocket',x,base,300,{squash:BB.isTalking('sprocket')?Math.sin(t*18)*.015:Math.sin(t*2)*.006})}
   drawCards(t){const fl=this.fly;this.cards.forEach((c,i)=>{const r=this.cardRect(i);if(fl&&fl.i===i&&this.state!=='fly')return;
     let x=r.x,y=r.y,w=r.w,h=r.h,a=1;if(fl&&fl.i!==i){const k=clamp((t-this.st)/.3,0,1);a=1-k;if(a<=0)return}else if(c.out){const k=clamp((t-(c.outT||0))/.4,0,1);a=c.x?1-.55*k:1-k;if(a<=0)return}
     if(fl&&fl.i===i){const k=ease.inOut(clamp((t-this.st)/.55,0,1));const tx=BOX_X-BOX_W*.38,ty=BELT_Y-BOX_H*.58,tw=BOX_W*.76,th=BOX_H*.48;x=lerp(r.x,tx,k);y=lerp(r.y,ty,k)-Math.sin(k*Math.PI)*120;w=lerp(r.w,tw,k);h=lerp(r.h,th,k)}

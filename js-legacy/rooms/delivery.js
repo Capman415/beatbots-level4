@@ -457,8 +457,9 @@
       else if (ph === "laugh" && k < 1.6) bub = "hee hee hee!";
       else if (ph === "hit" && k < 1.4) bub = "OOF!";
       else if (this.state === "intro") bub = "you'll never deliver these!";
-      if (bub && !this.shield) R.bubble(x, y - 330, bub);
+      if (bub && !this.shield) R.bubble(x - 300, y - 250, bub);
     }
+    /* v14.1.1 beside his head, clear of the HP panel */
     drawHP() {
       const x = JR.x - 190, y = 84, w = 380, f = this.hp / TOTAL;
       BB.rrect(x - 10, y - 60, w + 20, 130, 24, "rgba(12,16,28,.85)", "#ff8adf", 3);

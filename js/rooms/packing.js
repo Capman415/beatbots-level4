@@ -17,7 +17,7 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['jr_fit',"Wrong fit! Hee hee!",'jr'],
 ]);
 // v12.3: taller chute (longer fall) and 4/6/8-beat pallets; the chute stays 640 px wide, columns narrow as beats grow
-const FLOOR=947,CX0=640,CTOP=172,ROWY=575,CH=128;let NB=4,CW=160;const setNB=n=>{NB=n;CW=640/n};
+const FLOOR=947,CX0=640,CTOP=262/* v14.1.1: hopper below the HUD row */,ROWY=575,CH=128;let NB=4,CW=160;const setNB=n=>{NB=n;CW=640/n};
 const NEXTP={x:1350,y:170,w:330,h:430},JRH={x:1515,y:110},FB=130;
 const ROUNDS=[// v13.0: every pallet is 8 beats; belt speeds up gently (sp); rush orders have a beat timer for a bonus star (no fail). No clap-back: the packed rhythm plays back as robot sounds.
  {n:8,mode:'free',pool:['h','q','e','r','q'],sp:1,ov:1,txt:'FREE BUILD: fill 8 beats any way!'},

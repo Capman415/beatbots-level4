@@ -176,8 +176,8 @@
       ctx.restore();
     }
   };
-  const PR = { x: 70, y: 300, w: 250, h: 220 };
-  const BELT_Y = 560, BOX_X = 880, BOX_W = 300, BOX_H = 230;
+  const PR = { x: 70, y: 330, w: 250, h: 220 };
+  const BELT_Y = 560, BOX_X = 880, BOX_W = 264, BOX_H = 250;
   function drawBox(x, y, w, h, lbl, t, o = {}) {
     const im = BB.V2.crate;
     BB.rrect(x + 6, y + 10, w, h, 12, "rgba(0,0,0,.3)");
@@ -269,7 +269,12 @@
     const hy = y0 + ext;
     BB.rrect(X - 50, hy, 100, 46, 10, BB.lg(hy, hy + 46, ["#a8704a", "#5e3620"]), "#22282e", 4);
     BB.rrect(X - 70, hy + 46, 140, 26, 6, BB.lg(hy + 46, hy + 72, ["#e8685a", "#9c2e24"]), "#22282e", 4);
-    BB.rrect(X - 95, PAD + 72, 190, 70, 6, "#efe6d2", "#5a5040", 3);
+    {
+      const py = PAD + 66;
+      BB.rrect(X - 100, py, 200, 90, 8, BB.lg(py, py + 90, ["#d8a466", "#9a6430"]), "#4a2e12", 4);
+      ctx.fillStyle = "rgba(240,220,170,.8)";
+      ctx.fillRect(X - 14, py, 28, 90);
+    }
     if (e > 0.5 || c < 1.2) {
       ctx.globalAlpha = c < 1.2 ? 1 - c / 1.2 * 0.6 : 1;
       ctx.strokeStyle = "#d24a3c";
@@ -864,8 +869,15 @@
       ctx.restore();
     }
     drawSprocket(t) {
-      const x = 1690, base = 700;
-      BB.contactShadow(x, base, 110, 0.5);
+      const x = 1720, base = 712;
+      R.paint(ctx, () => {
+        for (const [y, h, w] of [[712, 100, 190], [812, 96, 206]]) {
+          BB.rrect(x - w / 2, y, w, h, 8, BB.lg(y, y + h, ["#d8a466", "#9a6430"]), "#4a2e12", 4);
+          ctx.fillStyle = "rgba(240,220,170,.8)";
+          ctx.fillRect(x - 14, y, 28, h);
+        }
+      });
+      BB.contactShadow(x, base, 90, 0.4);
       BB.sprite("sprocket", x, base, 300, { squash: BB.isTalking("sprocket") ? Math.sin(t * 18) * 0.015 : Math.sin(t * 2) * 6e-3 });
     }
     drawCards(t) {
