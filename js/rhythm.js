@@ -131,12 +131,15 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     for(let i=0;i<this.n;i++){if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5)}
     const ons=BB.mic.take(),C=T0+(this.L+4)*spb;if(BB.MLP&&BB.MLP.on){const bs=this.snd.map(x=>x.b);BB.MLP.openWin('rhythm',C+Math.min(...bs)*spb-.12,C+Math.max(...bs)*spb+.18)}const G=window.GroupGate,gated=BB.mic.ok&&G&&!BB.debug;
     if(window.ClapDet&&this.seq.includes('s'))ClapDet.fastUntil=ac.currentTime+.5;if(window.ClapDet&&ClapDet.expect&&!this._gap){const bs=this.snd.map(x=>x.b).sort((p,q)=>p-q);let g=1;for(let i=1;i<bs.length;i++)g=Math.min(g,bs[i]-bs[i-1]);this._gap=Math.max(.125,g)*spb}if(window.ClapDet&&ClapDet.expect)ClapDet.expect(this._gap,ac.currentTime+.5);// v13.3: refractory follows the shortest note gap of this rhythm// v13.2 tika-tika: claps 0.18 s apart must not be merged
+    // v13.6 clap96 (default; ?det=old = v13.3): per-note score-informed decision on the mic minus our own output, verified by clapnet96
+    const K=window.C96;if(K&&!this._k&&K.active()&&ac.currentTime>C-.3){const bs=this.snd.map(x=>x.b).sort((p,q)=>p-q);let g=1;for(let i=1;i<bs.length;i++)g=Math.min(g,bs[i]-bs[i-1]);this._k=K.expect(this,this.snd.map(x=>C+x.b*spb),Math.max(.125,g)*spb)?1:2}
+    if(this._k===1){for(const d of K.poll(this))if(d.t!=null&&!this.got[d.i])this.hit(d.i);ons.length=0}
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;if(o.up)continue;let best=-1,bd=1;
       for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),lat=G?G.lat||0:0,dd=o.t-lat-te,tol=dd<0?Math.min(.12,gapB*spb*.45):Math.min(.18,gapB*spb*.5),d=Math.abs(dd);if(d<tol&&d<bd){bd=d;best=i}}
       if(best<0){if(gated&&o.t>C)G.stray(o.t);continue}
       const s=this.snd[best];if(gated&&!o.sim&&s.f===0){this.got[best]=2;this.pend.push(best)}else this.hit(best)}
     if(gated)this.pend=this.pend.filter(i=>{const te=C+this.snd[i].b*spb;if(ac.currentTime-.02<te+G.lat+Math.max(G.W1,G.win(spb)[1])+.02)return true;const m=G.judge(te,false,spb);if(m.ok)this.hit(i);else{this.got[i]=0;this.few=BB.t}return false});
-    if(!this.done&&ac.currentTime>C+this.L*spb+.25){this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;this.score=sc;this.onDone&&this.onDone(sc)}}
+    if(!this.done&&ac.currentTime>C+this.L*spb+.25&&!(this._k===1&&K.exp&&K.exp.key===this&&ac.currentTime<C+this.L*spb+1.2)){if(this._k===1&&K.exp&&K.exp.key===this)K.cancel();this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;this.score=sc;this.onDone&&this.onDone(sc)}}
   hit(i){this.got[i]=1;this.marks[i]=.01;BB.sfx.tink(undefined,.6)}
   override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}
   cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-this.L-4;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}

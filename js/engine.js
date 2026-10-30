@@ -252,7 +252,7 @@ BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoSupport'};
     const st=await MicCore.start(true,BB.aec);mic.ac=MicCore.ctx;mic.stream=st;mic.track=MicCore.track();try{if(mic.lat==null&&window.GroupGate){const ts=mic.track&&mic.track.getSettings?mic.track.getSettings():{};mic.latEst=(ts.latency||0)+micLat();GroupGate.setLat(mic.latEst)}}catch(e){}// v13.2: no beep test yet -> seed latency from the browser's own numbers (USB mics add 50-150 ms); Mine refines it livemic.floor=.003;mic.prev=0;
     if(mic.track)mic.track.onended=()=>{mic.ok=false;mic.state='lost';mic.err='Microphone disconnected. Tap MIC SETUP to turn it back on.'};
-    mic.ok=true;mic.state='on';if(BB.MLP&&BB.MLP.on)BB.MLP.init();return true}
+    mic.ok=true;mic.state='on';if(BB.MLP&&BB.MLP.on)BB.MLP.init();if(window.C96)C96.start();return true}
   catch(e){const n=e&&e.name;mic.ok=false;
     mic.state=(n==='NotFoundError'||n==='DevicesNotFoundError')?'nodevice':(n==='NotAllowedError'||n==='SecurityError'||n==='PermissionDeniedError')?'denied':'error';
     mic.err=mic.state==='denied'?'Mic permission is blocked. Click the mic/lock icon in the address bar, choose Allow, then reload.':

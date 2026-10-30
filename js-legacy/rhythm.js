@@ -486,6 +486,17 @@
         this._gap = Math.max(0.125, g) * spb;
       }
       if (window.ClapDet && ClapDet.expect) ClapDet.expect(this._gap, ac.currentTime + 0.5);
+      const K = window.C96;
+      if (K && !this._k && K.active() && ac.currentTime > C - 0.3) {
+        const bs = this.snd.map((x) => x.b).sort((p, q) => p - q);
+        let g = 1;
+        for (let i = 1; i < bs.length; i++) g = Math.min(g, bs[i] - bs[i - 1]);
+        this._k = K.expect(this, this.snd.map((x) => C + x.b * spb), Math.max(0.125, g) * spb) ? 1 : 2;
+      }
+      if (this._k === 1) {
+        for (const d of K.poll(this)) if (d.t != null && !this.got[d.i]) this.hit(d.i);
+        ons.length = 0;
+      }
       for (const o of ons) {
         if (BB.talking && BB.t < BB.talking.until && !BB.debug) continue;
         if (o.up) continue;
@@ -519,7 +530,8 @@
         }
         return false;
       });
-      if (!this.done && ac.currentTime > C + this.L * spb + 0.25) {
+      if (!this.done && ac.currentTime > C + this.L * spb + 0.25 && !(this._k === 1 && K.exp && K.exp.key === this && ac.currentTime < C + this.L * spb + 1.2)) {
+        if (this._k === 1 && K.exp && K.exp.key === this) K.cancel();
         this.done = true;
         const sc = this.got.filter((x) => x === 1).length / this.n;
         this.score = sc;

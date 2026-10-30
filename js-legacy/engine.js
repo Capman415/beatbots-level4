@@ -915,6 +915,7 @@ BB.startMic = async () => {
       mic.ok = true;
       mic.state = "on";
       if (BB.MLP && BB.MLP.on) BB.MLP.init();
+      if (window.C96) C96.start();
       return true;
     } catch (e) {
       const n = e && e.name;
