@@ -25,6 +25,13 @@ let ctx = cv.getContext("2d");
 BB.ctx = ctx;
 {
   const P = CanvasRenderingContext2D.prototype, dSB = Object.getOwnPropertyDescriptor(P, "shadowBlur"), dF = Object.getOwnPropertyDescriptor(P, "filter");
+  BB.tierGuard = (g) => {
+    if (dSB) Object.defineProperty(g, "shadowBlur", { get() {
+      return dSB.get.call(this);
+    }, set(v) {
+      dSB.set.call(this, BB.tier === 0 ? 0 : v);
+    } });
+  };
   if (dSB) Object.defineProperty(ctx, "shadowBlur", { get() {
     return dSB.get.call(this);
   }, set(v) {
@@ -48,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v13.4";
+BB.VERSION = "v13.5";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -372,7 +379,31 @@ BB.lg = (y0, y1, stops) => {
   stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
   return g;
 };
-BB.bevel = (x, y, w, h, r, cols = ["#fdf8ea", "#e9e2cc", "#c9bfa3"]) => {
+const BVC = /* @__PURE__ */ new Map();
+BB.bevelCache = true;
+BB.bevel = (x, y, w, h, r, cols) => {
+  const T = ctx.getTransform();
+  if (!BB.bevelCache || T.b || T.c || T.a !== T.d || !(T.a > 0)) return bevelLive(x, y, w, h, r, cols);
+  const M = 40, s = T.a, X0 = T.a * (x - M) + T.e, Y0 = T.d * (y - M) + T.f, ix = Math.floor(X0), iy = Math.floor(Y0), fx = +(X0 - ix).toFixed(3), fy = +(Y0 - iy).toFixed(3);
+  const k = w + "|" + h + "|" + r + "|" + (cols ? cols.join(",") : "") + "|" + s.toFixed(4) + "|" + fx + "|" + fy + "|" + BB.tier;
+  let c = BVC.get(k);
+  if (!c) {
+    if (BVC.size > 400) BVC.clear();
+    c = document.createElement("canvas");
+    c.width = Math.ceil((w + M * 2) * s + 2);
+    c.height = Math.ceil((h + M * 2) * s + 2);
+    const g = c.getContext("2d");
+    BB.tierGuard(g);
+    g.setTransform(s, 0, 0, s, fx - s * (x - M), fy - s * (y - M));
+    BB.withCtx(g, () => bevelLive(x, y, w, h, r, cols));
+    BVC.set(k, c);
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(c, ix, iy);
+  ctx.restore();
+};
+const bevelLive = (x, y, w, h, r, cols = ["#fdf8ea", "#e9e2cc", "#c9bfa3"]) => {
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,.45)";
   ctx.shadowBlur = 22;

@@ -6,11 +6,12 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
 // v13.1 lite floor: the main canvas ignores shadow blur and CSS filters (the two costliest per-draw effects on weak GPUs/CPUs).
 // Offscreen bakes use their own contexts, so baked sprites keep their shading.
 {const P=CanvasRenderingContext2D.prototype,dSB=Object.getOwnPropertyDescriptor(P,'shadowBlur'),dF=Object.getOwnPropertyDescriptor(P,'filter');
+  BB.tierGuard=g=>{if(dSB)Object.defineProperty(g,'shadowBlur',{get(){return dSB.get.call(this)},set(v){dSB.set.call(this,BB.tier===0?0:v)}})};
   if(dSB)Object.defineProperty(ctx,'shadowBlur',{get(){return dSB.get.call(this)},set(v){dSB.set.call(this,BB.tier===0?0:v)}});
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v13.4';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v13.5';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -117,7 +118,16 @@ BB.text=(t,x,y,s,fill,o={})=>{ctx.font=`${s}px '${o.font||'Lilita One'}'`;ctx.te
 // clay-look panel: soft two-step shadow, lit cream rim, deep teal well with inner shadow + top sheen
 BB.lg=(y0,y1,stops)=>{const g=ctx.createLinearGradient(0,y0,0,y1);stops.forEach((c,i)=>g.addColorStop(i/(stops.length-1),c));return g};
 // v12.6: shaded, beveled enamel plaque with a chrome rim, rivets and soft inner/outer shading (matches the robots + CGI rooms)
-BB.bevel=(x,y,w,h,r,cols=['#fdf8ea','#e9e2cc','#c9bfa3'])=>{ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=22;ctx.shadowOffsetY=10;
+// v13.5: bevel sprites are cached per size/colours/scale/sub-pixel phase - the 22px outer shadowBlur re-rasterised on every panel,
+// plaque and button every frame was the main tier>0 cost in every room. Drawn at the identical device pixel, so it looks the same.
+const BVC=new Map();BB.bevelCache=true;
+BB.bevel=(x,y,w,h,r,cols)=>{const T=ctx.getTransform();if(!BB.bevelCache||T.b||T.c||T.a!==T.d||!(T.a>0))return bevelLive(x,y,w,h,r,cols);
+  const M=40,s=T.a,X0=T.a*(x-M)+T.e,Y0=T.d*(y-M)+T.f,ix=Math.floor(X0),iy=Math.floor(Y0),fx=+(X0-ix).toFixed(3),fy=+(Y0-iy).toFixed(3);
+  const k=w+'|'+h+'|'+r+'|'+(cols?cols.join(','):'')+'|'+s.toFixed(4)+'|'+fx+'|'+fy+'|'+BB.tier;let c=BVC.get(k);
+  if(!c){if(BVC.size>400)BVC.clear();c=document.createElement('canvas');c.width=Math.ceil((w+M*2)*s+2);c.height=Math.ceil((h+M*2)*s+2);const g=c.getContext('2d');BB.tierGuard(g);
+    g.setTransform(s,0,0,s,fx-s*(x-M),fy-s*(y-M));BB.withCtx(g,()=>bevelLive(x,y,w,h,r,cols));BVC.set(k,c)}
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(c,ix,iy);ctx.restore()};
+const bevelLive=(x,y,w,h,r,cols=['#fdf8ea','#e9e2cc','#c9bfa3'])=>{ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=22;ctx.shadowOffsetY=10;
   BB.rrect(x-4,y-4,w+8,h+8,r+4,BB.lg(y-4,y+h+4,['#f4f7f6','#9aa6a4','#e2e8e6','#6c7775']));ctx.restore();// chrome rim
   BB.rrect(x-4,y-4,w+8,h+8,r+4,null,'rgba(20,30,30,.75)',2.5);
   BB.rrect(x,y,w,h,r,BB.lg(y,y+h,cols));// enamel
