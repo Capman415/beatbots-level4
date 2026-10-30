@@ -154,7 +154,7 @@ class LabelRoom{constructor(o={}){this.o=o}
   correct(c){const i=this.cards.indexOf(c);this.state='fly';this.st=BB.t;this.fly={i,from:this.cardRect(i)};const p=this.points();this.score+=p;this.gain={p,t:BB.t};this.streak++;this.best=Math.max(this.best,this.streak);
     BB.sfx.ding();BB.say(this.streak%2?'lb_right':'lb_right2');if(this.streak===3||this.streak===6)setTimeout(()=>{if(BB.scene!==this)return;this.pop={t:BB.t,txt:'no fair!'};BB.say('jr_lstreak',{overlap:true})},1500);if(this.streak===4)setTimeout(()=>BB.scene===this&&BB.say('lb_faster',{overlap:false}),1800)}
   slapped(){BB.sfx.thunk();BB.sfx.clunk(ac.currentTime+.05);BB.shake(5);BB.burst(BOX_X,BELT_Y-BOX_H*.3,18,{cols:['#ffe066','#fff','#d24a3c'],kind:'star',size:12,speed:500,g:500});
-    if(this.clapBack){this.state='clap';this.cb=new R.ClapBack(this.ans,{bpm:100,onDone:()=>setTimeout(()=>BB.scene===this&&this.ship(),500)});BB.say('lb_clap',{overlap:true})}else setTimeout(()=>BB.scene===this&&this.ship(),500)}
+    if(this.clapBack){this.state='clap';this.cb=new R.ClapBack(this.ans,{bpm:100,onQuiet:()=>{this.score++},onSneak:()=>{this.score=Math.max(0,this.score-1)},onDone:()=>setTimeout(()=>BB.scene===this&&this.ship(),500)});BB.say('lb_clap',{overlap:true})}else setTimeout(()=>BB.scene===this&&this.ship(),500)}
   ship(){this.cb=null;this.state='ship';this.st=BB.t;BB.sfx.whoosh(undefined,1)}
   manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;if(this.cb)this.cb.override();else if(this.state==='pick')this.tapBox()}
   pause(){BB.paused=true;BB.ac.suspend()}

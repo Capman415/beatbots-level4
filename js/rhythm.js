@@ -119,7 +119,7 @@ Object.assign(BB.sfx,{
 // seq = 4-beat rhythm. Measure 0 plays it with the click; measure 1 the class claps. Group-gated on the beat-start sounds.
 class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60/this.bpm;this.snd=R.sounds(seq);this.n=this.snd.length;this.L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0));// beats in the pattern (4, 6 or 8)
     this.t0=ac.currentTime+.35;this.next=0;this.lit=new Array(this.n).fill(0);this.marks=new Array(this.n).fill(0);this.got=new Array(this.n).fill(0);this.pend=[];this.done=false;this.onDone=o.onDone;this.voice=o.voice||(()=>{});this.cnt=o.countIn!==false;this.read=!!o.read;// v14.0 read mode: the machine stays silent on 'my turn' (class reads the notation)
-    this.base=this.cnt?4:0;// optional count-in measure
+    this.base=this.cnt?4:0;/* optional count-in measure */this.lc=0;this.lcT=-9;this.qDone=0;this.oQuiet=o.onQuiet;this.oSneak=o.onSneak;
     BB.mic.take();BB.groove&&BB.groove.sync(this.t0,this.spb)}
   beatNow(){return(ac.currentTime-this.t0)/this.spb}
   beatNowV(){return(ac.currentTime-BB.visLat()-this.t0)/this.spb}// v13.2 visual clock = audible beat
@@ -137,6 +137,9 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     const K=window.C96;if(K&&!this._k&&K.active()&&ac.currentTime>C-.3){const bs=this.snd.map(x=>x.b).sort((p,q)=>p-q);let g=1;for(let i=1;i<bs.length;i++)g=Math.min(g,bs[i]-bs[i-1]);this._k=K.expect(this,this.snd.map(x=>C+x.b*spb),Math.max(.125,g)*spb)?1:2}
     if(this._k===1){for(const d of K.poll(this)){const te=C+this.snd[d.i].b*spb;if(d.t!=null){BB.clapStats.heard++;BB.clapLog.add({bpm:this.bpm,i:d.i,exp:te,on:d.t,peak:d.info&&d.info.v,thr:d.info&&d.info.s,res:this.got[d.i]?'rejected-as-double':'hit'});if(!this.got[d.i])this.hit(d.i)}else BB.clapLog.add({bpm:this.bpm,i:d.i,exp:te,peak:d.info&&d.info.v,thr:d.info&&d.info.s,res:d.info&&d.info.v>0?'too soft':'miss'});this.logged=this.logged||{};this.logged[d.i]=1}ons.length=0}
     {const S=BB.clapStats,ph=this.phase();if(ph==='clap'){S.peak=Math.max(S.peak,BB.mic.level||0);if(dt>.05)S.slow++}}
+    /* v14.3 listening turn: claps while Sprocket plays are logged as clap_during_listen and never scored */
+    for(let j=ons.length-1;j>=0;j--){const o=ons[j];if(!o.up&&o.t>=T0-.08&&o.t<T0+this.L*spb+.08){this.lc++;this.lcT=BB.t;BB.clapLog.add({bpm:this.bpm,on:o.t,peak:o.v??o.e,res:'clap_during_listen'});ons.splice(j,1)}}
+    if(!this.qDone&&this.beatNow()-this.base>=this.L+.1){this.qDone=1;R.listenResult(this)}
     for(const o of ons){if(o.up){BB.clapLog.add({bpm:this.bpm,on:o.t,peak:o.v??o.e,res:'rejected-as-double'});continue}BB.clapStats.heard++;if(BB.talking&&BB.t<BB.talking.until&&!BB.debug){BB.clapStats.talk++;BB.clapLog.add({bpm:this.bpm,on:o.t,peak:o.v??o.e,res:'ignored-during-playback'});continue}let best=-1,bd=1;
       for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),lat=G?G.lat||0:0,dd=o.t-lat-te,tol=dd<0?Math.min(.15,gapB*spb*.48):Math.min(.22,gapB*spb*.55)/* v14.2 wider (Clap Check leniency) */,d=Math.abs(dd);if(d<tol&&d<bd){bd=d;best=i}}
       if(best<0){if(o.t>C){BB.clapStats.stray++;let ni=0,nd=1e9;for(let i=0;i<this.n;i++){const dd=o.t-(C+this.snd[i].b*spb);if(Math.abs(dd)<Math.abs(nd)){nd=dd;ni=i}}BB.clapLog.add({bpm:this.bpm,i:ni,exp:C+this.snd[ni].b*spb,on:o.t,peak:o.v??o.e,res:this.got[ni]?'rejected-as-double':nd<0?'early':'late'})}if(gated&&o.t>C)G.stray(o.t);continue}
@@ -148,6 +151,8 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
   cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-this.L-4;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
   draw(cx,y){const ph=this.phase(),yt=ph==='ready'||ph==='clap';
     if(yt)R.yourTurn(ph,this.beatNowV()-this.base-this.L,y);
+    if(ph==='listen'||(ph==='count'&&this.beatNowV()>=this.base-1))R.listenBanner(this);if(ph==='clap')R.turnFlash((this.beatNowV()-this.base-this.L-4)*this.spb);
+
     if(yt){ctx.save();ctx.translate(cx,y);ctx.scale(1.18,1.18);ctx.translate(-cx,-y);}// bigger beat lights while it's the class's turn
     R.pills(cx,y,this.seq,{lit:this.lit,marks:this.marks,cur:this.cursor(),words:true});if(yt)ctx.restore();
     const bn=this.beatNowV();let msg='';
@@ -157,12 +162,45 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     // beat dots under the pills
     if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*120+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
 R.ClapBack=ClapBack;
+/* v14.3 quiet listening: LISTEN banner + quiet meter, a quiet-listen star, Static Jr. sneak (2+ claps, mode ON), teacher mode on/gentle/off */
+{let mode='on';try{mode=localStorage.getItem('bb_listenmode')||'on'}catch(e){}
+ BB.listenMode={get v(){return mode},cycle(){mode={on:'gentle',gentle:'off',off:'on'}[mode]||'on';try{localStorage.setItem('bb_listenmode',mode)}catch(e){}},label(){return{on:'ON',gentle:'GENTLE (K)',off:'OFF'}[mode]}}}
+R.qStars=()=>{const S=BB.scene||{};return S._qStars||0};
+R.listenResult=cb=>{const S=BB.scene;if(!S||BB.listenMode.v==='off')return;
+  if(cb.lc===0){S._qStars=(S._qStars||0)+1;cb.oQuiet&&cb.oQuiet();BB.sfx.tink&&BB.sfx.tink(undefined,.5);BB.burst&&BB.burst(W/2+250,232,16,{col:COL.yellow,kind:'star',size:15,speed:500,g:300});S._qFx={t:BB.t,k:'star'}}
+  else if(cb.lc>=2&&BB.listenMode.v==='on'){if(S._qStars>0)S._qStars--;cb.oSneak&&cb.oSneak();S._sneak={t:BB.t};BB.sfx.glitch?BB.sfx.glitch():BB.sfx.zap()}};
+R.listenBanner=cb=>{const t=BB.t,by=118,bh=150,bw=980,bx=W/2-bw/2,lc=cb.lc,sh=BB.t-cb.lcT<.35?Math.sin(BB.t*90)*10*(1-(BB.t-cb.lcT)/.35):0;
+  ctx.save();ctx.translate(sh,0);
+  BB.rrect(bx,by-bh/2+8,bw,bh,34,'rgba(0,0,0,.35)');BB.rrect(bx,by-bh/2,bw,bh,34,'#183e3e','#eee4cc',8);
+  // ear + hands-down icons
+  const ex=bx+95,ey=by;ctx.save();ctx.translate(ex,ey);ctx.fillStyle='#f3c9a2';ctx.strokeStyle='#5a3a24';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,0,34,48,0,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(2,-6,18,Math.PI*.9,Math.PI*2.2);ctx.stroke();ctx.beginPath();ctx.moveTo(6,10);ctx.quadraticCurveTo(-6,24,4,30);ctx.stroke();
+   for(let i=0;i<3;i++){ctx.strokeStyle=`rgba(255,216,74,${.9-.25*i})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(-52,0,16+i*14+((t*30)%14),-.7,.7);ctx.stroke()}ctx.restore();
+  const hx=bx+bw-95;ctx.save();ctx.translate(hx,by);for(const s of[-1,1]){ctx.save();ctx.translate(s*22,-8);ctx.fillStyle='#f3c9a2';ctx.strokeStyle='#5a3a24';ctx.lineWidth=4;BB.rrect(-14,-34,28,52,12,'#f3c9a2','#5a3a24',4);ctx.restore()}
+   ctx.strokeStyle='#ffd84a';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,26);ctx.lineTo(0,54);ctx.moveTo(-12,42);ctx.lineTo(0,56);ctx.lineTo(12,42);ctx.stroke();ctx.restore();
+  BB.text('LISTEN',W/2,by-26,72,'#ffd84a',{font:'Rammetto One',stroke:10});
+  ctx.restore();
+  // quiet meter under the banner
+  const mw=520,mx=W/2-mw/2,my=by+22,mh=34,spb=cb.spb,f=Math.max(0,Math.min(1,(cb.beatNowV()-cb.base)/cb.L)),cr=lc>0;
+  ctx.save();ctx.translate(sh*.6,0);BB.rrect(mx-6,my-6,mw+12,mh+12,22,'#0f2a2a','#eee4cc',3);
+  if(f>0)BB.rrect(mx,my,Math.max(mh,mw*f),mh,17,cr?'#8aa39d':BB.lg(my,my+mh,['#9ff5b0','#46b45a']));
+  BB.text(cr?(lc>=2&&BB.listenMode.v==='on'?'TOO NOISY!':'SHHH...'):(cb.read?'QUIET: read it silently':'QUIET: hands down, ears on'),W/2,my+mh/2+2,22,'#fff',{stroke:4});
+  if(cr){ctx.strokeStyle='#1e2b29';ctx.lineWidth=3;ctx.beginPath();const n=Math.min(lc,4);for(let k=0;k<n;k++){const cx=mx+60+k*110;ctx.moveTo(cx,my);ctx.lineTo(cx+12,my+12);ctx.lineTo(cx-6,my+22);ctx.lineTo(cx+8,my+mh)}ctx.stroke()}
+  const q=R.qStars();if(q>0||BB.scene._qStars!=null){BB.star(mx+mw+36,my+mh/2,16,COL.yellow,0);BB.text('x'+q,mx+mw+70,my+mh/2+2,24,'#fff',{stroke:4})}
+  ctx.restore()};
+R.turnFlash=dt=>{if(dt<0||dt>.45)return;const k=1-dt/.45;ctx.save();ctx.globalAlpha=.55*k;ctx.fillStyle='#fffbe0';ctx.fillRect(0,0,W,H);ctx.restore()};
+/* sneak overlay: drawn by every ClapBack room after its scene (see BB.drawSneak in engine loop) */
+R.drawSneak=()=>{const S=BB.scene;if(!S||!S._sneak)return;const t=BB.t-S._sneak.t;if(t>2){S._sneak=null;return}
+  const inn=Math.min(1,t/.35),out=t>1.5?(t-1.5)/.5:0,x=W-140+(1-inn)*260+out*320,y=H-40;
+  ctx.save();BB.staticJr(x,y,150,{run:out>0?1:.3,flip:out<=0,rot:Math.sin(BB.t*18)*.06,glitch:t<.4?1:0});ctx.restore();
+  if(t<1.5){const bx=x-40,byy=y-280;BB.star(bx-60-(t>.6?(t-.6)*-40:0),byy+60,22,COL.yellow,0);R.bubble(x-60,y-300,'Hee hee! Mine!','#8a2a6e')}
+  if(t<.5){ctx.save();ctx.globalAlpha=.25*(1-t/.5);for(let i=0;i<40;i++){ctx.fillStyle=i%2?'#fff':'#7ef0ff';ctx.fillRect(Math.random()*W,Math.random()*H,40+Math.random()*120,2)}ctx.restore()}};
+
 /* v14.2 clap readout (pause menu): what the detector heard vs counted, so misses are visible */
 BB.clapStats={heard:0,hit:0,exp:0,talk:0,stray:0,peak:0,slow:0};
 /* v14.2.1 local clap diagnostics log: numbers only (never audio), localStorage on this device, last 30000 events.
    Compact rows: [t (0.1 s since epoch base), session idx, room code, bpm, beat, exp*1000, on*1000, peak*1000, thr*1000, result code, playing] */
 {const KEY='bb_claplog2',SKEY='bb_clsess',CAP=30000,WARN=27000,T0=17e9,
- RES=['hit','miss','early','late','too soft','ignored-during-playback','rejected-as-double'];
+ RES=['hit','miss','early','late','too soft','ignored-during-playback','rejected-as-double','clap_during_listen'];
  const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')||d}catch(e){return d}};
  let ev=ld(KEY,[]),sess=ld(SKEY,[]);
  const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -197,8 +235,8 @@ BB.clapStats={heard:0,hit:0,exp:0,talk:0,stray:0,peak:0,slow:0};
   csv(){return 'session_id,date,day,class,timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing\n'+BB.clapLog.rows().map(r=>[r.s.id||'',r.s.date||'',r.s.day||'',r.s.cls||'',r.ts,r.room,r.bpm,r.i,r.exp,r.on,r.off,r.peak,r.thr,r.res,r.pl].map(q).join(',')).join('\n')},
   summaryCsv(){const g=new Map();for(const r of BB.clapLog.rows()){const k=(r.s.id||'')+'|'+r.room;let a=g.get(k);if(!a){a={s:r.s,room:r.room,c:{},n:0,offs:[],first:r.ts,last:r.ts};g.set(k,a)}a.n++;a.c[r.res]=(a.c[r.res]||0)+1;a.last=r.ts;if(r.res==='hit'&&r.off!=='')a.offs.push(r.off)}
    const med=x=>{if(!x.length)return'';x=x.slice().sort((a,b)=>a-b);return x[x.length>>1]};
-   return 'session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,hit_rate,median_hit_offset_ms\n'+[...g.values()].map(a=>{const c=k=>a.c[k]||0,h=c('hit'),den=h+c('miss')+c('too soft')+c('early')+c('late');
-    return[a.s.id||'',a.s.date||'',a.s.day||'',a.s.cls||'',a.room,a.first,a.last,a.n,h,c('miss'),c('early'),c('late'),c('too soft'),c('ignored-during-playback'),c('rejected-as-double'),den?(h/den).toFixed(3):'',med(a.offs)].map(q).join(',')}).join('\n')},
+   return 'session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms\n'+[...g.values()].map(a=>{const c=k=>a.c[k]||0,h=c('hit'),den=h+c('miss')+c('too soft')+c('early')+c('late');
+    return[a.s.id||'',a.s.date||'',a.s.day||'',a.s.cls||'',a.room,a.first,a.last,a.n,h,c('miss'),c('early'),c('late'),c('too soft'),c('ignored-during-playback'),c('rejected-as-double'),c('clap_during_listen'),den?(h/den).toFixed(3):'',med(a.offs)].map(q).join(',')}).join('\n')},
   download(){save();dl(BB.clapLog.csv(),'beatbots_claplog_'+dstr(new Date())+'.csv')},
   downloadSummary(){save();dl(BB.clapLog.summaryCsv(),'beatbots_claplog_summary_'+dstr(new Date())+'.csv')},
   clear(){ev=[];sess=[];dirty=1;save();if(BB.clapStats)for(const k in BB.clapStats)BB.clapStats[k]=0}}}
@@ -216,7 +254,7 @@ R.yourTurn=(ph,rb,py)=>{const t=BB.t,pu=.5+.5*Math.sin(t*Math.PI*2*1.4),cl=ph===
   BB.rrect(30,by-bh/2+8,W-60,bh,34,'rgba(0,0,0,.35)');BB.rrect(30,by-bh/2,W-60,bh,34,BB.lg(-bh/2,bh/2,cl?['#86e486','#3fae4c']:['#f6d65e','#e3b02a']/* v12.8 glare pass: even marquee fill */),'#1e2b29',8);ctx.restore();
   for(let i=0;i<14;i++){const bx=70+i*(W-140)/13,on=(Math.floor(t*6)+i)%2;ctx.fillStyle=on?'#fffbe0':'rgba(80,60,20,.5)';ctx.beginPath();ctx.arc(bx,by-bh/2+16,7,0,7);ctx.arc(bx,by+bh/2-16,7,0,7);ctx.fill()}// marquee bulbs
   const big=cl?'YOUR TURN, ENGINEERS! CLAP!':(['GET READY... 1','GET READY... 2','READY...','GO!'][Math.max(0,Math.min(3,Math.floor(rb)))]);
-  BB.text(big,W/2,by+4,(cl?84:90)*(1+.04*pu),'#fffdf2',{font:'Rammetto One',stroke:12,maxW:W-420});
+  BB.text(big,W/2,by+4,(cl?84:90)*(1+.04*pu)*(cl?1+.3*Math.max(0,1-(rb-4)*2.5):1),'#fffdf2',{font:'Rammetto One',stroke:12,maxW:W-420});
   // robots turn and point at the class
   for(const sd of[-1,1]){const rx=W/2+sd*(W/2-130),ry=by+70;ctx.save();ctx.translate(rx,ry);ctx.scale(-sd,1);
     if(BB.IMG&&BB.IMG.sprocket)BB.sprite('sprocket',0,0,150,{parts:false});

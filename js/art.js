@@ -252,7 +252,7 @@ BB.beatPills=(cx,y,lit,o={})=>{const n=lit.length,pw=o.pw||76,gap=o.gap||16,ph=o
 BB.micMeter=(x,y,o={})=>{if(BB.listening&&!o._in){const sc=BB.listening===2?1.35:1.15,cx=x<W/2?x:x+330,cy=y>H/2?y+110:y;ctx.save();ctx.translate(cx,cy);ctx.scale(sc,sc);ctx.translate(-cx,-cy);ctx.save();ctx.shadowColor='#6ee678';ctx.shadowBlur=30+20*Math.sin(BB.t*9);BB.rrect(x-8,y-8,346,126,30,null,'#6ee678',6);ctx.restore();BB.micMeter(x,y,{...o,_in:1});BB.text('LISTENING',x+165,y-24,26,'#6ee678',{stroke:5});ctx.restore();return}const m=BB.mic;BB.bevel(x-8,y-8,346,126,30);BB.well(x,y,330,110,26);
   BB.text('MIC',x+50,y+40,32,COL.yellow,{stroke:4});
   BB.text(m.ok?'ON':({denied:'BLOCKED',nodevice:'NONE',lost:'LOST',error:'ERROR'}[m.state]||'OFF'),x+50,y+78,m.ok?22:16,m.ok?COL.green:'#ff9c8a');
-  const n=10,lvl=m.level;for(let i=0;i<n;i++){const on=i<lvl*n,bx=x+95+i*20;let c=on?(i<4?'#6ee678':i<7?'#ffe066':'#ff7b5c'):'#3c5050';
+  const n=10,lvl=m.meter??m.level;for(let i=0;i<n;i++){const on=i<lvl*n,bx=x+95+i*20;let c=on?(i<4?'#6ee678':i<7?'#ffe066':'#ff7b5c'):'#3c5050';
     if(o.band==='soft'&&i>=4)c=on?'#ff7b5c':'#2a3a3a';
     if(o.band==='loud'&&i<6)c=on?'#8aa':'#2a3a3a';
     const by=y+22+(9-i)*3,bh=64-(9-i)*3;BB.rrect(bx,by,14,bh,4,c);if(on){ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(bx+2,by+2,4,bh-4)}}
@@ -286,13 +286,15 @@ BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRec
   BB.text(howTo.words,x+220,y+h-300,34,'#fff',{align:'left',maxW:1180});
   // clap sensitivity (also in MIC SETUP): softer claps count when turned up
   // v13.8: contained in its own well (bottom-right), clear of RESUME and the panel border
-  {const m=BB.mic,wx=x+w-560,wy=y+h-230,sx=wx+30,sy=wy+56;BB.well(wx,wy,520,180,26);BB.text('Clap sensitivity',wx+260,wy+32,30,COL.yellow,{stroke:4});
+  {/* v14.3 bottom row rebalanced: ROOM SELECT | RESUME | sensitivity well, equal 80px gaps */const m=BB.mic,wx=x+960,wy=y+h-230,sx=wx+20,sy=wy+56;BB.well(wx,wy,480,180,26);BB.text('Clap sensitivity',wx+240,wy+32,30,COL.yellow,{stroke:4});
    BB.button(sx,sy+8,80,80,'−',{size:46,id:'psens-',onClick:()=>BB.setSens(m.sensIdx-1)});
-   for(let i=0;i<6;i++){const on=i<=m.sensIdx;BB.rrect(sx+108+i*40,sy+70-i*8,30,18+i*8,6,on?(i<2?'#6ee678':i<4?'#ffe066':'#ff9c5c'):'#2f4242','rgba(0,0,0,.35)',2)}
-   BB.button(sx+380,sy+8,80,80,'+',{size:46,id:'psens+',onClick:()=>BB.setSens(m.sensIdx+1)})}
+   for(let i=0;i<6;i++){const on=i<=m.sensIdx;BB.rrect(sx+104+i*40,sy+70-i*8,30,18+i*8,6,on?(i<2?'#6ee678':i<4?'#ffe066':'#ff9c5c'):'#2f4242','rgba(0,0,0,.35)',2)}
+   BB.button(sx+360,sy+8,80,80,'+',{size:46,id:'psens+',onClick:()=>BB.setSens(m.sensIdx+1)})}
   // v13.8: back to the room picker, only from inside the pause menu (hard to hit by accident)
-  BB.button(x+60,y+h-200,380,120,'ROOM SELECT',{size:40,id:'roomsel',onClick:()=>{BB.paused=false;BB.ac.resume().catch(()=>{});BB.caption=null;BB.talking=null;BB.go(new BB.MapScene())}});
+  BB.button(x+60,y+h-200,340,120,'ROOM SELECT',{size:38,id:'roomsel',onClick:()=>{BB.paused=false;BB.ac.resume().catch(()=>{});BB.caption=null;BB.talking=null;BB.go(new BB.MapScene())}});
   {const S=BB.clapStats;if(S){const m=BB.mic;BB.text('CLAP READOUT  counted '+S.hit+'/'+S.exp+'  \u2022  heard '+S.heard+'  \u2022  off-beat '+S.stray+'  \u2022  blocked by voice '+S.talk+'  \u2022  mic peak '+Math.round(S.peak*100)+'%  \u2022  slow frames '+S.slow+'  \u2022  mic '+(m.ok?'on':m.state)+(window.C96&&C96.active&&C96.active()?' (clap96)':''),W/2,y+h-38,22,'#cfe8e2',{maxW:w-80})}}
+  /* v14.3 teacher toggle: listening rule (ON = Static Jr. sneaks on 2+ claps, GENTLE = meter only, for K) */
+  if(BB.listenMode)BB.button(x+40,y+24,290,42,'LISTEN RULE: '+BB.listenMode.label(),{size:19,id:'lrule',onClick:()=>BB.listenMode.cycle()});
   /* v14.2.1: clap log + session tag, compact column kept above the example picture (ends y+188) */
   if(BB.clapLog){const L=BB.clapLog,bx=x+w-330,bw=290,warn=L.nearCap(),tw=(bw-12)/3;
    BB.button(bx,y+24,bw,42,(warn?'NEARLY FULL! ':'CLAP LOG: '+(L.on?'ON ':'OFF '))+L.count()+'/'+L.CAP,{style:warn?'cream':undefined,size:19,id:'clog',onClick:()=>{L.on=!L.on}});
@@ -301,7 +303,7 @@ BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRec
    BB.button(bx,y+156,tw,36,'DAY '+BB.session.day,{size:16,id:'psday',onClick:()=>BB.session.cycleDay()});
    BB.button(bx+tw+6,y+156,tw,36,'CLASS '+BB.session.cls,{size:16,id:'pscls',onClick:()=>BB.session.cycleClass()});
    BB.button(bx+2*tw+12,y+156,tw,36,'Clear',{size:16,id:'clogclr',onClick:()=>{if(window.confirm('Clear the clap log? Download it first.'))L.clear()}})}
-  BB.button(W/2-220,y+h-200,440,120,'RESUME',{style:'green',size:56,id:'resume',onClick:onResume})};
+  BB.button(x+480,y+h-200,400,120,'RESUME',{style:'green',size:54,id:'resume',onClick:onResume})};
 let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)/1000;rl=n;return rt};
 // room title card
 BB.titleCard=(txt,sub,k)=>{if(k<=0||k>=1)return;const a=k<.15?k/.15:k>.85?(1-k)/.15:1;ctx.save();ctx.globalAlpha=a;

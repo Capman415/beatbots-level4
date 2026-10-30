@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.2.1';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.3';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -305,6 +305,8 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   const oR=BB.outRms(),EG=BB.echoOff?null:window.EchoGate;if(EG){EG.push(ac.currentTime,oR);if(tNow-mic.lastOn>.3)EG.learn(rms,EG.outAt(tNow,micLat()).peak)}
   // v13.2: onsets are found on the residual after removing the predicted echo of our own output (x = rms when silent)
   const CD=window.ClapDet,x=CD&&EG&&EG.on?EG.resid(tNow,rms,micLat()):rms;
+  /* v14.3 mic meter follows the detector: residual after echo removal, and silent inside our own sound attacks */
+  {const sc=selfCheck(tNow),xl=sc==='hard'?0:(window.GroupGate?GroupGate.lvl(x,sens):clamp(Math.sqrt(x*sens*6),0,1));mic.meter=Math.max(xl,(mic.meter||0)-dt*1.8)}
   const gap=CD?CD.gapOk(mic,tNow,x):(tNow-mic.lastOn>.12?1:0);
   const jmp=window.GroupGate?GroupGate.adaptJump(x,softOn&&BB.fastSoft&&BB.t-BB.fastSoft<.5?GroupGate.ONSET_JUMP_FS:GroupGate.ONSET_JUMP):1.3;
   if(x>thr&&(CD&&CD.jumpOk?CD.jumpOk(mic,x,mic.prev||0,jmp,tNow):x>mic.prev*jmp)&&gap){const prevOn=mic.lastOn;mic.lastOn=tNow;if(window.GroupGate)GroupGate.adaptPeak(x);
@@ -323,7 +325,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   if(x<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(x,(mic.prev||0)*(window.GroupGate?GroupGate.adaptDecay():.6));mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};
 mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 // Simulated class (debug ?sim=1): claps on the beat with the requested loudness.
-BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl,sim:1});mic.level=lvl;mic.peak=lvl;mic.hold=.4};
+BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl,sim:1});mic.level=lvl;mic.meter=lvl;mic.peak=lvl;mic.hold=.4};
 // ---------- main loop ----------
 BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.groove&&BB.groove.stop();BB.scene=s;parts.length=0;s.enter&&s.enter()};
 let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0,perfGood=0,bootT=last;
@@ -342,7 +344,7 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   ctx.setTransform(SC*BB.dpr,0,0,SC*BB.dpr,OX*BB.dpr,OY*BB.dpr);ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
   shakeAmt*=Math.pow(.02,dt);const sx=(Math.random()-.5)*2*shakeAmt,sy=(Math.random()-.5)*2*shakeAmt;
   BB.shakeXY=[sx,sy];
-  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
+  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);if(BB.R&&BB.R.drawSneak&&!BB.paused)BB.R.drawSneak();if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
   BB.drawCelebrate&&BB.drawCelebrate();BB.drawParts&&0;
   ctx.restore();
   ctx.save();ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.font='13px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillStyle='rgba(255,255,255,.55)';
