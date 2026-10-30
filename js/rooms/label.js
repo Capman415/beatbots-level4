@@ -49,7 +49,7 @@ function nearMiss(ans,pool,n){const out=[],seen=new Set([key(ans)]),one=pool.fil
   for(let t=0;t<200&&out.length<n;t++){const c=ops[Math.random()*ops.length|0](ans);if(!c||R.len(c)!==R.len(ans)||c.every(k=>k==='r'))continue;const kk=key(c);if(seen.has(kk))continue;seen.add(kk);out.push(c)}
   while(out.length<n){const c=genRhythm(pool.length>1?pool:['q','e'],null,R.len(ans));if(!seen.has(key(c))){seen.add(key(c));out.push(c)}}return out}
 const howTo={title:'LABEL ROOM: Static Jr. scrambled the labels!',
-  steps:['Tap the box to shake it and hear its rhythm.','Pick the label card with the matching notes.','Stuck? Tap HINT (each hint costs a point).','Right label = it ships down the conveyor!','TEACHER picks which notes can appear.'],
+  steps:['Tap the box to shake it and hear its rhythm.','Pick the label card with the matching notes.','Tap the box again to hear it again.','Right label = it ships down the conveyor!','TEACHER picks which notes can appear.'],
   words:'ta = 1 sound   ti-ti = 2   tika-tika = 4   rest = silence   (all 1 beat)',
   example:(x,y,w,h,t)=>{ctx.save();ctx.translate(x+w/2,y+h/2);const sh=Math.sin(t*20)*(t%2<.5?6:0);drawBox(-90+sh,-160,180,150,null,t);
     [['q','e','q','q'],['q','q','e','q']].forEach((s,i)=>drawCard(-220+i*230,40,210,140,s,{badge:'AB'[i],hl:i===1&&t%3>1.5}));ctx.restore()}};
@@ -156,9 +156,9 @@ class LabelRoom{constructor(o={}){this.o=o}
   manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;if(this.cb)this.cb.override();else if(this.state==='pick')this.tapBox()}
   pause(){BB.paused=true;BB.ac.suspend()}
   resume(){BB.paused=false;BB.ensureMic()}
-  cardRect(i){const n=this.cards.length,cw=(this.L||4)>4?470:n>3?340:400,ch=215,gap=30,tot=n*cw+(n-1)*gap,x0=780-tot/2;return{x:x0+i*(cw+gap),y:690,w:cw,h:ch}}
+  cardRect(i){const n=this.cards.length,cw=(this.L||4)>4?470:n>3?340:400,ch=215,gap=30,tot=n*cw+(n-1)*gap,x0=W/2-tot/2;return{x:x0+i*(cw+gap),y:690,w:cw,h:ch}}
   update(dt){BB.dt=dt;if(BB.keys.includes('p')){this.pause();return}if(BB.keys.includes(' '))this.manualOverride();
-    for(const k of BB.keys){if(k>='1'&&k<='4'&&this.cards&&this.cards[+k-1])this.pick(this.cards[+k-1]);if(k==='h')this.doHint();if(k==='b')this.tapBox()}
+    for(const k of BB.keys){if(k>='1'&&k<='4'&&this.cards&&this.cards[+k-1])this.pick(this.cards[+k-1]);if(k==='b')this.tapBox()}
     if(this.state==='intro'){const t=BB.t-this.st;this.introJr(dt);for(const f of this.flurry){f.vy=Math.min(f.vy+500*dt,170);f.vx*=1-dt*1.2;f.y+=f.vy*dt;f.x+=f.vx*dt+Math.sin(BB.t*1.6+f.p)*70*dt;f.r+=f.vr*dt;if(f.y>BELT_Y-60){Object.assign(f,this.flake(-90))}if(f.x>1450)f.x=1450}if(BB.keys.includes('s'))this.skipIntro();if(t>2&&this.voEnd&&BB.t>this.voEnd+.4)this.skipIntro();if(t>14)this.skipIntro()}
     const bv=this.beatV();this.belt=bv;
     // conveyor lights: one lamp per beat, lit on the beat, decaying
@@ -217,13 +217,7 @@ class LabelRoom{constructor(o={}){this.o=o}
     BB.button(W-270,24,230,76,'TEACHER',{size:30,id:'teacher',onClick:()=>{this.teacher=true}});
     BB.pauseBtn(()=>this.pause());
     if(this.state==='end')return;if(this.state==='intro'){BB.button(W-300,H-130,260,100,'SKIP INTRO',{size:36,id:'skip',onClick:()=>this.skipIntro()});return}
-    // hint ladder (right column under Sprocket)
-    const HX=1520,HY=700,on=this.state==='pick',names=['SLOW REPLAY','BEAT LIGHTS','FIRST BEAT','REMOVE A CARD','SHOW ANSWER'];
-    PANEL(HX,HY,360,230,28);BB.text('HINTS USED '+this.hint+'/5',HX+180,HY+40,26,COL.yellow,{stroke:4});
-    BB.text(this.hint<5?'next: '+names[this.hint]:'answer shown',HX+180,HY+76,22,'#d8efe9',{maxW:320});
-    BB.button(HX+20,HY+100,150,70,'HINT',{style:'cream',size:32,id:'hint',disabled:!on||this.hint>=5,onClick:()=>this.doHint()});
-    BB.button(HX+190,HY+100,150,70,'REPLAY',{style:'teal',size:28,id:'replay',disabled:!on,onClick:()=>this.tapBox()});
-    BB.text('worth '+(on?this.points():'-')+' pts',HX+180,HY+200,24,'#fff',{stroke:4});
+    // v14.0.2: hint panel removed (teacher); tap the box to hear it again
     BB.micMeter(40,H-150);if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});this.cb.draw(W/2,H-90)}}
   drawTeacher(){ctx.fillStyle='rgba(8,18,17,.78)';ctx.fillRect(0,0,W,H);const x=W/2-560,y=150,w=1120,h=780;PANEL(x,y,w,h,40);
     BB.text('TEACHER SETTINGS',W/2,y+70,52,'#fff',{font:'Rammetto One',stroke:7});BB.text('Notes allowed on the labels (higher streaks unlock more of these)',W/2,y+130,28,COL.yellow,{stroke:4,maxW:w-80});

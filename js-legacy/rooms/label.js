@@ -165,7 +165,7 @@
   }
   const howTo = {
     title: "LABEL ROOM: Static Jr. scrambled the labels!",
-    steps: ["Tap the box to shake it and hear its rhythm.", "Pick the label card with the matching notes.", "Stuck? Tap HINT (each hint costs a point).", "Right label = it ships down the conveyor!", "TEACHER picks which notes can appear."],
+    steps: ["Tap the box to shake it and hear its rhythm.", "Pick the label card with the matching notes.", "Tap the box again to hear it again.", "Right label = it ships down the conveyor!", "TEACHER picks which notes can appear."],
     words: "ta = 1 sound   ti-ti = 2   tika-tika = 4   rest = silence   (all 1 beat)",
     example: (x, y, w, h, t) => {
       ctx.save();
@@ -683,7 +683,7 @@
       BB.ensureMic();
     }
     cardRect(i) {
-      const n = this.cards.length, cw = (this.L || 4) > 4 ? 470 : n > 3 ? 340 : 400, ch = 215, gap = 30, tot = n * cw + (n - 1) * gap, x0 = 780 - tot / 2;
+      const n = this.cards.length, cw = (this.L || 4) > 4 ? 470 : n > 3 ? 340 : 400, ch = 215, gap = 30, tot = n * cw + (n - 1) * gap, x0 = W / 2 - tot / 2;
       return { x: x0 + i * (cw + gap), y: 690, w: cw, h: ch };
     }
     update(dt) {
@@ -695,7 +695,6 @@
       if (BB.keys.includes(" ")) this.manualOverride();
       for (const k of BB.keys) {
         if (k >= "1" && k <= "4" && this.cards && this.cards[+k - 1]) this.pick(this.cards[+k - 1]);
-        if (k === "h") this.doHint();
         if (k === "b") this.tapBox();
       }
       if (this.state === "intro") {
@@ -946,13 +945,6 @@
         BB.button(W - 300, H - 130, 260, 100, "SKIP INTRO", { size: 36, id: "skip", onClick: () => this.skipIntro() });
         return;
       }
-      const HX = 1520, HY = 700, on = this.state === "pick", names = ["SLOW REPLAY", "BEAT LIGHTS", "FIRST BEAT", "REMOVE A CARD", "SHOW ANSWER"];
-      PANEL(HX, HY, 360, 230, 28);
-      BB.text("HINTS USED " + this.hint + "/5", HX + 180, HY + 40, 26, COL.yellow, { stroke: 4 });
-      BB.text(this.hint < 5 ? "next: " + names[this.hint] : "answer shown", HX + 180, HY + 76, 22, "#d8efe9", { maxW: 320 });
-      BB.button(HX + 20, HY + 100, 150, 70, "HINT", { style: "cream", size: 32, id: "hint", disabled: !on || this.hint >= 5, onClick: () => this.doHint() });
-      BB.button(HX + 190, HY + 100, 150, 70, "REPLAY", { style: "teal", size: 28, id: "replay", disabled: !on, onClick: () => this.tapBox() });
-      BB.text("worth " + (on ? this.points() : "-") + " pts", HX + 180, HY + 200, 24, "#fff", { stroke: 4 });
       BB.micMeter(40, H - 150);
       if (this.cb) {
         BB.overrideBtn(() => this.manualOverride(), { pop: this.ovPop && t - this.ovPop < 0.3 ? 1.08 : 1 });
