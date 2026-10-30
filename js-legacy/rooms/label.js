@@ -247,6 +247,34 @@
     }
     ctx.drawImage(c, x - 12, y - 12, w + 24, h + 24);
   }
+  function drawStampArm(t) {
+    const X = 1300, TOP = 110, PAD = 398, c = t % 4, p = c < 3.4 ? 0 : c < 3.6 ? (c - 3.4) / 0.2 : c < 3.75 ? 1 : 1 - (c - 3.75) / 0.25, e = p * p * (3 - 2 * p), ext = 30 + e * 178;
+    ctx.save();
+    BB.rrect(X - 120, TOP - 40, 240, 50, 10, "#4a5560", "#22282e", 4);
+    ctx.fillStyle = "#f2c230";
+    for (let i = 0; i < 6; i++) ctx.fillRect(X - 110 + i * 38, TOP - 30, 18, 30);
+    BB.rrect(X - 34, TOP, 68, 90, 12, "#6c7a86", "#22282e", 4);
+    ctx.fillStyle = "#ff5a4a";
+    ctx.beginPath();
+    ctx.arc(X, TOP + 45, 10, 0, 7);
+    ctx.fill();
+    const y0 = TOP + 90;
+    BB.rrect(X - 16, y0, 32, ext, 6, "#b8c4cc", "#22282e", 3);
+    ctx.fillStyle = "rgba(0,0,0,.18)";
+    for (let y = y0 + 14; y < y0 + ext - 8; y += 22) ctx.fillRect(X - 16, y, 32, 4);
+    const hy = y0 + ext;
+    BB.rrect(X - 50, hy, 100, 46, 10, "#7a4a2e", "#22282e", 4);
+    BB.rrect(X - 70, hy + 46, 140, 26, 6, "#d24a3c", "#22282e", 4);
+    BB.rrect(X - 95, PAD + 72, 190, 70, 6, "#efe6d2", "#5a5040", 3);
+    if (e > 0.5 || c < 1.2) {
+      ctx.globalAlpha = c < 1.2 ? 1 - c / 1.2 * 0.6 : 1;
+      ctx.strokeStyle = "#d24a3c";
+      ctx.lineWidth = 5;
+      ctx.strokeRect(X - 60, PAD + 84, 120, 46);
+      BB.text("OK!", X, PAD + 108, 30, "#d24a3c");
+    }
+    ctx.restore();
+  }
   function drawCardRaw(x, y, w, h, seq, o = {}) {
     ctx.save();
     if (!o.mini) BB.rrect(x + 5, y + 8, w, h, 12, "rgba(0,0,0,.35)");
@@ -270,6 +298,7 @@
     }
     const pad = o.mini ? 4 : 12, bx = x + pad, by = y + hh + pad, bw = (w - pad * 2) / Math.max(4, R.len(seq)), bh = h - hh - pad * 2 - (o.syl ? 28 : 0);
     let b = 0;
+    const U = R.noteSize("q", bw - 6, bh);
     for (const k of seq) {
       const n = R.BEATS[k], cx = bx + b * bw;
       if (!o.mini && b > 0) {
@@ -278,7 +307,7 @@
       }
       const lit = o.lit && o.lit[b] > 0;
       if (lit) BB.rrect(cx + 2, by, n * bw - 4, bh, 8, "rgba(255,224,102,".concat(0.25 + 0.4 * o.lit[b], ")"));
-      R.tile(k, cx + 3, by, n * bw - 6, bh, { shadow: !o.mini && BB.tier > 0 });
+      R.tile(k, cx + 3, by, n * bw - 6, bh, { ns: Math.min(U, R.noteSize(k, n * bw - 6, bh)), shadow: !o.mini && BB.tier > 0 });
       if (o.syl) BB.text(SYL[k], cx + n * bw / 2, by + bh + 16, 20, "#5a5040", { maxW: n * bw - 6 });
       b += n;
     }
@@ -714,6 +743,7 @@
         ctx.fillRect(0, 0, W, H);
       }
       this.drawBelt(t);
+      drawStampArm(t);
       if (this.state !== "intro" && this.state !== "load" && this.state !== "end") {
         const sh = this.shakeT && t - this.shakeT < 0.35 ? Math.sin((t - this.shakeT) * 60) * 8 * (1 - (t - this.shakeT) / 0.35) : 0;
         const lbl = this.state === "slap" || this.state === "ship" || this.state === "clap" ? this.ans : null, bx = this.boxX - BOX_W / 2 + sh, by = BELT_Y - BOX_H;

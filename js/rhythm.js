@@ -32,8 +32,8 @@ R.glyph=(k,x,y,s,col='#19191f',g=ctx)=>{g.save();g.fillStyle=col;g.strokeStyle=c
 const n3c={};
 function tint(src,fill){const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.drawImage(src,0,0);g.globalCompositeOperation='source-in';g.fillStyle=fill(g,c);g.fillRect(0,0,c.width,c.height);return c}
 R.noteSize=(k,w,h)=>Math.min(h*.2,w/(k==='s'?8.6:k==='e'?6.2:k==='w'?2.9:3.1));
-R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'+(o.gs||1);if(n3c[key])return n3c[key];
-  const s=R.noteSize(k,w,h)*(o.gs||1)*sc,PAD=Math.ceil(s*.9),cw=Math.ceil(w*sc)+PAD*2,ch=Math.ceil(h*sc)+PAD*2;
+R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'+(o.gs||1)+'|'+(o.ns?o.ns.toFixed(1):'');if(n3c[key])return n3c[key];
+  const s=(o.ns||R.noteSize(k,w,h))*(o.gs||1)*sc,PAD=Math.ceil(s*.9),cw=Math.ceil(w*sc)+PAD*2,ch=Math.ceil(h*sc)+PAD*2;
   const m=document.createElement('canvas');m.width=cw;m.height=ch;const mg=m.getContext('2d');
   const gx=cw/2+(k==='e'||k==='s'||k==='w'?0:-s*.4),gy=PAD+h*sc*.86-(k==='w'?h*sc*.3:0);
   if(k==='w'){mg.save();mg.translate(gx,gy);mg.fillStyle='#000';mg.beginPath();mg.ellipse(0,0,s*1.25,s*.85,0,0,7);mg.fill();mg.globalCompositeOperation='destination-out';mg.beginPath();mg.ellipse(0,0,s*.55,s*.42,-.8,0,7);mg.fill();mg.restore()}
@@ -75,7 +75,7 @@ R.syl=(k,x,w,h)=>{const c=x+w/2;if(k==='e'||k==='s'){const n=k==='e'?2:4,s=R.not
 R.tile=(k,x,y,w,h,o={})=>{ctx.save();ctx.globalAlpha=o.alpha??1;
   // label = cream name tag on the surface UNDER the note (never on the stem); the note shrinks to make room
   const fs=o.label?Math.max(14,Math.min(21,h*.16)):0,tagH=o.label?fs+10:0,pad=o.label?Math.max(6,h*.07):0;if(o.label)h-=tagH+pad*2;// v12.6: even gap note|tag|box bottom
-  if(o.shadow!==false){const sw=Math.min(w*.46,R.noteSize(k,w,h)*(k==='s'?4.6:k==='e'?3.4:1.8));const gr=ctx.createRadialGradient(x+w/2,y+h,0,x+w/2,y+h,sw);gr.addColorStop(0,'rgba(0,0,0,.42)');gr.addColorStop(1,'rgba(0,0,0,0)');
+  if(o.shadow!==false){const sw=Math.min(w*.46,(o.ns||R.noteSize(k,w,h))*(k==='s'?4.6:k==='e'?3.4:1.8));const gr=ctx.createRadialGradient(x+w/2,y+h,0,x+w/2,y+h,sw);gr.addColorStop(0,'rgba(0,0,0,.42)');gr.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=gr;ctx.save();ctx.translate(x+w/2,y+h);ctx.scale(1,.22);ctx.translate(-x-w/2,-y-h);ctx.beginPath();ctx.arc(x+w/2,y+h,sw,0,7);ctx.fill();ctx.restore()}
   if(o.glyph!==false){const sp=R.note3d(k,w,h,o);if(o.shadow!==false&&!(!BB.q)){/* lamp upper-left: shadow falls right & down, flattened onto the surface */const ox=sp.s*.35,oy=sp.s*.18;ctx.save();ctx.globalAlpha*=.75;const pv=y-sp.PAD/sp.sc+sp.gy+sp.s*.7;ctx.translate(x+w/2,pv);ctx.transform(1,0,-.35,.45,0,0);ctx.translate(-x-w/2,-pv);ctx.drawImage(sp.sh,x-sp.PAD/sp.sc+ox,y-sp.PAD/sp.sc+oy,sp.c.width/sp.sc,sp.c.height/sp.sc);ctx.restore()}ctx.drawImage(sp.c,x-sp.PAD/sp.sc,y-sp.PAD/sp.sc,sp.c.width/sp.sc,sp.c.height/sp.sc)}
   if(o.label){const tw=Math.min(w-8,BB.measure(R.NAME[k],fs)+18),ty=y+h+pad;BB.rrect(x+w/2-tw/2+2,ty+3,tw,tagH,7,'rgba(0,0,0,.3)');BB.rrect(x+w/2-tw/2,ty,tw,tagH,7,BB.lg(ty,ty+tagH,['#fbf6e6','#ddd3b8']),'rgba(25,25,31,.8)',2);BB.text(R.NAME[k],x+w/2,ty+tagH/2+1,fs,COL.ink,{maxW:tw-8})}

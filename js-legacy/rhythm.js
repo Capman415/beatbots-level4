@@ -104,9 +104,9 @@
   }
   R.noteSize = (k, w, h) => Math.min(h * 0.2, w / (k === "s" ? 8.6 : k === "e" ? 6.2 : k === "w" ? 2.9 : 3.1));
   R.note3d = (k, w, h, o = {}) => {
-    const sc = 2, key = k + "|" + Math.round(w) + "|" + Math.round(h) + "|" + (o.gs || 1);
+    const sc = 2, key = k + "|" + Math.round(w) + "|" + Math.round(h) + "|" + (o.gs || 1) + "|" + (o.ns ? o.ns.toFixed(1) : "");
     if (n3c[key]) return n3c[key];
-    const s = R.noteSize(k, w, h) * (o.gs || 1) * sc, PAD = Math.ceil(s * 0.9), cw = Math.ceil(w * sc) + PAD * 2, ch = Math.ceil(h * sc) + PAD * 2;
+    const s = (o.ns || R.noteSize(k, w, h)) * (o.gs || 1) * sc, PAD = Math.ceil(s * 0.9), cw = Math.ceil(w * sc) + PAD * 2, ch = Math.ceil(h * sc) + PAD * 2;
     const m = document.createElement("canvas");
     m.width = cw;
     m.height = ch;
@@ -237,7 +237,7 @@
     const fs = o.label ? Math.max(14, Math.min(21, h * 0.16)) : 0, tagH = o.label ? fs + 10 : 0, pad = o.label ? Math.max(6, h * 0.07) : 0;
     if (o.label) h -= tagH + pad * 2;
     if (o.shadow !== false) {
-      const sw = Math.min(w * 0.46, R.noteSize(k, w, h) * (k === "s" ? 4.6 : k === "e" ? 3.4 : 1.8));
+      const sw = Math.min(w * 0.46, (o.ns || R.noteSize(k, w, h)) * (k === "s" ? 4.6 : k === "e" ? 3.4 : 1.8));
       const gr = ctx.createRadialGradient(x + w / 2, y + h, 0, x + w / 2, y + h, sw);
       gr.addColorStop(0, "rgba(0,0,0,.42)");
       gr.addColorStop(1, "rgba(0,0,0,0)");
