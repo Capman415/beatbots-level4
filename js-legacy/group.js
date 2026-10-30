@@ -186,7 +186,7 @@
       tc += this.lat;
       const [w0, w1] = spb ? this.win(spb) : [this.W0, this.W1];
       const m = this.measure(tc + w0, tc + w1, soft ? 1.05 : 1.5);
-      const thr = soft ? Math.pow(this.floor, this.PW) * (w1 - w0) * this.K_FLOOR * 0.5 / this.sensMul : this.thresh() * (w1 - w0) / (this.W1 - this.W0);
+      const thr = soft ? Math.pow(this.floor, this.PW) * (w1 - w0) * this.K_FLOOR * 0.35 / this.sensMul : this.thresh() * (w1 - w0) / (this.W1 - this.W0);
       m.ok = m.E > thr && m.dur >= (soft ? this.MIN_DUR * 0.6 : this.MIN_DUR);
       m.thr = thr;
       if (m.ok && !soft) {

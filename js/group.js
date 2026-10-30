@@ -65,7 +65,7 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
     if(this.singleN>=2)thr=Math.max(thr,this.single*this.K_SINGLE);
     const g=this.cal&&this.group?Math.min(this.cal,this.group):(this.cal||this.group);if(g)thr=Math.max(thr,g*this.K_GROUP);return thr/this.sensMul},
   // decide one beat; tc = expected clap time on the mic clock
-  judge(tc,soft,spb){tc+=this.lat;const[w0,w1]=spb?this.win(spb):[this.W0,this.W1];const m=this.measure(tc+w0,tc+w1,soft?1.05:1.5);const thr=(soft?Math.pow(this.floor,this.PW)*(w1-w0)*this.K_FLOOR*.5/this.sensMul:this.thresh()*(w1-w0)/(this.W1-this.W0));// piano: the onset already passed the soft-bar test; only demand it beats the room floor
+  judge(tc,soft,spb){tc+=this.lat;const[w0,w1]=spb?this.win(spb):[this.W0,this.W1];const m=this.measure(tc+w0,tc+w1,soft?1.05:1.5);const thr=(soft?Math.pow(this.floor,this.PW)*(w1-w0)*this.K_FLOOR*.35/this.sensMul:this.thresh()*(w1-w0)/(this.W1-this.W0));// piano: the onset already passed the soft-bar test; only demand it beats the room floor
     m.ok=m.E>thr&&m.dur>=(soft?this.MIN_DUR*.6:this.MIN_DUR);m.thr=thr;
     if(m.ok&&!soft){this.group=this.groupN?this.group+(m.E-this.group)*(m.E>this.group?.2:.3):m.E;this.groupN++}
     return m},

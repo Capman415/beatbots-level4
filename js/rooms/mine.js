@@ -58,7 +58,7 @@ function litC(k,amb){if(litCache[k])return litCache[k];const im=BB.V2['tun'+k];i
   const gr=g.createLinearGradient(0,GY,0,rail(4)+200);gr.addColorStop(0,'rgba(20,10,5,.15)');gr.addColorStop(1,'rgba(10,5,3,.55)');g.fillStyle=gr;g.fillRect(0,GY,e.width,D);
   const p=ctx.createPattern(c,'repeat-x');p.setTransform(new DOMMatrix([1,0,0,1,0,GY]));return ePat=p}
 const howTo={title:'NOTE MINE: dig up the whole notes!',
-  steps:['Watch the green beat lights.','WARM UP: 4 claps in a row on the lights.','Then every clap = a pickaxe strike. 4 strikes break a rock!','Tougher rocks later need 6 or 8 strikes.','Piano = soft claps. Forte = loud claps.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  steps:['Watch the green beat lights.','WARM UP: 4 claps in a row on the lights.','Then 4 MORE claps in a row strike the rock. Miss a beat and the rock goes back to whole!','Tougher rocks later need 6 or 8 strikes.','Piano = soft claps. Forte = loud claps.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
   words:'"ta - a - a - a" (one whole note = 4 beats)   andante = walking speed,  allegro = fast',
   example:(x,y,w,h,t)=>{const bpm=90,ph=t*bpm/60,b=Math.floor(ph)%4,f=ph%1;
     const lit=[0,0,0,0];lit[b]=1-f*.6;ctx.save();ctx.translate(x+w/2,y+h-80);ctx.scale(.62,.62);BB.beatPills(0,0,lit);ctx.restore();
@@ -171,9 +171,9 @@ class MineRoom{
   drawDust(){if(!this.caveDust.length)return;const y=top(4);ctx.save();ctx.beginPath();ctx.roundRect(1460,y,1880,420,70);ctx.clip();
     const ds=dustSprite();for(const d of this.caveDust){const dt=BB.t-d.t;if(dt<0)continue;const k2=dt/1.6,rr=d.r*(.5+k2*1.2);ctx.globalAlpha=1-k2;ctx.drawImage(ds,d.x-rr,d.y-rr*1.3,rr*2,rr*2)}ctx.globalAlpha=1;
     ctx.restore()}
-  startBeat(){const R=this.R,spb=60/R.bpm,t0=BB.ac.currentTime+.25;
+  startBeat(){const R=this.R,spb=60/R.bpm;let vo=0;if(!this.said.ready){this.said.ready=1;vo=BB.say('ready')||0}const t0=BB.ac.currentTime+.25+vo;// v14.0: the 'ready' line finishes BEFORE the first light (claps during our VO were ignored -> beat 1 dropped)
     this.beat={spb,t0,next:0,evalM:1,hits:{},sim:0};this.warm=0;this.warmLast=-9;this.strikes=0;BB.groove.sync(t0,spb);// v12.7 groove follows andante/allegro// measure 0 = count-in, scoring starts measure 1
-    if(!this.said.ready){this.said.ready=1;BB.say('ready')}}
+    }
   beatNow(){const b=this.beat;return b?(BB.ac.currentTime-b.t0)/b.spb:0}
   scheduleTicks(){const b=this.beat,ahead=BB.ac.currentTime+.12;
     while(b.t0+b.next*b.spb<ahead){const t=b.t0+b.next*b.spb;BB.sfx.tick(t,b.next%4===0,this.R.dyn==='p'?.6:1);
@@ -183,7 +183,7 @@ class MineRoom{
   autoLat(dt){const G=window.GroupGate,a=this._dts=this._dts||[];a.push(dt);if(a.length>16)a.shift();if(a.length<6||a.length%2)return;
     const m=a.slice().sort((x,y)=>x-y)[a.length>>1],TL=window.ClapDet&&ClapDet.TickLat,tb=TL&&TL.heard(BB.ac.currentTime)?Math.max(0,TL.lat-G.LAT_BASE):null,tg=Math.min(.25,Math.max(tb!=null?tb-.03:0,Math.min(tb!=null?tb+.12:1,m)));// ticks heard: kids may drag, but never clap before the tick reached them
     if(Math.abs(tg-G.lat)>.015)G.lat+=(tg-G.lat)*.5}
-  handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||(this.state!=='dig'&&this.state!=='count'))return;if(window.ClapDet&&ClapDet.expect)ClapDet.expect(b.spb,BB.ac.currentTime+.5);if(BB.MLP&&BB.MLP.on)BB.MLP.openWin('mine',b.t0+3*b.spb-.12,BB.ac.currentTime+.3);if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p'){BB.softClap=BB.t;if(b.spb<.5)BB.fastSoft=BB.t}
+  handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||(this.state!=='dig'&&this.state!=='count'))return;if(window.ClapDet&&ClapDet.expect)ClapDet.expect(b.spb,BB.ac.currentTime+.5);if(BB.MLP&&BB.MLP.on)BB.MLP.openWin('mine',b.t0-.12,BB.ac.currentTime+.3);if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p'){BB.softClap=BB.t;if(b.spb<.5)BB.fastSoft=BB.t}
     const G=window.GroupGate,tol=G?G.tol(b.spb):Math.min(.17,b.spb*.4);
     for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;// ignore our own voice lines
       const bi=Math.round((o.t-b.t0-(G?G.lat:0))/b.spb),dt=o.t-(b.t0+bi*b.spb),inT=G?G.inTol(dt,b.spb):Math.abs(dt)<=tol;
@@ -191,7 +191,7 @@ class MineRoom{
       if(bi>=4&&!inT){if(this.gated()&&!o.up&&(this._dts||[]).length>=8&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
       if((bi<4&&this.state!=='count')||bi<0||!inT||b.hits[bi]||(b.pend&&b.pend[bi]))continue;
       const d=this.R.dyn;
-      if(d==='p'&&o.lvl>SOFT_MAX){this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
+      if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*1.3)){this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
       if(d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN)){this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
       if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;continue}// wait for the beat window to close, then ask: was that the whole group?
       if(this.state==='count')this.warmClap(bi);else this.hit(bi)}}
@@ -204,16 +204,21 @@ class MineRoom{
     if(b.pend)for(const k in b.pend){if(this.beat!==b)return;const bi=+k,tc=b.t0+bi*b.spb;if(now<tc+G.lat+Math.max(G.W1,G.win(b.spb)[1])+.02)continue;delete b.pend[k];
       const m=G.judge(tc,this.R.dyn==='p',b.spb);if(m.ok&&this.state==='count')this.warmClap(bi);else if(m.ok&&this.state==='dig')this.hit(bi);else{this.fewHands=BB.t;if(this.state==='count')this.warm=0}}}
   // v13.2 warm-up: the first FOUR claps in a row on the beat are the count-in; then every on-beat clap is a pickaxe strike
-  warmClap(bi){const b=this.beat;b.hits[bi]=1;this.warm=bi===this.warmLast+1?this.warm+1:1;this.warmLast=bi;this.marks=[0,0,0,0];for(let i=0;i<this.warm;i++)this.marks[i]=.01;BB.sfx.tink(undefined,.5,true);
-    if(this.warm>=WARM){this.state='dig';this.marks=[0,0,0,0];b.evalM=Math.floor(bi/4)+1;this.warmEnd=bi}}
+  warmClap(bi){const b=this.beat;b.hits[bi]=1;this.warm=bi===this.warmLast+1?this.warm+1:1;this.warmLast=bi;this.marks=[0,0,0,0];for(let i=0;i<this.warm;i++)this.marks[(bi-i)%4]=.01;// v14.0: light the slot the clap was ON (was filled from slot 1 -> every clap looked one marker late)BB.sfx.tink(undefined,.5,true);
+    if(this.warm>=WARM){this.state='dig';this.marks=[0,0,0,0];b.evalM=Math.floor(bi/4)+1;this.warmEnd=bi;b.chk=bi+1}}
   evalMeasures(){const b=this.beat;this.resolveGroup();// v13.8: judge pending group claps during the warm-up too (they were never resolved, so warm-up ignored every clap with the mic on)
-    if(this.state!=='dig')return;const tol=window.GroupGate?GroupGate.tol(b.spb):.17;while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+Math.max(tol,.2)+.03+(window.GroupGate?GroupGate.lat+.03:0)){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
+    if(this.state!=='dig')return;this.streakCheck();const tol=window.GroupGate?GroupGate.tol(b.spb):.17;while(BB.ac.currentTime>b.t0+(b.evalM*4+3)*b.spb+Math.max(tol,.2)+.03+(window.GroupGate?GroupGate.lat+.03:0)){const m=b.evalM;let n=0;for(let i=0;i<4;i++)if(b.hits[m*4+i])n++;
       b.evalM++;this.marks=[0,0,0,0];
       if(m<=(this.warmEnd!=null?Math.floor(this.warmEnd/4):0))continue;// the warm-up measure itself is not judged
       if(n>=2){}// strikes already cracked the rock
       else{const talking=BB.talking&&BB.t<BB.talking.until;if(talking&&!BB.debug)continue;
         this.wob=1;BB.sfx.wobble();this.shrugT=BB.t;BB.burst(ROCK_X,rail(this.R.f)-60,10,{world:1,col:'#c8b49a',kind:'dust',size:18,g:-60,speed:160});
         if(!this.missVO&&n<2){this.missVO=true;BB.say('keepgoing')}}}}
+  // v14.0 rule: after the warm-up, strikes must be CONSECUTIVE beats; miss one and the rock goes back to whole
+  streakCheck(){const b=this.beat,G=window.GroupGate;if(!b||b.chk==null)return;const close=(G?G.lat+Math.max(G.W1,G.win(b.spb)[1]):.2)+.06;
+    while(this.beat===b&&this.state==='dig'&&BB.ac.currentTime>b.t0+b.chk*b.spb+close){const bi=b.chk++;if(b.hits[bi]||(b.pend&&b.pend[bi]))continue;
+      if((BB.talking&&BB.t<BB.talking.until&&!BB.debug)||this.ovPop&&BB.t-this.ovPop<1)continue;
+      if(this.strikes>0){this.strikes=0;this.stage=0;this.healT=BB.t;BB.sfx.wobble();this.wob=1;BB.burst(ROCK_X,rail(this.R.f)-120,10,{world:1,col:'#c8b49a',kind:'dust',size:18,g:-60,speed:160});if(!this.missVO){this.missVO=true;BB.say('keepgoing')}}}}
   crack(one){const R=this.R;this.stage+=one?1:(R.bonus?2:1);BB.sfx.crack();BB.shake(4);this.shk=1;
     {const ix=ROCK_X-30,iy=rail(R.f)-170,lq=!BB.q;BB.burst(ix,iy,lq?8:18,{world:1,cols:['#a08c78','#6e5a4a','#cbb79c'],speed:520,size:10,kind:'dot'});if(!lq)BB.burst(ix,iy,10,{world:1,cols:['rgba(210,190,160,.5)'],speed:160,size:22,kind:'dot',g:-40})}// v12.6 chips + dust at the impact point
     if(this.stage>=NEED)this.popNote()}

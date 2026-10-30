@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v13.9";
+BB.VERSION = "v14.0";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -647,16 +647,38 @@ function noise(t, dur, peak, ftype, f, q = 1, f2) {
   s.stop(t + dur + 0.05);
 }
 const now = () => ac.currentTime;
+const DR = {};
+["kick", "snare", "hat", "tom", "tomlo"].forEach((n) => fetch("assets/drums/" + n + ".mp3").then((r) => r.arrayBuffer()).then((b) => ac.decodeAudioData(b)).then((x) => DR[n] = x).catch(() => {
+}));
+function drum(n, t, v = 1, rate = 1) {
+  const b = DR[n];
+  if (!b) return false;
+  BB.selfSound(t, Math.min(0.5, b.duration), null);
+  const s = ac.createBufferSource(), g = ac.createGain();
+  s.buffer = b;
+  s.playbackRate.value = rate;
+  g.gain.value = v * (BB.boxVol || 1);
+  s.connect(g).connect(sfxBus);
+  s.start(t);
+  return true;
+}
+BB.drum = drum;
 BB.sfx = {
   // v13.0 packing playback voices (robot/factory): ka-chunk ta, double blips ti-ti, quad blips tika-tika, hum for long notes, soft hiss rest
   pkTa: (t = now()) => {
+    if (drum("kick", t, 0.9)) {
+      drum("snare", t, 0.35);
+      return;
+    }
     noise(t, 0.07, 0.35, "lowpass", 2200, 1, 300);
     osc("square", 120, t, 0.13, 0.16, 60);
   },
   pkBlip: (t = now(), f = 1100) => {
+    if (drum("hat", t, 0.8, f / 1100)) return;
     osc("square", f, t, 0.05, 0.09, f * 0.8);
   },
   pkHum: (t = now(), d = 0.6) => {
+    if (drum("tomlo", t, 0.8)) return;
     noise(t, 0.06, 0.3, "lowpass", 2e3, 1, 300);
     osc("sawtooth", 196, t, d, 0.07, 180);
     osc("square", 98, t, d * 0.8, 0.05);
@@ -678,6 +700,7 @@ BB.sfx = {
   },
   // quiet: no noise burst (cave-in whisper claps)
   crack: (t = now()) => {
+    if (drum("snare", t, 0.9)) return;
     noise(t, 0.25, 0.5, "lowpass", 2500, 1, 300);
     osc("square", 140, t, 0.12, 0.15, 60);
   },
@@ -692,6 +715,10 @@ BB.sfx = {
     osc("sine", 2093, t + 0.06, 0.6, 0.15);
   },
   boom: (t = now()) => {
+    if (drum("kick", t, 1)) {
+      drum("tomlo", t, 0.6);
+      return;
+    }
     osc("sine", 120, t, 0.5, 0.6, 40);
     noise(t, 0.4, 0.4, "lowpass", 800, 1, 80);
   },
@@ -699,6 +726,7 @@ BB.sfx = {
     noise(t, 0.9, 0.18, "highpass", 3e3);
   },
   burp: (t = now()) => {
+    if (drum("tomlo", t, 0.7, 0.7)) return;
     osc("sawtooth", 110, t, 0.45, 0.25, 70);
     noise(t, 0.4, 0.1, "lowpass", 400);
   },
@@ -706,6 +734,7 @@ BB.sfx = {
     noise(t, d, 0.3, "bandpass", 300, 2, 3e3);
   },
   bonk: (t = now()) => {
+    if (drum("tom", t, 0.8)) return;
     osc("square", 600, t, 0.15, 0.18, 150);
     osc("sine", 300, t, 0.2, 0.25, 120);
   },
@@ -713,6 +742,7 @@ BB.sfx = {
     osc("triangle", 1200 + Math.random() * 600, t, 0.06, 0.12);
   },
   clunk: (t = now()) => {
+    if (drum("tomlo", t, 0.8, 0.8)) return;
     noise(t, 0.18, 0.4, "lowpass", 600);
     osc("square", 90, t, 0.15, 0.2, 50);
   },
@@ -727,6 +757,11 @@ BB.sfx = {
     noise(t, 0.3, 0.12, "lowpass", 500);
   },
   glitch: (t = now()) => {
+    if (drum("hat", t, 0.6, 1.4)) {
+      drum("hat", t + 0.08, 0.5, 1.2);
+      drum("snare", t + 0.16, 0.4, 1.3);
+      return;
+    }
     for (let i = 0; i < 5; i++) osc("square", 200 + Math.random() * 1500, t + i * 0.04, 0.04, 0.06);
   },
   fanfare: (t = now()) => {

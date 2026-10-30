@@ -21,7 +21,7 @@
     NB = n;
     CW = 640 / n;
   };
-  const NEXTP = { x: 1350, y: 170, w: 330, h: 430 };
+  const NEXTP = { x: 1350, y: 170, w: 330, h: 430 }, JRH = { x: 1515, y: 110 }, FB = 130;
   const ROUNDS = [
     // v13.0: every pallet is 8 beats; belt speeds up gently (sp); rush orders have a beat timer for a bonus star (no fail). No clap-back: the packed rhythm plays back as robot sounds.
     { n: 8, mode: "free", pool: ["h", "q", "e", "r", "q"], sp: 1, ov: 1, txt: "FREE BUILD: fill 8 beats any way!" },
@@ -284,6 +284,7 @@
       this.tries = 0;
       this.prank = null;
       this.decoyUsed = 0;
+      this.face = null;
       this.crush = [];
       this.palletIn = BB.t;
       if (Rd.mode === "limited") this.q = Rd.set.slice().sort(() => Math.random() - 0.5);
@@ -615,6 +616,109 @@
       if (this.state === "play") this.drop();
     }
     // Static Jr. sneaks an overflow crate into NEXT when one beat is left
+    // v14.0 Static Jr.'s FACE BOX (teacher-approved): a few times per game (more likely near the end of a pallet) he drops his face box.
+    // Drag it up onto his head to bonk him. If it reaches the pallet first, it pops the crates it lands on (+ the one beside it) back into the queue.
+    updFace(dt) {
+      const f = this.face;
+      if (this.jrB) this.jrB.k = BB.t - this.jrB.t;
+      if (!f) {
+        if (this.state !== "play" || (this.faces || 0) >= 3 || BB.t - (this.faceT || -9) < 14 || !this.placed.length || this.left() < 1 || BB.t - this.palletIn < 4) return;
+        const prog = 1 - this.left() / NB;
+        if (Math.random() < dt * 0.05 * (1 + 3 * prog * prog)) {
+          this.faces = (this.faces || 0) + 1;
+          this.faceT = BB.t;
+          const col = Math.random() * NB | 0;
+          this.face = { x: CX0 + col * CW + CW / 2, y: -60, t: BB.t, drag: null };
+          this.jrB = { t: BB.t, ph: "giggle" };
+          BB.sfx.whoosh(void 0, 0.5);
+          BB.say("jr_giggle", { overlap: true });
+          if (!this.said.face) {
+            this.said.face = 1;
+            BB.caption = { txt: "Static Jr. dropped his FACE BOX! Drag it up onto his head!", who: "sprocket", until: BB.t + 3, start: BB.t };
+          }
+        }
+        return;
+      }
+      if (this.state !== "play") {
+        this.face = null;
+        return;
+      }
+      if (!f.drag) {
+        f.y += dt * (70 + Math.min(40, (BB.t - f.t) * 4));
+        if (f.y + FB / 2 >= ROWY) {
+          this.faceHit();
+        }
+      }
+    }
+    faceHit() {
+      const f = this.face;
+      this.face = null;
+      const c0 = Math.floor((f.x - CX0) / CW);
+      BB.sfx.glitch();
+      BB.sfx.pop();
+      BB.shake(5);
+      BB.burst(f.x, ROWY, 30, { cols: ["#ffe066", "#7ef0ff", "#ff8adf", "#fff"], kind: "star", size: 14, speed: 700, g: 300 });
+      const hit = this.placed.filter((p) => p.col <= c0 + 1 && p.col + R.BEATS[p.k] - 1 >= c0 - 1 && Math.abs(p.col + R.BEATS[p.k] / 2 - (f.x - CX0) / CW) < R.BEATS[p.k] / 2 + 0.9);
+      for (const p of hit) {
+        for (let i = 0; i < R.BEATS[p.k]; i++) this.cells[p.col + i] = null;
+        this.q.unshift(p.k);
+        this.bounce.push({ k: p.k, x: CX0 + p.col * CW, y: ROWY, vx: (Math.random() - 0.5) * 900, vy: -1300, r: 0, t: BB.t, why: "" });
+      }
+      this.placed = this.placed.filter((p) => !hit.includes(p));
+      this.jrB = { t: BB.t, ph: "laugh" };
+      BB.say("jr_fit", { overlap: true, nocap: true });
+      BB.caption = { txt: hit.length ? "Glitch-pop! " + hit.length + " crate" + (hit.length > 1 ? "s" : "") + " popped off. Pack " + (hit.length > 1 ? "them" : "it") + " again!" : "Phew! It missed your crates.", who: "sprocket", until: BB.t + 2.6, start: BB.t };
+    }
+    faceBonk() {
+      const f = this.face;
+      this.face = null;
+      this.jrB = { t: BB.t, ph: "bonk" };
+      BB.sfx.bonk();
+      BB.shake(4);
+      BB.say("jr_oof", { overlap: true, nocap: true });
+      BB.burst(JRH.x, JRH.y - 30, 16, { col: COL.yellow, kind: "star", size: 14, g: 300 });
+      BB.caption = { txt: 'BONK! Static Jr.: "Hmph... no fair!"', who: "jr", until: BB.t + 2.2, start: BB.t };
+    }
+    drawFace() {
+      const f = this.face, jb = this.jrB, k = jb ? BB.t - jb.t : 9;
+      if (f || k < 2.4) {
+        const ph = jb && jb.ph, bonk = ph === "bonk" && k < 2.4;
+        BB.staticJr(JRH.x, JRH.y + 130, 120, { dizzy: bonk, glitch: bonk ? 0.5 : 0, flip: true });
+        if (bonk) R.bubble(JRH.x, JRH.y - 120, "grumble grumble...");
+        else if (ph === "laugh" && k < 1.8) R.bubble(JRH.x, JRH.y - 120, "hee hee!");
+        else if (f) {
+          R.bubble(JRH.x, JRH.y - 120, "bonk me? never!");
+          if (!f.drag) {
+            ctx.save();
+            ctx.globalAlpha = 0.5 + 0.4 * Math.sin(BB.t * 8);
+            ctx.strokeStyle = COL.yellow;
+            ctx.lineWidth = 6;
+            ctx.setLineDash([14, 10]);
+            ctx.beginPath();
+            ctx.moveTo(f.x, f.y - FB / 2);
+            ctx.quadraticCurveTo((f.x + JRH.x) / 2, Math.min(f.y, JRH.y) - 160, JRH.x, JRH.y - 10);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      }
+      if (!f) return;
+      const s = FB / 2, pu = f.drag ? 1.08 : 1 + 0.05 * Math.sin(BB.t * 10);
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.scale(pu, pu);
+      ctx.rotate(f.drag ? 0 : Math.sin(BB.t * 3) * 0.08);
+      BB.rrect(-s, -s, s * 2, s * 2, 16, BB.lg(-s, s, ["#9b8fe0", "#4b3f8f"]), COL.ink, 6);
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(-s + 5, -s + 5, s * 2 - 10, s * 2 - 10, 12);
+      ctx.clip();
+      BB.staticJr(0, s * 1.25, s * 2.1, {});
+      ctx.restore();
+      BB.rrect(-70, s + 6, 140, 32, 10, "rgba(12,28,26,.85)", COL.yellow, 2);
+      BB.text(f.drag ? "DROP ON HIS HEAD!" : "DRAG ME UP!", 0, s + 22, 17, "#fff", { maxW: 132 });
+      ctx.restore();
+    }
     startPrank() {
       this.prank = { t: BB.t, x: W + 120, ph: "in" };
       BB.sfx.glitch();
@@ -672,6 +776,12 @@
       return best;
     }
     pdown(p) {
+      const f = this.face;
+      if (f && !f.drag && this.state === "play" && Math.abs(p.x - f.x) < FB * 0.75 && Math.abs(p.y - f.y) < FB * 0.75) {
+        f.drag = { id: p.id, dx: p.x - f.x, dy: p.y - f.y };
+        BB.sfx.pop();
+        return true;
+      }
       if (this.state !== "play" || !this.air.length) return false;
       if (p.x > CX0 - 20 && p.x < CX0 + NB * CW + 20 && p.y > CTOP - CH - 60 && p.y < ROWY + CH) {
         const c = this.hitCrate(p);
@@ -691,11 +801,23 @@
       return false;
     }
     pmove(p) {
+      const f = this.face;
+      if (f && f.drag && f.drag.id === p.id) {
+        f.x = clamp(p.x - f.drag.dx, 80, W - 80);
+        f.y = clamp(p.y - f.drag.dy, 40, ROWY);
+        return;
+      }
       const g = this.grab[p.id];
       if (!g || !this.air.includes(g.c)) return;
       this.setColOf(g.c, Math.round((p.x - g.dx - CX0) / CW));
     }
     pup(p) {
+      const f = this.face;
+      if (f && f.drag && (!p || f.drag.id === p.id)) {
+        f.drag = null;
+        if (Math.hypot(f.x - JRH.x, f.y - JRH.y) < 170) this.faceBonk();
+        if (p) return;
+      }
       if (p && this.grab[p.id]) delete this.grab[p.id];
       else if (!p) this.grab = {};
     }
@@ -766,7 +888,7 @@
           this.drop();
         }
       }
-      if (this.Rd && this.Rd.prank && this.part === this.parts.length - 1 && this.state === "play" && !this.prank && this.left() === 1 && this.cur) this.startPrank();
+      this.updFace(dt);
       if (this.prank) this.updPrank(dt);
       BB.mic.take();
       if (this.state === "play2" && this.pb && BB.ac.currentTime > this.pb.end + 0.15) this.clapDone();
@@ -853,6 +975,7 @@
           R.bubble(CX0 - 170, ROWY - 300, c.why, COL.ink);
         }
       }
+      this.drawFace();
       if (this.jrToss && t - this.jrToss.t < 1) {
         const j = this.jrToss, k = t - j.t;
         ctx.save();

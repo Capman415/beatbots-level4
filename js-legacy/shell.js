@@ -6,7 +6,7 @@
     { id: "smasher", name: "NOTE SMASHER", sub: "Meet tika-tika", create: () => new BB.SmasherRoom(), col: "#5a8cb4" },
     { id: "packing", name: "PACKING STATION", sub: "Cargo Code", create: () => new BB.PackingRoom(), col: "#c89632" },
     { id: "label", name: "NAME THAT RHYTHM", sub: "Label Room", create: () => BB.LabelRoom && new BB.LabelRoom(), col: "#b45aa0" },
-    { id: "finale", name: "DELIVERY", sub: "Stop Static Jr.!", create: null, col: "#3c5a8c" }
+    { id: "finale", name: "DELIVERY", sub: "Route codes (prototype)", create: () => BB.DeliveryRoom && new BB.DeliveryRoom(), col: "#3c5a8c" }
   ];
   const save = JSON.parse(localStorage.getItem("bb4") || '{"done":[]}');
   BB.save = save;
@@ -459,6 +459,7 @@
     else if (p.get("room") === "smasher") BB.go(new BB.SmasherRoom(ro));
     else if (p.get("room") === "packing") BB.go(new BB.PackingRoom(ro));
     else if (p.get("room") === "label") BB.go(new BB.LabelRoom(ro));
+    else if (p.get("room") === "delivery") BB.go(new BB.DeliveryRoom(ro));
     else if (p.get("room") === "map") BB.go(new MapScene());
     else if (p.get("room") === "mic") BB.go(new MicScene());
     else BB.go(new TitleScene());

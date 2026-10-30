@@ -31,13 +31,14 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['lb_done2',"Next stop, the delivery dock!",'sprocket'],
  ['syl_q','ta','sprocket'],['syl_e','tee-tee','sprocket'],['syl_s','tika-tika','sprocket'],['syl_a','tee-tika','sprocket'],['syl_b','tika-tee','sprocket'],['syl_h','ta-ah','sprocket'],
 ]);
-const BOXES=8,ALL=['q','e','r','h','s','a','b'];
+const STAGES=[[4,5],[6,3],[8,2]],BOXES=STAGES.reduce((a,x)=>a+x[1],0),beatsFor=n=>{for(const[L,c]of STAGES){if(n<c)return L;n-=c}return 8};// v14.0: 5 x 4-beat, 3 x 6-beat, 2 x 8-beat finale (random within each stage)
+const ALL=['q','e','r','h','s','a','b'];
 const LV=[['q','e'],['q','e','r'],['q','e','r','h'],['q','e','r','h','s'],['q','e','r','h','s','a','b']];
 const loadAllowed=()=>{try{const a=JSON.parse(localStorage.getItem('bb_lbl_notes')||'null');if(Array.isArray(a)&&a.length)return a}catch(e){}return ALL.slice()};
 const key=s=>s.join('');
 // a rhythm = list of note kinds summing to 4 beats
-function genRhythm(pool,last){for(let n=0;n<60;n++){const s=[];let b=0,rests=0;while(b<4){const ok=pool.filter(k=>R.BEATS[k]<=4-b&&!(k==='r'&&rests>=1)&&!(k==='h'&&s.includes('h')));const k=ok[Math.random()*ok.length|0];s.push(k);if(k==='r')rests++;b+=R.BEATS[k]}
-    const kinds=new Set(s);if(kinds.size<2&&pool.length>1)continue;if(s.every(k=>k==='r'))continue;if(last&&key(s)===last)continue;return s}return['q','e','q','q']}
+function genRhythm(pool,last,L=4){for(let n=0;n<60;n++){const s=[];let b=0,rests=0;while(b<L){const ok=pool.filter(k=>R.BEATS[k]<=L-b&&!(k==='r'&&rests>=L/4)&&!(k==='h'&&s.filter(x=>x==='h').length>=L/4));const k=ok[Math.random()*ok.length|0];s.push(k);if(k==='r')rests++;b+=R.BEATS[k]}
+    const kinds=new Set(s);if(kinds.size<2&&pool.length>1)continue;if(s.every(k=>k==='r'))continue;if(last&&key(s)===last)continue;return s}const f=['q','e','q','q'];while(f.length<L)f.push(f.length%2?'e':'q');return f}
 // near-miss distractors
 function nearMiss(ans,pool,n){const out=[],seen=new Set([key(ans)]),one=pool.filter(k=>R.BEATS[k]===1);const ops=[
   s=>{const i=s.findIndex(k=>k==='e'||k==='q');if(i<0)return null;const c=s.slice();c[i]=c[i]==='e'?'q':'e';return c},// ti-ti/ta swap
@@ -45,8 +46,8 @@ function nearMiss(ans,pool,n){const out=[],seen=new Set([key(ans)]),one=pool.fil
   s=>{const idx=[];for(let i=0;i<s.length-1;i++)if(s[i]!==s[i+1])idx.push(i);if(!idx.length)return null;const i=idx[Math.random()*idx.length|0],c=s.slice();[c[i],c[i+1]]=[c[i+1],c[i]];return c},// beats swapped
   s=>{const i=s.indexOf('h');if(i<0)return null;const c=s.slice();c.splice(i,1,'q','q');return c},// half -> ta ta
   s=>{const i=s.findIndex(k=>k==='s'||k==='a'||k==='b');if(i<0)return null;const alt=['s','a','b','e'].filter(k=>k!==s[i]);const c=s.slice();c[i]=alt[Math.random()*alt.length|0];return c}];
-  for(let t=0;t<200&&out.length<n;t++){const c=ops[Math.random()*ops.length|0](ans);if(!c||R.len(c)!==4||c.every(k=>k==='r'))continue;const kk=key(c);if(seen.has(kk))continue;seen.add(kk);out.push(c)}
-  while(out.length<n){const c=genRhythm(pool.length>1?pool:['q','e'],null);if(!seen.has(key(c))){seen.add(key(c));out.push(c)}}return out}
+  for(let t=0;t<200&&out.length<n;t++){const c=ops[Math.random()*ops.length|0](ans);if(!c||R.len(c)!==R.len(ans)||c.every(k=>k==='r'))continue;const kk=key(c);if(seen.has(kk))continue;seen.add(kk);out.push(c)}
+  while(out.length<n){const c=genRhythm(pool.length>1?pool:['q','e'],null,R.len(ans));if(!seen.has(key(c))){seen.add(key(c));out.push(c)}}return out}
 const howTo={title:'LABEL ROOM: Static Jr. scrambled the labels!',
   steps:['Tap the box to shake it and hear its rhythm.','Pick the label card with the matching notes.','Stuck? Tap HINT (each hint costs a point).','Right label = it ships down the conveyor!','TEACHER picks which notes can appear.'],
   words:'ta = 1 sound   ti-ti = 2   tika-tika = 4   rest = silence   (all 1 beat)',
@@ -83,7 +84,7 @@ function drawCardRaw(x,y,w,h,seq,o={}){ctx.save();
   const hh=o.mini?0:Math.min(40,h*.2);if(hh){ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,hh+4,[12,12,0,0]);ctx.clip();ctx.fillStyle='#d24a3c';ctx.fillRect(x,y,w,hh+4);ctx.restore();
     BB.text('SHIP TO: DELIVERY',x+(o.badge?58:w/2),y+hh/2+2,Math.min(22,hh*.6),'#fff',{maxW:w-(o.badge?80:20),align:o.badge?'left':'center'});}
   if(o.badge){BB.rrect(x+10,y+6,40,hh-4,8,'#fbf6e6',COL.ink,2);BB.text(o.badge,x+30,y+hh/2+2,24,COL.ink)}
-  const pad=o.mini?4:12,bx=x+pad,by=y+hh+pad,bw=(w-pad*2)/4,bh=h-hh-pad*2-(o.syl?28:0);let b=0;
+  const pad=o.mini?4:12,bx=x+pad,by=y+hh+pad,bw=(w-pad*2)/Math.max(4,R.len(seq)),bh=h-hh-pad*2-(o.syl?28:0);let b=0;
   for(const k of seq){const n=R.BEATS[k],cx=bx+b*bw;if(!o.mini&&b>0){ctx.fillStyle='rgba(90,80,64,.18)';ctx.fillRect(cx-1,by+6,2,bh-12)}
     const lit=o.lit&&o.lit[b]>0;if(lit)BB.rrect(cx+2,by,n*bw-4,bh,8,`rgba(255,224,102,${.25+.4*o.lit[b]})`);
     R.tile(k,cx+3,by,n*bw-6,bh,{shadow:!o.mini&&BB.tier>0});
@@ -97,6 +98,17 @@ class LabelRoom{constructor(o={}){this.o=o}
   exit(){BB.paused=false;if(window.__lbl===this)window.__lbl=null}
   bake(){const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
     if(V.pack_blur||V.pack_bg)g.drawImage(V.pack_blur||V.pack_bg,0,0,W,H);g.fillStyle='rgba(8,18,17,.35)';g.fillRect(0,0,W,H);
+    // v14.0 LABEL ROOM stage: plum riveted wall, label rail with hanging tags, printer hatch sign, checker floor strip
+    {const wg=g.createLinearGradient(0,0,0,BELT_Y);wg.addColorStop(0,'rgba(70,30,66,.92)');wg.addColorStop(1,'rgba(120,52,108,.82)');g.fillStyle=wg;g.fillRect(0,0,W,BELT_Y+24);
+     g.strokeStyle='rgba(20,8,20,.55)';g.lineWidth=4;for(let x=0;x<W;x+=240){g.beginPath();g.moveTo(x,0);g.lineTo(x,BELT_Y+24);g.stroke();for(let y=40;y<BELT_Y;y+=110){g.fillStyle='rgba(255,220,250,.35)';g.beginPath();g.arc(x+14,y,5,0,7);g.arc(x+226,y,5,0,7);g.fill()}}
+     g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,250,W,10);
+     g.fillStyle='#3a3f44';g.fillRect(0,262,W,14);g.fillStyle='#9aa4a8';g.fillRect(0,262,W,4);// label rail
+     const TC=['#fffaf0','#ffe066','#a6f5ae','#9fe0ff','#ffb3e6'];for(let i=0;i<11;i++){const x=420+i*100+(i%2)*20,y=276,r=(i%3-1)*.12;g.save();g.translate(x,y);g.rotate(r);g.strokeStyle='#2a2a2a';g.lineWidth=2;g.beginPath();g.moveTo(0,0);g.lineTo(0,30);g.stroke();
+       g.fillStyle=TC[i%5];g.strokeStyle='rgba(60,40,40,.8)';g.beginPath();g.roundRect(-34,30,68,46,8);g.fill();g.stroke();g.fillStyle='#d24a3c';g.fillRect(-34,30,68,10);g.fillStyle='#19191f';for(let k=0;k<3;k++){g.beginPath();g.ellipse(-16+k*16,62,5,4,-.35,0,7);g.fill();g.fillRect(-12+k*16,46,2,16)}g.restore()}
+     g.save();g.translate(W-250,300);g.fillStyle='#1e2b29';g.beginPath();g.roundRect(-190,-70,380,120,22);g.fill();g.strokeStyle='#ff8adf';g.lineWidth=6;g.shadowColor='#ff8adf';g.shadowBlur=24;g.beginPath();g.roundRect(-176,-56,352,92,16);g.stroke();g.shadowBlur=0;
+       g.fillStyle='#ffd6f4';g.font='44px "Rammetto One"';g.textAlign='center';g.textBaseline='middle';g.fillText('LABEL ROOM',0,-10);g.restore();
+     const fl=g.createLinearGradient(0,BELT_Y+24,0,H);fl.addColorStop(0,'rgba(40,20,40,.6)');fl.addColorStop(1,'rgba(10,6,12,.85)');g.fillStyle=fl;g.fillRect(0,BELT_Y+24,W,H-BELT_Y-24);
+     for(let x=0;x<W;x+=60){g.fillStyle=(x/60)%2?'#ffe066':'#1e2b29';g.fillRect(x,H-36,60,14)}}
     // conveyor frame (belt surface + rollers drawn live)
     R.shadow(g,780,BELT_Y+120,760,.55);const fr=g.createLinearGradient(0,BELT_Y+24,0,BELT_Y+80);fr.addColorStop(0,'#c9d2d3');fr.addColorStop(.5,'#8a9798');fr.addColorStop(1,'#56625f');g.fillStyle=fr;g.fillRect(40,BELT_Y+24,1440,56);
     g.fillStyle='rgba(0,0,0,.3)';g.fillRect(40,BELT_Y+80,1440,8);for(const x of [120,760,1400]){const lg=g.createLinearGradient(x,0,x+44,0);lg.addColorStop(0,'#5d696b');lg.addColorStop(.5,'#aab4b5');lg.addColorStop(1,'#4d585a');g.fillStyle=lg;g.fillRect(x,BELT_Y+88,44,60)}
@@ -116,18 +128,18 @@ class LabelRoom{constructor(o={}){this.o=o}
   skipIntro(){this.flurry=null;this.ijr=null;BB.talking=null;BB.caption=null;this.newBox(true)}
   level(){return Math.min(LV.length-1,Math.floor(this.streak/2)+Math.floor(this.shipped/3))}
   pool(){let p=LV[this.level()].filter(k=>this.allowed.includes(k));if(p.length<2)p=this.allowed.slice();if(!p.length)p=['q','e'];if(p.length===1&&p[0]==='r')p=['q','r'];return p}
-  newBox(first){const pool=this.pool();const ans=genRhythm(pool,this.last);this.last=key(ans);const nc=this.streak>=3||this.level()>=3?4:3;
+  newBox(first){const pool=this.pool();const L=beatsFor(this.shipped),ans=genRhythm(pool,this.last,L);if(first||L!==this.L){if(this.L&&L!==this.L){this.stageT=BB.t;BB.sfx.chime()}this.L=L}this.last=key(ans);const nc=L>4?3:this.streak>=3||this.level()>=3?4:3;
     const cards=[ans,...nearMiss(ans,pool,nc-1)].sort(()=>Math.random()-.5).map(s=>({s,out:false,x:false,shake:0}));
-    this.ans=ans;this.cards=cards;this.hint=0;this.tries=0;this.state='enter';this.st=BB.t;this.boxX=-400;this.pb=null;this.fly=null;this.revealed=false;this.lit=[0,0,0,0];
+    this.ans=ans;this.cards=cards;this.hint=0;this.tries=0;this.state='enter';this.st=BB.t;this.boxX=-400;this.pb=null;this.fly=null;this.revealed=false;this.lit=new Array(L).fill(0);
     BB.sfx.whoosh(undefined,.6);if(first){this.cardT=BB.t;if(!this.said.how){this.said.how=1;setTimeout(()=>BB.scene===this&&BB.say('lb_how'),1200)}}}
   // play the hidden rhythm (robot sounds) on the beat grid; slow = half speed (still on grid beats)
-  play(slow,syl){if(this.state!=='pick'&&this.state!=='enter')return;const nb=this.nextBeat(),spb=nb.spb*(slow?2:1),t0=nb.t,S=BB.sfx;let b=0;const notes=[];
+  play(slow,syl){if(this.state!=='pick'&&this.state!=='enter')return;const nb=this.nextBeat(),spb=nb.spb*(slow?2:1),t0=nb.t,S=BB.sfx;let b=0;const notes=[];BB.boxVol=1.9;// v14.0: the beat inside the box plays louder
     for(const k of this.ans){const t=t0+b*spb;notes.push({k,b,t,n:R.BEATS[k]});
       if(k==='q')S.pkTa(t);else if(k==='e'){S.pkBlip(t,1100);S.pkBlip(t+spb/2,1100)}else if(k==='s'){for(let i=0;i<4;i++)S.pkBlip(t+i*spb/4,1500)}
       else if(k==='a'){S.pkBlip(t,1100);S.pkBlip(t+spb/2,1500);S.pkBlip(t+spb*.75,1500)}else if(k==='b'){S.pkBlip(t,1500);S.pkBlip(t+spb/4,1500);S.pkBlip(t+spb/2,1100)}
       else if(k==='r')S.pkHiss(t,spb*.5);else S.pkHum(t,R.BEATS[k]*spb*.9);
       if(syl&&k!=='r')setTimeout(()=>BB.scene===this&&BB.say('syl_'+k,{overlap:true,nocap:true}),Math.max(0,(t-ac.currentTime)*1000-20));b+=R.BEATS[k]}
-    this.pb={t0,spb,notes,end:t0+4*spb};this.shakeT=BB.t}
+    BB.boxVol=1;this.pb={t0,spb,notes,end:t0+R.len(this.ans)*spb};this.shakeT=BB.t}
   tapBox(){if(this.state==='pick'){if(this.pb&&ac.currentTime<this.pb.end)return;this.play(false)}}
   doHint(){if(this.state!=='pick'||this.hint>=5)return;this.hint++;BB.sfx.pop();const h=this.hint;
     if(h===1)this.play(true);else if(h===2)this.play(false);else if(h===3){BB.say('lb_hint',{overlap:true})}
@@ -144,7 +156,7 @@ class LabelRoom{constructor(o={}){this.o=o}
   manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;if(this.cb)this.cb.override();else if(this.state==='pick')this.tapBox()}
   pause(){BB.paused=true;BB.ac.suspend()}
   resume(){BB.paused=false;BB.ensureMic()}
-  cardRect(i){const n=this.cards.length,cw=n>3?340:400,ch=215,gap=30,tot=n*cw+(n-1)*gap,x0=780-tot/2;return{x:x0+i*(cw+gap),y:690,w:cw,h:ch}}
+  cardRect(i){const n=this.cards.length,cw=(this.L||4)>4?470:n>3?340:400,ch=215,gap=30,tot=n*cw+(n-1)*gap,x0=780-tot/2;return{x:x0+i*(cw+gap),y:690,w:cw,h:ch}}
   update(dt){BB.dt=dt;if(BB.keys.includes('p')){this.pause();return}if(BB.keys.includes(' '))this.manualOverride();
     for(const k of BB.keys){if(k>='1'&&k<='4'&&this.cards&&this.cards[+k-1])this.pick(this.cards[+k-1]);if(k==='h')this.doHint();if(k==='b')this.tapBox()}
     if(this.state==='intro'){const t=BB.t-this.st;this.introJr(dt);for(const f of this.flurry){f.vy=Math.min(f.vy+500*dt,170);f.vx*=1-dt*1.2;f.y+=f.vy*dt;f.x+=f.vx*dt+Math.sin(BB.t*1.6+f.p)*70*dt;f.r+=f.vr*dt;if(f.y>BELT_Y-60){Object.assign(f,this.flake(-90))}if(f.x>1450)f.x=1450}if(BB.keys.includes('s'))this.skipIntro();if(t>2&&this.voEnd&&BB.t>this.voEnd+.4)this.skipIntro();if(t>14)this.skipIntro()}
@@ -224,7 +236,7 @@ class LabelRoom{constructor(o={}){this.o=o}
   capPos(){return this.state==='end'?{y:722,maxW:1150}:{y:942,maxW:1100}}
   drawEnd(){const t=BB.t-this.st;if(t<.4)return;const k=ease.back(clamp((t-.4)/.6,0,1));ctx.fillStyle=`rgba(8,18,17,${.6*clamp(t,0,1)})`;ctx.fillRect(0,0,W,H);
     ctx.save();ctx.translate(W/2,370);ctx.scale(k,k);PANEL(-600,-195,1200,390,44);BB.text('ROOM 4 COMPLETE!',0,-130,68,'#fff',{font:'Rammetto One',stroke:9});
-    drawCard(-230,-80,460,140,['q','e','s','q'],{});BB.text(BOXES+' boxes labeled  \u2022  '+this.score+' points  \u2022  best streak '+this.best,0,100,34,COL.yellow,{stroke:5,maxW:1100});BB.text('Next: DELIVERY (coming soon)',0,150,30,'#fff',{stroke:5});ctx.restore();
+    drawCard(-230,-80,460,140,['q','e','s','q'],{});BB.text(BOXES+' boxes labeled  \u2022  '+this.score+' points  \u2022  best streak '+this.best,0,100,34,COL.yellow,{stroke:5,maxW:1100});BB.text('Next: DELIVERY DOCK',0,150,30,'#fff',{stroke:5});ctx.restore();
     if(t>1.6){BB.button(W/2-520,590,480,110,'ROOM MAP',{style:'green',size:52,id:'tomap',onClick:()=>BB.roomDone('label')});BB.button(W/2+40,590,480,110,'PLAY AGAIN',{size:46,id:'again',onClick:()=>BB.go(new LabelRoom())})}}
 }
 BB.LabelRoom=LabelRoom;BB.LabelGen={genRhythm,nearMiss,LV};

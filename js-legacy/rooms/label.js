@@ -60,7 +60,14 @@
     ["syl_b", "tika-tee", "sprocket"],
     ["syl_h", "ta-ah", "sprocket"]
   ]);
-  const BOXES = 8, ALL = ["q", "e", "r", "h", "s", "a", "b"];
+  const STAGES = [[4, 5], [6, 3], [8, 2]], BOXES = STAGES.reduce((a, x) => a + x[1], 0), beatsFor = (n) => {
+    for (const [L, c] of STAGES) {
+      if (n < c) return L;
+      n -= c;
+    }
+    return 8;
+  };
+  const ALL = ["q", "e", "r", "h", "s", "a", "b"];
   const LV = [["q", "e"], ["q", "e", "r"], ["q", "e", "r", "h"], ["q", "e", "r", "h", "s"], ["q", "e", "r", "h", "s", "a", "b"]];
   const loadAllowed = () => {
     try {
@@ -71,12 +78,12 @@
     return ALL.slice();
   };
   const key = (s) => s.join("");
-  function genRhythm(pool, last) {
+  function genRhythm(pool, last, L = 4) {
     for (let n = 0; n < 60; n++) {
       const s = [];
       let b = 0, rests = 0;
-      while (b < 4) {
-        const ok = pool.filter((k2) => R.BEATS[k2] <= 4 - b && !(k2 === "r" && rests >= 1) && !(k2 === "h" && s.includes("h")));
+      while (b < L) {
+        const ok = pool.filter((k2) => R.BEATS[k2] <= L - b && !(k2 === "r" && rests >= L / 4) && !(k2 === "h" && s.filter((x) => x === "h").length >= L / 4));
         const k = ok[Math.random() * ok.length | 0];
         s.push(k);
         if (k === "r") rests++;
@@ -88,7 +95,9 @@
       if (last && key(s) === last) continue;
       return s;
     }
-    return ["q", "e", "q", "q"];
+    const f = ["q", "e", "q", "q"];
+    while (f.length < L) f.push(f.length % 2 ? "e" : "q");
+    return f;
   }
   function nearMiss(ans, pool, n) {
     const out = [], seen = /* @__PURE__ */ new Set([key(ans)]), one = pool.filter((k) => R.BEATS[k] === 1);
@@ -139,14 +148,14 @@
     ];
     for (let t = 0; t < 200 && out.length < n; t++) {
       const c = ops[Math.random() * ops.length | 0](ans);
-      if (!c || R.len(c) !== 4 || c.every((k) => k === "r")) continue;
+      if (!c || R.len(c) !== R.len(ans) || c.every((k) => k === "r")) continue;
       const kk = key(c);
       if (seen.has(kk)) continue;
       seen.add(kk);
       out.push(c);
     }
     while (out.length < n) {
-      const c = genRhythm(pool.length > 1 ? pool : ["q", "e"], null);
+      const c = genRhythm(pool.length > 1 ? pool : ["q", "e"], null, R.len(ans));
       if (!seen.has(key(c))) {
         seen.add(key(c));
         out.push(c);
@@ -259,7 +268,7 @@
       BB.rrect(x + 10, y + 6, 40, hh - 4, 8, "#fbf6e6", COL.ink, 2);
       BB.text(o.badge, x + 30, y + hh / 2 + 2, 24, COL.ink);
     }
-    const pad = o.mini ? 4 : 12, bx = x + pad, by = y + hh + pad, bw = (w - pad * 2) / 4, bh = h - hh - pad * 2 - (o.syl ? 28 : 0);
+    const pad = o.mini ? 4 : 12, bx = x + pad, by = y + hh + pad, bw = (w - pad * 2) / Math.max(4, R.len(seq)), bh = h - hh - pad * 2 - (o.syl ? 28 : 0);
     let b = 0;
     for (const k of seq) {
       const n = R.BEATS[k], cx = bx + b * bw;
@@ -328,6 +337,92 @@
       if (V.pack_blur || V.pack_bg) g.drawImage(V.pack_blur || V.pack_bg, 0, 0, W, H);
       g.fillStyle = "rgba(8,18,17,.35)";
       g.fillRect(0, 0, W, H);
+      {
+        const wg = g.createLinearGradient(0, 0, 0, BELT_Y);
+        wg.addColorStop(0, "rgba(70,30,66,.92)");
+        wg.addColorStop(1, "rgba(120,52,108,.82)");
+        g.fillStyle = wg;
+        g.fillRect(0, 0, W, BELT_Y + 24);
+        g.strokeStyle = "rgba(20,8,20,.55)";
+        g.lineWidth = 4;
+        for (let x = 0; x < W; x += 240) {
+          g.beginPath();
+          g.moveTo(x, 0);
+          g.lineTo(x, BELT_Y + 24);
+          g.stroke();
+          for (let y = 40; y < BELT_Y; y += 110) {
+            g.fillStyle = "rgba(255,220,250,.35)";
+            g.beginPath();
+            g.arc(x + 14, y, 5, 0, 7);
+            g.arc(x + 226, y, 5, 0, 7);
+            g.fill();
+          }
+        }
+        g.fillStyle = "rgba(0,0,0,.25)";
+        g.fillRect(0, 250, W, 10);
+        g.fillStyle = "#3a3f44";
+        g.fillRect(0, 262, W, 14);
+        g.fillStyle = "#9aa4a8";
+        g.fillRect(0, 262, W, 4);
+        const TC = ["#fffaf0", "#ffe066", "#a6f5ae", "#9fe0ff", "#ffb3e6"];
+        for (let i = 0; i < 11; i++) {
+          const x = 420 + i * 100 + i % 2 * 20, y = 276, r = (i % 3 - 1) * 0.12;
+          g.save();
+          g.translate(x, y);
+          g.rotate(r);
+          g.strokeStyle = "#2a2a2a";
+          g.lineWidth = 2;
+          g.beginPath();
+          g.moveTo(0, 0);
+          g.lineTo(0, 30);
+          g.stroke();
+          g.fillStyle = TC[i % 5];
+          g.strokeStyle = "rgba(60,40,40,.8)";
+          g.beginPath();
+          g.roundRect(-34, 30, 68, 46, 8);
+          g.fill();
+          g.stroke();
+          g.fillStyle = "#d24a3c";
+          g.fillRect(-34, 30, 68, 10);
+          g.fillStyle = "#19191f";
+          for (let k = 0; k < 3; k++) {
+            g.beginPath();
+            g.ellipse(-16 + k * 16, 62, 5, 4, -0.35, 0, 7);
+            g.fill();
+            g.fillRect(-12 + k * 16, 46, 2, 16);
+          }
+          g.restore();
+        }
+        g.save();
+        g.translate(W - 250, 300);
+        g.fillStyle = "#1e2b29";
+        g.beginPath();
+        g.roundRect(-190, -70, 380, 120, 22);
+        g.fill();
+        g.strokeStyle = "#ff8adf";
+        g.lineWidth = 6;
+        g.shadowColor = "#ff8adf";
+        g.shadowBlur = 24;
+        g.beginPath();
+        g.roundRect(-176, -56, 352, 92, 16);
+        g.stroke();
+        g.shadowBlur = 0;
+        g.fillStyle = "#ffd6f4";
+        g.font = '44px "Rammetto One"';
+        g.textAlign = "center";
+        g.textBaseline = "middle";
+        g.fillText("LABEL ROOM", 0, -10);
+        g.restore();
+        const fl = g.createLinearGradient(0, BELT_Y + 24, 0, H);
+        fl.addColorStop(0, "rgba(40,20,40,.6)");
+        fl.addColorStop(1, "rgba(10,6,12,.85)");
+        g.fillStyle = fl;
+        g.fillRect(0, BELT_Y + 24, W, H - BELT_Y - 24);
+        for (let x = 0; x < W; x += 60) {
+          g.fillStyle = x / 60 % 2 ? "#ffe066" : "#1e2b29";
+          g.fillRect(x, H - 36, 60, 14);
+        }
+      }
       R.shadow(g, 780, BELT_Y + 120, 760, 0.55);
       const fr = g.createLinearGradient(0, BELT_Y + 24, 0, BELT_Y + 80);
       fr.addColorStop(0, "#c9d2d3");
@@ -422,9 +517,16 @@
     }
     newBox(first) {
       const pool = this.pool();
-      const ans = genRhythm(pool, this.last);
+      const L = beatsFor(this.shipped), ans = genRhythm(pool, this.last, L);
+      if (first || L !== this.L) {
+        if (this.L && L !== this.L) {
+          this.stageT = BB.t;
+          BB.sfx.chime();
+        }
+        this.L = L;
+      }
       this.last = key(ans);
-      const nc = this.streak >= 3 || this.level() >= 3 ? 4 : 3;
+      const nc = L > 4 ? 3 : this.streak >= 3 || this.level() >= 3 ? 4 : 3;
       const cards = [ans, ...nearMiss(ans, pool, nc - 1)].sort(() => Math.random() - 0.5).map((s) => ({ s, out: false, x: false, shake: 0 }));
       this.ans = ans;
       this.cards = cards;
@@ -436,7 +538,7 @@
       this.pb = null;
       this.fly = null;
       this.revealed = false;
-      this.lit = [0, 0, 0, 0];
+      this.lit = new Array(L).fill(0);
       BB.sfx.whoosh(void 0, 0.6);
       if (first) {
         this.cardT = BB.t;
@@ -452,6 +554,7 @@
       const nb = this.nextBeat(), spb = nb.spb * (slow ? 2 : 1), t0 = nb.t, S = BB.sfx;
       let b = 0;
       const notes = [];
+      BB.boxVol = 1.9;
       for (const k of this.ans) {
         const t = t0 + b * spb;
         notes.push({ k, b, t, n: R.BEATS[k] });
@@ -474,7 +577,8 @@
         if (syl && k !== "r") setTimeout(() => BB.scene === this && BB.say("syl_" + k, { overlap: true, nocap: true }), Math.max(0, (t - ac.currentTime) * 1e3 - 20));
         b += R.BEATS[k];
       }
-      this.pb = { t0, spb, notes, end: t0 + 4 * spb };
+      BB.boxVol = 1;
+      this.pb = { t0, spb, notes, end: t0 + R.len(this.ans) * spb };
       this.shakeT = BB.t;
     }
     tapBox() {
@@ -579,7 +683,7 @@
       BB.ensureMic();
     }
     cardRect(i) {
-      const n = this.cards.length, cw = n > 3 ? 340 : 400, ch = 215, gap = 30, tot = n * cw + (n - 1) * gap, x0 = 780 - tot / 2;
+      const n = this.cards.length, cw = (this.L || 4) > 4 ? 470 : n > 3 ? 340 : 400, ch = 215, gap = 30, tot = n * cw + (n - 1) * gap, x0 = 780 - tot / 2;
       return { x: x0 + i * (cw + gap), y: 690, w: cw, h: ch };
     }
     update(dt) {
@@ -906,7 +1010,7 @@
       BB.text("ROOM 4 COMPLETE!", 0, -130, 68, "#fff", { font: "Rammetto One", stroke: 9 });
       drawCard(-230, -80, 460, 140, ["q", "e", "s", "q"], {});
       BB.text(BOXES + " boxes labeled  \u2022  " + this.score + " points  \u2022  best streak " + this.best, 0, 100, 34, COL.yellow, { stroke: 5, maxW: 1100 });
-      BB.text("Next: DELIVERY (coming soon)", 0, 150, 30, "#fff", { stroke: 5 });
+      BB.text("Next: DELIVERY DOCK", 0, 150, 30, "#fff", { stroke: 5 });
       ctx.restore();
       if (t > 1.6) {
         BB.button(W / 2 - 520, 590, 480, 110, "ROOM MAP", { style: "green", size: 52, id: "tomap", onClick: () => BB.roomDone("label") });

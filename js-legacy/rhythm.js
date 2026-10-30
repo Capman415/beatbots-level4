@@ -416,6 +416,7 @@
       this.voice = o.voice || (() => {
       });
       this.cnt = o.countIn !== false;
+      this.read = !!o.read;
       this.base = this.cnt ? 4 : 0;
       BB.mic.take();
       BB.groove && BB.groove.sync(this.t0, this.spb);
@@ -448,6 +449,7 @@
         this.sched = 1;
         this.snd.forEach((s, i) => {
           const t = T0 + s.b * spb;
+          if (this.read) return;
           BB.sfx.block(t);
           setTimeout(() => this.voice(s), Math.max(0, (t - ac.currentTime) * 1e3));
         });
@@ -576,7 +578,7 @@
       if (ph === "count") {
         const n = 4 - Math.floor(bn);
         msg = n > 0 ? "Listen... " + n : "";
-      } else if (ph === "listen") msg = "MY TURN: listen!";
+      } else if (ph === "listen") msg = this.read ? "READ IT... (silently)" : "MY TURN: listen!";
       else if (ph === "ready") {
         const n = Math.floor(bn - this.base - this.L) + 1;
         msg = ["", "1", "2", "READY", "GO!"][n] || "";
@@ -667,30 +669,6 @@
       ctx.translate(rx, ry);
       ctx.scale(-sd, 1);
       if (BB.IMG && BB.IMG.sprocket) BB.sprite("sprocket", 0, 0, 150, { parts: false });
-      const sw = Math.sin(t * 8) * 0.08;
-      ctx.rotate(sw);
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#1e2b29";
-      ctx.lineWidth = 20;
-      ctx.beginPath();
-      ctx.moveTo(18, -70);
-      ctx.lineTo(70, -40);
-      ctx.stroke();
-      ctx.strokeStyle = "#cfeee4";
-      ctx.lineWidth = 12;
-      ctx.stroke();
-      ctx.fillStyle = "#e9e2c8";
-      ctx.strokeStyle = "#1e2b29";
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.arc(76, -36, 15, 0, 7);
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(84, -34);
-      ctx.lineTo(106, -26);
-      ctx.lineWidth = 9;
-      ctx.stroke();
       ctx.restore();
     }
   };

@@ -116,7 +116,7 @@ Object.assign(BB.sfx,{
 // ---------- clap-back: "my turn" (the machine plays it) then "your turn" (the class claps it) ----------
 // seq = 4-beat rhythm. Measure 0 plays it with the click; measure 1 the class claps. Group-gated on the beat-start sounds.
 class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60/this.bpm;this.snd=R.sounds(seq);this.n=this.snd.length;this.L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0));// beats in the pattern (4, 6 or 8)
-    this.t0=ac.currentTime+.35;this.next=0;this.lit=new Array(this.n).fill(0);this.marks=new Array(this.n).fill(0);this.got=new Array(this.n).fill(0);this.pend=[];this.done=false;this.onDone=o.onDone;this.voice=o.voice||(()=>{});this.cnt=o.countIn!==false;
+    this.t0=ac.currentTime+.35;this.next=0;this.lit=new Array(this.n).fill(0);this.marks=new Array(this.n).fill(0);this.got=new Array(this.n).fill(0);this.pend=[];this.done=false;this.onDone=o.onDone;this.voice=o.voice||(()=>{});this.cnt=o.countIn!==false;this.read=!!o.read;// v14.0 read mode: the machine stays silent on 'my turn' (class reads the notation)
     this.base=this.cnt?4:0;// optional count-in measure
     BB.mic.take();BB.groove&&BB.groove.sync(this.t0,this.spb)}
   beatNow(){return(ac.currentTime-this.t0)/this.spb}
@@ -125,7 +125,7 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
   update(dt){{const ph=this.phase();BB.listening=ph==='clap'?2:ph==='ready'?1:0}const ahead=ac.currentTime+.12,spb=this.spb,T0=this.t0+this.base*spb;
     while(this.t0+this.next*spb<ahead&&this.next<this.base+2*this.L+4){const t=this.t0+this.next*spb,rd=this.next>=this.base+this.L&&this.next<this.base+this.L+4;BB.sfx.tick(t,this.next%4===0||rd,rd?1:.8);if(this.next===this.base+this.L)R.turnCue(t);this.next++}
     // machine plays the rhythm in measure "listen"
-    if(!this.sched){this.sched=1;this.snd.forEach((s,i)=>{const t=T0+s.b*spb;BB.sfx.block(t);setTimeout(()=>this.voice(s),Math.max(0,(t-ac.currentTime)*1000))});
+    if(!this.sched){this.sched=1;this.snd.forEach((s,i)=>{const t=T0+s.b*spb;if(this.read)return;BB.sfx.block(t);setTimeout(()=>this.voice(s),Math.max(0,(t-ac.currentTime)*1000))});
       if(BB.debug)this.snd.forEach((s,i)=>{if(Math.random()<.93){const t=T0+(this.L+4+s.b)*spb+(Math.random()-.5)*.05;setTimeout(()=>BB.simClap(t,.7),Math.max(0,(t-ac.currentTime)*1000+30))}})}
     {const tv=ac.currentTime-BB.visLat(),Cc=T0+(this.L+4)*spb;for(let i=0;i<this.n;i++){let l=0;for(const b0 of[T0,Cc]){const d=tv-(b0+this.snd[i].b*spb);if(d>=0&&d<.4)l=Math.max(l,1-d*2.5)}this.lit[i]=l}}// v13.2 lights locked to the audible beat (listen AND clap turn), not setTimeout
     for(let i=0;i<this.n;i++){if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5)}
@@ -149,7 +149,7 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     R.pills(cx,y,this.seq,{lit:this.lit,marks:this.marks,cur:this.cursor(),words:true});if(yt)ctx.restore();
     const bn=this.beatNowV();let msg='';
     if(ph==='count'){const n=4-Math.floor(bn);msg=n>0?'Listen... '+n:'';}
-    else if(ph==='listen')msg='MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-this.L)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
+    else if(ph==='listen')msg=this.read?'READ IT... (silently)':'MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-this.L)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
     if(msg)BB.text(msg,cx,y-125,ph==='ready'?56:40,ph==='clap'||msg==='GO!'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
     // beat dots under the pills
     if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*150+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
@@ -171,8 +171,8 @@ R.yourTurn=(ph,rb,py)=>{const t=BB.t,pu=.5+.5*Math.sin(t*Math.PI*2*1.4),cl=ph===
   // robots turn and point at the class
   for(const sd of[-1,1]){const rx=W/2+sd*(W/2-130),ry=by+70;ctx.save();ctx.translate(rx,ry);ctx.scale(-sd,1);
     if(BB.IMG&&BB.IMG.sprocket)BB.sprite('sprocket',0,0,150,{parts:false});
-    const sw=Math.sin(t*8)*.08;ctx.rotate(sw);ctx.lineCap='round';ctx.strokeStyle='#1e2b29';ctx.lineWidth=20;ctx.beginPath();ctx.moveTo(18,-70);ctx.lineTo(70,-40);ctx.stroke();ctx.strokeStyle='#cfeee4';ctx.lineWidth=12;ctx.stroke();
-    ctx.fillStyle='#e9e2c8';ctx.strokeStyle='#1e2b29';ctx.lineWidth=5;ctx.beginPath();ctx.arc(76,-36,15,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(84,-34);ctx.lineTo(106,-26);ctx.lineWidth=9;ctx.stroke();ctx.restore()}};
+    // v14.0: hand-drawn pointing arm removed (teacher: 'weird arm' on the green countdown)
+    ctx.restore()}};
 // ---------- shared room bits ----------
 // bake a static layer once (background + anything that never moves). Phones bake at half size.
 R.bake=(fn)=>{const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const old=BB.ctx;

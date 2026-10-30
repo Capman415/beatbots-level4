@@ -119,7 +119,7 @@
   }
   const howTo = {
     title: "NOTE MINE: dig up the whole notes!",
-    steps: ["Watch the green beat lights.", "WARM UP: 4 claps in a row on the lights.", "Then every clap = a pickaxe strike. 4 strikes break a rock!", "Tougher rocks later need 6 or 8 strikes.", "Piano = soft claps. Forte = loud claps.", "No mic? Tap MANUAL OVERRIDE when they nail it."],
+    steps: ["Watch the green beat lights.", "WARM UP: 4 claps in a row on the lights.", "Then 4 MORE claps in a row strike the rock. Miss a beat and the rock goes back to whole!", "Tougher rocks later need 6 or 8 strikes.", "Piano = soft claps. Forte = loud claps.", "No mic? Tap MANUAL OVERRIDE when they nail it."],
     words: '"ta - a - a - a" (one whole note = 4 beats)   andante = walking speed,  allegro = fast',
     example: (x, y, w, h, t) => {
       const bpm = 90, ph = t * bpm / 60, b = Math.floor(ph) % 4, f = ph % 1;
@@ -568,16 +568,18 @@
       ctx.restore();
     }
     startBeat() {
-      const R = this.R, spb = 60 / R.bpm, t0 = BB.ac.currentTime + 0.25;
+      const R = this.R, spb = 60 / R.bpm;
+      let vo = 0;
+      if (!this.said.ready) {
+        this.said.ready = 1;
+        vo = BB.say("ready") || 0;
+      }
+      const t0 = BB.ac.currentTime + 0.25 + vo;
       this.beat = { spb, t0, next: 0, evalM: 1, hits: {}, sim: 0 };
       this.warm = 0;
       this.warmLast = -9;
       this.strikes = 0;
       BB.groove.sync(t0, spb);
-      if (!this.said.ready) {
-        this.said.ready = 1;
-        BB.say("ready");
-      }
     }
     beatNow() {
       const b = this.beat;
@@ -608,7 +610,7 @@
       const b = this.beat, ons = BB.mic.take();
       if (!b || this.state !== "dig" && this.state !== "count") return;
       if (window.ClapDet && ClapDet.expect) ClapDet.expect(b.spb, BB.ac.currentTime + 0.5);
-      if (BB.MLP && BB.MLP.on) BB.MLP.openWin("mine", b.t0 + 3 * b.spb - 0.12, BB.ac.currentTime + 0.3);
+      if (BB.MLP && BB.MLP.on) BB.MLP.openWin("mine", b.t0 - 0.12, BB.ac.currentTime + 0.3);
       if (this.R.dyn) BB.dynMode = BB.t;
       if (this.R.dyn === "p") {
         BB.softClap = BB.t;
@@ -625,7 +627,7 @@
         }
         if (bi < 4 && this.state !== "count" || bi < 0 || !inT || b.hits[bi] || b.pend && b.pend[bi]) continue;
         const d = this.R.dyn;
-        if (d === "p" && o.lvl > SOFT_MAX) {
+        if (d === "p" && o.lvl > Math.min(0.95, SOFT_MAX * 1.3)) {
           this.tooLoud = BB.t;
           BB.sfx.wobble();
           BB.burst(ROCK_X, rail(this.R.f) - 170, 14, { world: 1, cols: ["#cfefff", "#fff", "#9fe0ff"], kind: "star", size: 9, g: 200, speed: 300 });
@@ -696,19 +698,20 @@
       this.warm = bi === this.warmLast + 1 ? this.warm + 1 : 1;
       this.warmLast = bi;
       this.marks = [0, 0, 0, 0];
-      for (let i = 0; i < this.warm; i++) this.marks[i] = 0.01;
-      BB.sfx.tink(void 0, 0.5, true);
+      for (let i = 0; i < this.warm; i++) this.marks[(bi - i) % 4] = 0.01;
       if (this.warm >= WARM) {
         this.state = "dig";
         this.marks = [0, 0, 0, 0];
         b.evalM = Math.floor(bi / 4) + 1;
         this.warmEnd = bi;
+        b.chk = bi + 1;
       }
     }
     evalMeasures() {
       const b = this.beat;
       this.resolveGroup();
       if (this.state !== "dig") return;
+      this.streakCheck();
       const tol = window.GroupGate ? GroupGate.tol(b.spb) : 0.17;
       while (BB.ac.currentTime > b.t0 + (b.evalM * 4 + 3) * b.spb + Math.max(tol, 0.2) + 0.03 + (window.GroupGate ? GroupGate.lat + 0.03 : 0)) {
         const m = b.evalM;
@@ -726,6 +729,29 @@
           this.shrugT = BB.t;
           BB.burst(ROCK_X, rail(this.R.f) - 60, 10, { world: 1, col: "#c8b49a", kind: "dust", size: 18, g: -60, speed: 160 });
           if (!this.missVO && n < 2) {
+            this.missVO = true;
+            BB.say("keepgoing");
+          }
+        }
+      }
+    }
+    // v14.0 rule: after the warm-up, strikes must be CONSECUTIVE beats; miss one and the rock goes back to whole
+    streakCheck() {
+      const b = this.beat, G = window.GroupGate;
+      if (!b || b.chk == null) return;
+      const close = (G ? G.lat + Math.max(G.W1, G.win(b.spb)[1]) : 0.2) + 0.06;
+      while (this.beat === b && this.state === "dig" && BB.ac.currentTime > b.t0 + b.chk * b.spb + close) {
+        const bi = b.chk++;
+        if (b.hits[bi] || b.pend && b.pend[bi]) continue;
+        if (BB.talking && BB.t < BB.talking.until && !BB.debug || this.ovPop && BB.t - this.ovPop < 1) continue;
+        if (this.strikes > 0) {
+          this.strikes = 0;
+          this.stage = 0;
+          this.healT = BB.t;
+          BB.sfx.wobble();
+          this.wob = 1;
+          BB.burst(ROCK_X, rail(this.R.f) - 120, 10, { world: 1, col: "#c8b49a", kind: "dust", size: 18, g: -60, speed: 160 });
+          if (!this.missVO) {
             this.missVO = true;
             BB.say("keepgoing");
           }
