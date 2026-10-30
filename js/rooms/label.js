@@ -95,7 +95,7 @@ function drawCardRaw(x,y,w,h,seq,o={}){ctx.save();
   const pad=o.mini?4:12,bx=x+pad,by=y+hh+pad,bw=(w-pad*2)/Math.max(4,R.len(seq)),bh=h-hh-pad*2-(o.syl?28:0);let b=0;const U=R.noteSize('q',bw-6,bh);/* v14.0.3: one head size per card (v13.9 look) */
   for(const k of seq){const n=R.BEATS[k],cx=bx+b*bw;if(!o.mini&&b>0){ctx.fillStyle='rgba(90,80,64,.18)';ctx.fillRect(cx-1,by+6,2,bh-12)}
     const lit=o.lit&&o.lit[b]>0;if(lit)BB.rrect(cx+2,by,n*bw-4,bh,8,`rgba(255,224,102,${.25+.4*o.lit[b]})`);
-    R.tile(k,cx+3,by,n*bw-6,bh,{ns:Math.min(U,R.noteSize(k,n*bw-6,bh)),shadow:!o.mini&&BB.tier>0});
+    R.tile(k,cx+3,by,n*bw-6,bh,{ns:R.cardNs(k,bw,bh,n),shadow:!o.mini&&BB.tier>0});
     if(o.syl)BB.text(SYL[k],cx+n*bw/2,by+bh+16,20,'#5a5040',{maxW:n*bw-6});b+=n}
   if(o.x){ctx.strokeStyle='#d24a3c';ctx.lineWidth=10;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+30,y+30);ctx.lineTo(x+w-30,y+h-30);ctx.moveTo(x+w-30,y+30);ctx.lineTo(x+30,y+h-30);ctx.stroke()}
   ctx.restore()}
@@ -234,7 +234,7 @@ class LabelRoom{constructor(o={}){this.o=o}
   drawEnd(){const t=BB.t-this.st;if(t<.4)return;const k=ease.back(clamp((t-.4)/.6,0,1));ctx.fillStyle=`rgba(8,18,17,${.6*clamp(t,0,1)})`;ctx.fillRect(0,0,W,H);
     ctx.save();ctx.translate(W/2,370);ctx.scale(k,k);PANEL(-600,-195,1200,390,44);BB.text('ROOM 4 COMPLETE!',0,-130,68,'#fff',{font:'Rammetto One',stroke:9});
     drawCard(-230,-80,460,140,['q','e','s','q'],{});BB.text(BOXES+' boxes labeled  \u2022  '+this.score+' points  \u2022  best streak '+this.best,0,100,34,COL.yellow,{stroke:5,maxW:1100});BB.text('Next: DELIVERY DOCK',0,150,30,'#fff',{stroke:5});ctx.restore();
-    if(t>1.6){BB.button(W/2-520,590,480,110,'ROOM MAP',{style:'green',size:52,id:'tomap',onClick:()=>BB.roomDone('label')});BB.button(W/2+40,590,480,110,'PLAY AGAIN',{size:46,id:'again',onClick:()=>BB.go(new LabelRoom())})}}
+    if(t>1.6){/* v14.2: NEXT ROOM -> Room 5 (Delivery) */BB.button(W/2-690,590,440,110,'NEXT ROOM',{style:'green',size:52,id:'nextroom',onClick:()=>{if(!BB.save.done.includes('label')){BB.save.done.push('label');localStorage.setItem('bb4',JSON.stringify(BB.save))}BB.go(BB.DeliveryRoom?new BB.DeliveryRoom():new BB.MapScene('label'))}});BB.button(W/2-220,590,440,110,'ROOM MAP',{size:46,id:'tomap',onClick:()=>BB.roomDone('label')});BB.button(W/2+250,590,440,110,'PLAY AGAIN',{size:44,id:'again',onClick:()=>BB.go(new LabelRoom())})}}
 }
 BB.LabelRoom=LabelRoom;BB.LabelGen={genRhythm,nearMiss,LV};
 })();

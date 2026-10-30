@@ -225,12 +225,12 @@ BB.sfx={
 let fanBuf=null;fetch('assets/fanfare.mp3').then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).then(b=>fanBuf=b).catch(()=>{});
 BB.celebrate=(o={})=>{BB.groove&&BB.groove.stop();BB.selfSound(ac.currentTime,8.6,null);
   if(fanBuf){const s=ac.createBufferSource(),g=ac.createGain();g.gain.value=.8;s.buffer=fanBuf;s.connect(g).connect(sfxBus);s.start()}else BB.sfx.fanfare();
-  BB.cele={t:BB.t,next:o.next||''}};
+  BB.cele={t:BB.t,next:o.next||'',noJr:!!o.noJr}};
 BB.drawCelebrate=()=>{const c=BB.cele;if(!c)return;const t=BB.t-c.t;if(t>9){BB.cele=null;return}
   const cols=['#ffe066','#6ee678','#fff','#e65046','#5ac8fa','#ff9ad5'];
   for(const [tt,x] of[[0,W*.2],[.35,W*.8],[.8,W*.5],[1.5,W*.3],[2.1,W*.7],[3,W*.5]])if(t>=tt&&!c['b'+tt]){c['b'+tt]=1;BB.burst(x,H*.25,45,{cols,kind:Math.random()<.5?'star':'spark',size:15,speed:900,g:500,life:2.2,up:300})}
   // Static Jr. scampers across the floor and out the right side, toward the next room
-  if(t>1.2&&t<5.5&&BB.staticJr){const k=(t-1.2)/3.6,x=-120+k*(W+260),y=H-60;BB.contactShadow(x,y,50,.4);
+  if(t>1.2&&t<5.5&&BB.staticJr&&!c.noJr){const k=(t-1.2)/3.6,x=-120+k*(W+260),y=H-60;BB.contactShadow(x,y,50,.4);
     BB.staticJr(x,y,120,{spd:420,run:1,flip:false,rot:Math.sin(t*20)*.06});
     if(BB.q&&Math.random()<.5)BB.burst(x-40,y-6,2,{cols:['rgba(220,200,170,.8)'],kind:'dust',size:8,speed:80,g:-30,life:.5});
     if(c.next&&k<.85){ctx.save();ctx.globalAlpha=Math.min(1,(t-1.2)*3);BB.plaque(x+170,y-150,240,46,c.next+'  ▶',22,'#b5482a',{font:'Rammetto One',noRivet:1});ctx.restore()}}};

@@ -841,7 +841,7 @@ BB.celebrate = (o = {}) => {
     s.connect(g).connect(sfxBus);
     s.start();
   } else BB.sfx.fanfare();
-  BB.cele = { t: BB.t, next: o.next || "" };
+  BB.cele = { t: BB.t, next: o.next || "", noJr: !!o.noJr };
 };
 BB.drawCelebrate = () => {
   const c = BB.cele;
@@ -856,7 +856,7 @@ BB.drawCelebrate = () => {
     c["b" + tt] = 1;
     BB.burst(x, H * 0.25, 45, { cols, kind: Math.random() < 0.5 ? "star" : "spark", size: 15, speed: 900, g: 500, life: 2.2, up: 300 });
   }
-  if (t > 1.2 && t < 5.5 && BB.staticJr) {
+  if (t > 1.2 && t < 5.5 && BB.staticJr && !c.noJr) {
     const k = (t - 1.2) / 3.6, x = -120 + k * (W + 260), y = H - 60;
     BB.contactShadow(x, y, 50, 0.4);
     BB.staticJr(x, y, 120, { spd: 420, run: 1, flip: false, rot: Math.sin(t * 20) * 0.06 });

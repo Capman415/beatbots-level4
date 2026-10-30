@@ -32,6 +32,8 @@ R.glyph=(k,x,y,s,col='#19191f',g=ctx)=>{g.save();g.fillStyle=col;g.strokeStyle=c
 const n3c={};
 function tint(src,fill){const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.drawImage(src,0,0);g.globalCompositeOperation='source-in';g.fillStyle=fill(g,c);g.fillRect(0,0,c.width,c.height);return c}
 R.noteSize=(k,w,h)=>Math.min(h*.2,w/(k==='s'?8.6:k==='e'?6.2:k==='w'?2.9:3.1));
+/* v14.2: one head size for every note on a card (q, e, h share it; dense s/a/b only shrink if they must) */
+R.cardNs=(k,bw,bh,n=1)=>{const U=Math.min(bh*.2,bw/5.4);return k==='s'||k==='a'||k==='b'?Math.min(U,R.noteSize(k,n*bw-6,bh)):U};
 R.note3d=(k,w,h,o={})=>{const sc=2,key=k+'|'+Math.round(w)+'|'+Math.round(h)+'|'+(o.gs||1)+'|'+(o.ns?o.ns.toFixed(1):'');if(n3c[key])return n3c[key];
   const s=(o.ns||R.noteSize(k,w,h))*(o.gs||1)*sc,PAD=Math.ceil(s*.9),cw=Math.ceil(w*sc)+PAD*2,ch=Math.ceil(h*sc)+PAD*2;
   const m=document.createElement('canvas');m.width=cw;m.height=ch;const mg=m.getContext('2d');
@@ -133,13 +135,14 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     if(window.ClapDet&&this.seq.includes('s'))ClapDet.fastUntil=ac.currentTime+.5;if(window.ClapDet&&ClapDet.expect&&!this._gap){const bs=this.snd.map(x=>x.b).sort((p,q)=>p-q);let g=1;for(let i=1;i<bs.length;i++)g=Math.min(g,bs[i]-bs[i-1]);this._gap=Math.max(.125,g)*spb}if(window.ClapDet&&ClapDet.expect)ClapDet.expect(this._gap,ac.currentTime+.5);// v13.3: refractory follows the shortest note gap of this rhythm// v13.2 tika-tika: claps 0.18 s apart must not be merged
     // v13.6 clap96 (default; ?det=old = v13.3): per-note score-informed decision on the mic minus our own output, verified by clapnet96
     const K=window.C96;if(K&&!this._k&&K.active()&&ac.currentTime>C-.3){const bs=this.snd.map(x=>x.b).sort((p,q)=>p-q);let g=1;for(let i=1;i<bs.length;i++)g=Math.min(g,bs[i]-bs[i-1]);this._k=K.expect(this,this.snd.map(x=>C+x.b*spb),Math.max(.125,g)*spb)?1:2}
-    if(this._k===1){for(const d of K.poll(this))if(d.t!=null&&!this.got[d.i])this.hit(d.i);ons.length=0}
-    for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;if(o.up)continue;let best=-1,bd=1;
-      for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),lat=G?G.lat||0:0,dd=o.t-lat-te,tol=dd<0?Math.min(.12,gapB*spb*.45):Math.min(.18,gapB*spb*.5),d=Math.abs(dd);if(d<tol&&d<bd){bd=d;best=i}}
-      if(best<0){if(gated&&o.t>C)G.stray(o.t);continue}
-      const s=this.snd[best];if(gated&&!o.sim&&s.f===0){this.got[best]=2;this.pend.push(best)}else this.hit(best)}
-    if(gated)this.pend=this.pend.filter(i=>{const te=C+this.snd[i].b*spb;if(ac.currentTime-.02<te+G.lat+Math.max(G.W1,G.win(spb)[1])+.02)return true;const m=G.judge(te,false,spb);if(m.ok)this.hit(i);else{this.got[i]=0;this.few=BB.t}return false});
-    if(!this.done&&ac.currentTime>C+this.L*spb+.25&&!(this._k===1&&K.exp&&K.exp.key===this&&ac.currentTime<C+this.L*spb+1.2)){if(this._k===1&&K.exp&&K.exp.key===this)K.cancel();this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;this.score=sc;this.onDone&&this.onDone(sc)}}
+    if(this._k===1){for(const d of K.poll(this)){const te=C+this.snd[d.i].b*spb;if(d.t!=null){BB.clapStats.heard++;BB.clapLog.add({bpm:this.bpm,i:d.i,exp:te,on:d.t,peak:d.info&&d.info.v,thr:d.info&&d.info.s,res:this.got[d.i]?'rejected-as-double':'hit'});if(!this.got[d.i])this.hit(d.i)}else BB.clapLog.add({bpm:this.bpm,i:d.i,exp:te,peak:d.info&&d.info.v,thr:d.info&&d.info.s,res:d.info&&d.info.v>0?'too soft':'miss'});this.logged=this.logged||{};this.logged[d.i]=1}ons.length=0}
+    {const S=BB.clapStats,ph=this.phase();if(ph==='clap'){S.peak=Math.max(S.peak,BB.mic.level||0);if(dt>.05)S.slow++}}
+    for(const o of ons){if(o.up){BB.clapLog.add({bpm:this.bpm,on:o.t,peak:o.v??o.e,res:'rejected-as-double'});continue}BB.clapStats.heard++;if(BB.talking&&BB.t<BB.talking.until&&!BB.debug){BB.clapStats.talk++;BB.clapLog.add({bpm:this.bpm,on:o.t,peak:o.v??o.e,res:'ignored-during-playback'});continue}let best=-1,bd=1;
+      for(let i=0;i<this.n;i++){if(this.got[i])continue;const s=this.snd[i],te=C+s.b*spb,gapB=Math.min(...this.snd.filter((x,j)=>j!==i).map(x=>Math.abs(x.b-s.b)),1),lat=G?G.lat||0:0,dd=o.t-lat-te,tol=dd<0?Math.min(.15,gapB*spb*.48):Math.min(.22,gapB*spb*.55)/* v14.2 wider (Clap Check leniency) */,d=Math.abs(dd);if(d<tol&&d<bd){bd=d;best=i}}
+      if(best<0){if(o.t>C){BB.clapStats.stray++;let ni=0,nd=1e9;for(let i=0;i<this.n;i++){const dd=o.t-(C+this.snd[i].b*spb);if(Math.abs(dd)<Math.abs(nd)){nd=dd;ni=i}}BB.clapLog.add({bpm:this.bpm,i:ni,exp:C+this.snd[ni].b*spb,on:o.t,peak:o.v??o.e,res:this.got[ni]?'rejected-as-double':nd<0?'early':'late'})}if(gated&&o.t>C)G.stray(o.t);continue}
+      BB.clapLog.add({bpm:this.bpm,i:best,exp:C+this.snd[best].b*spb,on:o.t,peak:o.v??o.e,res:'hit'});(this.logged=this.logged||{})[best]=1;const s=this.snd[best];if(gated&&!o.sim&&s.f===0){this.got[best]=2;this.pend.push(best)}else this.hit(best)}
+    if(gated)this.pend=this.pend.filter(i=>{const te=C+this.snd[i].b*spb;if(ac.currentTime-.02<te+G.lat+Math.max(G.W1,G.win(spb)[1])+.02)return true;const m=G.judge(te,false,spb);if(m.ok)this.hit(i);else{this.got[i]=0;this.few=BB.t;BB.clapLog.add({bpm:this.bpm,i,exp:te,res:'too soft'})}return false});
+    if(!this.done&&ac.currentTime>C+this.L*spb+.25&&!(this._k===1&&K.exp&&K.exp.key===this&&ac.currentTime<C+this.L*spb+1.2)){if(this._k===1&&K.exp&&K.exp.key===this)K.cancel();this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;BB.clapStats.exp+=this.n;for(let i=0;i<this.n;i++)if(this.got[i]!==1&&!(this.logged&&this.logged[i]))BB.clapLog.add({bpm:this.bpm,i,exp:C+this.snd[i].b*spb,res:'miss'});BB.clapStats.hit+=this.got.filter(x=>x===1).length;this.score=sc;this.onDone&&this.onDone(sc)}}
   hit(i){this.got[i]=1;this.marks[i]=.01;BB.sfx.tink(undefined,.6)}
   override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}
   cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-this.L-4;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
@@ -154,6 +157,20 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     // beat dots under the pills
     if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*120+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
 R.ClapBack=ClapBack;
+/* v14.2 clap readout (pause menu): what the detector heard vs counted, so misses are visible */
+BB.clapStats={heard:0,hit:0,exp:0,talk:0,stray:0,peak:0,slow:0};
+/* v14.2 local clap diagnostics log: numbers only (never audio), localStorage on this device, last 5000 events */
+{const KEY='bb_claplog',CAP=5000;let ev=[];try{ev=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){ev=[]}
+ let on=true;try{on=localStorage.getItem('bb_clog')!=='0'}catch(e){}
+ let dirty=0;const save=()=>{if(!dirty)return;dirty=0;try{localStorage.setItem(KEY,JSON.stringify(ev))}catch(e){ev.splice(0,ev.length>>1)}};setInterval(save,3000);
+ const playing=()=>{const t=ac.currentTime;return !!((BB.talking&&BB.t<BB.talking.until)||(BB.selfWins||[]).some(w=>t>=w.t&&t<=w.e+.05))};
+ const r3=v=>v==null?'':Math.round(v*1000)/1000;
+ BB.clapLog={get on(){return on},set on(v){on=!!v;try{localStorage.setItem('bb_clog',on?'1':'0')}catch(e){}},count:()=>ev.length,
+  add(o){if(!on)return;const m=BB.mic;ev.push([new Date().toISOString(),(BB.scene&&BB.scene.constructor&&BB.scene.constructor.name)||'',o.bpm||'',o.i??'',r3(o.exp),r3(o.on),o.exp!=null&&o.on!=null?Math.round((o.on-o.exp)*1000):'',r3(o.peak??m.level),r3(o.thr??m.floor),o.res,playing()?1:0]);if(ev.length>CAP)ev.splice(0,ev.length-CAP);dirty=1},
+  csv(){return 'timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing\n'+ev.map(r=>r.join(',')).join('\n')},
+  download(){save();const b=new Blob([BB.clapLog.csv()],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='beatbots_claplog_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)},
+  clear(){ev=[];dirty=1;save();if(BB.clapStats)for(const k in BB.clapStats)BB.clapStats[k]=0}}}
+
 // v12.6: paper fibre texture (cached pattern) for tickets
 let paperPat=null;R.paper=(x,y,w,h)=>{if(!paperPat){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');for(let i=0;i<1400;i++){const v=Math.random();g.fillStyle=v<.5?`rgba(120,95,60,${Math.random()*.06})`:`rgba(255,255,255,${Math.random()*.12})`;g.fillRect(Math.random()*128,Math.random()*128,1+Math.random()*3,1)}paperPat=ctx.createPattern(c,'repeat')}
   ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.clip();ctx.fillStyle=paperPat;ctx.fillRect(x,y,w,h);const e=ctx.createRadialGradient(x+w/2,y+h/2,Math.min(w,h)*.3,x+w/2,y+h/2,Math.max(w,h)*.75);e.addColorStop(0,'rgba(120,90,40,0)');e.addColorStop(1,'rgba(120,90,40,.18)');ctx.fillStyle=e;ctx.fillRect(x,y,w,h);ctx.restore()};
@@ -198,7 +215,7 @@ R.paint=(target,fn,o={})=>{if(!BB.tier){BB.withCtx(target,fn);return}const cw=ta
   if(!L||L.width!==cw||L.height!==ch){L=document.createElement('canvas');L.width=cw;L.height=ch}const g=L.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cw,ch);
   g.setTransform(target.getTransform());BB.withCtx(g,fn);g.setTransform(1,0,0,1,0,0);
   g.save();g.globalCompositeOperation='source-atop';
-  g.globalAlpha=o.grain??.55;g.fillStyle=grainPat(g);g.fillRect(0,0,cw,ch);
+  /* v14.2: grain removed (read as noise next to the painted rooms); opt-in via o.grain */if(o.grain){g.globalAlpha=o.grain;g.fillStyle=grainPat(g);g.fillRect(0,0,cw,ch)}
   g.globalAlpha=1;const lg=g.createLinearGradient(0,0,cw*.35,ch);lg.addColorStop(0,'rgba(255,236,200,.16)');lg.addColorStop(.55,'rgba(255,220,170,0)');lg.addColorStop(1,'rgba(30,18,10,.22)');g.fillStyle=lg;g.fillRect(0,0,cw,ch);
   g.fillStyle=o.tint||'rgba(255,170,100,.09)';g.fillRect(0,0,cw,ch);g.restore();
   target.save();target.setTransform(1,0,0,1,0,0);if(o.shadow!==false){target.shadowColor='rgba(10,6,2,.45)';target.shadowBlur=18*cw/1920;target.shadowOffsetY=8*cw/1920;target.shadowOffsetX=5*cw/1920}target.drawImage(L,0,0);target.restore()}})();

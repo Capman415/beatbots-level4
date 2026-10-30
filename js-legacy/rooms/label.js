@@ -316,7 +316,7 @@
       }
       const lit = o.lit && o.lit[b] > 0;
       if (lit) BB.rrect(cx + 2, by, n * bw - 4, bh, 8, "rgba(255,224,102,".concat(0.25 + 0.4 * o.lit[b], ")"));
-      R.tile(k, cx + 3, by, n * bw - 6, bh, { ns: Math.min(U, R.noteSize(k, n * bw - 6, bh)), shadow: !o.mini && BB.tier > 0 });
+      R.tile(k, cx + 3, by, n * bw - 6, bh, { ns: R.cardNs(k, bw, bh, n), shadow: !o.mini && BB.tier > 0 });
       if (o.syl) BB.text(SYL[k], cx + n * bw / 2, by + bh + 16, 20, "#5a5040", { maxW: n * bw - 6 });
       b += n;
     }
@@ -996,8 +996,15 @@
       BB.text("Next: DELIVERY DOCK", 0, 150, 30, "#fff", { stroke: 5 });
       ctx.restore();
       if (t > 1.6) {
-        BB.button(W / 2 - 520, 590, 480, 110, "ROOM MAP", { style: "green", size: 52, id: "tomap", onClick: () => BB.roomDone("label") });
-        BB.button(W / 2 + 40, 590, 480, 110, "PLAY AGAIN", { size: 46, id: "again", onClick: () => BB.go(new LabelRoom()) });
+        BB.button(W / 2 - 690, 590, 440, 110, "NEXT ROOM", { style: "green", size: 52, id: "nextroom", onClick: () => {
+          if (!BB.save.done.includes("label")) {
+            BB.save.done.push("label");
+            localStorage.setItem("bb4", JSON.stringify(BB.save));
+          }
+          BB.go(BB.DeliveryRoom ? new BB.DeliveryRoom() : new BB.MapScene("label"));
+        } });
+        BB.button(W / 2 - 220, 590, 440, 110, "ROOM MAP", { size: 46, id: "tomap", onClick: () => BB.roomDone("label") });
+        BB.button(W / 2 + 250, 590, 440, 110, "PLAY AGAIN", { size: 44, id: "again", onClick: () => BB.go(new LabelRoom()) });
       }
     }
   }

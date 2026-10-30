@@ -38,7 +38,7 @@
       this.motes = R.motes(10);
       this.ph = 0;
       this.jrK = null;
-      R.loadImgs([["pack_blur", "jpg"], ["dock_bg", "jpg"]]).then(() => {
+      R.loadImgs([["pack_blur", "jpg"], ["dock_bg", "jpg"], ["chip", "png"]]).then(() => {
         this.static = R.bake((g) => this.bake(g));
         this.state = "intro";
         this.st = BB.t;
@@ -134,7 +134,14 @@
       return this.hp <= 2 ? 2 : this.hp <= 5 ? 1 : 0;
     }
     bpm() {
-      return [96, 104, 112][this.phase()];
+      return [92, 96, 100][this.phase()];
+    }
+    /* v14.2: capped at the Label Room's 100 BPM */
+    clapTurn() {
+      const c = this.cb;
+      if (!c) return false;
+      const p = c.phase();
+      return p === "ready" || p === "clap";
     }
     newBox() {
       const p = this.phase();
@@ -284,29 +291,43 @@
           this.st = BB.t;
           this.cb = null;
           BB.sfx.glitch();
+          BB.shake(16);
+          BB.burst(JR.x, JR.y - 150, 60, { cols: ["#7ef0ff", "#fff", "#ff8adf"], kind: "spark", size: 14, speed: 1100, g: 150, life: 1.2 });
+          this.fuzzT = BB.t;
+          this.fuzzD = 0.9;
           BB.say("jr_nofair");
         } else this.newBox();
       }
       if (this.state === "end") {
+        if (t > 1.5 && !this.sealed) {
+          this.sealed = 1;
+          BB.sfx.clunk();
+          BB.sfx.pkTa && BB.sfx.pkTa();
+        }
         if (t > 2.2 && !this.stamped) {
           this.stamped = 1;
           BB.sfx.thunk();
-          BB.shake(10);
+          BB.sfx.boom();
+          BB.shake(18);
+          BB.burst(W / 2 - 160, 360, 50, { cols: ["#d24a3c", "#ffe066", "#fff"], kind: "star", size: 16, speed: 1e3, g: 500, life: 1.6 });
           BB.say("dl_done", { overlap: true });
         }
         if (t > 3.6 && !this.vroom) {
           this.vroom = 1;
           BB.sfx.motor && BB.sfx.motor();
         }
-        if (t > 7 && !this.cel) {
+        if (t > 5 && !this.cel) {
           this.cel = 1;
-          BB.celebrate({ next: "ROOM MAP" });
+          BB.celebrate({ next: "", noJr: true });
+          const a = BB.ac.currentTime;
+          [0, 0.3, 0.6, 0.75, 0.9].forEach((d, i) => BB.sfx.pkTa && BB.sfx.pkTa(a + d));
         }
       }
+      if (this.clapTurn() && BB.t > this.atk - 1) this.atk = BB.t + 1;
       if ((this.state === "clap" || this.state === "show" || this.state === "wait") && BB.t > this.atk && this.state !== "end") this.attack();
       this.bolts = this.bolts.filter((b) => BB.t - b.t < 1.1);
       const f = this.face;
-      if (f && !f.drag) {
+      if (f && !f.drag && !this.clapTurn()) {
         f.vy = Math.min(f.vy + dt * 120, 160);
         f.y += f.vy * dt;
         if (f.y > 900) {
@@ -412,7 +433,7 @@
         let b = 0;
         for (const k of seq) {
           const w = R.BEATS[k] * bw;
-          R.tile(k, -172 + b * bw + 3, -62, w - 6, bh, { ns: Math.min(U, R.noteSize(k, w - 6, bh)), shadow: false });
+          R.tile(k, -172 + b * bw + 3, -62, w - 6, bh, { ns: R.cardNs(k, bw, bh, R.BEATS[k]), shadow: false });
           b += R.BEATS[k];
         }
       }
@@ -536,15 +557,49 @@
         ctx.rotate(0.5 + Math.sin(t * 9) * 0.08);
         BB.rrect(-10, -10, 100, 16, 4, "#c9965a", "#5a3a1e", 3);
         ctx.restore();
-        if (k < 3.6) R.bubble(0, -230, "hey! put me down!");
+        if (k > 1.5) {
+          const c = ease.out(clamp((k - 1.5) / 0.3, 0, 1));
+          BB.rrect(-134, -14 - c * 0, 268, lerp(0, 40, c), 8, BB.lg(-14, 26, ["#d9a868", "#a87038"]), "#5a3a1e", 5);
+          if (c >= 1) {
+            ctx.fillStyle = "rgba(240,220,170,.85)";
+            ctx.fillRect(-20, -14, 40, 40);
+          }
+        }
+        if (k < 1.5) R.bubble(0, -230, "hey! put me down!");
         ctx.restore();
+        if (k < 1.4 && BB.q) {
+          ctx.save();
+          ctx.globalAlpha = 0.35 * (1 - k / 1.4);
+          for (let i = 0; i < 40; i++) {
+            ctx.fillStyle = Math.random() < 0.5 ? "#fff" : "#7ef0ff";
+            ctx.fillRect(Math.random() * W, Math.random() * H, 60 + Math.random() * 300, 3 + Math.random() * 6);
+          }
+          ctx.restore();
+        }
+        if (k > 5) {
+          const a = clamp((k - 5) / 0.4, 0, 1), s = 0.7 + 0.3 * ease.back(a);
+          ctx.save();
+          ctx.globalAlpha = a;
+          ctx.translate(W / 2, 190);
+          ctx.scale(s, s);
+          BB.text("DELIVERY DOCK FIXED!", 0, 0, 92, "#ffd63c", { font: "Rammetto One", stroke: 12, strokeCol: "#782814" });
+          if (BB.V2.chip) {
+            const im = BB.V2.chip, h = 150, w = im.width * h / im.height;
+            BB.glow(0, 170, 110, "rgba(255,220,120,A)", 0.5);
+            ctx.drawImage(im, -w / 2, 170 - h / 2, w, h);
+          }
+          BB.text("Level 4 Beat Chip earned!", 0, 275, 40, "#fff", { stroke: 6 });
+          BB.panel(-430, 320, 860, 90, 24);
+          BB.text("Great work, Rhythm Engineers!", 0, 366, 44, COL.yellow, { stroke: 5 });
+          ctx.restore();
+        }
         if (k > 2.2) {
           const s = k < 2.45 ? lerp(3, 1, (k - 2.2) / 0.25) : 1;
           ctx.save();
           ctx.translate(W / 2 - 160 + dx * 0, 360);
           ctx.rotate(-0.12);
           ctx.scale(s, s);
-          ctx.globalAlpha = Math.min(1, (k - 2.2) * 6) * 0.92;
+          ctx.globalAlpha = Math.min(1, (k - 2.2) * 6) * 0.92 * clamp(1 - (k - 4.6) / 0.4, 0, 1);
           ctx.strokeStyle = "#d24a3c";
           ctx.lineWidth = 14;
           ctx.strokeRect(-430, -90, 860, 180);
@@ -670,6 +725,10 @@
         ctx.restore();
       }
       if (this.state === "intro" && k < 2.6) BB.titleCard("ROOM 5: DELIVERY SHOWDOWN", "Clap the boxes. Beat Static Jr.!", k / 2.6);
+      if (end && k > 7.5) {
+        BB.button(W / 2 - 520, 860, 480, 130, "ROOM MAP", { style: "green", size: 56, id: "tomap", onClick: () => BB.roomDone("finale") });
+        BB.button(W / 2 + 40, 860, 480, 130, "PLAY AGAIN", { size: 50, id: "again", onClick: () => BB.go(new DeliveryRoom()) });
+      }
       if (BB.paused) BB.pauseOverlay(howTo, () => this.resume());
     }
   }

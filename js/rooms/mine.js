@@ -524,9 +524,9 @@ class MineRoom{
     BB.text('8 whole notes are back in the bin!',0,20,40,COL.yellow,{stroke:5});
     if(this.chip&&BB.V2.chip){const im=BB.V2.chip,h=110,w=im.width*h/im.height;BB.glow(455,140,80,'rgba(255,220,120,A)',.4);ctx.drawImage(im,455-w/2,138-h/2,w,h);BB.text('+ BEAT CHIP piece',440,212,22,COL.yellow,{stroke:4})}
     BB.text('Next: the NOTE SMASHER!',0,80,36,'#fff',{stroke:5});ctx.restore();
-    if(t>6){BB.button(W/2-520,620,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('mine')});
-      BB.button(W/2+40,620,480,130,'NEXT ROOM',{size:50,id:'nextroom',onClick:()=>{if(!BB.save.done.includes('mine')){BB.save.done.push('mine');localStorage.setItem('bb4',JSON.stringify(BB.save))}BB.go(new BB.SmasherRoom())}});
-      BB.button(W/2-200,780,400,100,'PLAY AGAIN',{size:40,id:'again',onClick:()=>BB.go(new MineRoom())})}}
+    if(t>6){BB.button(W/2-220,620,440,130,'ROOM MAP',{size:50,id:'tomap',onClick:()=>BB.roomDone('mine')});
+      BB.button(W/2-690,620,440,130,'NEXT ROOM',{style:'green',size:56,id:'nextroom',onClick:()=>{if(!BB.save.done.includes('mine')){BB.save.done.push('mine');localStorage.setItem('bb4',JSON.stringify(BB.save))}BB.go(new BB.SmasherRoom())}});
+      BB.button(W/2+250,620,440,130,'PLAY AGAIN',{size:44,id:'again',onClick:()=>BB.go(new MineRoom())})}}
 }
 BB.MineRoom=MineRoom;
 })();

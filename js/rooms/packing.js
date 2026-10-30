@@ -269,7 +269,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetX=6;ctx.shadowOffsetY=12;BB.rrect(0,0,w,h,10,BB.lg(0,h,['#fffaf0','#f1e8d2','#ddd0b2']));ctx.restore();BB.R.paper(0,0,w,h);BB.rrect(0,0,w,h,10,null,'rgba(110,95,70,.6)',2);{const lg=ctx.createRadialGradient(w*.3,-30,10,w*.3,-30,w);lg.addColorStop(0,'rgba(255,236,180,.2)');lg.addColorStop(1,'rgba(255,236,180,0)');ctx.fillStyle=lg;ctx.fillRect(0,0,w,h)}BB.rrect(0,0,w,50,10,'#e65046');ctx.fillStyle='#e65046';ctx.fillRect(0,28,w,22);
     BB.text('ORDER #'+(this.ri+1)+(this.parts&&this.parts.length>1?'  \u2022  PALLET '+(this.part+1)+' of '+this.parts.length:''),w/2,26,26,'#fff',{stroke:3,maxW:w-24});BB.text(Rd.txt,w/2,80,Rd.txt.length>30?22:26,'#5a5040',{maxW:w-30});
     if(Rd.mode==='match'){let b=0;const cw=(w-40)/NB;for(const k of this.pcode){const n=R.BEATS[k],xx=20+b*cw,ww=n*cw;const done=this.cells[b]===k;ctx.strokeStyle=done?'#3fb45a':'rgba(0,0,0,.18)';ctx.lineWidth=done?4:2;ctx.strokeRect(xx+3,110,ww-6,140);
-        R.glyph(k,xx+ww/2,215,Math.min(k==='s'?10:12,ww/(k==='s'?6.4:k==='e'?4.6:k==='w'?2.6:2.4)),COL.ink);BB.text(R.SAY[k],xx+ww/2,270,NB>6?16:20,'#5a5040',{maxW:ww-4});b+=n}}
+        R.glyph(k,xx+ww/2,215,(k==='s'?Math.min(10,cw/6.4):Math.min(12,cw/4.6)),COL.ink);BB.text(R.SAY[k],xx+ww/2,270,NB>6?16:20,'#5a5040',{maxW:ww-4});b+=n}}
     else{BB.text(Rd.mode==='limited'?'Every crate must fit!':'Any crates that add up to '+NB,w/2,150,26,'#5a5040');const bw=(w-60)/NB;for(let i=0;i<NB;i++){BB.rrect(30+i*bw,190,bw-14,60,10,this.cells[i]?'#9ff09a':'#eee8d6','#8a806b',2);BB.ctext(this.cells[i]?'\u2713':String(i+1),30+i*bw+(bw-14)/2,220,30,'#5a5040','Lilita One')}}
     if(this.ri===2&&BB.t-this.palletIn<3){ctx.globalAlpha=1-(BB.t-this.palletIn)/3;BB.text('TORN BY STATIC JR. ... fixed!',w/2,h-18,20,'#c0392b')}
     ctx.restore()}
@@ -294,8 +294,9 @@ class PackingRoom{constructor(o={}){this.o=o}
     BB.text('ROOM 3 COMPLETE!',0,-170,72,'#fff',{font:'Rammetto One',stroke:9});
     R.crateDraw('h',-440,-100,300,120);R.crateDraw('q',-120,-100,140,120);R.crateDraw('e',40,-100,140,120);R.crateDraw('s',200,-100,140,120);R.crateDraw('r',360,-100,100,120,{tag:false});
     BB.text(ROUNDS.length+' orders packed and sealed!',0,80,40,COL.yellow,{stroke:5});BB.text('Next: the LABEL ROOM!',0,150,36,'#fff',{stroke:5});ctx.restore();
-    if(t>1.6){BB.button(W/2-520,700,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('packing')});
-      BB.button(W/2+40,700,480,130,'PLAY AGAIN',{size:50,id:'again',onClick:()=>BB.go(new PackingRoom())})}}
+    if(t>1.6){/* v14.2: NEXT ROOM -> Room 4 (Label Room) */BB.button(W/2-690,700,440,130,'NEXT ROOM',{style:'green',size:56,id:'nextroom',onClick:()=>{if(!BB.save.done.includes('packing')){BB.save.done.push('packing');localStorage.setItem('bb4',JSON.stringify(BB.save))}BB.go(BB.LabelRoom?new BB.LabelRoom():new BB.MapScene('packing'))}});
+      BB.button(W/2-220,700,440,130,'ROOM MAP',{size:50,id:'tomap',onClick:()=>BB.roomDone('packing')});
+      BB.button(W/2+250,700,440,130,'PLAY AGAIN',{size:44,id:'again',onClick:()=>BB.go(new PackingRoom())})}}
 }
 BB.PackingRoom=PackingRoom;
 })();

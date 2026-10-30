@@ -1213,7 +1213,7 @@
           ctx.strokeStyle = done ? "#3fb45a" : "rgba(0,0,0,.18)";
           ctx.lineWidth = done ? 4 : 2;
           ctx.strokeRect(xx + 3, 110, ww - 6, 140);
-          R.glyph(k, xx + ww / 2, 215, Math.min(k === "s" ? 10 : 12, ww / (k === "s" ? 6.4 : k === "e" ? 4.6 : k === "w" ? 2.6 : 2.4)), COL.ink);
+          R.glyph(k, xx + ww / 2, 215, k === "s" ? Math.min(10, cw / 6.4) : Math.min(12, cw / 4.6), COL.ink);
           BB.text(R.SAY[k], xx + ww / 2, 270, NB > 6 ? 16 : 20, "#5a5040", { maxW: ww - 4 });
           b += n;
         }
@@ -1301,8 +1301,15 @@
       BB.text("Next: the LABEL ROOM!", 0, 150, 36, "#fff", { stroke: 5 });
       ctx.restore();
       if (t > 1.6) {
-        BB.button(W / 2 - 520, 700, 480, 130, "ROOM MAP", { style: "green", size: 56, id: "tomap", onClick: () => BB.roomDone("packing") });
-        BB.button(W / 2 + 40, 700, 480, 130, "PLAY AGAIN", { size: 50, id: "again", onClick: () => BB.go(new PackingRoom()) });
+        BB.button(W / 2 - 690, 700, 440, 130, "NEXT ROOM", { style: "green", size: 56, id: "nextroom", onClick: () => {
+          if (!BB.save.done.includes("packing")) {
+            BB.save.done.push("packing");
+            localStorage.setItem("bb4", JSON.stringify(BB.save));
+          }
+          BB.go(BB.LabelRoom ? new BB.LabelRoom() : new BB.MapScene("packing"));
+        } });
+        BB.button(W / 2 - 220, 700, 440, 130, "ROOM MAP", { size: 50, id: "tomap", onClick: () => BB.roomDone("packing") });
+        BB.button(W / 2 + 250, 700, 440, 130, "PLAY AGAIN", { size: 44, id: "again", onClick: () => BB.go(new PackingRoom()) });
       }
     }
   }

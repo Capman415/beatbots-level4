@@ -103,6 +103,10 @@
     return c;
   }
   R.noteSize = (k, w, h) => Math.min(h * 0.2, w / (k === "s" ? 8.6 : k === "e" ? 6.2 : k === "w" ? 2.9 : 3.1));
+  R.cardNs = (k, bw, bh, n = 1) => {
+    const U = Math.min(bh * 0.2, bw / 5.4);
+    return k === "s" || k === "a" || k === "b" ? Math.min(U, R.noteSize(k, n * bw - 6, bh)) : U;
+  };
   R.note3d = (k, w, h, o = {}) => {
     const sc = 2, key = k + "|" + Math.round(w) + "|" + Math.round(h) + "|" + (o.gs || 1) + "|" + (o.ns ? o.ns.toFixed(1) : "");
     if (n3c[key]) return n3c[key];
@@ -434,6 +438,7 @@
     }
     // v12.2: 4-beat count-in between listen and clap
     update(dt) {
+      var _a, _b, _c, _d;
       {
         const ph = this.phase();
         BB.listening = ph === "clap" ? 2 : ph === "ready" ? 1 : 0;
@@ -496,25 +501,63 @@
         this._k = K.expect(this, this.snd.map((x) => C + x.b * spb), Math.max(0.125, g) * spb) ? 1 : 2;
       }
       if (this._k === 1) {
-        for (const d of K.poll(this)) if (d.t != null && !this.got[d.i]) this.hit(d.i);
+        for (const d of K.poll(this)) {
+          const te = C + this.snd[d.i].b * spb;
+          if (d.t != null) {
+            BB.clapStats.heard++;
+            BB.clapLog.add({ bpm: this.bpm, i: d.i, exp: te, on: d.t, peak: d.info && d.info.v, thr: d.info && d.info.s, res: this.got[d.i] ? "rejected-as-double" : "hit" });
+            if (!this.got[d.i]) this.hit(d.i);
+          } else BB.clapLog.add({ bpm: this.bpm, i: d.i, exp: te, peak: d.info && d.info.v, thr: d.info && d.info.s, res: d.info && d.info.v > 0 ? "too soft" : "miss" });
+          this.logged = this.logged || {};
+          this.logged[d.i] = 1;
+        }
         ons.length = 0;
       }
+      {
+        const S = BB.clapStats, ph = this.phase();
+        if (ph === "clap") {
+          S.peak = Math.max(S.peak, BB.mic.level || 0);
+          if (dt > 0.05) S.slow++;
+        }
+      }
       for (const o of ons) {
-        if (BB.talking && BB.t < BB.talking.until && !BB.debug) continue;
-        if (o.up) continue;
+        if (o.up) {
+          BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_a = o.v) != null ? _a : o.e, res: "rejected-as-double" });
+          continue;
+        }
+        BB.clapStats.heard++;
+        if (BB.talking && BB.t < BB.talking.until && !BB.debug) {
+          BB.clapStats.talk++;
+          BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_b = o.v) != null ? _b : o.e, res: "ignored-during-playback" });
+          continue;
+        }
         let best = -1, bd = 1;
         for (let i = 0; i < this.n; i++) {
           if (this.got[i]) continue;
-          const s2 = this.snd[i], te = C + s2.b * spb, gapB = Math.min(...this.snd.filter((x, j) => j !== i).map((x) => Math.abs(x.b - s2.b)), 1), lat = G ? G.lat || 0 : 0, dd = o.t - lat - te, tol = dd < 0 ? Math.min(0.12, gapB * spb * 0.45) : Math.min(0.18, gapB * spb * 0.5), d = Math.abs(dd);
+          const s2 = this.snd[i], te = C + s2.b * spb, gapB = Math.min(...this.snd.filter((x, j) => j !== i).map((x) => Math.abs(x.b - s2.b)), 1), lat = G ? G.lat || 0 : 0, dd = o.t - lat - te, tol = dd < 0 ? Math.min(0.15, gapB * spb * 0.48) : Math.min(0.22, gapB * spb * 0.55), d = Math.abs(dd);
           if (d < tol && d < bd) {
             bd = d;
             best = i;
           }
         }
         if (best < 0) {
+          if (o.t > C) {
+            BB.clapStats.stray++;
+            let ni = 0, nd = 1e9;
+            for (let i = 0; i < this.n; i++) {
+              const dd = o.t - (C + this.snd[i].b * spb);
+              if (Math.abs(dd) < Math.abs(nd)) {
+                nd = dd;
+                ni = i;
+              }
+            }
+            BB.clapLog.add({ bpm: this.bpm, i: ni, exp: C + this.snd[ni].b * spb, on: o.t, peak: (_c = o.v) != null ? _c : o.e, res: this.got[ni] ? "rejected-as-double" : nd < 0 ? "early" : "late" });
+          }
           if (gated && o.t > C) G.stray(o.t);
           continue;
         }
+        BB.clapLog.add({ bpm: this.bpm, i: best, exp: C + this.snd[best].b * spb, on: o.t, peak: (_d = o.v) != null ? _d : o.e, res: "hit" });
+        (this.logged = this.logged || {})[best] = 1;
         const s = this.snd[best];
         if (gated && !o.sim && s.f === 0) {
           this.got[best] = 2;
@@ -529,6 +572,7 @@
         else {
           this.got[i] = 0;
           this.few = BB.t;
+          BB.clapLog.add({ bpm: this.bpm, i, exp: te, res: "too soft" });
         }
         return false;
       });
@@ -536,6 +580,9 @@
         if (this._k === 1 && K.exp && K.exp.key === this) K.cancel();
         this.done = true;
         const sc = this.got.filter((x) => x === 1).length / this.n;
+        BB.clapStats.exp += this.n;
+        for (let i = 0; i < this.n; i++) if (this.got[i] !== 1 && !(this.logged && this.logged[i])) BB.clapLog.add({ bpm: this.bpm, i, exp: C + this.snd[i].b * spb, res: "miss" });
+        BB.clapStats.hit += this.got.filter((x) => x === 1).length;
         this.score = sc;
         this.onDone && this.onDone(sc);
       }
@@ -598,6 +645,79 @@
     }
   }
   R.ClapBack = ClapBack;
+  BB.clapStats = { heard: 0, hit: 0, exp: 0, talk: 0, stray: 0, peak: 0, slow: 0 };
+  {
+    const KEY = "bb_claplog", CAP = 5e3;
+    let ev = [];
+    try {
+      ev = JSON.parse(localStorage.getItem(KEY) || "[]");
+    } catch (e) {
+      ev = [];
+    }
+    let on = true;
+    try {
+      on = localStorage.getItem("bb_clog") !== "0";
+    } catch (e) {
+    }
+    let dirty = 0;
+    const save = () => {
+      if (!dirty) return;
+      dirty = 0;
+      try {
+        localStorage.setItem(KEY, JSON.stringify(ev));
+      } catch (e) {
+        ev.splice(0, ev.length >> 1);
+      }
+    };
+    setInterval(save, 3e3);
+    const playing = () => {
+      const t = ac.currentTime;
+      return !!(BB.talking && BB.t < BB.talking.until || (BB.selfWins || []).some((w) => t >= w.t && t <= w.e + 0.05));
+    };
+    const r3 = (v) => v == null ? "" : Math.round(v * 1e3) / 1e3;
+    BB.clapLog = {
+      get on() {
+        return on;
+      },
+      set on(v) {
+        on = !!v;
+        try {
+          localStorage.setItem("bb_clog", on ? "1" : "0");
+        } catch (e) {
+        }
+      },
+      count: () => ev.length,
+      add(o) {
+        var _a, _b, _c;
+        if (!on) return;
+        const m = BB.mic;
+        ev.push([(/* @__PURE__ */ new Date()).toISOString(), BB.scene && BB.scene.constructor && BB.scene.constructor.name || "", o.bpm || "", (_a = o.i) != null ? _a : "", r3(o.exp), r3(o.on), o.exp != null && o.on != null ? Math.round((o.on - o.exp) * 1e3) : "", r3((_b = o.peak) != null ? _b : m.level), r3((_c = o.thr) != null ? _c : m.floor), o.res, playing() ? 1 : 0]);
+        if (ev.length > CAP) ev.splice(0, ev.length - CAP);
+        dirty = 1;
+      },
+      csv() {
+        return "timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing\n" + ev.map((r) => r.join(",")).join("\n");
+      },
+      download() {
+        save();
+        const b = new Blob([BB.clapLog.csv()], { type: "text/csv" }), a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        a.download = "beatbots_claplog_" + (/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace(/[:T]/g, "-") + ".csv";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          URL.revokeObjectURL(a.href);
+          a.remove();
+        }, 500);
+      },
+      clear() {
+        ev = [];
+        dirty = 1;
+        save();
+        if (BB.clapStats) for (const k in BB.clapStats) BB.clapStats[k] = 0;
+      }
+    };
+  }
   let paperPat = null;
   R.paper = (x, y, w, h) => {
     if (!paperPat) {
@@ -777,7 +897,6 @@
     return g.createPattern(c, "repeat");
   }
   R.paint = (target, fn, o = {}) => {
-    var _a;
     if (!BB.tier) {
       BB.withCtx(target, fn);
       return;
@@ -796,9 +915,11 @@
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.save();
     g.globalCompositeOperation = "source-atop";
-    g.globalAlpha = (_a = o.grain) != null ? _a : 0.55;
-    g.fillStyle = grainPat(g);
-    g.fillRect(0, 0, cw, ch);
+    if (o.grain) {
+      g.globalAlpha = o.grain;
+      g.fillStyle = grainPat(g);
+      g.fillRect(0, 0, cw, ch);
+    }
     g.globalAlpha = 1;
     const lg = g.createLinearGradient(0, 0, cw * 0.35, ch);
     lg.addColorStop(0, "rgba(255,236,200,.16)");

@@ -1899,15 +1899,15 @@
       BB.text("Next: the NOTE SMASHER!", 0, 80, 36, "#fff", { stroke: 5 });
       ctx.restore();
       if (t > 6) {
-        BB.button(W / 2 - 520, 620, 480, 130, "ROOM MAP", { style: "green", size: 56, id: "tomap", onClick: () => BB.roomDone("mine") });
-        BB.button(W / 2 + 40, 620, 480, 130, "NEXT ROOM", { size: 50, id: "nextroom", onClick: () => {
+        BB.button(W / 2 - 220, 620, 440, 130, "ROOM MAP", { size: 50, id: "tomap", onClick: () => BB.roomDone("mine") });
+        BB.button(W / 2 - 690, 620, 440, 130, "NEXT ROOM", { style: "green", size: 56, id: "nextroom", onClick: () => {
           if (!BB.save.done.includes("mine")) {
             BB.save.done.push("mine");
             localStorage.setItem("bb4", JSON.stringify(BB.save));
           }
           BB.go(new BB.SmasherRoom());
         } });
-        BB.button(W / 2 - 200, 780, 400, 100, "PLAY AGAIN", { size: 40, id: "again", onClick: () => BB.go(new MineRoom()) });
+        BB.button(W / 2 + 250, 620, 440, 130, "PLAY AGAIN", { size: 44, id: "again", onClick: () => BB.go(new MineRoom()) });
       }
     }
   }

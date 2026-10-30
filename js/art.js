@@ -292,6 +292,9 @@ BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRec
    BB.button(sx+380,sy+8,80,80,'+',{size:46,id:'psens+',onClick:()=>BB.setSens(m.sensIdx+1)})}
   // v13.8: back to the room picker, only from inside the pause menu (hard to hit by accident)
   BB.button(x+60,y+h-200,380,120,'ROOM SELECT',{size:40,id:'roomsel',onClick:()=>{BB.paused=false;BB.ac.resume().catch(()=>{});BB.caption=null;BB.talking=null;BB.go(new BB.MapScene())}});
+  {const S=BB.clapStats;if(S){const m=BB.mic;BB.text('CLAP READOUT  counted '+S.hit+'/'+S.exp+'  \u2022  heard '+S.heard+'  \u2022  off-beat '+S.stray+'  \u2022  blocked by voice '+S.talk+'  \u2022  mic peak '+Math.round(S.peak*100)+'%  \u2022  slow frames '+S.slow+'  \u2022  mic '+(m.ok?'on':m.state)+(window.C96&&C96.active&&C96.active()?' (clap96)':''),W/2,y+h-38,22,'#cfe8e2',{maxW:w-80})}}
+  if(BB.clapLog){const L=BB.clapLog,bx=x+w-330,bw=290;BB.button(bx,y+30,bw,56,'CLAP LOG: '+(L.on?'ON':'OFF')+' ('+L.count()+')',{size:22,id:'clog',onClick:()=>{L.on=!L.on}});
+   BB.button(bx,y+92,bw,56,'Download clap log (CSV)',{size:20,id:'clogdl',onClick:()=>L.download()});BB.button(bx,y+154,bw,46,'Clear log',{size:20,id:'clogclr',onClick:()=>L.clear()})}
   BB.button(W/2-220,y+h-200,440,120,'RESUME',{style:'green',size:56,id:'resume',onClick:onResume})};
 let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)/1000;rl=n;return rt};
 // room title card

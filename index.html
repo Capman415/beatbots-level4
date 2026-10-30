@@ -12,12 +12,12 @@ canvas{position:absolute;left:0;top:0;touch-action:none}
 </style></head><body>
 <canvas id="c"></canvas>
 <button id="fs" onclick="const d=document.documentElement,f=d.requestFullscreen||d.webkitRequestFullscreen;f&&f.call(d).catch&&f.call(d).catch(()=>{})">full screen</button>
-<script>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.build!=='1794200000'&&!sessionStorage.bbReload){sessionStorage.bbReload=1;location.reload()}}).catch(()=>{})</script>
+<script>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j.build!=='1794200200'&&!sessionStorage.bbReload){sessionStorage.bbReload=1;location.reload()}}).catch(()=>{})</script>
 <script>/* v13.1 no pinch / double-tap zoom, long-press menus or page scroll on touch boards & tablets */for(const e of ['gesturestart','gesturechange','dblclick','contextmenu'])addEventListener(e,ev=>ev.preventDefault(),{passive:false});addEventListener('touchmove',e=>e.preventDefault(),{passive:false});addEventListener('keydown',e=>{if(e.key==='f'||e.key==='F'){const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen().catch(()=>{})}});</script>
 <script>/* v13.2 loader: old Chromium (Promethean ActivPanel / Android WebView) can't parse ?. and ?? and showed a blank screen.
    Detect it and load the ES2017 copies in js-legacy/ (built by tools/legacy.sh); show any startup error on screen. */
 (function(){var modern=true;try{new Function('var a={};return a?.b??1')}catch(e){modern=false}if(/[?&]legacy=1/.test(location.search))modern=false;
-var dir=modern?'js/':'js-legacy/',F=['echo.js','clapdet.js','mic.js','group.js','engine.js','mlpipe.js','clap96.js','groove.js','art.js','rooms/mine.js','rhythm.js','rooms/smasher.js','rooms/packing.js','rooms/label.js','rooms/delivery.js','shell.js'],V='1794200000';window.BB_LEGACY=!modern;
+var dir=modern?'js/':'js-legacy/',F=['echo.js','clapdet.js','mic.js','group.js','engine.js','mlpipe.js','clap96.js','groove.js','art.js','rooms/mine.js','rhythm.js','rooms/smasher.js','rooms/packing.js','rooms/label.js','rooms/delivery.js','shell.js'],V='1794200200';window.BB_LEGACY=!modern;
 window.addEventListener('error',function(e){var d=document.getElementById('bootErr');if(!d){d=document.createElement('pre');d.id='bootErr';d.style.cssText='position:fixed;left:0;right:0;bottom:0;margin:0;padding:8px;background:#400;color:#fff;font:14px monospace;z-index:99999;white-space:pre-wrap';document.body.appendChild(d)}
  d.textContent+=(e.message||'load error')+' '+(e.filename||(e.target&&e.target.src)||'')+(e.lineno?':'+e.lineno:'')+' | '+navigator.userAgent+'\n'},true);
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')&&!/[?&]nosw=1/.test(location.search))addEventListener('load',function(){navigator.serviceWorker.register('sw.js?v='+V).catch(function(){})});
