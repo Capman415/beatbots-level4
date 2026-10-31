@@ -48,9 +48,9 @@ var P=BB.MLP={on:q.get('ml')==='1',dbg:q.get('debug')==='1',state:'off',why:'',s
  refTransient:function(tNow){var EG=window.EchoGate;if(!EG||!EG.on||!EG.outAt)return false;try{var L=BB.micLat?BB.micLat():.09,a=EG.outAt(tNow,L).peak,b=EG.outAt(tNow-.09,L).peak;return a>1e-4&&a>3*b}catch(e){return false}},
  reply:function(id,buf){var r=null;for(var i=0;i<this.pend.length;i++)if(this.pend[i].id===id)r=this.pend[i];if(!r||r.done)return;r.done=1;
   var p=1;try{p=ClapNet.prob(ClapNet.resample(buf,this.sr,2048))}catch(e){p=1}this.lastP=p;if(r.ref)this.st.ref++;
-  if(p>=(r.ref?ClapNet.TH_REF:ClapNet.TH)){r.o.ml=+p.toFixed(2);BB.mic.onsets.push(r.o);this.st.acc++;this.note(r.o,'acc',p)}else{this.st.ret++;this.note(r.o,'ret',p)}
+  if(p>=(r.ref?ClapNet.TH_REF:ClapNet.TH)){r.o.ml=+p.toFixed(2);BB.mic.onsets.push(r.o),BB.mic&&(BB.mic.meter=Math.max(BB.mic.meter||0,r.o.lvl||.6));this.st.acc++;this.note(r.o,'acc',p)}else{this.st.ret++;this.note(r.o,'ret',p)}
   if(this.calRec)this.calRec.push({t:r.o.t,buf:buf});this.pend=this.pend.filter(function(x){return!x.done})},
- flush:function(all){var self=this;this.pend=this.pend.filter(function(r){if(r.done)return false;if(all||BB.t-r.t>.45){BB.mic.onsets.push(r.o);self.st.fail++;self.st.acc++;self.note(r.o,'timeout');return false}return true})},// fail-open
+ flush:function(all){var self=this;this.pend=this.pend.filter(function(r){if(r.done)return false;if(all||BB.t-r.t>.45){BB.mic.onsets.push(r.o),BB.mic&&(BB.mic.meter=Math.max(BB.mic.meter||0,r.o.lvl||.6));self.st.fail++;self.st.acc++;self.note(r.o,'timeout');return false}return true})},// fail-open
  note:function(o,k,p){if(!this.dbg)return;this.log.push({t:BB.t,k:k,p:p});if(this.log.length>14)this.log.shift()},
  // ---- "clap 8 times" calibration: claps = DSP onsets inside 8 ticks; room negatives = windows from the room/app audio between them
  calibrate:function(done){if(!window.ClapNet||!ClapNet.ready||!MicCore.ctx){done&&done(false);return}var self=this,ac=BB.ac,t0=ac.currentTime+1,S=.75,ticks=[];for(var i=0;i<8;i++){ticks.push(t0+i*S);BB.sfx.tick(t0+i*S,i%4===0)}

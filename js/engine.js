@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.3';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.3.1';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -306,10 +306,13 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   // v13.2: onsets are found on the residual after removing the predicted echo of our own output (x = rms when silent)
   const CD=window.ClapDet,x=CD&&EG&&EG.on?EG.resid(tNow,rms,micLat()):rms;
   /* v14.3 mic meter follows the detector: residual after echo removal, and silent inside our own sound attacks */
-  {const sc=selfCheck(tNow),xl=sc==='hard'?0:(window.GroupGate?GroupGate.lvl(x,sens):clamp(Math.sqrt(x*sens*6),0,1));mic.meter=Math.max(xl,(mic.meter||0)-dt*1.8)}
+  /* v14.3.1 mic meter = detector OUTPUT only: it jumps on an accepted clap and decays; music/voice bleed never moves it (Chromebook fix) */
+  mic.meter=Math.max(0,(mic.meter||0)-dt*1.8);
+  /* v14.3.1 speaker-bleed hardening: while our own output is loud, raise the onset bar and demand a sharp broadband (non-tonal) transient */
+  const bleed=clamp(oR/.08,0,1),ntFrac=nonTonalEnergy.frac||0,thrE=thr*(1+1.5*bleed);mic.bleed=bleed;
   const gap=CD?CD.gapOk(mic,tNow,x):(tNow-mic.lastOn>.12?1:0);
   const jmp=window.GroupGate?GroupGate.adaptJump(x,softOn&&BB.fastSoft&&BB.t-BB.fastSoft<.5?GroupGate.ONSET_JUMP_FS:GroupGate.ONSET_JUMP):1.3;
-  if(x>thr&&(CD&&CD.jumpOk?CD.jumpOk(mic,x,mic.prev||0,jmp,tNow):x>mic.prev*jmp)&&gap){const prevOn=mic.lastOn;mic.lastOn=tNow;if(window.GroupGate)GroupGate.adaptPeak(x);
+  if(x>thrE&&!(bleed>.15&&ntFrac<.5)&&(CD&&CD.jumpOk?CD.jumpOk(mic,x,mic.prev||0,jmp,tNow):x>mic.prev*jmp)&&gap){const prevOn=mic.lastOn;mic.lastOn=tNow;if(window.GroupGate)GroupGate.adaptPeak(x);
     const chk=selfCheck(tNow);let ok=true,sg=null;
     if(chk==='hard')ok=false;
     else if(chk){const e=nonTonalEnergy(chk);ok=nonTonalEnergy.frac>.6&&e>nonTonalFloor*6}// clap = mostly broadband energy
@@ -319,7 +322,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
     if(CD){if(ok){if(gap!==2&&CD.fired)CD.fired(mic,x);mic.up=gap===2;mic.lastX=gap===2?Math.max(mic.lastX||0,x):x}else mic.lastOn=prevOn}// a rejected onset must not start a refractory window
     if(mic.calib)mic.calib.push(tNow);
     if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'',sg?[+sg.hfr.toFixed(2),+sg.flat.toFixed(2),+sg.imp.toFixed(1)]:'',gap]);
-    if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;{const on={t:tNow,lvl:lv,rms,up:gap===2?1:0};if(!BB.MLP||!BB.MLP.on||BB.MLP.submit(on,tNow))mic.onsets.push(on)}mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
+    if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;{const on={t:tNow,lvl:lv,rms,up:gap===2?1:0};if(!BB.MLP||!BB.MLP.on||BB.MLP.submit(on,tNow)){mic.onsets.push(on);mic.meter=Math.max(mic.meter||0,lv)}}mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
   else if(x<thr){const nf=lerp(mic.floor,Math.min(x,.05),dt*.8);mic.floor=CD&&CD.active&&CD.active(tNow)&&tNow-mic.lastOn<.35?Math.min(mic.floor,nf):nf}// v13.3: claps' reverb tails between fast claps must not lift the floor
   if(CD&&CD.track)CD.track(mic,x,tNow);
   if(x<thr)nonTonalFloor=lerp(nonTonalFloor,Math.max(nt,1e-9),Math.min(1,dt*2));mic.prev=Math.max(x,(mic.prev||0)*(window.GroupGate?GroupGate.adaptDecay():.6));mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,mic.peak-dt)};

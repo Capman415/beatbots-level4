@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.2";
+BB.VERSION = "v14.3.1";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -1078,9 +1078,12 @@ mic.update = (dt) => {
     if (tNow - mic.lastOn > 0.3) EG.learn(rms, EG.outAt(tNow, micLat()).peak);
   }
   const CD = window.ClapDet, x = CD && EG && EG.on ? EG.resid(tNow, rms, micLat()) : rms;
+  mic.meter = Math.max(0, (mic.meter || 0) - dt * 1.8);
+  const bleed = clamp(oR / 0.08, 0, 1), ntFrac = nonTonalEnergy.frac || 0, thrE = thr * (1 + 1.5 * bleed);
+  mic.bleed = bleed;
   const gap = CD ? CD.gapOk(mic, tNow, x) : tNow - mic.lastOn > 0.12 ? 1 : 0;
   const jmp = window.GroupGate ? GroupGate.adaptJump(x, softOn && BB.fastSoft && BB.t - BB.fastSoft < 0.5 ? GroupGate.ONSET_JUMP_FS : GroupGate.ONSET_JUMP) : 1.3;
-  if (x > thr && (CD && CD.jumpOk ? CD.jumpOk(mic, x, mic.prev || 0, jmp, tNow) : x > mic.prev * jmp) && gap) {
+  if (x > thrE && !(bleed > 0.15 && ntFrac < 0.5) && (CD && CD.jumpOk ? CD.jumpOk(mic, x, mic.prev || 0, jmp, tNow) : x > mic.prev * jmp) && gap) {
     const prevOn = mic.lastOn;
     mic.lastOn = tNow;
     if (window.GroupGate) GroupGate.adaptPeak(x);
@@ -1116,7 +1119,10 @@ mic.update = (dt) => {
       const lv = window.GroupGate ? (BB.dynMode && BB.t - BB.dynMode < 0.5 || GroupGate.notePeak(rms), GroupGate.lvl(rms, sens)) : lvl;
       {
         const on = { t: tNow, lvl: lv, rms, up: gap === 2 ? 1 : 0 };
-        if (!BB.MLP || !BB.MLP.on || BB.MLP.submit(on, tNow)) mic.onsets.push(on);
+        if (!BB.MLP || !BB.MLP.on || BB.MLP.submit(on, tNow)) {
+          mic.onsets.push(on);
+          mic.meter = Math.max(mic.meter || 0, lv);
+        }
       }
       mic.peak = lvl;
       mic.hold = 0.6;
@@ -1139,6 +1145,7 @@ mic.take = () => {
 BB.simClap = (t, lvl) => {
   mic.onsets.push({ t, lvl, sim: 1 });
   mic.level = lvl;
+  mic.meter = lvl;
   mic.peak = lvl;
   mic.hold = 0.4;
 };
@@ -1218,6 +1225,7 @@ function frame(ts) {
       if (BB.MLP && BB.MLP.on && mic.ok) BB.MLP.frame();
     }
     BB.scene.draw(ctx);
+    if (BB.R && BB.R.drawSneak && !BB.paused) BB.R.drawSneak();
     if (BB.MLP && BB.MLP.dbg) BB.MLP.draw(ctx);
   }
   BB.drawCelebrate && BB.drawCelebrate();

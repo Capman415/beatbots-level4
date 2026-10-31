@@ -422,6 +422,11 @@
       this.cnt = o.countIn !== false;
       this.read = !!o.read;
       this.base = this.cnt ? 4 : 0;
+      this.lc = 0;
+      this.lcT = -9;
+      this.qDone = 0;
+      this.oQuiet = o.onQuiet;
+      this.oSneak = o.onSneak;
       BB.mic.take();
       BB.groove && BB.groove.sync(this.t0, this.spb);
     }
@@ -438,7 +443,7 @@
     }
     // v12.2: 4-beat count-in between listen and clap
     update(dt) {
-      var _a, _b, _c, _d;
+      var _a, _b, _c, _d, _e;
       {
         const ph = this.phase();
         BB.listening = ph === "clap" ? 2 : ph === "ready" ? 1 : 0;
@@ -520,15 +525,28 @@
           if (dt > 0.05) S.slow++;
         }
       }
+      for (let j = ons.length - 1; j >= 0; j--) {
+        const o = ons[j];
+        if (!o.up && o.t >= T0 - 0.08 && o.t < T0 + this.L * spb + 0.08) {
+          this.lc++;
+          this.lcT = BB.t;
+          BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_a = o.v) != null ? _a : o.e, res: "clap_during_listen" });
+          ons.splice(j, 1);
+        }
+      }
+      if (!this.qDone && this.beatNow() - this.base >= this.L + 0.1) {
+        this.qDone = 1;
+        R.listenResult(this);
+      }
       for (const o of ons) {
         if (o.up) {
-          BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_a = o.v) != null ? _a : o.e, res: "rejected-as-double" });
+          BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_b = o.v) != null ? _b : o.e, res: "rejected-as-double" });
           continue;
         }
         BB.clapStats.heard++;
         if (BB.talking && BB.t < BB.talking.until && !BB.debug) {
           BB.clapStats.talk++;
-          BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_b = o.v) != null ? _b : o.e, res: "ignored-during-playback" });
+          BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_c = o.v) != null ? _c : o.e, res: "ignored-during-playback" });
           continue;
         }
         let best = -1, bd = 1;
@@ -551,12 +569,12 @@
                 ni = i;
               }
             }
-            BB.clapLog.add({ bpm: this.bpm, i: ni, exp: C + this.snd[ni].b * spb, on: o.t, peak: (_c = o.v) != null ? _c : o.e, res: this.got[ni] ? "rejected-as-double" : nd < 0 ? "early" : "late" });
+            BB.clapLog.add({ bpm: this.bpm, i: ni, exp: C + this.snd[ni].b * spb, on: o.t, peak: (_d = o.v) != null ? _d : o.e, res: this.got[ni] ? "rejected-as-double" : nd < 0 ? "early" : "late" });
           }
           if (gated && o.t > C) G.stray(o.t);
           continue;
         }
-        BB.clapLog.add({ bpm: this.bpm, i: best, exp: C + this.snd[best].b * spb, on: o.t, peak: (_d = o.v) != null ? _d : o.e, res: "hit" });
+        BB.clapLog.add({ bpm: this.bpm, i: best, exp: C + this.snd[best].b * spb, on: o.t, peak: (_e = o.v) != null ? _e : o.e, res: "hit" });
         (this.logged = this.logged || {})[best] = 1;
         const s = this.snd[best];
         if (gated && !o.sim && s.f === 0) {
@@ -612,6 +630,8 @@
     draw(cx, y) {
       const ph = this.phase(), yt = ph === "ready" || ph === "clap";
       if (yt) R.yourTurn(ph, this.beatNowV() - this.base - this.L, y);
+      if (ph === "listen" || ph === "count" && this.beatNowV() >= this.base - 1) R.listenBanner(this);
+      if (ph === "clap") R.turnFlash((this.beatNowV() - this.base - this.L - 4) * this.spb);
       if (yt) {
         ctx.save();
         ctx.translate(cx, y);
@@ -645,28 +665,246 @@
     }
   }
   R.ClapBack = ClapBack;
+  {
+    let mode = "on";
+    try {
+      mode = localStorage.getItem("bb_listenmode") || "on";
+    } catch (e) {
+    }
+    BB.listenMode = { get v() {
+      return mode;
+    }, cycle() {
+      mode = { on: "gentle", gentle: "off", off: "on" }[mode] || "on";
+      try {
+        localStorage.setItem("bb_listenmode", mode);
+      } catch (e) {
+      }
+    }, label() {
+      return { on: "ON", gentle: "GENTLE (K)", off: "OFF" }[mode];
+    } };
+  }
+  R.qStars = () => {
+    const S = BB.scene || {};
+    return S._qStars || 0;
+  };
+  R.listenResult = (cb) => {
+    const S = BB.scene;
+    if (!S || BB.listenMode.v === "off") return;
+    if (cb.lc === 0) {
+      S._qStars = (S._qStars || 0) + 1;
+      cb.oQuiet && cb.oQuiet();
+      BB.sfx.tink && BB.sfx.tink(void 0, 0.5);
+      BB.burst && BB.burst(W / 2 + 250, 232, 16, { col: COL.yellow, kind: "star", size: 15, speed: 500, g: 300 });
+      S._qFx = { t: BB.t, k: "star" };
+    } else if (cb.lc >= 2 && BB.listenMode.v === "on") {
+      if (S._qStars > 0) S._qStars--;
+      cb.oSneak && cb.oSneak();
+      S._sneak = { t: BB.t };
+      BB.sfx.glitch ? BB.sfx.glitch() : BB.sfx.zap();
+    }
+  };
+  R.listenBanner = (cb) => {
+    const t = BB.t, by = 118, bh = 150, bw = 980, bx = W / 2 - bw / 2, lc = cb.lc, sh = BB.t - cb.lcT < 0.35 ? Math.sin(BB.t * 90) * 10 * (1 - (BB.t - cb.lcT) / 0.35) : 0;
+    ctx.save();
+    ctx.translate(sh, 0);
+    BB.rrect(bx, by - bh / 2 + 8, bw, bh, 34, "rgba(0,0,0,.35)");
+    BB.rrect(bx, by - bh / 2, bw, bh, 34, "#183e3e", "#eee4cc", 8);
+    const ex = bx + 95, ey = by;
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.fillStyle = "#f3c9a2";
+    ctx.strokeStyle = "#5a3a24";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 34, 48, 0, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(2, -6, 18, Math.PI * 0.9, Math.PI * 2.2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(6, 10);
+    ctx.quadraticCurveTo(-6, 24, 4, 30);
+    ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      ctx.strokeStyle = "rgba(255,216,74,".concat(0.9 - 0.25 * i, ")");
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(-52, 0, 16 + i * 14 + t * 30 % 14, -0.7, 0.7);
+      ctx.stroke();
+    }
+    ctx.restore();
+    const hx = bx + bw - 95;
+    ctx.save();
+    ctx.translate(hx, by);
+    for (const s of [-1, 1]) {
+      ctx.save();
+      ctx.translate(s * 22, -8);
+      ctx.fillStyle = "#f3c9a2";
+      ctx.strokeStyle = "#5a3a24";
+      ctx.lineWidth = 4;
+      BB.rrect(-14, -34, 28, 52, 12, "#f3c9a2", "#5a3a24", 4);
+      ctx.restore();
+    }
+    ctx.strokeStyle = "#ffd84a";
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(0, 26);
+    ctx.lineTo(0, 54);
+    ctx.moveTo(-12, 42);
+    ctx.lineTo(0, 56);
+    ctx.lineTo(12, 42);
+    ctx.stroke();
+    ctx.restore();
+    BB.text("LISTEN", W / 2, by - 26, 72, "#ffd84a", { font: "Rammetto One", stroke: 10 });
+    ctx.restore();
+    const mw = 520, mx = W / 2 - mw / 2, my = by + 22, mh = 34, spb = cb.spb, f = Math.max(0, Math.min(1, (cb.beatNowV() - cb.base) / cb.L)), cr = lc > 0;
+    ctx.save();
+    ctx.translate(sh * 0.6, 0);
+    BB.rrect(mx - 6, my - 6, mw + 12, mh + 12, 22, "#0f2a2a", "#eee4cc", 3);
+    if (f > 0) BB.rrect(mx, my, Math.max(mh, mw * f), mh, 17, cr ? "#8aa39d" : BB.lg(my, my + mh, ["#9ff5b0", "#46b45a"]));
+    BB.text(cr ? lc >= 2 && BB.listenMode.v === "on" ? "TOO NOISY!" : "SHHH..." : cb.read ? "QUIET: read it silently" : "QUIET: hands down, ears on", W / 2, my + mh / 2 + 2, 22, "#fff", { stroke: 4 });
+    if (cr) {
+      ctx.strokeStyle = "#1e2b29";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      const n = Math.min(lc, 4);
+      for (let k = 0; k < n; k++) {
+        const cx = mx + 60 + k * 110;
+        ctx.moveTo(cx, my);
+        ctx.lineTo(cx + 12, my + 12);
+        ctx.lineTo(cx - 6, my + 22);
+        ctx.lineTo(cx + 8, my + mh);
+      }
+      ctx.stroke();
+    }
+    const q = R.qStars();
+    if (q > 0 || BB.scene._qStars != null) {
+      BB.star(mx + mw + 36, my + mh / 2, 16, COL.yellow, 0);
+      BB.text("x" + q, mx + mw + 70, my + mh / 2 + 2, 24, "#fff", { stroke: 4 });
+    }
+    ctx.restore();
+  };
+  R.turnFlash = (dt) => {
+    if (dt < 0 || dt > 0.45) return;
+    const k = 1 - dt / 0.45;
+    ctx.save();
+    ctx.globalAlpha = 0.55 * k;
+    ctx.fillStyle = "#fffbe0";
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  };
+  R.drawSneak = () => {
+    const S = BB.scene;
+    if (!S || !S._sneak) return;
+    const t = BB.t - S._sneak.t;
+    if (t > 2) {
+      S._sneak = null;
+      return;
+    }
+    const inn = Math.min(1, t / 0.35), out = t > 1.5 ? (t - 1.5) / 0.5 : 0, x = W - 140 + (1 - inn) * 260 + out * 320, y = H - 40;
+    ctx.save();
+    BB.staticJr(x, y, 150, { run: out > 0 ? 1 : 0.3, flip: out <= 0, rot: Math.sin(BB.t * 18) * 0.06, glitch: t < 0.4 ? 1 : 0 });
+    ctx.restore();
+    if (t < 1.5) {
+      const bx = x - 40, byy = y - 280;
+      BB.star(bx - 60 - (t > 0.6 ? (t - 0.6) * -40 : 0), byy + 60, 22, COL.yellow, 0);
+      R.bubble(x - 60, y - 300, "Hee hee! Mine!", "#8a2a6e");
+    }
+    if (t < 0.5) {
+      ctx.save();
+      ctx.globalAlpha = 0.25 * (1 - t / 0.5);
+      for (let i = 0; i < 40; i++) {
+        ctx.fillStyle = i % 2 ? "#fff" : "#7ef0ff";
+        ctx.fillRect(Math.random() * W, Math.random() * H, 40 + Math.random() * 120, 2);
+      }
+      ctx.restore();
+    }
+  };
   BB.clapStats = { heard: 0, hit: 0, exp: 0, talk: 0, stray: 0, peak: 0, slow: 0 };
   {
-    const KEY = "bb_claplog", CAP = 5e3;
-    let ev = [];
-    try {
-      ev = JSON.parse(localStorage.getItem(KEY) || "[]");
-    } catch (e) {
-      ev = [];
+    const KEY = "bb_claplog2", SKEY = "bb_clsess", CAP = 3e4, WARN = 27e3, T0 = 17e9, RES = ["hit", "miss", "early", "late", "too soft", "ignored-during-playback", "rejected-as-double", "clap_during_listen"];
+    const ld = (k, d) => {
+      try {
+        return JSON.parse(localStorage.getItem(k) || "null") || d;
+      } catch (e) {
+        return d;
+      }
+    };
+    let ev = ld(KEY, []), sess = ld(SKEY, []);
+    const pad = (n) => String(n).padStart(2, "0"), dstr = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+    const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"], CLS = ["K", "1", "2", "3", "4"];
+    const today = () => {
+      const w = (/* @__PURE__ */ new Date()).getDay();
+      return DAYS[w >= 1 && w <= 5 ? w - 1 : 0];
+    };
+    let tag = { day: today(), cls: (() => {
+      const c = ld("bb_sessclass", "K");
+      return CLS.includes(c) ? c : "K";
+    })() };
+    const curSess = () => {
+      const td = dstr(/* @__PURE__ */ new Date()), l = sess[sess.length - 1];
+      if (l && l.date === td && l.day === tag.day && l.cls === tag.cls) return sess.length - 1;
+      const d = /* @__PURE__ */ new Date();
+      sess.push({ id: td.replace(/-/g, "") + "-" + pad(d.getHours()) + pad(d.getMinutes()) + "-" + tag.day + "-C" + tag.cls, date: td, day: tag.day, cls: tag.cls });
+      dirty = 1;
+      return sess.length - 1;
+    };
+    BB.session = {
+      DAYS,
+      CLS,
+      get day() {
+        return tag.day;
+      },
+      get cls() {
+        return tag.cls;
+      },
+      cycleDay() {
+        tag.day = DAYS[(DAYS.indexOf(tag.day) + 1) % 5];
+      },
+      cycleClass() {
+        tag.cls = CLS[(CLS.indexOf(tag.cls) + 1) % 5];
+        try {
+          localStorage.setItem("bb_sessclass", JSON.stringify(tag.cls));
+        } catch (e) {
+        }
+      },
+      set(d, c) {
+        if (DAYS.includes(d)) tag.day = d;
+        if (CLS.includes(c)) tag.cls = c;
+      }
+    };
+    {
+      const old = ld("bb_claplog", null);
+      if (old && old.length) {
+        const si = sess.push({ id: "v14.2-untagged", date: "", day: "", cls: "" }) - 1;
+        for (const r of old) {
+          const t = Date.parse(r[0]);
+          ev.push([isNaN(t) ? 0 : Math.round(t / 100) - T0, si, r[1], r[2], r[3], r[4] === "" ? "" : Math.round(r[4] * 1e3), r[5] === "" ? "" : Math.round(r[5] * 1e3), r[7] === "" ? "" : Math.round(r[7] * 1e3), r[8] === "" ? "" : Math.round(r[8] * 1e3), Math.max(0, RES.indexOf(r[9])), r[10]]);
+        }
+        try {
+          localStorage.removeItem("bb_claplog");
+        } catch (e) {
+        }
+      }
     }
     let on = true;
     try {
       on = localStorage.getItem("bb_clog") !== "0";
     } catch (e) {
     }
-    let dirty = 0;
+    let dirty = 1, full = 0;
     const save = () => {
       if (!dirty) return;
       dirty = 0;
       try {
+        localStorage.setItem(SKEY, JSON.stringify(sess));
         localStorage.setItem(KEY, JSON.stringify(ev));
+        full = 0;
       } catch (e) {
-        ev.splice(0, ev.length >> 1);
+        full = 1;
+        ev.splice(0, ev.length >> 3);
       }
     };
     setInterval(save, 3e3);
@@ -674,7 +912,23 @@
       const t = ac.currentTime;
       return !!(BB.talking && BB.t < BB.talking.until || (BB.selfWins || []).some((w) => t >= w.t && t <= w.e + 0.05));
     };
-    const r3 = (v) => v == null ? "" : Math.round(v * 1e3) / 1e3;
+    const ms = (v) => v == null || v === "" || isNaN(v) ? "" : Math.round(v * 1e3);
+    const ROOMN = { MineRoom: "mine", SmasherRoom: "smasher", PackingRoom: "packing", LabelRoom: "label", DeliveryRoom: "delivery" };
+    const q = (v) => {
+      v = String(v);
+      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    };
+    const dl = (txt, name) => {
+      const b = new Blob([txt], { type: "text/csv" }), a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(a.href);
+        a.remove();
+      }, 500);
+    };
     BB.clapLog = {
       get on() {
         return on;
@@ -687,31 +941,68 @@
         }
       },
       count: () => ev.length,
+      CAP,
+      WARN,
+      nearCap: () => ev.length >= WARN || full,
+      bytes: () => {
+        try {
+          return ((localStorage.getItem(KEY) || "").length + (localStorage.getItem(SKEY) || "").length) * 2;
+        } catch (e) {
+          return 0;
+        }
+      },
       add(o) {
         var _a, _b, _c;
         if (!on) return;
-        const m = BB.mic;
-        ev.push([(/* @__PURE__ */ new Date()).toISOString(), BB.scene && BB.scene.constructor && BB.scene.constructor.name || "", o.bpm || "", (_a = o.i) != null ? _a : "", r3(o.exp), r3(o.on), o.exp != null && o.on != null ? Math.round((o.on - o.exp) * 1e3) : "", r3((_b = o.peak) != null ? _b : m.level), r3((_c = o.thr) != null ? _c : m.floor), o.res, playing() ? 1 : 0]);
+        const m = BB.mic || {}, n = BB.scene && BB.scene.constructor && BB.scene.constructor.name || "";
+        ev.push([Math.round(Date.now() / 100) - T0, curSess(), ROOMN[n] || n, o.bpm || "", (_a = o.i) != null ? _a : "", ms(o.exp), ms(o.on), ms((_b = o.peak) != null ? _b : m.level), ms((_c = o.thr) != null ? _c : m.floor), Math.max(0, RES.indexOf(o.res)), playing() ? 1 : 0]);
         if (ev.length > CAP) ev.splice(0, ev.length - CAP);
         dirty = 1;
       },
+      rows() {
+        return ev.map((r) => {
+          const S = sess[r[1]] || {}, e = r[5], o = r[6];
+          return { ts: r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", s: S, room: r[2], bpm: r[3], i: r[4], exp: e === "" ? "" : e / 1e3, on: o === "" ? "" : o / 1e3, off: e !== "" && o !== "" ? o - e : "", peak: r[7] === "" ? "" : r[7] / 1e3, thr: r[8] === "" ? "" : r[8] / 1e3, res: RES[r[9]], pl: r[10] };
+        });
+      },
       csv() {
-        return "timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing\n" + ev.map((r) => r.join(",")).join("\n");
+        return "session_id,date,day,class,timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing\n" + BB.clapLog.rows().map((r) => [r.s.id || "", r.s.date || "", r.s.day || "", r.s.cls || "", r.ts, r.room, r.bpm, r.i, r.exp, r.on, r.off, r.peak, r.thr, r.res, r.pl].map(q).join(",")).join("\n");
+      },
+      summaryCsv() {
+        const g = /* @__PURE__ */ new Map();
+        for (const r of BB.clapLog.rows()) {
+          const k = (r.s.id || "") + "|" + r.room;
+          let a = g.get(k);
+          if (!a) {
+            a = { s: r.s, room: r.room, c: {}, n: 0, offs: [], first: r.ts, last: r.ts };
+            g.set(k, a);
+          }
+          a.n++;
+          a.c[r.res] = (a.c[r.res] || 0) + 1;
+          a.last = r.ts;
+          if (r.res === "hit" && r.off !== "") a.offs.push(r.off);
+        }
+        const med = (x) => {
+          if (!x.length) return "";
+          x = x.slice().sort((a, b) => a - b);
+          return x[x.length >> 1];
+        };
+        return "session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms\n" + [...g.values()].map((a) => {
+          const c = (k) => a.c[k] || 0, h = c("hit"), den = h + c("miss") + c("too soft") + c("early") + c("late");
+          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs)].map(q).join(",");
+        }).join("\n");
       },
       download() {
         save();
-        const b = new Blob([BB.clapLog.csv()], { type: "text/csv" }), a = document.createElement("a");
-        a.href = URL.createObjectURL(b);
-        a.download = "beatbots_claplog_" + (/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace(/[:T]/g, "-") + ".csv";
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          URL.revokeObjectURL(a.href);
-          a.remove();
-        }, 500);
+        dl(BB.clapLog.csv(), "beatbots_claplog_" + dstr(/* @__PURE__ */ new Date()) + ".csv");
+      },
+      downloadSummary() {
+        save();
+        dl(BB.clapLog.summaryCsv(), "beatbots_claplog_summary_" + dstr(/* @__PURE__ */ new Date()) + ".csv");
       },
       clear() {
         ev = [];
+        sess = [];
         dirty = 1;
         save();
         if (BB.clapStats) for (const k in BB.clapStats) BB.clapStats[k] = 0;
@@ -782,7 +1073,7 @@
       ctx.fill();
     }
     const big = cl ? "YOUR TURN, ENGINEERS! CLAP!" : ["GET READY... 1", "GET READY... 2", "READY...", "GO!"][Math.max(0, Math.min(3, Math.floor(rb)))];
-    BB.text(big, W / 2, by + 4, (cl ? 84 : 90) * (1 + 0.04 * pu), "#fffdf2", { font: "Rammetto One", stroke: 12, maxW: W - 420 });
+    BB.text(big, W / 2, by + 4, (cl ? 84 : 90) * (1 + 0.04 * pu) * (cl ? 1 + 0.3 * Math.max(0, 1 - (rb - 4) * 2.5) : 1), "#fffdf2", { font: "Rammetto One", stroke: 12, maxW: W - 420 });
     for (const sd of [-1, 1]) {
       const rx = W / 2 + sd * (W / 2 - 130), ry = by + 70;
       ctx.save();

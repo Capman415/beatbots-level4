@@ -1179,6 +1179,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
   };
   BB.micMeter = (x, y, o = {}) => {
+    var _a;
     if (BB.listening && !o._in) {
       const sc = BB.listening === 2 ? 1.35 : 1.15, cx = x < W / 2 ? x : x + 330, cy = y > H / 2 ? y + 110 : y;
       ctx.save();
@@ -1200,7 +1201,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     BB.well(x, y, 330, 110, 26);
     BB.text("MIC", x + 50, y + 40, 32, COL.yellow, { stroke: 4 });
     BB.text(m.ok ? "ON" : { denied: "BLOCKED", nodevice: "NONE", lost: "LOST", error: "ERROR" }[m.state] || "OFF", x + 50, y + 78, m.ok ? 22 : 16, m.ok ? COL.green : "#ff9c8a");
-    const n = 10, lvl = m.level;
+    const n = 10, lvl = (_a = m.meter) != null ? _a : m.level;
     for (let i = 0; i < n; i++) {
       const on = i < lvl * n, bx = x + 95 + i * 20;
       let c = on ? i < 4 ? "#6ee678" : i < 7 ? "#ffe066" : "#ff7b5c" : "#3c5050";
@@ -1297,17 +1298,17 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     BB.text("Say it:", x + 100, y + h - 300, 34, COL.yellow, { align: "left" });
     BB.text(howTo.words, x + 220, y + h - 300, 34, "#fff", { align: "left", maxW: 1180 });
     {
-      const m = BB.mic, wx = x + w - 560, wy = y + h - 230, sx = wx + 30, sy = wy + 56;
-      BB.well(wx, wy, 520, 180, 26);
-      BB.text("Clap sensitivity", wx + 260, wy + 32, 30, COL.yellow, { stroke: 4 });
+      const m = BB.mic, wx = x + 960, wy = y + h - 230, sx = wx + 20, sy = wy + 56;
+      BB.well(wx, wy, 480, 180, 26);
+      BB.text("Clap sensitivity", wx + 240, wy + 32, 30, COL.yellow, { stroke: 4 });
       BB.button(sx, sy + 8, 80, 80, "\u2212", { size: 46, id: "psens-", onClick: () => BB.setSens(m.sensIdx - 1) });
       for (let i = 0; i < 6; i++) {
         const on = i <= m.sensIdx;
-        BB.rrect(sx + 108 + i * 40, sy + 70 - i * 8, 30, 18 + i * 8, 6, on ? i < 2 ? "#6ee678" : i < 4 ? "#ffe066" : "#ff9c5c" : "#2f4242", "rgba(0,0,0,.35)", 2);
+        BB.rrect(sx + 104 + i * 40, sy + 70 - i * 8, 30, 18 + i * 8, 6, on ? i < 2 ? "#6ee678" : i < 4 ? "#ffe066" : "#ff9c5c" : "#2f4242", "rgba(0,0,0,.35)", 2);
       }
-      BB.button(sx + 380, sy + 8, 80, 80, "+", { size: 46, id: "psens+", onClick: () => BB.setSens(m.sensIdx + 1) });
+      BB.button(sx + 360, sy + 8, 80, 80, "+", { size: 46, id: "psens+", onClick: () => BB.setSens(m.sensIdx + 1) });
     }
-    BB.button(x + 60, y + h - 200, 380, 120, "ROOM SELECT", { size: 40, id: "roomsel", onClick: () => {
+    BB.button(x + 60, y + h - 200, 340, 120, "ROOM SELECT", { size: 38, id: "roomsel", onClick: () => {
       BB.paused = false;
       BB.ac.resume().catch(() => {
       });
@@ -1322,15 +1323,21 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         BB.text("CLAP READOUT  counted " + S.hit + "/" + S.exp + "  \u2022  heard " + S.heard + "  \u2022  off-beat " + S.stray + "  \u2022  blocked by voice " + S.talk + "  \u2022  mic peak " + Math.round(S.peak * 100) + "%  \u2022  slow frames " + S.slow + "  \u2022  mic " + (m.ok ? "on" : m.state) + (window.C96 && C96.active && C96.active() ? " (clap96)" : ""), W / 2, y + h - 38, 22, "#cfe8e2", { maxW: w - 80 });
       }
     }
+    if (BB.listenMode) BB.button(x + 40, y + 24, 290, 42, "LISTEN RULE: " + BB.listenMode.label(), { size: 19, id: "lrule", onClick: () => BB.listenMode.cycle() });
     if (BB.clapLog) {
-      const L = BB.clapLog, bx = x + w - 330, bw = 290;
-      BB.button(bx, y + 30, bw, 56, "CLAP LOG: " + (L.on ? "ON" : "OFF") + " (" + L.count() + ")", { size: 22, id: "clog", onClick: () => {
+      const L = BB.clapLog, bx = x + w - 330, bw = 290, warn = L.nearCap(), tw = (bw - 12) / 3;
+      BB.button(bx, y + 24, bw, 42, (warn ? "NEARLY FULL! " : "CLAP LOG: " + (L.on ? "ON " : "OFF ")) + L.count() + "/" + L.CAP, { style: warn ? "cream" : void 0, size: 19, id: "clog", onClick: () => {
         L.on = !L.on;
       } });
-      BB.button(bx, y + 92, bw, 56, "Download clap log (CSV)", { size: 20, id: "clogdl", onClick: () => L.download() });
-      BB.button(bx, y + 154, bw, 46, "Clear log", { size: 20, id: "clogclr", onClick: () => L.clear() });
+      BB.button(bx, y + 72, bw, 36, "Download clap log (CSV)", { size: 17, id: "clogdl", onClick: () => L.download() });
+      BB.button(bx, y + 114, bw, 36, "Download summary (CSV)", { size: 17, id: "clogsum", onClick: () => L.downloadSummary() });
+      BB.button(bx, y + 156, tw, 36, "DAY " + BB.session.day, { size: 16, id: "psday", onClick: () => BB.session.cycleDay() });
+      BB.button(bx + tw + 6, y + 156, tw, 36, "CLASS " + BB.session.cls, { size: 16, id: "pscls", onClick: () => BB.session.cycleClass() });
+      BB.button(bx + 2 * tw + 12, y + 156, tw, 36, "Clear", { size: 16, id: "clogclr", onClick: () => {
+        if (window.confirm("Clear the clap log? Download it first.")) L.clear();
+      } });
     }
-    BB.button(W / 2 - 220, y + h - 200, 440, 120, "RESUME", { style: "green", size: 56, id: "resume", onClick: onResume });
+    BB.button(x + 480, y + h - 200, 400, 120, "RESUME", { style: "green", size: 54, id: "resume", onClick: onResume });
   };
   let rt = 0, rl = performance.now();
   BB.realT = () => {

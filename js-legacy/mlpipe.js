@@ -194,7 +194,7 @@
       if (r.ref) this.st.ref++;
       if (p >= (r.ref ? ClapNet.TH_REF : ClapNet.TH)) {
         r.o.ml = +p.toFixed(2);
-        BB.mic.onsets.push(r.o);
+        BB.mic.onsets.push(r.o), BB.mic && (BB.mic.meter = Math.max(BB.mic.meter || 0, r.o.lvl || 0.6));
         this.st.acc++;
         this.note(r.o, "acc", p);
       } else {
@@ -211,7 +211,7 @@
       this.pend = this.pend.filter(function(r) {
         if (r.done) return false;
         if (all || BB.t - r.t > 0.45) {
-          BB.mic.onsets.push(r.o);
+          BB.mic.onsets.push(r.o), BB.mic && (BB.mic.meter = Math.max(BB.mic.meter || 0, r.o.lvl || 0.6));
           self.st.fail++;
           self.st.acc++;
           self.note(r.o, "timeout");

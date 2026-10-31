@@ -638,7 +638,11 @@
       BB.burst(BOX_X, BELT_Y - BOX_H * 0.3, 18, { cols: ["#ffe066", "#fff", "#d24a3c"], kind: "star", size: 12, speed: 500, g: 500 });
       if (this.clapBack) {
         this.state = "clap";
-        this.cb = new R.ClapBack(this.ans, { bpm: 100, onDone: () => setTimeout(() => BB.scene === this && this.ship(), 500) });
+        this.cb = new R.ClapBack(this.ans, { bpm: 100, onQuiet: () => {
+          this.score++;
+        }, onSneak: () => {
+          this.score = Math.max(0, this.score - 1);
+        }, onDone: () => setTimeout(() => BB.scene === this && this.ship(), 500) });
         BB.say("lb_clap", { overlap: true });
       } else setTimeout(() => BB.scene === this && this.ship(), 500);
     }
