@@ -120,6 +120,7 @@
     C4("stomp"),
     JP(),
     A_("CLAP CLAP CLAP CLAP!", [[0, "L"], [1, "R"], [2, "rain"], [3, "stomp"]]),
+    ...[0, 1, 2, 3].map((j) => KB("CHARGE UP! Sing AHHH and go HIGHER!", "ready", [], { voice: 1, vi: j, bpm: 100 })),
     ...PWR(),
     PH(6, "AIR JUGGLE PARTY!"),
     ...[
@@ -190,6 +191,10 @@
     });
     return i;
   };
+  {
+    const j = KO_BARS.findIndex((b) => b.phase === 6);
+    for (let i = j - 1; i >= 0 && KO_BARS[i].pwr; i--) KO_BARS[i].beam = 1;
+  }
   BB.KO_BARS = KO_BARS;
   KO_BARS.forEach((b) => {
     b.turn = b.mode ? "jr" : b.atk || b.pwr || b.clear ? "us" : "";
@@ -530,6 +535,7 @@
       this.atk = BB.t + [5, 3.6, 2.6][p] + Math.random() * 2;
     }
     update(dt) {
+      this.voiceTick(dt);
       if (BB.keys.includes("p")) {
         this.pause();
         return;
@@ -635,6 +641,7 @@
           if (t >= hk && !this["h" + i]) {
             this["h" + i] = 1;
             if (kind === "big") {
+              this.impact(3, 0);
               BB.shake(this.deluxe ? 44 : 30);
               if (this.deluxe) for (let q = 0; q < 3; q++) BB.burst(W * (0.25 + q * 0.25), H * 0.3, 40, { cols: ["#ff5a5a", "#ffb020", "#ffe066", "#6ee678", "#5ac8fa", "#b07aff"], kind: "star", size: 16, speed: 1200, g: 400, life: 2 });
               BB.burst(JR.x, JR.y - 60, 40, { cols: ["#f4ecd8", "#ff8adf", "#6ee678"], kind: "spark", size: 16, speed: 1300, g: 450, life: 2 });
@@ -652,7 +659,8 @@
             } else {
               if (kind === "L" || kind === "R") {
                 this.has = (this.has || []).filter((p) => BB.t - p.t < 1);
-                if (Math.random() < 0.5) this.has.push({ t: BB.t, w: ["HA!", "HEE HEE!", "HA HA!", "LOL!"][Math.floor(Math.random() * 4)], x: LCH.x + (Math.random() * 160 - 40), y: LCH.y - 300 - Math.random() * 60, c: ["#6ee678", "#ffe066", "#7ec8ff"][Math.floor(Math.random() * 3)] });
+                const _sb = KO_BARS[barAt(BB.t - this.st)], _sc = _sb && this.sceneOf(_sb);
+                if (_sc !== "beam" && _sc !== "aura" && Math.random() < 0.15) this.has.push({ t: BB.t, w: ["HA!", "HEE HEE!", "HA HA!", "LOL!"][Math.floor(Math.random() * 4)], x: LCH.x + (Math.random() * 160 - 40), y: LCH.y - 300 - Math.random() * 60, c: ["#6ee678", "#ffe066", "#7ec8ff"][Math.floor(Math.random() * 3)] });
                 if (BB.t - (this.lastLaugh || -9) > 4.5) {
                   this.lastLaugh = BB.t;
                   BB.say("bb_laugh", { overlap: true });
@@ -672,11 +680,11 @@
                   BB.sfx.bonk && BB.sfx.bonk();
                 } else if (!g || gv > 2.6) {
                   const bt = 60 / (240 / (BL[barAt(BB.t - this.st)] || 2.4));
-                  if ((this.hitN === 14 || this.hitN === 38) && (this.mwN || 0) < 2) {
+                  if (this.hitN === 38 && (this.mwN || 0) < 1) {
                     this.mwN = (this.mwN || 0) + 1;
                     this.gag = { kind: "mw", t: BB.t, dur: 4 * (BL[barAt(BB.t - this.st)] || 2.4) / 4, beat: (BL[barAt(BB.t - this.st)] || 2.4) / 4 };
                     BB.say("bb_heehee", { overlap: true });
-                  } else if ((this.n67 || 0) < 2 && this.hitN - (this.gagLast || -9) > 4 && Math.random() < 1 / 10) {
+                  } else if (!KO_HITS.some((h) => KO_ATK(h[1]) && Math.abs(h[0] - (BB.t - this.st)) < 2.2) && !(KO_BARS[barAt(BB.t - this.st)] || {}).chant && (KO_BARS[barAt(BB.t - this.st)] || {}).atk && (this.n67 || 0) < 1 && this.hitN - (this.gagLast || -9) > 4 && Math.random() < 1 / 10) {
                     this.n67 = (this.n67 || 0) + 1;
                     this.gagLast = this.hitN;
                     this.gag = { kind: "67", t: BB.t, dur: 1.6 };
@@ -686,6 +694,7 @@
                 }
               }
               BB.shake(kind === "stomp" ? 12 : 7);
+              this.impact(kind === "stomp" || kind === "chunk" ? 2 : 1, kind === "L" ? -1 : kind === "R" ? 1 : 0);
               const sx = JR.x + (kind === "L" ? -90 : kind === "R" ? 90 : 0);
               BB.burst(sx, JR.y - 60, 16, { cols: ["#e2b272", "#ffe066", "#fff"], kind: "star", size: 12, speed: 650, g: 300 });
               BB.burst(sx, JR.y - 60, 10, { cols: ["#f4ecd8", "#efe3c8"], kind: "spark", size: 14, speed: 500, g: 500 });
@@ -750,7 +759,8 @@
             S.pop && S.pop(A(h.t + 0.15));
           } else if (h.armed === 1 && t >= h.t) {
             h.armed = 2;
-            BB.shake(34);
+            BB.shake(30);
+            this.impact(3, 0);
             BB.burst(JR.x, JR.y - 80, 50, { cols: ["#ffe066", "#fff", "#ff8adf", "#7ef0ff"], kind: "star", size: 16, speed: 1300, g: 400 });
           }
           if (b && b.pwr === 2) {
@@ -1034,6 +1044,15 @@
       const sd = kd === "L" ? 1 : kd === "R" || kd === "push" ? -1 : kd === "chunk" ? (Math.sin(since * 40) > 0 ? 1 : -1) * Math.exp(-since * 3) : 0;
       let jx = JR.x + sd * 110 * Math.exp(-since * 6) * Math.cos(since * 30), jy = JR.y, rot = sd * 0.28 * Math.exp(-since * 6), sq = 0;
       {
+        const nx = KO_HITS.find((h) => h[0] > k && h[0] - k < 0.16 && (h[1] === "L" || h[1] === "R"));
+        if (nx) {
+          const a = 1 - (nx[0] - k) / 0.16, e = a * a * (3 - 2 * a);
+          jx += (nx[1] === "L" ? -1 : 1) * -28 * e;
+          rot += (nx[1] === "L" ? -1 : 1) * -0.06 * e;
+          sq = Math.max(sq, -0.06 * e);
+        }
+      }
+      {
         const g = this.gag, gv = g ? BB.t - g.t : 9;
         if (g && g.kind === "mw" && gv < g.dur + 1.2) {
           const st = Math.min(gv, g.dur) / g.beat, f = Math.floor(st) + Math.min(1, st % 1 * 2.5);
@@ -1129,7 +1148,7 @@
           ctx.restore();
         }
       }
-      if (bar && bar.tp) {
+      if (bar && bar.tp && !bar.beam) {
         const tp = bar.tp, u = (k - BS[bi]) / BL[bi];
         const dlx = this.deluxe && tp.w === "PRESTISSIMO";
         if (bar.pwr === 1) {
@@ -1313,7 +1332,7 @@
       }
       this.drawHero(k, t);
       if (bar && bar.pwr || bar && bar.clear && k - BS[bi] < 0.4) {
-        const x = LCH.x - 175, y = LCH.y - 330, pw = clamp(this.pw || 0, 0, 1);
+        const x = LCH.x - 175, y = LCH.y - 330, pw = clamp((KO_BARS[barAt(k)] || {}).voice ? (this.vf || 0) / 3 : this.pw || 0, 0, 1);
         BB.rrect(x - 30, y - 30, 60, 240, 20, "#1e2228", "#fff", 4);
         BB.rrect(x - 22, y - 22 + 224 * (1 - pw), 44, 224 * pw, 14, this.deluxe && bar.tp && bar.tp.w === "PRESTISSIMO" ? BB.lg(y, y + 210, ["#ff5a5a", "#ffb020", "#ffe066", "#6ee678", "#5ac8fa", "#b07aff"]) : BB.lg(y, y + 210, ["#fff38a", "#ffb020"]), null, 0);
         BB.text("POWER", x, y + 240, 28, COL.yellow, { stroke: 4 });
@@ -1340,6 +1359,7 @@
         if (hpf < 0.2 && !gone) rot += Math.sin(t * 3) * 0.06;
       }
       if (gone && k < KO_LAUNCH) this.drawTransform(k - KO_BIG, t);
+      this.jp = { x: jx, y: jy };
       if (jy > -400 && jx < W + 400 && !(k >= KO_BIG + 0.9)) {
         ctx.save();
         ctx.translate(jx, jy);
@@ -2159,6 +2179,738 @@
       ctx.restore();
     }
     /* v14.3.4 CAMERA: gentle action-movie moves (zoom always >= tilt cover, max 1.14x, max 2 deg tilt, eased; no shake added here) */
+    /* v14.3.5 SPECTACLE: one call per landed hit. lvl 1 slap, 2 big, 3 hero/finisher. Layered SFX, cardboard shards + shock rings, rim flash, hit-stop (lvl>=2) */
+    impact(lvl, dir) {
+      const S = BB.sfx;
+      S.pop && S.pop();
+      if (lvl >= 2) {
+        S.clunk && S.clunk();
+        S.pebble && S.pebble();
+      }
+      if (lvl >= 3) {
+        S.boom && S.boom();
+        S.tink && S.tink();
+      }
+      this.fx2 = (this.fx2 || []).filter((f) => BB.t - f.t < 1.2);
+      if (this.fx2.length > 90) this.fx2.splice(0, 30);
+      const x = JR.x + dir * 90, y = JR.y - 60;
+      for (let i = 0; i < 4 + lvl * 4; i++) {
+        const a = Math.random() * Math.PI * 2, sp = 300 + Math.random() * 500 * lvl;
+        this.fx2.push({ k: "shard", t: BB.t, x, y, vx: Math.cos(a) * sp - dir * 200, vy: Math.sin(a) * sp - 300, r: Math.random() * 6, vr: (Math.random() - 0.5) * 14, w: 14 + Math.random() * 16, c: ["#e2b272", "#c9935a", "#f4ecd8"][i % 3] });
+      }
+      this.fx2.push({ k: "ring", t: BB.t, x, y, lvl });
+      this.rim = { t: BB.t, lvl, dir };
+      if (lvl >= 2) this.hs = { until: BB.t + (lvl >= 3 ? 0.12 : 0.07), k: BB.t - this.st };
+    }
+    drawFx2() {
+      const now = BB.t, dt = BB.dt || 0.016;
+      for (const f of this.fx2 || []) {
+        const v = now - f.t;
+        if (v > 1.2) continue;
+        if (f.k === "shard") {
+          f.vy += 1400 * dt;
+          f.x += f.vx * dt;
+          f.y += f.vy * dt;
+          f.r += f.vr * dt;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, 1 - v / 1.1);
+          ctx.translate(f.x, f.y);
+          ctx.rotate(f.r);
+          ctx.fillStyle = f.c;
+          ctx.strokeStyle = "#5a3a1e";
+          ctx.lineWidth = 2;
+          ctx.fillRect(-f.w / 2, -f.w / 3, f.w, f.w * 0.66);
+          ctx.strokeRect(-f.w / 2, -f.w / 3, f.w, f.w * 0.66);
+          ctx.restore();
+        } else if (f.k === "ring" && v < 0.45) {
+          const e = 1 - Math.pow(1 - v / 0.45, 3);
+          ctx.save();
+          ctx.globalAlpha = (1 - v / 0.45) * 0.8;
+          ctx.strokeStyle = "#fff6d0";
+          ctx.lineWidth = 10 * (1 - e) + 2;
+          ctx.beginPath();
+          ctx.ellipse(f.x, f.y, 40 + e * (120 + f.lvl * 70), 30 + e * (80 + f.lvl * 45), 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+    drawRim() {
+      const r = this.rim;
+      if (!r) return;
+      const v = BB.t - r.t;
+      if (v > 0.35) return;
+      const a = (1 - v / 0.35) * (0.25 + 0.12 * r.lvl);
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const g = ctx.createRadialGradient(JR.x + r.dir * 60, JR.y - 80, 40, JR.x, JR.y - 80, 380);
+      g.addColorStop(0, "rgba(255,240,190," + a + ")");
+      g.addColorStop(1, "rgba(255,240,190,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(JR.x - 420, JR.y - 480, 840, 840);
+      ctx.restore();
+      if (r.lvl >= 3 && v < 0.08) {
+        ctx.save();
+        ctx.globalAlpha = 0.35 * (1 - v / 0.08);
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+      }
+    }
+    drawSplit(k) {
+      if (!(this.state === "intro" && this.move)) return;
+      const v = k - 14;
+      if (v < 1.6 || v > 3.6) return;
+      const E = (x) => {
+        x = clamp(x, 0, 1);
+        return 1 - Math.pow(1 - x, 3);
+      }, a = E((v - 1.6) / 0.35) * (1 - E((v - 3.25) / 0.35));
+      if (a <= 0) return;
+      const c = this.snap || (this.snap = document.createElement("canvas"));
+      c.width = W;
+      c.height = H;
+      c.getContext("2d").drawImage(ctx.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height, 0, 0, W, H);
+      const sh = (1 - a) * W * 0.5, zz = 1.7;
+      ctx.save();
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(-sh, 0);
+      ctx.lineTo(W * 0.56 - sh, 0);
+      ctx.lineTo(W * 0.44 - sh, H);
+      ctx.lineTo(-sh, H);
+      ctx.clip();
+      ctx.drawImage(c, LCH.x - W / zz * 0.3, LCH.y - H / zz * 0.62, W / zz, H / zz, -sh, 0, W, H);
+      ctx.fillStyle = "rgba(126,240,255,.10)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(W * 0.56 + sh, 0);
+      ctx.lineTo(W + sh, 0);
+      ctx.lineTo(W + sh, H);
+      ctx.lineTo(W * 0.44 + sh, H);
+      ctx.clip();
+      ctx.drawImage(c, JR.x - W / zz * 0.5, JR.y - H / zz * 0.6, W / zz, H / zz, sh, 0, W, H);
+      ctx.fillStyle = "rgba(255,138,223,.10)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = "#eee4cc";
+      ctx.lineWidth = 14;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.56, -10);
+      ctx.lineTo(W * 0.44, H + 10);
+      ctx.stroke();
+      ctx.strokeStyle = "#1d3b38";
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      BB.text("VS", W / 2, H / 2, 120, "#ffd84a", { font: "Rammetto One", stroke: 10 });
+      ctx.restore();
+    }
+    /* v14.3.5 ANIME SET-PIECES (see preview/boss_storyboard.md). sceneOf: which set-piece a bar belongs to */
+    sceneOf(b) {
+      if (!b) return "";
+      if (b.voice) return "aura";
+      if (b.beam) return "beam";
+      if (b.pwr) return "aura";
+      if (b.read) return "air";
+      if (b.clear) return "knock";
+      if (b.atk) return "rush";
+      if (b.mode) return "dodge";
+      return "";
+    }
+    drawSceneBack(k, t) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
+      const bi = barAt(k), b = KO_BARS[bi], sc = this.sceneOf(b), u = b ? (k - BS[bi]) / BL[bi] : 0, SP = { x: LCH.x - 175, y: LCH.y - 60 };
+      const inA = clamp((k - BS[bi]) / 0.35, 0, 1);
+      if (sc === "air") {
+        const first = !KO_BARS[bi - 1] || !KO_BARS[bi - 1].read, a = first ? inA : 1;
+        ctx.save();
+        ctx.globalAlpha = a;
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, "#3b6fb6");
+        g.addColorStop(0.6, "#8fc3ea");
+        g.addColorStop(1, "#d9ecf7");
+        ctx.fillStyle = g;
+        ctx.fillRect(-60, -60, W + 120, H + 120);
+        ctx.fillStyle = "rgba(255,255,255,.85)";
+        for (let i = 0; i < 7; i++) {
+          const y = (i * 170 + k * 420) % (H + 300) - 150, x = i * 397 % W;
+          ctx.beginPath();
+          ctx.ellipse(x, y, 160, 46, 0, 0, Math.PI * 2);
+          ctx.ellipse(x + 90, y - 20, 110, 40, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = "rgba(255,255,255,.5)";
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 14; i++) {
+          const x = (i * 139 + k * 60) % W, y = (i * 263 + k * 1600) % (H + 400) - 200;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, y + 160);
+          ctx.stroke();
+        }
+        ctx.restore();
+        return;
+      }
+      if (sc === "aura" || sc === "beam") {
+        const p = clamp((KO_BARS[barAt(k)] || {}).voice ? (this.vf || 0) / 3 : this.pw || 0, 0, 1), a = sc === "beam" ? 0.45 : 0.35 + 0.25 * p;
+        ctx.save();
+        ctx.globalAlpha = a * inA;
+        ctx.fillStyle = "#0a0c18";
+        ctx.fillRect(-60, -60, W + 120, H + 120);
+        ctx.restore();
+        if (sc === "aura") {
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          const R0 = 150 + p * 170;
+          for (let L = 0; L < 3; L++) {
+            ctx.beginPath();
+            for (let i = 0; i <= 36; i++) {
+              const an = i / 36 * Math.PI * 2, fl = Math.max(0, -Math.sin(an)) * (0.6 + 0.4 * Math.sin(t * 14 + i * 1.7 + L)) * (80 + p * 160), r = R0 * (1 - L * 0.22) + fl;
+              const x = SP.x + Math.cos(an) * r * 0.75, y = SP.y + Math.sin(an) * r;
+              i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = ["rgba(255,190,40,.18)", "rgba(255,220,90,.22)", "rgba(255,250,200,.28)"][L];
+            ctx.fill();
+          }
+          const gg = ctx.createRadialGradient(SP.x, SP.y, 20, SP.x, SP.y, 700);
+          gg.addColorStop(0, "rgba(255,220,120," + (0.15 + 0.3 * p) + ")");
+          gg.addColorStop(1, "rgba(255,220,120,0)");
+          ctx.fillStyle = gg;
+          ctx.fillRect(-60, -60, W + 120, H + 120);
+          ctx.restore();
+          for (let i = 0; i < 7; i++) {
+            const ph = (k * 0.5 + i / 7) % 1, x = SP.x - 260 + i * 173 % 560, y = LCH.y + 140 - ph * (500 + p * 300);
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, (1 - ph) * 2) * inA;
+            ctx.translate(x, y);
+            ctx.rotate(t * 2 + i);
+            ctx.fillStyle = "#6b5a4a";
+            ctx.strokeStyle = "#2e2620";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-18, -10);
+            ctx.lineTo(4, -20);
+            ctx.lineTo(20, -2);
+            ctx.lineTo(8, 16);
+            ctx.lineTo(-14, 12);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          }
+          ctx.save();
+          ctx.strokeStyle = "#1a1410";
+          ctx.lineWidth = 5;
+          const len = p * 900;
+          for (const d of [1, -1, 0.5]) {
+            ctx.beginPath();
+            let x = SP.x, y = LCH.y + 150;
+            ctx.moveTo(x, y);
+            for (let s = 0; s < len; s += 60) {
+              x += 60 * Math.sign(d || 1) * (d === 0.5 ? 1 : 1) * (d < 0 ? -0.5 : 1);
+              y += Math.sin(s * 0.07 + d * 3) * 14 + (d === 0.5 ? 6 : 0);
+              ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        ctx.save();
+        ctx.globalAlpha = 0.25 * inA;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 40; i++) {
+          const an = i / 40 * Math.PI * 2 + t * 0.3, r1 = 380 + (i * 97 + k * 900) % 500;
+          ctx.beginPath();
+          ctx.moveTo(SP.x + Math.cos(an) * r1, SP.y + Math.sin(an) * r1);
+          ctx.lineTo(SP.x + Math.cos(an) * (r1 + 220), SP.y + Math.sin(an) * (r1 + 220));
+          ctx.stroke();
+        }
+        ctx.restore();
+        return;
+      }
+      if (sc === "rush" || sc === "knock") {
+        ctx.save();
+        ctx.globalAlpha = 0.18 * inA;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 46; i++) {
+          const an = i / 46 * Math.PI * 2 + i % 3 * 0.05, r1 = 300 + (i * 131 + Math.floor(k * 12) * 57) % 260;
+          ctx.beginPath();
+          ctx.moveTo(JR.x + Math.cos(an) * r1, JR.y - 80 + Math.sin(an) * r1);
+          ctx.lineTo(JR.x + Math.cos(an) * 1500, JR.y - 80 + Math.sin(an) * 1500);
+          ctx.stroke();
+        }
+        ctx.restore();
+        return;
+      }
+      if (sc === "dodge") {
+        ctx.save();
+        ctx.globalAlpha = 0.16 * inA;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 22; i++) {
+          const y = i * 53 % H, x = W - (i * 311 + k * 2600) % (W + 600);
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 380, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+    drawSceneFront(k, t) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
+      const bi = barAt(k), b = KO_BARS[bi], sc = this.sceneOf(b), SP = { x: LCH.x - 175, y: LCH.y - 60 };
+      if (sc === "rush") {
+        const v = k - BS[bi];
+        if (v < 0.45) {
+          const e = 1 - Math.pow(1 - v / 0.45, 3);
+          ctx.save();
+          for (let i = 0; i < 3; i++) {
+            const f = clamp(e - i * 0.18, 0, 1);
+            ctx.globalAlpha = (0.45 - i * 0.12) * (1 - e * 0.6);
+            BB.sprite("sprocket", lerp(SP.x, JR.x - 330, f), LCH.y + 100 - Math.sin(f * Math.PI) * 60, 330, {});
+          }
+          ctx.globalAlpha = 0.7 * (1 - e);
+          ctx.strokeStyle = "#fff6c8";
+          ctx.lineWidth = 18 * (1 - e) + 2;
+          ctx.beginPath();
+          ctx.moveTo(SP.x, SP.y);
+          ctx.lineTo(lerp(SP.x, JR.x - 200, e), SP.y - 20);
+          ctx.stroke();
+          ctx.restore();
+        }
+        for (const [hk, kind] of KO_HITS) {
+          const d = k - hk;
+          if (d < 0 || d > 0.18 || kind !== "L" && kind !== "R") continue;
+          const s = kind === "L" ? -1 : 1;
+          ctx.save();
+          ctx.globalAlpha = 1 - d / 0.18;
+          ctx.strokeStyle = "#ffe066";
+          ctx.lineWidth = 10;
+          for (let j = 0; j < 3; j++) {
+            ctx.beginPath();
+            ctx.arc(JR.x + s * 30, JR.y - 80 + j * 30 - 30, 120 + j * 20, s > 0 ? -0.6 : Math.PI - 0.6, s > 0 ? 0.6 : Math.PI + 0.6);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
+      if (sc === "dodge") {
+        const v = (k - BS[bi]) / BL[bi];
+        if (v > 0.5 && v < 0.8) {
+          const e = (v - 0.5) / 0.3;
+          ctx.save();
+          ctx.globalAlpha = 0.35 * (1 - e);
+          BB.sprite("sprocket", SP.x + 175 - 60 * e, LCH.y + 100, 330, {});
+          ctx.restore();
+        }
+      }
+      if (sc === "beam") {
+        const p = b.pwr === 2 ? clamp(this.pw || 0, 0, 1.2) : 0, v = k - BS[bi], sx = SP.x + 120, sy = SP.y - 30, jx = JR.x - 130, jy = JR.y - 90, cx = lerp(lerp(sx, jx, 0.42), jx - 40, Math.min(1, p)), cy = lerp(sy, jy, (cx - sx) / (jx - sx)), wob = Math.sin(t * 40) * 4;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const beam = (x0, y0, x1, y1, c1, c2, w) => {
+          ctx.lineCap = "round";
+          ctx.strokeStyle = c1;
+          ctx.lineWidth = w + wob;
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+          ctx.strokeStyle = c2;
+          ctx.lineWidth = w * 0.45;
+          ctx.stroke();
+        };
+        beam(sx, sy, cx, cy, "rgba(255,200,60,.75)", "rgba(255,255,230,.95)", 70 + p * 40);
+        beam(jx, jy, cx, cy, "rgba(90,220,255,.7)", "rgba(230,255,255,.9)", 62);
+        const r = 90 + Math.sin(t * 30) * 10 + p * 40, g = ctx.createRadialGradient(cx, cy, 10, cx, cy, r * 2);
+        g.addColorStop(0, "rgba(255,255,255,1)");
+        g.addColorStop(0.4, "rgba(255,230,140,.7)");
+        g.addColorStop(1, "rgba(255,230,140,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.6)";
+        ctx.lineWidth = 4;
+        for (let i = 0; i < 10; i++) {
+          const an = t * 9 + i * 0.63;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(an) * r, cy + Math.sin(an) * r);
+          ctx.lineTo(cx + Math.cos(an) * (r + 90 + 40 * Math.sin(t * 20 + i)), cy + Math.sin(an) * (r + 90));
+          ctx.stroke();
+        }
+        ctx.restore();
+        if (b.pwr === 2) BB.text(p >= 1 ? "BEAM WINS!" : "CLAP FASTER! PUSH THE BEAM!", W / 2, H - 330, p >= 1 ? 80 : 52, p >= 1 ? "#ffe066" : "#fff", { font: p >= 1 ? "Rammetto One" : "Lilita One", stroke: 8 });
+      }
+      if (sc === "knock" && this.jp) {
+        this.trail = (this.trail || []).concat([{ x: this.jp.x, y: this.jp.y - 90, t: BB.t }]).filter((p) => BB.t - p.t < 0.5);
+        ctx.save();
+        ctx.lineCap = "round";
+        for (let i = 1; i < this.trail.length; i++) {
+          const a = this.trail[i - 1], c = this.trail[i], f = 1 - (BB.t - c.t) / 0.5;
+          ctx.globalAlpha = f * 0.8;
+          ctx.strokeStyle = "#bff8ff";
+          ctx.lineWidth = 60 * f;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(c.x, c.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+    drawCloseup(k) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
+      const bi = barAt(k), b = KO_BARS[bi];
+      if (!b || !b.phase) return;
+      const v = k - BS[bi];
+      if (v > 1.9) return;
+      const E = (x) => {
+        x = clamp(x, 0, 1);
+        return 1 - Math.pow(1 - x, 3);
+      }, a = E(v / 0.25) * (1 - E((v - 1.6) / 0.3));
+      if (a <= 0) return;
+      const c = this.snap || (this.snap = document.createElement("canvas"));
+      c.width = W;
+      c.height = H;
+      c.getContext("2d").drawImage(ctx.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height, 0, 0, W, H);
+      const z = 3.2 + v * 0.25, sh = H * 0.24, SPf = { x: LCH.x - 178, y: LCH.y - 130 }, JRf = { x: JR.x, y: JR.y - 95 };
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.fillStyle = "#0b0f14";
+      ctx.fillRect(0, 0, W, H);
+      const strip = (f, y, off) => {
+        const sw = W / z, shh = sh / z;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, y, W, sh);
+        ctx.clip();
+        ctx.drawImage(c, f.x - sw / 2 + off, f.y - shh / 2, sw, shh, 0, y, W, sh);
+        ctx.restore();
+        ctx.strokeStyle = "#eee4cc";
+        ctx.lineWidth = 8;
+        ctx.strokeRect(-10, y, W + 20, sh);
+      };
+      strip(SPf, H * 0.2, 0);
+      strip(JRf, H * 0.56, 0);
+      ctx.restore();
+    }
+    /* v14.3.5 VOICE POWER-UP: class sings a rising AHHH. Lenient: sustained voiced loudness fills, upward glide adds bonus; auto-fills with time so nobody fails.
+       Pitch = autocorrelation on the existing analyser, read live only; nothing is recorded or stored. Clap detection is muted (BB.voiceSeg). */
+    pitchNow() {
+      const M = window.MicCore;
+      if (!BB.mic.ok || !M || !M.an) return null;
+      const n = M.an.fftSize, b = this.pbuf || (this.pbuf = new Float32Array(n));
+      M.an.getFloatTimeDomainData(b);
+      let r = 0;
+      for (let i = 0; i < n; i++) r += b[i] * b[i];
+      r = Math.sqrt(r / n);
+      if (r < 0.01) return { rms: r, f: 0, c: 0 };
+      const sr = M.ctx.sampleRate, lo = Math.floor(sr / 700), hi = Math.min(n >> 1, Math.floor(sr / 90)), N = n >> 1;
+      let best = 0, bl = 0, e0 = 0;
+      for (let i = 0; i < N; i++) e0 += b[i] * b[i];
+      for (let l = lo; l <= hi; l += 2) {
+        let c = 0, e1 = 0;
+        for (let i = 0; i < N; i++) {
+          c += b[i] * b[i + l];
+          e1 += b[i + l] * b[i + l];
+        }
+        c /= Math.sqrt(e0 * e1) + 1e-9;
+        if (c > best) {
+          best = c;
+          bl = l;
+        }
+      }
+      return { rms: r, f: best > 0.5 ? sr / bl : 0, c: best };
+    }
+    voiceTick(dt) {
+      const k = BB.t - this.st, b = this.state === "end" && k >= KO_T0 && k <= KO_BIG ? KO_BARS[barAt(k)] : null;
+      if (!b || !b.voice) {
+        if (this.vOn) {
+          this.vOn = 0;
+          BB.voiceSeg = 0;
+          BB.mic && BB.mic.take && BB.mic.take();
+        }
+        return;
+      }
+      const bi = barAt(k);
+      if (!this.vOn) {
+        this.vOn = 1;
+        this.vf = 0;
+        this.vp = [];
+        this.vPit = 0;
+        this.vBurst = 0;
+        this.vDemo = 0;
+      }
+      BB.voiceSeg = 1;
+      BB.mic && BB.mic.take && BB.mic.take();
+      if (this.gag) this.gag = null;
+      this.has = [];
+      if (b.vi === 0) {
+        if (!this.vDemo && k - BS[bi] > 0.3) {
+          this.vDemo = 1;
+          this.ahhh();
+        }
+        this.vPit = clamp((k - BS[bi] - 0.3) / 2.2, 0, 1) * 0.8;
+        return;
+      }
+      const tt = this.vt = (this.vt || 0) + dt;
+      if (tt > 0.05) {
+        this.vt = 0;
+        const p = this.pitchNow();
+        let add = 0;
+        if (p && p.f && p.rms > 0.015) {
+          const lf = Math.log2(p.f);
+          this.vp.push(lf);
+          if (this.vp.length > 12) this.vp.shift();
+          add = 0.5;
+          const L = this.vp.length;
+          if (L > 4 && this.vp[L - 1] - this.vp[0] > 0.05) add += 0.45;
+          this.vPit = lerp(this.vPit, clamp((lf - Math.log2(110)) / 2.6, 0, 1), 0.3);
+        } else if (p && p.rms > 0.03) add = 0.25;
+        const s0 = BS[barAt(k) - b.vi + 1], auto = clamp((k - s0) / (BL[bi] * 3 - 0.4), 0, 1) * 3;
+        this.vf = Math.min(3, Math.max(this.vf + add * 0.05 * 1.4, auto, this.vf));
+        if (!(p && p.f)) this.vPit = lerp(this.vPit, this.vf / 3, 0.15);
+      }
+      if (this.vf >= 3 && !this.vBurst) {
+        this.vBurst = k;
+        BB.shake(30);
+        this.impact && this.impact(3, 1);
+      }
+    }
+    ahhh() {
+      const ac = BB.ac;
+      if (!ac) return;
+      try {
+        const t0 = ac.currentTime, o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain(), f1 = ac.createBiquadFilter(), f2 = ac.createBiquadFilter(), m = ac.createGain();
+        o.type = "sawtooth";
+        o2.type = "sawtooth";
+        o2.detune.value = 8;
+        o.frequency.setValueAtTime(240, t0);
+        o.frequency.exponentialRampToValueAtTime(520, t0 + 2.1);
+        o2.frequency.setValueAtTime(240, t0);
+        o2.frequency.exponentialRampToValueAtTime(520, t0 + 2.1);
+        f1.type = "bandpass";
+        f1.frequency.value = 800;
+        f1.Q.value = 5;
+        f2.type = "bandpass";
+        f2.frequency.value = 1200;
+        f2.Q.value = 6;
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.5, t0 + 0.15);
+        g.gain.setValueAtTime(0.5, t0 + 1.9);
+        g.gain.linearRampToValueAtTime(0, t0 + 2.3);
+        o.connect(f1);
+        o2.connect(f1);
+        o.connect(f2);
+        f1.connect(g);
+        f2.connect(g);
+        g.connect(m);
+        m.gain.value = 0.9;
+        m.connect(BB.outBus || ac.destination);
+        o.start(t0);
+        o2.start(t0);
+        o.stop(t0 + 2.4);
+        o2.stop(t0 + 2.4);
+      } catch (e) {
+      }
+    }
+    drawVoice(k, t) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
+      const bi = barAt(k), b = KO_BARS[bi];
+      if (!b || !b.voice) return;
+      const f = this.vf || 0, X0 = 470, Y0 = 470, JW = 110, JH = 250, cols = ["#ffd84a", "#7ef0ff", "#ff8adf"];
+      if (f > 1) BB.shake(1 + f * 2);
+      for (let j = 0; j < 3; j++) {
+        const x = X0 + j * 140, fl = clamp(f - j, 0, 1), y = Y0;
+        ctx.save();
+        ctx.fillStyle = "rgba(20,30,40,.55)";
+        ctx.strokeStyle = "#eee4cc";
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.roundRect(x - JW / 2, y, JW, JH, 26);
+        ctx.fill();
+        if (fl > 0) {
+          const lh = (JH - 16) * fl, wv = Math.sin(t * 9 + j) * 6;
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(x - JW / 2 + 8, y + 8, JW - 16, JH - 16, 20);
+          ctx.clip();
+          ctx.fillStyle = cols[j];
+          ctx.beginPath();
+          ctx.moveTo(x - JW / 2, y + JH);
+          ctx.lineTo(x - JW / 2, y + JH - 8 - lh + wv);
+          ctx.quadraticCurveTo(x, y + JH - 8 - lh - wv, x + JW / 2, y + JH - 8 - lh + wv);
+          ctx.lineTo(x + JW / 2, y + JH);
+          ctx.fill();
+          ctx.fillStyle = "rgba(255,255,255,.55)";
+          for (let q = 0; q < 5; q++) {
+            const by = y + JH - (t * 120 + q * 53 + j * 30) % Math.max(20, lh);
+            ctx.beginPath();
+            ctx.arc(x - 25 + q * 12, by, 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+        ctx.beginPath();
+        ctx.roundRect(x - JW / 2, y, JW, JH, 26);
+        ctx.stroke();
+        ctx.fillStyle = "#7a4a24";
+        ctx.beginPath();
+        ctx.roundRect(x - JW / 2 - 8, y - 30, JW + 16, 34, 10);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#ffd84a";
+        ctx.beginPath();
+        ctx.arc(x, y - 13, 8, 0, Math.PI * 2);
+        ctx.fill();
+        if (fl >= 1) {
+          ctx.globalCompositeOperation = "lighter";
+          const g = ctx.createRadialGradient(x, y + JH / 2, 10, x, y + JH / 2, 170);
+          g.addColorStop(0, cols[j] + "88");
+          g.addColorStop(1, cols[j] + "00");
+          ctx.fillStyle = g;
+          ctx.fillRect(x - 170, y - 60, 340, JH + 120);
+        }
+        ctx.restore();
+      }
+      const LX = X0 + 380, LY = Y0 + JH, LH = 320;
+      ctx.save();
+      ctx.strokeStyle = "#eee4cc";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(LX, LY);
+      ctx.lineTo(LX, LY - LH);
+      ctx.moveTo(LX + 50, LY);
+      ctx.lineTo(LX + 50, LY - LH);
+      for (let r = 0; r <= 7; r++) {
+        ctx.moveTo(LX, LY - r * LH / 7);
+        ctx.lineTo(LX + 50, LY - r * LH / 7);
+      }
+      ctx.stroke();
+      const ay = LY - clamp(this.vPit || 0, 0, 1) * LH;
+      ctx.fillStyle = "#ffd84a";
+      ctx.strokeStyle = "#1a1a1a";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(LX - 6, ay);
+      ctx.lineTo(LX - 36, ay - 20);
+      ctx.lineTo(LX - 28, ay);
+      ctx.lineTo(LX - 36, ay + 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(LX + 25, LY - LH - 58);
+      ctx.lineTo(LX - 5, LY - LH - 18);
+      ctx.lineTo(LX + 55, LY - LH - 18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      const msg = b.vi === 0 ? "LISTEN... then you try!" : f >= 3 ? "FULL POWER!" : "HIGHER! HIGHER!";
+      BB.text(msg, X0 + 140, Y0 + JH + 70, f >= 3 ? 64 : 48, f >= 3 ? "#ffd84a" : "#fff", { font: f >= 3 ? "Rammetto One" : "Lilita One", stroke: 8, strokeCol: "#1a1a1a", maxW: 700 });
+      if (this.vBurst && k - this.vBurst < 0.6) {
+        const u = (k - this.vBurst) / 0.6;
+        ctx.save();
+        ctx.globalAlpha = 1 - u;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 14;
+        for (let j = 0; j < 3; j++) {
+          ctx.beginPath();
+          ctx.arc(X0 + j * 140, Y0 + JH / 2, 40 + u * 400, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+    drawFreeze(k, t) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
+      if (!this.frzL) {
+        this.frzL = [];
+        let n = 0;
+        KO_BARS.forEach((b, i) => {
+          const sc = this.sceneOf(b);
+          if (sc !== "rush" && sc !== "air") return;
+          const hs = KO_HITS.filter((h) => (h[1] === "L" || h[1] === "R" || KO_ATK(h[1])) && h[0] >= BS[i] && h[0] < BS[i] + BL[i]);
+          const lf = this.frzL[this.frzL.length - 1];
+          if (hs.length >= 3 && (!lf || hs[2][0] - lf.t > 15)) this.frzL.push({ t: hs[2][0], i });
+        });
+      }
+      const HOLD = 0.75, f = this.frzL.find((f2) => k >= f2.t && k < f2.t + HOLD + 0.45);
+      if (!f) {
+        this.frzS = null;
+        return;
+      }
+      const v = k - f.t;
+      if (v < HOLD) {
+        if (this.frzS !== f) {
+          this.frzS = f;
+          const c2 = this.frzC || (this.frzC = document.createElement("canvas"));
+          c2.width = W;
+          c2.height = H;
+          c2.getContext("2d").drawImage(ctx.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height, 0, 0, W, H);
+          BB.sfx && BB.sfx.bonk && BB.sfx.bonk();
+        }
+        const c = this.frzC, z = 1.06 + v * 0.04, r = f.i % 2 ? -0.05 : 0.05;
+        ctx.save();
+        ctx.translate(JR.x * 0.6 + W * 0.2, JR.y - 120);
+        ctx.rotate(r);
+        ctx.scale(z, z);
+        ctx.translate(-(JR.x * 0.6 + W * 0.2), -(JR.y - 120));
+        ctx.filter = "grayscale(1) contrast(2.2)";
+        ctx.drawImage(c, 0, 0);
+        ctx.filter = "none";
+        ctx.restore();
+        ctx.save();
+        ctx.globalCompositeOperation = "multiply";
+        ctx.fillStyle = this.frzL.indexOf(f) % 2 ? "#7ec8ff" : "#ffc870";
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.strokeStyle = "#fff";
+        for (let j = 0; j < 44; j++) {
+          const a = j / 44 * Math.PI * 2 + j * 7 % 5 * 0.02, r0 = 260 + j * 53 % 120;
+          ctx.lineWidth = 2 + j % 3 * 3;
+          ctx.beginPath();
+          ctx.moveTo(JR.x + Math.cos(a) * r0, JR.y - 100 + Math.sin(a) * r0);
+          ctx.lineTo(JR.x + Math.cos(a) * 1900, JR.y - 100 + Math.sin(a) * 1900);
+          ctx.stroke();
+        }
+        ctx.restore();
+        const s = 1 + 0.3 * Math.max(0, 1 - v / 0.12);
+        BB.text("3-HIT COMBO!", W * 0.36, H * 0.5, 84 * s, "#ffd84a", { font: "Rammetto One", stroke: 12, strokeCol: "#1a1a1a", maxW: 1200 });
+      } else {
+        const u = (v - HOLD) / 0.45;
+        if (!this.frzB || this.frzB !== f) {
+          this.frzB = f;
+          BB.shake(28);
+          BB.burst(JR.x, JR.y - 90, 40, { cols: ["#fff", "#ffd84a", "#7ef0ff"], kind: "spark", size: 14, speed: 1300, g: 300, life: 1 });
+          this.impact && this.impact(3, 1);
+        }
+        ctx.save();
+        ctx.globalAlpha = 1 - u;
+        ctx.strokeStyle = "#fff";
+        for (let j = 0; j < 3; j++) {
+          ctx.lineWidth = 18 - j * 5;
+          ctx.beginPath();
+          ctx.arc(JR.x, JR.y - 90, 60 + u * (700 + j * 260), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        if (u < 0.15) {
+          ctx.fillStyle = "rgba(255,255,255," + 0.6 * (1 - u / 0.15) + ")";
+          ctx.fillRect(0, 0, W, H);
+        }
+        ctx.restore();
+      }
+    }
     q(f) {
       (this.qq = this.qq || []).push(f);
     }
@@ -2167,7 +2919,7 @@
         x = clamp(x, 0, 1);
         return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
       }, win = (v, a, b, r = 0.4) => E((v - a) / r) * (1 - E((v - b + r) / r));
-      let z = 1, cx = W / 2, cy = H / 2, rot = 0, px = 0, lb = 0;
+      let z = 1, cx = W / 2, cy = H / 2, rot = 0, px = 0, lb = 0, orb = 0;
       if (this.state === "intro" && this.move && k >= 14) {
         const v = k - 14;
         {
@@ -2202,6 +2954,24 @@
           px += d;
           z += 0.04 * (1 - E(u / 0.3));
         }
+        if (b && u < 1) {
+          const sc = this.sceneOf(b), e = E(Math.min(1, u * 3));
+          if (sc === "rush") {
+            z += 0.05 * e;
+            rot += (bi % 2 ? 0.022 : -0.022) * e;
+            cx = lerp(cx, JR.x, 0.5 * e);
+          } else if (sc === "dodge") {
+            z += 0.06 * e;
+            cx = lerp(cx, LCH.x, 0.6 * e);
+            cy = lerp(cy, LCH.y, 0.4 * e);
+          } else if (sc === "aura") {
+            z += 0.07 * e;
+            cx = lerp(cx, LCH.x - 120, 0.7 * e);
+            cy = lerp(cy, H, 0.5 * e);
+          } else if (sc === "beam") {
+            z += 0.03 * e;
+          }
+        }
         if (b && b.chantIntro) {
           z += 0.05 * (1 - E(u));
         }
@@ -2216,20 +2986,23 @@
         }
         if (k > KO_BIG && k < KO_CEL + 1) {
           const w = E((k - KO_BIG) / 0.6) * (1 - E((k - KO_CEL) / 1));
-          z += 0.07 * w;
-          px += Math.sin((k - KO_BIG) * 0.9) * 60 * w;
+          z += 0.09 * w;
+          const o = Math.sin((k - KO_BIG) * 1.1) * w;
+          px += o * 70;
+          orb = o * 50;
+          rot += o * 0.012;
           lb = Math.max(lb, w);
         }
       }
       z = Math.min(z, 1.16);
-      rot = Math.max(rot, -0.04);
+      rot = clamp(rot, -0.04, 0.03);
       const need = 1 + Math.abs(rot) * 1.9 + Math.abs(px) / W * 2;
       z = Math.max(z, need);
       const mx = (z - 1) * W / 2, my = (z - 1) * H / 2;
       let tx = (W / 2 - cx) * (z - 1), ty = (H / 2 - cy) * (z - 1);
       tx = clamp(tx + px, -mx, mx);
       ty = clamp(ty, -my, my);
-      return { z, rot, tx, ty, lb };
+      return { z, rot, tx, ty, lb, orb };
     }
     drawLetterbox(lb) {
       if (lb <= 0.01) return;
@@ -2623,23 +3396,35 @@
       ctx.restore();
     }
     draw() {
-      const t = BB.t, k = t - this.st;
-      if (this.static) ctx.drawImage(this.static, 0, 0, W, H);
-      else {
-        ctx.fillStyle = "#111";
-        ctx.fillRect(0, 0, W, H);
+      const t = BB.t;
+      let k = t - this.st;
+      if (this.hs && t < this.hs.until) k = this.hs.k;
+      const CAM = this.state === "load" ? { z: 1, rot: 0, tx: 0, ty: 0, lb: 0, orb: 0 } : this.camFor(k);
+      {
+        const bz = 1 + (CAM.z - 1) * 0.45 + (CAM.orb ? 0.04 : 0);
+        ctx.save();
+        ctx.translate(W / 2 + CAM.tx * 0.45 - (CAM.orb || 0) * 0.6, H / 2 + CAM.ty * 0.45);
+        ctx.rotate(CAM.rot * 0.45);
+        ctx.scale(bz, bz);
+        ctx.translate(-W / 2, -H / 2);
+        if (this.static) ctx.drawImage(this.static, 0, 0, W, H);
+        else {
+          ctx.fillStyle = "#111";
+          ctx.fillRect(0, 0, W, H);
+        }
+        ctx.restore();
       }
       R.drawMotes(this.motes, BB.dt || 0.016, t);
       if (this.state === "load") return;
-      const CAM = this.camFor(k);
       this.qq = [];
       ctx.save();
       ctx.translate(W / 2 + CAM.tx, H / 2 + CAM.ty);
       ctx.rotate(CAM.rot);
       ctx.scale(CAM.z, CAM.z);
       ctx.translate(-W / 2, -H / 2);
+      this.drawSceneBack(k, t);
       const end = this.state === "end", dx = end ? Math.max(0, k - (KO_BIG + 1.2)) ** 2 * 260 : 0, fill = end ? clamp(Math.floor(barAt(k) / (KO_BARS.length - 1) * TOTAL) + 1, 0, TOTAL) : Math.min(TOTAL, this.n);
-      R.paint(ctx, () => this.drawTruck(TRK.x + dx, TRK.y, fill, { spin: end ? Math.max(0, k - (KO_BIG + 1.2)) * 14 : 0 }));
+      if (!(this.state === "end" && k < KO_BIG && (KO_BARS[barAt(k)] || {}).read)) R.paint(ctx, () => this.drawTruck(TRK.x + dx, TRK.y, fill, { spin: end ? Math.max(0, k - (KO_BIG + 1.2)) * 14 : 0 }));
       if (!end && !(this.move && this.state === "intro")) {
         this.drawJr();
         this.drawHP();
@@ -2785,7 +3570,14 @@
         BB.button(W / 2 - 520, 860, 480, 130, "ROOM MAP", { style: "green", size: 56, id: "tomap", onClick: () => BB.roomDone("finale") });
         BB.button(W / 2 + 40, 860, 480, 130, "PLAY AGAIN", { size: 50, id: "again", onClick: () => BB.go(new DeliveryRoom()) });
       }
+      this.drawSceneFront(k, t);
+      this.drawFx2();
+      this.drawRim();
       ctx.restore();
+      this.drawSplit(k);
+      this.drawCloseup(k);
+      this.drawVoice(k, t);
+      this.drawFreeze(k, t);
       this.drawLetterbox(CAM.lb);
       for (const f of this.qq) f();
       this.drawReplay(k, t);

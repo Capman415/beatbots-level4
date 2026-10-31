@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.3.4';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.3.5';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -321,7 +321,8 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
     if(ok&&CD&&fbin&&!BB.noSig){sg=CD.sig(i=>Math.pow(10,fbin[i]/10),fbin.length,MicCore.ctx.sampleRate/MicCore.an.fftSize);sg.imp=CD.impulse(MicCore.buf);if(CD.isVoice(sg)){ok=false;mic.voiceRej=(mic.voiceRej||0)+1}}
     if(CD){if(ok){if(gap!==2&&CD.fired)CD.fired(mic,x);mic.up=gap===2;mic.lastX=gap===2?Math.max(mic.lastX||0,x):x}else mic.lastOn=prevOn}// a rejected onset must not start a refractory window
     if(mic.calib)mic.calib.push(tNow);
-    if(BB.debugMic)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'',sg?[+sg.hfr.toFixed(2),+sg.flat.toFixed(2),+sg.imp.toFixed(1)]:'',gap]);
+    if(BB.voiceSeg)ok=false;// v14.3.5 voice power-up: singing never counts as claps and is never logged
+    if(BB.debugMic&&!BB.voiceSeg)(mic.log=mic.log||[]).push([+tNow.toFixed(3),chk==='hard'?'hard':chk?'tone':'none',ok,+(chk&&chk!=='hard'?(nonTonalEnergy(chk),nonTonalEnergy.frac):0).toFixed(2),BB.talking&&BB.t<BB.talking.until?'vo':'',sg?[+sg.hfr.toFixed(2),+sg.flat.toFixed(2),+sg.imp.toFixed(1)]:'',gap]);
     if(ok){const lv=window.GroupGate?((BB.dynMode&&BB.t-BB.dynMode<.5)||GroupGate.notePeak(rms),GroupGate.lvl(rms,sens)):lvl;{const on={t:tNow,lvl:lv,rms,up:gap===2?1:0};if(!BB.MLP||!BB.MLP.on||BB.MLP.submit(on,tNow)){mic.onsets.push(on);mic.meter=Math.max(mic.meter||0,lv)}}mic.peak=lvl;mic.hold=.6}else mic.rejected=(mic.rejected||0)+1}
   else if(x<thr){const nf=lerp(mic.floor,Math.min(x,.05),dt*.8);mic.floor=CD&&CD.active&&CD.active(tNow)&&tNow-mic.lastOn<.35?Math.min(mic.floor,nf):nf}// v13.3: claps' reverb tails between fast claps must not lift the floor
   if(CD&&CD.track)CD.track(mic,x,tNow);

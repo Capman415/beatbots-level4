@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.3.4";
+BB.VERSION = "v14.3.5";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -1114,7 +1114,8 @@ mic.update = (dt) => {
       } else mic.lastOn = prevOn;
     }
     if (mic.calib) mic.calib.push(tNow);
-    if (BB.debugMic) (mic.log = mic.log || []).push([+tNow.toFixed(3), chk === "hard" ? "hard" : chk ? "tone" : "none", ok, +(chk && chk !== "hard" ? (nonTonalEnergy(chk), nonTonalEnergy.frac) : 0).toFixed(2), BB.talking && BB.t < BB.talking.until ? "vo" : "", sg ? [+sg.hfr.toFixed(2), +sg.flat.toFixed(2), +sg.imp.toFixed(1)] : "", gap]);
+    if (BB.voiceSeg) ok = false;
+    if (BB.debugMic && !BB.voiceSeg) (mic.log = mic.log || []).push([+tNow.toFixed(3), chk === "hard" ? "hard" : chk ? "tone" : "none", ok, +(chk && chk !== "hard" ? (nonTonalEnergy(chk), nonTonalEnergy.frac) : 0).toFixed(2), BB.talking && BB.t < BB.talking.until ? "vo" : "", sg ? [+sg.hfr.toFixed(2), +sg.flat.toFixed(2), +sg.imp.toFixed(1)] : "", gap]);
     if (ok) {
       const lv = window.GroupGate ? (BB.dynMode && BB.t - BB.dynMode < 0.5 || GroupGate.notePeak(rms), GroupGate.lvl(rms, sens)) : lvl;
       {
