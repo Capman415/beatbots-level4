@@ -1364,7 +1364,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   let ctx = BB.ctx;
   BB._sw.push((g) => ctx = g);
   BB.V2 = {};
-  BB.loadV2 = () => Promise.all([["rock", "png"], ["crystal", "png"], ["cart", "png"], ["elev", "png"], ["smash", "png"], ["bin", "png"], ["rubble", "png"], ["wh", "jpg"], ["tun0", "jpg"], ["tun1", "jpg"], ["tun2", "jpg"], ["tun3", "jpg"], ["tun4", "jpg"], ["pipe", "png"], ["funnel", "png"], ["title_bg", "jpg"], ["map_bg", "jpg"], ["hub_bg", "jpg"], ["conveyor", "png"], ["redbtn", "png"], ["smash_blur", "jpg"], ["pack_blur", "jpg"], ["logo", "png"], ["mic", "png"], ["lock", "png"], ["chip", "png"], ["earth", "jpg"], ["shaft", "jpg"]].map(([n, e]) => new Promise((r) => {
+  BB.loadV2 = () => Promise.all([["rock", "png"], ["crystal", "png"], ["cart", "png"], ["elev", "png"], ["smash", "png"], ["bin", "png"], ["rubble", "png"], ["wh", "jpg"], ["tun0", "jpg"], ["tun1", "jpg"], ["tun2", "jpg"], ["tun3", "jpg"], ["tun4", "jpg"], ["pipe", "png"], ["funnel", "png"], ["title_bg", "jpg"], ["map_bg", "jpg"], ["hub_bg", "jpg"], ["conveyor", "png"], ["redbtn", "png"], ["smash_blur", "jpg"], ["pack_blur", "jpg"], ["mine_door", "jpg"], ["label_door", "jpg"], ["dock_door", "jpg"], ["logo", "png"], ["mic", "png"], ["lock", "png"], ["chip", "png"], ["earth", "jpg"], ["shaft", "jpg"]].map(([n, e]) => new Promise((r) => {
     const i = new Image();
     i.onload = () => {
       BB.V2[n] = i;

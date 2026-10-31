@@ -90,7 +90,7 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
     BB.captionBox()}}
 
 // v12.7 hub bay: a doorway cut in the factory wall that previews its room
-function drawBay(i,cx,top,bot,bw,un,ready){const x=cx-bw/2,w=bw,h=bot-top,im=BB.V2[['tun0','smash_blur','pack_blur'][i]];
+function drawBay(i,cx,top,bot,bw,un,ready){const x=cx-bw/2,w=bw,h=bot-top,im=BB.V2[['mine_door','smash_blur','pack_blur','label_door','dock_door'][i]]||BB.V2[['tun0'][i]];
   ctx.save();ctx.beginPath();ctx.roundRect(x+14,top+14,w-28,h-14,[18,18,0,0]);ctx.clip();
   if(im){const s=Math.max((w-28)/im.width,(h-14)/im.height);ctx.drawImage(im,cx-im.width*s/2,top+14+(h-14)/2-im.height*s/2,im.width*s,im.height*s)}
   else{ctx.fillStyle=BB.lg(top,bot,['#1b1a22','#2c2a36']);ctx.fillRect(x,top,w,h)}
@@ -98,9 +98,9 @@ function drawBay(i,cx,top,bot,bw,un,ready){const x=cx-bw/2,w=bw,h=bot-top,im=BB.
     const g=ctx.createRadialGradient(cx,bot-90,10,cx,bot-90,150);g.addColorStop(0,'rgba(0,0,0,.75)');g.addColorStop(1,'rgba(0,0,0,.1)');ctx.fillStyle=g;ctx.fillRect(x,top,w,h);
     ctx.strokeStyle='#8b949a';ctx.lineWidth=5;for(const s of[-1,1]){ctx.beginPath();ctx.moveTo(cx+s*70,bot);ctx.lineTo(cx+s*12,bot-110);ctx.stroke()}
     ctx.strokeStyle='#5a3a22';for(let k=0;k<6;k++){const f=k/6,y=bot-f*f*110-4,hw=70-58*f;ctx.lineWidth=7-4*f;ctx.beginPath();ctx.moveTo(cx-hw-8,y);ctx.lineTo(cx+hw+8,y);ctx.stroke()}}
-  if(!un||!ready){ctx.fillStyle='rgba(10,8,12,.55)';ctx.fillRect(x,top,w,h);// rolled-down shutter
+  if(!un||!ready){ctx.fillStyle='rgba(10,8,12,.35)';ctx.fillRect(x,top,w,h);ctx.globalAlpha=.55;// rolled-down shutter
     const sh=!un?h:h*.62;for(let y=top+14;y<top+14+sh-14;y+=16){ctx.fillStyle=BB.lg(y,y+16,['#c9d3d1','#8f9b99','#5d6866']);ctx.fillRect(x,y,w,16);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x,y+14,w,2)}
-    const yb=top+sh-8;ctx.fillStyle=BB.lg(yb-10,yb+6,['#f6d24a','#c99a10']);ctx.fillRect(x,yb-10,w,16);}
+    const yb=top+sh-8;ctx.globalAlpha=1;ctx.fillStyle=BB.lg(yb-10,yb+6,['#f6d24a','#c99a10']);ctx.fillRect(x,yb-10,w,16);}
   else{const sy=top+14,g=ctx.createLinearGradient(0,sy,0,sy+40);g.addColorStop(0,'rgba(0,0,0,.55)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x,sy,w,40)}
   ctx.restore();
   if(i===0){// timber frame

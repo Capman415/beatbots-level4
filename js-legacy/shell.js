@@ -263,7 +263,7 @@
     }
   }
   function drawBay(i, cx, top, bot, bw, un, ready) {
-    const x = cx - bw / 2, w = bw, h = bot - top, im = BB.V2[["tun0", "smash_blur", "pack_blur"][i]];
+    const x = cx - bw / 2, w = bw, h = bot - top, im = BB.V2[["mine_door", "smash_blur", "pack_blur", "label_door", "dock_door"][i]] || BB.V2[["tun0"][i]];
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(x + 14, top + 14, w - 28, h - 14, [18, 18, 0, 0]);
@@ -300,8 +300,9 @@
       }
     }
     if (!un || !ready) {
-      ctx.fillStyle = "rgba(10,8,12,.55)";
+      ctx.fillStyle = "rgba(10,8,12,.35)";
       ctx.fillRect(x, top, w, h);
+      ctx.globalAlpha = 0.55;
       const sh = !un ? h : h * 0.62;
       for (let y = top + 14; y < top + 14 + sh - 14; y += 16) {
         ctx.fillStyle = BB.lg(y, y + 16, ["#c9d3d1", "#8f9b99", "#5d6866"]);
@@ -310,6 +311,7 @@
         ctx.fillRect(x, y + 14, w, 2);
       }
       const yb = top + sh - 8;
+      ctx.globalAlpha = 1;
       ctx.fillStyle = BB.lg(yb - 10, yb + 6, ["#f6d24a", "#c99a10"]);
       ctx.fillRect(x, yb - 10, w, 16);
     } else {
