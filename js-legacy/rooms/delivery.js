@@ -14,7 +14,22 @@
     ["jr_nofair", "No fair! Hey, what are you doing? Put me down!", "jr"],
     ["bb_fixed", "You fixed the factory! Levels one, two, three, and four, complete! Your reward... a boss brain break!", "sprocket"],
     ["bb_tease", "Next stop... somewhere new!", "sprocket"],
-    ["bb_p6", "Phase six! Speed read showdown! Read it and clap it, faster and faster!", "sprocket"],
+    ["bb_p6", "Phase six! Air juggle party! Ta, ta, ta, ta! Keep him bouncing!", "sprocket"],
+    ["bb_g1", "Umph!", "jr"],
+    ["bb_g2", "Ughh!", "jr"],
+    ["bb_g3", "Oof!", "jr"],
+    ["bb_6", "Six!", "jr"],
+    ["bb_7", "Seven!", "jr"],
+    ["bb_heehee", "Hee-hee! Hee-hee!", "jr"],
+    ["bb_laugh", "Ha ha ha! Hee hee!", "sprocket"],
+    ["bb_sj1", "Your claps are softer than a marshmallow!", "jr"],
+    ["bb_sj2", "I've heard louder sneezes!", "jr"],
+    ["bb_sj3", "My grandma TV has better rhythm!", "jr"],
+    ["bb_sj7", "I've seen kindergartners with better rhythm!", "jr"],
+    ["bb_sj4", "Ti-ti? More like tee-hee!", "jr"],
+    ["bb_sj5", "I ate all your whole notes... now I'm gonna eat your halves!", "jr"],
+    ["bb_sj6", "Come at me, bro!", "jr"],
+    ["bb_sp1", "Rhythm Engineers... let's show him!", "sprocket"],
     ["bb_speed", "Clap speed challenge! Clap fast! Faster is stronger!", "sprocket"],
     ["bb_fire", "You're on fire! Prestissimo! Hero punch!", "sprocket"],
     ["bb_treat", "Bonus round! Stand up, Rhythm Engineers! Dodge with your body, and attack by clapping! Nobody fails!", "sprocket"],
@@ -31,7 +46,7 @@
     ["dl_done", "Return to sender! The truck is full! Level four complete!", "sprocket"]
   ]);
   const TOTAL = 8, POOL = [["q", "e", "r", "h"], ["q", "e", "r", "h"], ["q", "e", "r", "h", "s"], ["q", "e", "r", "h", "s"], ["q", "e", "r", "h", "s"], ["q", "e", "r", "h", "s"], ["q", "e", "r", "h", "s"], ["q", "e", "r", "h", "s"]];
-  const KO_B = 0.6, KO_BAR = 2.4, KO_T0 = 0.6, KO_INTRO = 14;
+  const KO_B = 0.6, KO_BAR = 2.4, KO_T0 = 0.6, KO_INTRO = 37;
   const KB = (cue, ic, h, o = {}) => Object.assign({ cue, ic, h }, o), FOUR = (k) => [[0, k], [1, k], [2, k], [3, k]];
   const SH = () => KB("SHAKE! SHAKE! SHAKE!", "loud", [], { mode: "dance" }), SOFT = () => KB("SHAKE SOFT... shh!", "soft", [], { mode: "sneak" }), FRZ = (b) => KB("FREEZE! FUZZ BOMB!", "freeze", [[b, "bomb"]], { mode: "freeze" }), PH = (n, name) => KB("PHASE " + n + ": " + name, "ready", [], { count: 1, phase: n }), CLR = () => KB("SUPER BEAT BLAST!", "clap", [[0, "chunk"]], { clear: 1 }), TEMPI = { allegro: { w: "ALLEGRO", def: "Allegro = fast!", bpm: 125, inc: 0.25 }, presto: { w: "PRESTO", def: "PRESTO = very fast!", bpm: 170, inc: 0.15, isNew: 1 }, prestissimo: { w: "PRESTISSIMO", def: "PRESTISSIMO = as fast as possible!", bpm: 210, inc: 0.1, isNew: 1 } }, PWQ = ["allegro", "allegro", "presto", "presto", "prestissimo"];
   let PWN = 0;
@@ -39,7 +54,7 @@
     const tp = TEMPI[PWQ[Math.min(PWN++, 4)]];
     return [KB(tp.def, "clap", [], { count: 1, pwr: 1, tp }), KB(tp.w + "! CLAP CLAP CLAP!", "clap", [], { pwr: 2, tp })];
   };
-  const A_ = (cue, h) => KB(cue, "clap", h, { atk: 1 }), C4 = (k) => A_("CLAP NOW! PUNCH HIM!", FOUR(k)), CT = (k) => A_("CLAP CLAP CLAP! COMBO!", [[0, k], [1, k], [2, k], [2.5, k], [3, k]]), BOMBS = () => KB("FUZZ BOMBS! FREEZE... then SHAKE!", "freeze", [[1, "bomb"], [3, "bomb"]], { mode: "throw" }), DK = () => KB("DUCK!", "duck", [[2, "junkT"]], { mode: "throw" }), DL = () => KB("LEAN LEFT!", "L", [[2, "junkR"]], { mode: "throw" }), DR = () => KB("LEAN RIGHT!", "R", [[2, "junkL"]], { mode: "throw" }), JP = () => KB("JUMP! (rolling tire!)", "jump", [[2, "junkF"]], { mode: "throw" });
+  const A_ = (cue, h) => KB(cue, "clap", h, { atk: 1 }), C4 = (k) => A_("CLAP NOW! SLAP HIM SILLY!", [[0, "L"], [1, "R"], [2, "L"], [2.5, "R"], [3, k]]), CT = (k) => A_("CLAP CLAP CLAP! SLAP-HAPPY!", [[0, "L"], [0.5, "R"], [1, "L"], [1.5, "R"], [2, k]]), BOMBS = () => KB("FUZZ BOMBS! FREEZE... then SHAKE!", "freeze", [[1, "bomb"], [3, "bomb"]], { mode: "throw" }), DK = () => KB("DUCK!", "duck", [[2, "junkT"]], { mode: "throw" }), DL = () => KB("LEAN LEFT!", "L", [[2, "junkR"]], { mode: "throw" }), DR = () => KB("LEAN RIGHT!", "R", [[2, "junkL"]], { mode: "throw" }), JP = () => KB("JUMP! (rolling tire!)", "jump", [[2, "junkF"]], { mode: "throw" });
   const KO_BARS = [
     PH(1, "SHAKE & FREEZE"),
     SH(),
@@ -101,11 +116,11 @@
     JP(),
     A_("CLAP CLAP CLAP CLAP!", [[0, "L"], [1, "R"], [2, "rain"], [3, "stomp"]]),
     ...PWR(),
-    PH(6, "SPEED READ SHOWDOWN!"),
+    PH(6, "AIR JUGGLE PARTY!"),
     ...[
-      ["ALLEGRO", 125, [["q", "q", "q", "q"], ["q", "e", "q", "e"], ["e", "e", "q", "q"], ["e", "e", "e", "q"]]],
-      ["PRESTO", 170, [["q", "q", "e", "q"], ["q", "e", "q", "e"], ["e", "q", "e", "e"], ["e", "e", "e", "e"]]],
-      ["PRESTISSIMO", 210, [["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "e", "q", "q"]]]
+      ["ALLEGRO", 125, [["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"]]],
+      ["PRESTO", 170, [["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"]]],
+      ["PRESTISSIMO", 210, [["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"]]]
     ].flatMap(([w, bpm, cards]) => cards.map((pat, j) => {
       let x = 0, h = [], n = 0;
       for (const k of pat) {
@@ -113,7 +128,7 @@
         st.forEach((o) => h.push([x + o, n++ % 2 ? "R" : "L"]));
         x++;
       }
-      return KB("SPEED READ: " + w + "!", "read", h, { read: pat, bpm, tw: w, cardN: j });
+      return KB("AIR JUGGLE! ta ta ta ta!", "read", h, { read: pat, bpm, tw: w, cardN: j });
     })),
     KB("EVERYBODY GET LOW...", "duck", [], { count: 2 }),
     KB("EVERYBODY JUMP!", "jump", [[0, "big"]])
@@ -606,6 +621,41 @@
               BB.burst(JR.x, JR.y - 60, 40, { cols: ["#ff8adf", "#7ef0ff", "#ffe066", "#6ee678", "#f4ecd8"], kind: "spark", size: 14, speed: 1200, g: 500, life: 1.6 });
               BB.burst(JR.x, JR.y - 100, 45, { cols: ["#ffe066", "#fff", "#ff8adf"], kind: "star", size: 15, speed: 1e3, g: 350, life: 1.3 });
             } else {
+              if (kind === "L" || kind === "R") {
+                this.has = (this.has || []).filter((p) => BB.t - p.t < 1);
+                if (Math.random() < 0.5) this.has.push({ t: BB.t, w: ["HA!", "HEE HEE!", "HA HA!", "LOL!"][Math.floor(Math.random() * 4)], x: LCH.x + (Math.random() * 160 - 40), y: LCH.y - 300 - Math.random() * 60, c: ["#6ee678", "#ffe066", "#7ec8ff"][Math.floor(Math.random() * 3)] });
+                if (BB.t - (this.lastLaugh || -9) > 4.5) {
+                  this.lastLaugh = BB.t;
+                  BB.say("bb_laugh", { overlap: true });
+                }
+                this.hitN = (this.hitN || 0) + 1;
+                if (this.hitN % 3 === 1 && BB.t - (this.lastGr || -9) > 1.5 && !(this.gag && BB.t - this.gag.t < 2)) {
+                  this.lastGr = BB.t;
+                  this.grN = (this.grN || 0) + 1;
+                  BB.say(["bb_g1", "bb_g2", "bb_g3"][this.grN % 3], { overlap: true });
+                }
+                const g = this.gag, gv = g ? BB.t - g.t : 9;
+                if (g && g.kind === "mw" && gv > g.dur) {
+                  this.gag = null;
+                  this.gagLast = this.hitN;
+                  BB.text && 0;
+                  this.has.push({ t: BB.t, w: "SLAP! (mid-glide!)", x: JR.x - 120, y: JR.y - 330, c: "#ffe066" });
+                  BB.sfx.bonk && BB.sfx.bonk();
+                } else if (!g || gv > 2.6) {
+                  const bt = 60 / (240 / (BL[barAt(BB.t - this.st)] || 2.4));
+                  if ((this.hitN === 14 || this.hitN === 38) && (this.mwN || 0) < 2) {
+                    this.mwN = (this.mwN || 0) + 1;
+                    this.gag = { kind: "mw", t: BB.t, dur: 4 * (BL[barAt(BB.t - this.st)] || 2.4) / 4, beat: (BL[barAt(BB.t - this.st)] || 2.4) / 4 };
+                    BB.say("bb_heehee", { overlap: true });
+                  } else if ((this.n67 || 0) < 2 && this.hitN - (this.gagLast || -9) > 4 && Math.random() < 1 / 10) {
+                    this.n67 = (this.n67 || 0) + 1;
+                    this.gagLast = this.hitN;
+                    this.gag = { kind: "67", t: BB.t, dur: 1.6 };
+                    BB.say("bb_6", { overlap: true });
+                    setTimeout(() => BB.scene === this && BB.say("bb_7", { overlap: true }), 800);
+                  }
+                }
+              }
               BB.shake(kind === "stomp" ? 12 : 7);
               const sx = JR.x + (kind === "L" ? -90 : kind === "R" ? 90 : 0);
               BB.burst(sx, JR.y - 60, 16, { cols: ["#e2b272", "#ffe066", "#fff"], kind: "star", size: 12, speed: 650, g: 300 });
@@ -938,6 +988,15 @@
       const since = last ? k - last[0] : 9, kd = last && last[1];
       const sd = kd === "L" ? 1 : kd === "R" || kd === "push" ? -1 : kd === "chunk" ? (Math.sin(since * 40) > 0 ? 1 : -1) * Math.exp(-since * 3) : 0;
       let jx = JR.x + sd * 110 * Math.exp(-since * 6) * Math.cos(since * 30), jy = JR.y, rot = sd * 0.28 * Math.exp(-since * 6), sq = 0;
+      {
+        const g = this.gag, gv = g ? BB.t - g.t : 9;
+        if (g && g.kind === "mw" && gv < g.dur + 1.2) {
+          const st = Math.min(gv, g.dur) / g.beat, f = Math.floor(st) + Math.min(1, st % 1 * 2.5);
+          jx -= Math.min(f, 4) * 55;
+          rot += Math.sin(st * Math.PI) * 0.04;
+        }
+        if (g && g.kind === "67") rot += Math.sin(gv * 12) * 0.03;
+      }
       if (kd === "stomp" && since < 0.5) {
         jy -= Math.sin(since / 0.5 * Math.PI) * 90;
         sq = since < 0.08 ? 0.25 : 0;
@@ -951,6 +1010,14 @@
           jy -= [140, 0, 0][this.heroS] * Math.sin(Math.min(1, hv / 0.5) * Math.PI);
           rot += [0.1, 0.4, 0][this.heroS] * Math.exp(-hv * 5);
         }
+      }
+      if (bar && bar.read && !gone) {
+        const qb = BL[bi] / 4, ph = (k - BS[bi]) / qb % 1;
+        jy -= 180 + Math.sin(ph * Math.PI) * 140;
+        rot += Math.sin(k * 9) * 0.2;
+      }
+      if (since < 0.3 && (kd === "L" || kd === "R") && !gone) {
+        sq = Math.max(sq, 0.18 * Math.sin(since * 60) * Math.exp(-since * 8));
       }
       const md = bar && bar.mode;
       if (md === "sneak") {
@@ -996,9 +1063,9 @@
         }
       }
       if (bar && bar.turn && !gone) {
-        const us = bar.turn === "us";
-        BB.rrect(W / 2 - 330, 282, 660, 66, 22, us ? "#ffe066" : "#ff8adf", COL.ink, 4);
-        BB.text(us ? "CLAP NOW! FASTER = STRONGER!" : "STATIC JR. ATTACKS: DODGE!", W / 2, 316, us ? 32 : 38, us ? "#3a2a00" : "#3a1040", { font: "Rammetto One", stroke: 0 });
+        const us = bar.turn === "us", BY = 318;
+        BB.rrect(W / 2 - 330, BY, 660, 66, 22, us ? "#ffe066" : "#ff8adf", COL.ink, 4);
+        BB.text(us ? "CLAP PARTY! FASTER = SILLIER!" : "STATIC JR. ATTACKS: DODGE!", W / 2, BY + 34, 38, us ? "#3a2a00" : "#3a1040", { stroke: 0, maxW: 620 });
       }
       {
         const lc = KO_PHASE_END.filter((x) => x <= k).pop();
@@ -1032,10 +1099,10 @@
             ctx.strokeStyle = g;
             ctx.lineWidth = 12;
             ctx.strokeRect(-500, -130, 1e3, 260);
-            BB.text("ALL 4 BEAT CHIPS: DELUXE ULTRA UNLOCKED!", 0, -150, 44, "#ffd63c", { font: "Rammetto One", stroke: 8, strokeCol: "#782814", maxW: 1100 });
+            BB.text("ALL 4 BEAT CHIPS: DELUXE ULTRA UNLOCKED!", 0, -150, 44, "#ffd63c", { stroke: 8, strokeCol: "#782814", maxW: 1100 });
           }
-          BB.text("CLAP SPEED CHALLENGE!", 0, -50, 62, COL.yellow, { font: "Rammetto One", stroke: 9, maxW: 940 });
-          BB.text("Clap FAST! Faster = stronger! Reach PRESTISSIMO!", 0, 40, 40, "#fff", { stroke: 5, maxW: 940 });
+          BB.text("CLAP PARTY!", 0, -50, 62, COL.yellow, { stroke: 9, maxW: 940 });
+          BB.text("Clap fast! Faster = sillier! Can we hit PRESTISSIMO?", 0, 40, 40, "#fff", { stroke: 5, maxW: 940 });
           ctx.restore();
         } else {
           const tw = TIERS[tierOf(this.cpm || 0)][0], s = 1 + 0.25 * Math.exp(-(BB.t - (this.lastCl || 0)) * 8);
@@ -1062,7 +1129,7 @@
             ctx.arc(x, y, (30 + u * 30) * (b.s || 1), 0, 7);
             ctx.stroke();
             ctx.restore();
-          } else BB.text("POW!", jx + 60, jy - 320, 60 * (b.s || 1), "#ffe066", { font: "Rammetto One", stroke: 7 });
+          } else BB.text("POW!", jx - 200, jy - 160, 60 * (b.s || 1), "#ffe066", { font: "Rammetto One", stroke: 7 });
         }
       }
       for (const [hk, kind] of KO_HITS) {
@@ -1179,6 +1246,26 @@
         if (bar && bar.read) this.drawCard(bar, (k - BS[bi]) / BL[bi], t);
         else if (nx && nx.read && k > BS[bi + 1] - 0.6) this.drawCard(nx, -1, t);
       }
+      for (const [hk, kind] of KO_HITS) {
+        if (kind !== "L" && kind !== "R") continue;
+        const v = k - hk;
+        if (v < -0.12 || v > 0.3 || gone) continue;
+        const dir = kind === "L" ? 1 : -1, u = clamp((v + 0.12) / 0.16, 0, 1), hx = jx - dir * lerp(260, -40, u), hy = jy - 60;
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.scale(dir, 1);
+        ctx.rotate(-0.3 + u * 0.5);
+        BB.rrect(-70, -50, 110, 100, 30, BB.lg(-50, 50, ["#ecc088", "#b88246"]), "#5a3a1e", 5);
+        for (let f = 0; f < 4; f++) BB.rrect(30, -48 + f * 25, 60, 22, 10, "#ecc088", "#5a3a1e", 4);
+        BB.rrect(-40, -80, 40, 40, 14, "#ecc088", "#5a3a1e", 4);
+        BB.rrect(-170, -22, 110, 44, 10, BB.lg(-22, 22, ["#e2b272", "#b07a40"]), "#5a3a1e", 4);
+        ctx.restore();
+        if (v > 0 && v < 0.3) BB.text("SLAP!", jx + dir * 150, jy - 230 - v * 80, 56, "#ffe066", { font: "Rammetto One", stroke: 7 });
+      }
+      for (const p of this.has || []) {
+        const v = BB.t - p.t;
+        if (v < 1) BB.text(p.w, p.x, p.y - v * 60, 44 * (1 + 0.2 * Math.exp(-v * 8)), p.c, { stroke: 6 });
+      }
       this.drawHero(k, t);
       if (bar && bar.pwr || bar && bar.clear && k - BS[bi] < 0.4) {
         const x = LCH.x - 175, y = LCH.y - 330, pw = clamp(this.pw || 0, 0, 1);
@@ -1216,6 +1303,22 @@
         BB.staticJr(0, 230, 300, { dizzy: hpf < 0.2 || gone, flip: md === "sneak" && Math.cos((k - KO_T0) / KO_B * Math.PI / 2) < 0, glitch: 0.2 + 0.15 * Math.sin(t * 20), noShadow: gone });
         this.drawDmg(1 - hpf, t, gone);
         ctx.restore();
+        {
+          const g = this.gag, gv = g ? BB.t - g.t : 9;
+          if (g && g.kind === "67" && gv < g.dur) {
+            for (const sd2 of [-1, 1]) {
+              const bob = Math.cos(gv * Math.PI / 0.8 + (sd2 > 0 ? Math.PI : 0)) * 40;
+              ctx.save();
+              ctx.translate(jx + sd2 * 190, jy - 60 + bob);
+              BB.rrect(-45, -20, 90, 40, 18, "#e2b272", "#5a3a1e", 5);
+              BB.rrect(-30, -34, 60, 22, 10, "#efe3c8", "#5a3a1e", 4);
+              ctx.restore();
+            }
+            BB.text(gv < 0.8 ? "6..." : "6... 7!", jx - 330, jy - 60, 72, "#ffe066", { font: "Rammetto One", stroke: 8 });
+          }
+          if (g && g.kind === "mw" && gv < g.dur) BB.text("hee-hee!", jx - 300, jy - 60, 64, "#ff8adf", { stroke: 7 });
+          if (g && g.kind === "mw" && gv > g.dur + 1.2) this.gag = null;
+        }
         if (k > KO_T0) {
           ctx.save();
           ctx.strokeStyle = "#bff8ff";
@@ -1234,9 +1337,9 @@
           BB.text("\u2605", jx + Math.cos(a) * 110, jy - 160 + Math.sin(a) * 26, 40, "#ffe066", { stroke: 4 });
         }
       }
-      if (md && !gone) {
+      if (md && !gone && !(this.gag && BB.t - this.gag.t < 2)) {
         const lines = { sneak: "tip... toe... hee hee", throw: "catch THIS!", freeze: "statues?! no fair!" };
-        R.bubble(jx, jy - 200, lines[md]);
+        lines[md] && R.bubble(jx, jy - 200, lines[md]);
       }
       const box = (x, y, s, r, lab) => {
         ctx.save();
@@ -1542,47 +1645,37 @@
     drawSpeed(t) {
       const c = this.cpm || 0, ti = tierOf(c), fire = ti === 4;
       R.turnBorder(true);
-      if (fire) {
-        ctx.save();
-        ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 20);
-        ctx.strokeStyle = "#ff7a20";
-        ctx.shadowColor = "#ffb020";
-        ctx.shadowBlur = 60;
-        ctx.lineWidth = 14;
-        ctx.strokeRect(30, 30, W - 60, H - 60);
-        ctx.restore();
-      }
-      const x = 40, y = H - 250, w = 520;
-      BB.rrect(x, y, w + 40, 210, 26, "rgba(12,16,28,.88)", fire ? "#ff7a20" : "#6ee678", 4);
-      BB.text("CLAP SPEED", x + 20 + w / 2, y + 28, 26, "#dfffe0", { stroke: 0 });
+      const w = 480, x = W / 2 - w / 2 - 20, y = H - 240;
+      BB.panel(x, y, w + 40, 210, 26);
+      BB.text("CLAP SPEED", x + 20 + w / 2, y + 40, 26, "#ffd84a", { stroke: 0 });
       TIERS.forEach(([n, lo, col], i) => {
         const hi = (TIERS[i + 1] || [0, 240])[1], x0 = x + 20 + lo / 240 * w, x1 = x + 20 + hi / 240 * w;
         ctx.globalAlpha = i <= ti ? 1 : 0.3;
-        BB.rrect(x0 + 2, y + 52, x1 - x0 - 4, 34, 8, col, null, 0);
+        BB.rrect(x0 + 2, y + 60, x1 - x0 - 4, 30, 8, col, null, 0);
         ctx.globalAlpha = 1;
       });
       const nx = x + 20 + clamp(c, 0, 240) / 240 * w;
       ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.moveTo(nx, y + 92);
-      ctx.lineTo(nx - 14, y + 116);
-      ctx.lineTo(nx + 14, y + 116);
+      ctx.moveTo(nx, y + 94);
+      ctx.lineTo(nx - 12, y + 114);
+      ctx.lineTo(nx + 12, y + 114);
       ctx.fill();
       const s = 1 + 0.15 * Math.exp(-(BB.t - (this.lastCl || 0)) * 8);
       ctx.save();
-      ctx.translate(x + 20 + w / 2, y + 160);
+      ctx.translate(x + 20 + w / 2, y + 152);
       ctx.scale(s, s);
-      BB.text(TIERS[ti][0], 0, 0, ti === 4 ? 54 : 62, TIERS[ti][2], { font: "Rammetto One", stroke: 8 });
+      BB.text(TIERS[ti][0], 0, 0, ti === 4 ? 50 : 56, TIERS[ti][2], { stroke: 8 });
       ctx.restore();
-      if (this.combo > 2 && BB.t - this.lastCl < 0.8) BB.text("COMBO x" + this.combo + "!", x + 20 + w / 2, y - 34, 52, "#ffe066", { font: "Rammetto One", stroke: 8 });
+      if (this.combo > 2 && BB.t - this.lastCl < 0.8) BB.text("COMBO x" + this.combo + "!", x + w + 180, y + 105, 52, "#ffe066", { stroke: 8 });
       if (fire) {
         const f = 1 + 0.08 * Math.sin(t * 25);
         ctx.save();
-        ctx.translate(W / 2, 430);
+        ctx.translate(W / 2, H - 300);
         ctx.scale(f, f);
-        BB.text("ON FIRE!", 0, 0, 120, "#ffb020", { font: "Rammetto One", stroke: 14, strokeCol: "#7a1a00" });
+        BB.text("ON FIRE!", 0, 0, 90, "#ffb020", { stroke: 14, strokeCol: "#7a1a00" });
         ctx.restore();
-        BB.burst(W / 2 + (Math.random() - 0.5) * 500, 470, 1, { cols: ["#ff5a20", "#ffb020", "#ffe066"], kind: "spark", size: 12, speed: 200, g: -400, life: 0.8 });
+        BB.burst(W / 2 + (Math.random() - 0.5) * 400, H - 300, 1, { cols: ["#ff5a20", "#ffb020", "#ffe066"], kind: "spark", size: 12, speed: 200, g: -400, life: 0.8 });
       }
     }
     drawFist(x, y, s, rot) {
@@ -1631,7 +1724,7 @@
           ctx.stroke();
         }
         ctx.restore();
-        BB.text(st === 3 ? "S U P E R   S L O W - M O . . ." : "S L O W - M O . . .", W / 2, 120, 48, "#bff8ff", { font: "Rammetto One", stroke: 6 });
+        BB.text(st === 3 ? "SUPER SLOW-MO..." : "SLOW-MO...", W / 2, 250, 52, "#bff8ff", { stroke: 6 });
         const fs = [[[tx - 40, H + 260], [tx - 10, ty + 60], -Math.PI / 2.4]], hay = [[[-260, ty - 40], [tx - 150, ty - 20], 0]], dbl = [[[-260, ty + 40], [tx - 160, ty], 0], [[W + 260, ty + 40], [tx + 160, ty], Math.PI]];
         for (const [[ax, ay], [bx, by], r] of [fs, hay, dbl, [...fs, ...dbl]][st]) this.drawFist(lerp(ax, bx, p), lerp(ay, by, p), 0.9 + 0.6 * p, r);
       } else {
@@ -1747,7 +1840,7 @@
           ctx.fillRect(x - 200 + Math.random() * 400, y - 300 + Math.random() * 420, 80 + Math.random() * 120, 10);
         }
         ctx.restore();
-        BB.text("BZZT! GLITCH!", x, y - 380, 56, "#bff8ff", { font: "Rammetto One", stroke: 7 });
+        BB.text("BZZT! GLITCH!", x, y - 380, 56, "#bff8ff", { stroke: 7 });
       }
       if (v >= 0.9 && v < 1.5) {
         const u = (v - 0.9) / 0.6;
@@ -1773,36 +1866,148 @@
         const jx2 = v > KO_TF - 0.6 ? lerp(x, x - 200, (v - (KO_TF - 0.6)) / 0.45) : x, jy2 = v > KO_TF - 0.6 ? y - 100 - Math.sin((v - (KO_TF - 0.6)) / 0.45 * Math.PI) * 220 : y - 100;
         this.drawMini(jx2, jy2 - hop, s, t, { rot: ang });
         if (v > 1.4 && v < KO_TF - 0.6) {
-          BB.rrect(x - 760, y - 430, 560, 170, 22, "#1e2228", "#7ef0ff", 5);
-          BB.text("BEEP-BOOP! BZZT!", x - 480, y - 390, 34, "#7ef0ff", { font: "Courier New", stroke: 0 });
-          BB.text("YOU HAVEN'T SEEN", x - 480, y - 340, 38, "#fff", { font: "Courier New", stroke: 0 });
-          BB.text("THE LAST OF ME!!", x - 480, y - 296, 38, "#ff5a5a", { font: "Courier New", stroke: 0 });
+          BB.panel(x - 770, y - 450, 580, 200, 26);
+          BB.text("BEEP-BOOP! BZZT!", x - 480, y - 390, 34, "#7ef0ff", { stroke: 0 });
+          BB.text("YOU HAVEN'T SEEN", x - 480, y - 340, 38, "#fff", { stroke: 0 });
+          BB.text("THE LAST OF ME!!", x - 480, y - 296, 38, "#ff5a5a", { stroke: 0 });
         }
       }
     }
     drawCard(b, u, t) {
-      const cx = 690, cy = 600, w = 960, h = 300, pre = u < 0;
+      const cx = 760, cy = 345, w = 620, h = 230, pre = u < 0;
       ctx.save();
-      ctx.globalAlpha = pre ? 0.7 : 1;
-      const pop = pre ? 1 : 1 + 0.06 * Math.exp(-u * 12);
+      ctx.globalAlpha = pre ? 0.75 : 1;
+      const pop = pre ? 1 : 1 + 0.05 * Math.exp(-u * 12);
       ctx.translate(cx, cy);
       ctx.scale(pop, pop);
-      BB.rrect(-w / 2, -h / 2 - 60, w, h + 60, 26, "#fffaf0", "#1e2b29", 7);
-      BB.rrect(-w / 2, -h / 2 - 60, w, 64, 26, TIERS[{ ALLEGRO: 2, PRESTO: 3, PRESTISSIMO: 4 }[b.tw]][2], null, 0);
-      BB.text((pre ? "NEXT: " : "") + b.tw + "  " + b.bpm + " bpm   CARD " + (b.cardN + 1), 0, -h / 2 - 28, 36, "#1e2b29", { font: "Rammetto One", stroke: 0 });
-      const cw = (w - 60) / 4, S = R.noteSize("s", cw, h);
+      BB.panel(-w / 2, -h / 2, w, h, 26);
+      BB.text((pre ? "NEXT: " : "") + "AIR JUGGLE " + (b.cardN + 1) + "  " + b.tw + "!", 0, -h / 2 + 40, 32, "#ffd84a", { stroke: 0 });
+      const cw = (w - 60) / 4, bh = h - 90, y0 = -h / 2 + 66;
       b.read.forEach((k, i) => {
         const x = -w / 2 + 30 + i * cw, on = !pre && Math.floor(u * 4) === i;
-        if (on) BB.rrect(x + 6, -h / 2 + 16, cw - 12, h - 30, 18, "rgba(110,230,120,.35)", "#3fae4c", 4);
-        R.glyph(k, x + cw / 2, 40, S, "#19191f");
-        BB.text(k === "q" ? "ta" : k === "e" ? "ti-ti" : "ti-ka-ti-ka", x + cw / 2, h / 2 - 40, 38, on ? "#2a7a36" : "#5a4a3a", { stroke: 0 });
+        if (on) BB.rrect(x + 2, y0 - 4, cw - 4, bh + 8, 14, "rgba(110,230,120,.35)", "#6ee678", 3);
+        R.tile(k, x + 4, y0, cw - 8, bh, { ns: R.cardNs(k, cw, bh, 1), shadow: false, label: true });
       });
       if (!pre) {
         const px = -w / 2 + 30 + u * (w - 60);
-        ctx.fillStyle = "#ff5a5a";
-        ctx.fillRect(px - 4, -h / 2 + 10, 8, h - 20);
+        ctx.fillStyle = "#ffd84a";
+        ctx.fillRect(px - 3, y0 - 6, 6, bh + 12);
       }
       ctx.restore();
+    }
+    drawStandoff(v, t) {
+      const SJ = [[3.3, "bb_sj1", "Your claps are softer than a marshmallow!"], [5.8, "bb_sj2", "I've heard louder sneezes!"], [8.3, "bb_sj3", "My grandma TV has better rhythm!"], [10.8, "bb_sj7", "I've seen kindergartners with better rhythm!"], [13.3, "bb_sj4", "Ti-ti? More like tee-hee!"], [15.8, "bb_sp1", "Rhythm Engineers... let's show him!"], [17.6, "bb_sj5", "I ate all your WHOLE notes... now I'm gonna eat your HALVES!"], [20.2, "bb_sj6", "COME AT ME, BRO!"]];
+      for (const [a, id] of SJ) if (v >= a && !this["so" + id]) {
+        this["so" + id] = 1;
+        BB.say(id, { overlap: true });
+      }
+      const fx = v < 1.5 ? lerp(W + 300, JR.x, ease.out ? ease.out(v / 1.5) : v / 1.5) : JR.x, hop = v < 1.5 ? Math.abs(Math.sin(v * 8)) * 50 : Math.abs(Math.sin(t * 3)) * 6;
+      ctx.save();
+      ctx.strokeStyle = "rgba(238,228,204,.35)";
+      ctx.lineWidth = 4;
+      for (let i = 0; i < 9; i++) {
+        const y = 420 + i * 60, x = (t * 900 + i * 377) % (W + 600) - 300;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 160, y - 6);
+        ctx.stroke();
+      }
+      ctx.restore();
+      {
+        const px = v * 420 % (W + 400) - 200, py = 820 - Math.abs(Math.sin(v * 5)) * 80;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(v * 6);
+        ctx.fillStyle = "#f4ecd8";
+        ctx.strokeStyle = "#b8a888";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(-14, 0, 20, 14, 0, 0, 7);
+        ctx.ellipse(14, 0, 20, 14, 0, 0, 7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+      const stare = v >= 1.5 && v < 3.5;
+      if (stare) {
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, W, 110);
+        ctx.fillRect(0, H - 110, W, 110);
+        ctx.restore();
+        BB.text(". . .", LCH.x + 20, LCH.y - 330, 64, "#fff", { stroke: 6 });
+        BB.text(". . .", JR.x, JR.y - 360, 64, "#fff", { stroke: 6 });
+        BB.text("THE STANDOFF", W / 2, 200, 72, "#ffd63c", { font: "Rammetto One", stroke: 10, strokeCol: "#782814" });
+      }
+      const beck = v >= 20.2 && v < 22;
+      BB.staticJr(fx, JR.y + 230 - hop, 300, { flip: true, glitch: 0.15 + 0.1 * Math.sin(t * 20), rot: beck ? Math.sin(t * 10) * 0.08 : 0 });
+      if (beck) {
+        const bx = fx - 190, by = JR.y - 20, c = Math.sin(t * 12);
+        ctx.save();
+        ctx.translate(bx, by);
+        BB.rrect(-40, -30, 70, 60, 22, BB.lg(-30, 30, ["#ecc088", "#b88246"]), "#5a3a1e", 4);
+        BB.rrect(-70, -14 + c * 10, 40, 22, 10, "#ecc088", "#5a3a1e", 4);
+        ctx.restore();
+        BB.text("COME AT ME, BRO!", W / 2 + 120, 230, 92, "#ff8adf", { font: "Rammetto One", stroke: 12, strokeCol: "#3a1040" });
+      }
+      if (v >= 17.6 && v < 20.2) {
+        const u = v - 17.6, S = BB.sfx, ch = Math.floor(u / 0.45);
+        if (ch !== this.chompN && u < 1.9) {
+          this.chompN = ch;
+          S.clunk && S.clunk();
+          S.pop && S.pop();
+        }
+        if (u >= 2 && !this.burped) {
+          this.burped = 1;
+          S.glitch && S.glitch();
+          BB.burst(JR.x - 60, JR.y - 120, 20, { cols: ["#7ef0ff", "#fff"], kind: "spark", size: 10, speed: 400, g: -100 });
+        }
+        const cw = 220, bh = 220, ns = R.cardNs("q", cw, bh, 1);
+        [["w", JR.x - 560], ["h", JR.x - 560]].forEach(([nk, x], q) => {
+          if (q === 0 && u > 1) return;
+          if (q === 1 && (u < 1 || u >= 2)) return;
+          const uu = q ? u - 1 : u, bites = Math.min(3, Math.floor(uu / 0.33)), y = JR.y - 260, sl = uu * 120;
+          R.tile(nk, x + sl, y, cw, bh, { ns, shadow: false, label: true });
+          ctx.save();
+          ctx.fillStyle = "#3a2a22";
+          for (let b = 0; b < bites; b++) {
+            for (let m = 0; m < 3; m++) {
+              ctx.beginPath();
+              ctx.arc(x + sl + cw + 4, y + 30 + b * 60 + m * 22, 18, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+          if (bites) BB.burst(x + sl + cw, y + bh / 2, 1, { cols: ["#f4ecd8", "#e2b272"], kind: "spark", size: 8, speed: 200, g: 500 });
+        });
+        if (u >= 2) BB.text("BURP! bzzt!", JR.x - 40, JR.y - 260, 56, "#7ef0ff", { font: "Rammetto One", stroke: 7 });
+        else BB.text("CHOMP!", JR.x - 300, JR.y - 260, 52, "#ffe066", { font: "Rammetto One", stroke: 7 });
+      }
+      let cur = null;
+      for (const l of SJ) if (v >= l[0]) cur = l;
+      if (cur && v < cur[0] + 2.4 && cur[1] !== "bb_sj6") {
+        if (cur[1] === "bb_sp1") R.bubble(LCH.x - 10, LCH.y - 310, cur[2].toLowerCase());
+        else R.bubble(JR.x - 40, JR.y - 360, cur[2].toLowerCase(), "#2a6f8a");
+      }
+      if (v >= 22) {
+        const u = v - 22, s = u < 0.2 ? lerp(3.2, 1, u / 0.2) : 1 + 0.03 * Math.sin(t * 20);
+        if (!this.fightSlam) {
+          this.fightSlam = 1;
+          BB.shake(26);
+          BB.sfx.pkTa && BB.sfx.pkTa();
+          BB.sfx.bonk && BB.sfx.bonk();
+          BB.burst(W / 2, 480, 50, { cols: ["#ffe066", "#ff8adf", "#fff"], kind: "star", size: 16, speed: 1200, g: 300 });
+        }
+        ctx.save();
+        ctx.translate(W / 2, 480);
+        ctx.scale(s, s);
+        BB.text("FIGHT!", 0, 0, 220, "#ffd63c", { font: "Rammetto One", stroke: 16, strokeCol: "#782814" });
+        ctx.restore();
+      }
+      BB.button(W - 300, 30, 260, 90, "SKIP", { size: 40, id: "soskip", onClick: () => {
+        if (this.state === "intro") this.startKO();
+      } });
     }
     drawDmg(d, t, wreck) {
       if (wreck) d = 1;
@@ -1904,15 +2109,15 @@
       if (k < 8) {
         const s = k < 0.3 ? lerp(2.6, 1, k / 0.3) : 1 + 0.03 * Math.sin(t * 6);
         ctx.save();
-        ctx.translate(W / 2, 170);
+        ctx.translate(W / 2, 215);
         ctx.scale(s, s);
-        BB.text("YOU FIXED THE FACTORY!", 0, 0, 96, "#ffd63c", { font: "Rammetto One", stroke: 12, strokeCol: "#782814" });
+        BB.text("YOU FIXED THE FACTORY!", 0, 0, 88, "#ffd63c", { font: "Rammetto One", stroke: 12, strokeCol: "#782814" });
         ctx.restore();
         const L = [["LEVEL 1", "gear", "#6ee678"], ["LEVEL 2", "box", "#5ac8fa"], ["LEVEL 3", "bolt", "#ff8adf"], ["LEVEL 4", "truck", "#ffd63c"]];
         L.forEach(([n, ic, c], i) => {
           const v = k - (1.6 + i * 1.2);
           if (v < 0) return;
-          const sc = ease.back ? ease.back(clamp(v / 0.4, 0, 1)) : 1, x = W / 2 - 570 + i * 380, y = 520;
+          const sc = ease.back ? ease.back(clamp(v / 0.4, 0, 1)) : 1, x = W / 2 - 450 + i * 320, y = 540;
           if (v < 0.05 && !this["bd" + i]) {
             this["bd" + i] = 1;
             BB.sfx.pkTa && BB.sfx.pkTa();
@@ -1924,14 +2129,14 @@
           ctx.scale(sc, sc);
           ctx.fillStyle = c;
           ctx.beginPath();
-          ctx.arc(0, 0, 140, 0, 7);
+          ctx.arc(0, 0, 120, 0, 7);
           ctx.fill();
-          ctx.strokeStyle = "#fff";
+          ctx.strokeStyle = "#eee4cc";
           ctx.lineWidth = 8;
           ctx.stroke();
-          ctx.fillStyle = "#1e3b38";
+          ctx.fillStyle = "#1d3b38";
           ctx.beginPath();
-          ctx.arc(0, 0, 112, 0, 7);
+          ctx.arc(0, 0, 96, 0, 7);
           ctx.fill();
           if (ic === "gear") {
             ctx.fillStyle = c;
@@ -1972,11 +2177,11 @@
             ctx.arc(40, 32, 13, 0, 7);
             ctx.fill();
           }
-          BB.text(n, 0, 175, 40, "#fff", { font: "Rammetto One", stroke: 6 });
-          BB.text("COMPLETE!", 0, 218, 30, c, { stroke: 5 });
+          BB.text(n, 0, 158, 40, "#fff", { stroke: 6 });
+          BB.text("COMPLETE!", 0, 198, 30, c, { stroke: 5 });
           ctx.restore();
         });
-        if (k > 2) R.bubble(LCH.x + 40, LCH.y - 300, "you did it, Rhythm Engineers!");
+        if (k > 2) R.bubble(LCH.x - 10, LCH.y - 310, "woo-hoo! party time!");
       } else if (k < 11.2) {
         const v = k - 8, s = v < 0.3 ? lerp(3, 1, v / 0.3) : 1 + 0.04 * Math.sin(t * 8);
         if (v < 0.05 && !this.rvl) {
@@ -1989,7 +2194,7 @@
         ctx.save();
         ctx.translate(W / 2, 330);
         ctx.scale(s, s);
-        BB.text("YOUR REWARD:", 0, -90, 64, "#fff", { font: "Rammetto One", stroke: 9 });
+        BB.text("YOUR REWARD:", 0, -90, 64, "#fff", { stroke: 9 });
         BB.text("BOSS BRAIN BREAK!", 0, 30, 120, "#ff8adf", { font: "Rammetto One", stroke: 14, strokeCol: "#3a1040" });
         ctx.restore();
         if (v < 0.12) {
@@ -1997,8 +2202,8 @@
           ctx.fillRect(0, 0, W, H);
         }
       } else {
-        BB.panel(W / 2 - 560, 120, 1120, 200, 30);
-        BB.text("STAND UP, RHYTHM ENGINEERS!", W / 2, 190, 64, COL.yellow, { font: "Rammetto One", stroke: 8, maxW: 1060 });
+        BB.panel(W / 2 - 560, 140, 1120, 200, 30);
+        BB.text("STAND UP, RHYTHM ENGINEERS!", W / 2, 190, 64, COL.yellow, { stroke: 8, maxW: 1060 });
         BB.text("DODGE: duck, lean, freeze, jump.  ATTACK: CLAP! Faster = stronger!  Everybody wins!", W / 2, 265, 34, "#fff", { stroke: 5, maxW: 1040 });
       }
       BB.button(W - 300, 30, 260, 90, "SKIP", { size: 40, id: "rwskip", onClick: () => {
@@ -2203,10 +2408,10 @@
       if (this.state === "load") return;
       const end = this.state === "end", dx = end ? Math.max(0, k - (KO_BIG + 1.2)) ** 2 * 260 : 0, fill = end ? clamp(Math.floor(barAt(k) / (KO_BARS.length - 1) * TOTAL) + 1, 0, TOTAL) : Math.min(TOTAL, this.n);
       R.paint(ctx, () => this.drawTruck(TRK.x + dx, TRK.y, fill, { spin: end ? Math.max(0, k - (KO_BIG + 1.2)) * 14 : 0 }));
-      if (!end) {
+      if (!end && !(this.move && this.state === "intro")) {
         this.drawJr();
         this.drawHP();
-      } else {
+      } else if (!(this.move && this.state === "intro")) {
         const hv = this.heroV(k);
         let z = 1;
         if (hv != null) z = hv < 0 ? 1 + (this.heroS === 3 ? 0.35 : 0.22) * clamp(1 + hv / this.heroW, 0, 1) : 1 + 0.22 * Math.max(0, 1 - hv / 0.15);
@@ -2309,7 +2514,7 @@
           ctx.restore();
         }
       }
-      if (!end) {
+      if (!end && !(this.move && this.state === "intro")) {
         BB.panel(40, 24, 400, 110, 28);
         BB.text("TRUCK LOAD  " + fill + " of " + TOTAL, 64, 52, 28, COL.yellow, { align: "left", stroke: 4 });
         for (let i = 0; i < TOTAL; i++) BB.rrect(64 + i * 44, 78, 36, 36, 8, i < fill ? BB.lg(78, 114, ["#e2b272", "#b07a40"]) : "#2d4744", "#fff", 3);
@@ -2338,7 +2543,10 @@
         ctx.restore();
       }
       if (this.state === "intro" && !this.move && k < 2.6) BB.titleCard("ROOM 5: DELIVERY SHOWDOWN", "Clap the boxes. Beat Static Jr.!", k / 2.6);
-      if (this.state === "intro" && this.move) this.drawReward(k, t);
+      if (this.state === "intro" && this.move) {
+        if (k < 14) this.drawReward(k, t);
+        else this.drawStandoff(k - 14, t);
+      }
       if (end) this.drawTease(k, t);
       if (end && k > KO_CEL + 2) {
         BB.button(W / 2 - 520, 860, 480, 130, "ROOM MAP", { style: "green", size: 56, id: "tomap", onClick: () => BB.roomDone("finale") });
