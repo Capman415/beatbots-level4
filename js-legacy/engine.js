@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.3.3";
+BB.VERSION = "v14.3.4";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {

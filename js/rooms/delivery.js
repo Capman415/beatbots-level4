@@ -17,7 +17,7 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['bb_fixed',"You fixed the factory! Levels one, two, three, and four, complete! Your reward... a boss brain break!",'sprocket'],
  ['bb_tease',"Next stop... somewhere new!",'sprocket'],
  ['bb_p6',"Phase six! Air juggle party! Ta, ta, ta, ta! Keep him bouncing!",'sprocket'],
- ['bb_g1',"Umph!",'jr'],['bb_g2',"Ughh!",'jr'],['bb_g3',"Oof!",'jr'],['bb_6',"Six!",'jr'],['bb_7',"Seven!",'jr'],['bb_heehee',"Hee-hee! Hee-hee!",'jr'],['bb_laugh',"Ha ha ha! Hee hee!",'sprocket'],
+ ['bb_chant',"Sing-along time! Stomp, stomp, clap! Everybody sing!",'sp'],['bb_ch1',"Rhythm, Rhythm Engineers.",'sp'],['bb_ch2',"Pull the levers, turn your gears.",'sp'],['bb_who1',"Who fixed the factory?",'sp'],['bb_who2',"Who are we?",'sp'],['bb_g1',"Umph!",'jr'],['bb_g2',"Ughh!",'jr'],['bb_g3',"Oof!",'jr'],['bb_6',"Six!",'jr'],['bb_7',"Seven!",'jr'],['bb_heehee',"Hee-hee! Hee-hee!",'jr'],['bb_laugh',"Ha ha ha! Hee hee!",'sprocket'],
  ['bb_sj1',"Your claps are softer than a marshmallow!",'jr'],
  ['bb_sj2',"I've heard louder sneezes!",'jr'],
  ['bb_sj3',"My grandma TV has better rhythm!",'jr'],
@@ -66,10 +66,21 @@ const KO_BARS=[
   C4('stomp'),JP(),A_('CLAP CLAP CLAP CLAP!',[[0,'L'],[1,'R'],[2,'rain'],[3,'stomp']]),
   ...PWR(),
  PH(6,'AIR JUGGLE PARTY!'),
-  ...[['ALLEGRO',125,[['q','q','q','q'],['q','q','q','q'],['q','q','q','q'],['q','q','q','q']]],
-      ['PRESTO',170,[['q','q','q','q'],['q','q','q','q'],['q','q','q','q'],['q','q','q','q']]],
-      ['PRESTISSIMO',210,[['q','q','q','q'],['q','q','q','q'],['q','q','q','q']]]].flatMap(([w,bpm,cards])=>cards.map((pat,j)=>{let x=0,h=[],n=0;for(const k of pat){const st=k==='q'?[0]:k==='e'?[0,.5]:[0,.25,.5,.75];st.forEach(o=>h.push([x+o,n++%2?'R':'L']));x++}return KB('AIR JUGGLE! ta ta ta ta!','read',h,{read:pat,bpm,tw:w,cardN:j})})),
-  KB('EVERYBODY GET LOW...','duck',[],{count:2}),KB('EVERYBODY JUMP!','jump',[[0,'big']])];
+  ...[['ALLEGRO',120,[['q','q','q','q'],['q','q','q','q'],['q','q','q','q'],['q','q','q','q']]],
+      ['ALLEGRO',120,[['q','q','q','q'],['q','q','q','q'],['q','q','q','q'],['q','q','q','q']]],
+      ['ALLEGRO',120,[['q','q','q','q'],['q','q','q','q'],['q','q','q','q']]]].flatMap(([w,bpm,cards])=>cards.map((pat,j)=>{let x=0,h=[],n=0;for(const k of pat){const st=k==='q'?[0]:k==='e'?[0,.5]:[0,.25,.5,.75];st.forEach(o=>h.push([x+o,n++%2?'R':'L']));x++}return KB('AIR JUGGLE! ta ta ta ta!','read',h,{read:pat,bpm,tw:w,cardN:j})})),
+  /* v14.3.4 SING-ALONG CHANT (user's own lyrics): stomp-stomp-CLAP at 110 BPM; Sprocket leads, class echoes, then everybody; Jr gets slapped on the claps */
+  ...(()=>{const L1=['Rhythm,','Rhythm','Engi-','neers.'],L2=['Pull the','levers,','turn your','gears.'],CH=(who,ws,o={})=>KB('SING-ALONG! STOMP STOMP CLAP!','clap',[[1,'L'],[3,'R']],Object.assign({chant:who,ws,bpm:110,sty:'chant'},o)),
+     CR=(q,a,vo)=>[CH('lead',[q],{vo,ask:1}),CH('crowd',[a],{shout:1,h:[[0,'chunk']]})];
+    return[KB('SING-ALONG TIME!','ready',[],{count:1,bpm:110,sty:'chant',chantIntro:1}),
+      CH('lead',L1,{vo:'bb_ch1'}),CH('echo',L1),CH('lead',L2,{vo:'bb_ch2'}),CH('echo',L2),
+      CH('lead',L1,{vo:'bb_ch1',lay:2}),CH('echo',L1,{lay:2}),CH('lead',L2,{vo:'bb_ch2',lay:2}),CH('echo',L2,{lay:2}),
+      ...CR('Who fixed the factory?','WE DID!','bb_who1'),
+      CH('all',L1,{vo:'bb_ch1',lay:3}),CH('all',L2,{vo:'bb_ch2',lay:3}),
+      ...CR('Who are we?','RHYTHM ENGINEERS!','bb_who2'),
+      CH('all',L1,{vo:'bb_ch1',lay:4,sty:'chantUp'}),CH('all',L2,{vo:'bb_ch2',lay:4,sty:'chantUp'})]})(),
+  Object.assign(C4('L'),{bpm:110,sty:'chantUp'}),Object.assign(CT('R'),{bpm:110,sty:'chantUp'}),Object.assign(C4('stomp'),{bpm:110,sty:'chantUp'}),
+  Object.assign(KB('EVERYBODY GET LOW...','duck',[],{count:2}),{bpm:110,sty:'chantUp'}),Object.assign(KB('EVERYBODY JUMP!','jump',[[0,'big']]),{bpm:110,sty:'chantUp'})];
 /* v14.3.2 variable tempo: per-bar start/length (Speed Read Showdown runs faster) */
 const BS=[],BL=[];{let x=KO_T0;KO_BARS.forEach((b,i)=>{b.bpm=b.bpm||100;BS[i]=x;BL[i]=240/b.bpm;x+=BL[i]});BS.push(x);BL.push(KO_BAR)}
 const barAt=k=>{if(k<KO_T0)return Math.floor((k-KO_T0)/KO_BAR);const n=KO_BARS.length;if(k>=BS[n])return n+Math.floor((k-BS[n])/KO_BAR);let i=0;while(BS[i+1]<=k)i++;return i};BB.KO_BS=BS;
@@ -162,7 +173,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
         if(b&&b.pwr===2){const u=(t-BS[bi])/BL[bi];this.pw=this.pw||0;for(const o of on){if(BB.t-(this.lastPc||0)>.1){this.lastPc=BB.t;this.pw+=b.tp.inc*(1+tierOf(this.cpm||0)*.4);BB.sfx.chime&&BB.sfx.chime();BB.burst(LCH.x-175,LCH.y-240,14,{cols:['#ffe066','#fff'],kind:'star',size:10,speed:500,g:200})}}if(this.manualPc){this.manualPc=0;this.pw+=b.tp.inc}this.pw=Math.max(this.pw,u*u)}
         else if(!(b&&b.clear))this.pw=0}
       {const bi=barAt(t),b=KO_BARS[bi],bt=(t-BS[bi])/BL[bi];if(b&&this.lastBi!==bi){this.lastBi=bi;
-        if(b.phase){BB.say('bb_p'+b.phase,{overlap:true});const sty=['pack','pack','mine','smash','pack','smash','pack'][b.phase];BB.groove.start(100,sty);BB.groove.t0=this.a0+BS[bi]-KO_T0+KO_B;this.sty=sty}if(b.read&&(!KO_BARS[bi-1]||KO_BARS[bi-1].bpm!==b.bpm)){BB.groove.start(b.bpm,this.sty||'pack');BB.groove.t0=this.a0+BS[bi]-KO_T0}if(KO_BARS[bi-1]&&KO_BARS[bi-1].read&&!b.read){BB.groove.start(100,this.sty||'pack');BB.groove.t0=this.a0+BS[bi]-KO_T0}if(b.pwr===1)BB.say('bb_speed',{overlap:true});if(b.clear)BB.say('bb_blast',{overlap:true});if(b.h.some(h=>h[1]==='big'))BB.say('bb_jump',{overlap:true});
+        if(b.phase){BB.say('bb_p'+b.phase,{overlap:true});const sty=['pack','pack','mine','smash','pack','smash','pack'][b.phase];BB.groove.start(100,sty);BB.groove.t0=this.a0+BS[bi]-KO_T0+KO_B;this.sty=sty}{const p=KO_BARS[bi-1],ws=b.sty||this.sty||'pack',ps=p?(p.sty||this.sty||'pack'):ws;if(p&&!b.phase&&!b.pwr&&(p.bpm!==b.bpm||ps!==ws||p.pwr===2)){BB.groove.start(b.bpm,ws);BB.groove.t0=this.a0+BS[bi]-KO_T0}}if(b.phase)this.curPh=b.phase;BB.groove.vol=b.chant?[.6,.6,.7,.8,.95][b.lay||1]:b.sty?.9:.5+.05*(this.curPh||1);if(b.vo)BB.say(b.vo,{overlap:true});if(b.chantIntro)BB.say('bb_chant',{overlap:true});if(b.chant){const S=BB.sfx,A=x=>this.a0+BS[bi]-KO_T0+x*BL[bi]/4;[0,.5,2,2.5].forEach(x=>{S.clunk&&S.clunk(A(x))});[1,3].forEach(x=>{S.crack&&S.crack(A(x));(b.lay||1)>=3&&S.pkTa&&S.pkTa(A(x))});if(b.shout){S.fanfare&&S.fanfare(A(0))}}if(b.pwr===1)BB.say('bb_speed',{overlap:true});if(b.clear)BB.say('bb_blast',{overlap:true});if(b.h.some(h=>h[1]==='big'))BB.say('bb_jump',{overlap:true});
         if(b.pwr===2)BB.groove.stop()}
         if(b&&b.pwr===2&&bt>.9&&!this['gr'+bi]){this['gr'+bi]=1;BB.groove.start(100,this.sty||'pack');BB.groove.t0=this.a0+BS[bi+1]-KO_T0}}
       if(t>=KO_LAUNCH+1.2&&!this.dinged){this.dinged=1;BB.say('dl_done',{overlap:true})}
@@ -213,7 +224,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
      if(g&&g.kind==='67')rot+=Math.sin(gv*12)*.03}
     if(kd==='stomp'&&since<.5){jy-=Math.sin(since/.5*Math.PI)*90;sq=since<.08?.25:0}
     if(['rain','zap','pat','stamp','pick'].includes(kd)&&since<.6)sq=Math.max(0,.35-since*.7);
-    {const hv=this.heroV(k);if(hv!=null&&hv>=0&&hv<.5){sq=.5*(1-hv/.5);jx+=[0,120,0][this.heroS]*Math.exp(-hv*6);jy-=[140,0,0][this.heroS]*Math.sin(Math.min(1,hv/.5)*Math.PI);rot+=[.1,.4,0][this.heroS]*Math.exp(-hv*5)}}
+    {const hv=this.heroV(k);if(hv!=null&&hv>=0&&hv<.5){sq=.5*(1-hv/.5);jx+=[0,120,0,0][this.heroS]*Math.exp(-hv*6);jy-=[140,0,0,160][this.heroS]*Math.sin(Math.min(1,hv/.5)*Math.PI);rot+=[.1,.4,0,.2][this.heroS]*Math.exp(-hv*5)}}
     if(bar&&bar.read&&!gone){const qb=BL[bi]/4,ph=((k-BS[bi])/qb)%1;jy-=180+Math.sin(ph*Math.PI)*140;rot+=Math.sin(k*9)*.2}
     if(since<.3&&(kd==='L'||kd==='R')&&!gone){sq=Math.max(sq,.18*Math.sin(since*60)*Math.exp(-since*8))}
     const md=bar&&bar.mode;if(md==='sneak'){jx+=Math.sin((k-KO_T0)/KO_B*Math.PI/2)*160;jy-=Math.abs(Math.sin((k-KO_T0)/KO_B*Math.PI))*20}if(md==='throw')rot+=Math.sin(t*14)*.05;
@@ -292,9 +303,9 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       let txt=bar.cue;if(bar.count===1)txt=bar.tp?bar.cue:bar.cue+'  '+['1','2','3','4'][Math.min(3,bb|0)];if(bar.count===2)txt='EVERYBODY GET LOW... '+['1','2','3','4'][Math.min(3,bb|0)];
       BB.text(txt,60,-20,txt.length>16?54:78,COL.yellow,{font:'Rammetto One',stroke:8,maxW:820});
       for(let q=0;q<4;q++)BB.rrect(-110+q*90,50,60,34,12,q===(bb|0)?'#6ee678':'#2d4744','#fff',3);ctx.restore();
-      const nx=KO_BARS[bi+1];if(nx&&bb>2)BB.text('NEXT: '+nx.cue,cx,cy+150,34,'#fff',{stroke:5,maxW:900});
-      if(bb%1<.5&&!bar.count)R.bubble(LCH.x+20,LCH.y-300,bar.cue.toLowerCase())}
-    if(!this.cel)BB.button(W-300,30,260,90,'SKIP',{size:40,id:'koskip',onClick:()=>this.skipKO()});
+      const nx=KO_BARS[bi+1];if(nx&&bb>2&&!(KO_BARS[bi]&&(KO_BARS[bi].chant||KO_BARS[bi].chantIntro)))BB.text('NEXT: '+nx.cue,cx,cy+150,34,'#fff',{stroke:5,maxW:900});
+      if(bb%1<.5&&!bar.count&&!bar.chant&&!bar.chantIntro)R.bubble(LCH.x+20,LCH.y-300,bar.cue.toLowerCase())}
+    if(!this.cel)(this.q||(f=>f())).call(this,()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'koskip',onClick:()=>this.skipKO()}));
     if(k>KO_CEL){const a=clamp((k-KO_CEL)/.4,0,1),s=.7+.3*ease.back(a);ctx.save();ctx.globalAlpha=a;ctx.translate(W/2,190);ctx.scale(s,s);BB.text('DELIVERY DOCK FIXED!',0,0,92,'#ffd63c',{font:'Rammetto One',stroke:12,strokeCol:'#782814'});
       if(BB.V2.chip){const im=BB.V2.chip,h=150,w=im.width*h/im.height;BB.glow(0,170,110,'rgba(255,220,120,A)',.5);ctx.drawImage(im,-w/2,170-h/2,w,h)}BB.text('Level 4 Beat Chip earned!',0,275,40,'#fff',{stroke:6});
       BB.panel(-430,320,860,90,24);BB.text('Great work, Rhythm Engineers!',0,366,44,COL.yellow,{stroke:5});ctx.restore();
@@ -355,6 +366,9 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     ctx.save();ctx.strokeStyle='rgba(238,228,204,.35)';ctx.lineWidth=4;for(let i=0;i<9;i++){const y=420+i*60,x=((t*900+i*377)%(W+600))-300;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+160,y-6);ctx.stroke()}ctx.restore();
     {const px=((v*420)%(W+400))-200,py=820-Math.abs(Math.sin(v*5))*80;ctx.save();ctx.translate(px,py);ctx.rotate(v*6);ctx.fillStyle='#f4ecd8';ctx.strokeStyle='#b8a888';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(-14,0,20,14,0,0,7);ctx.ellipse(14,0,20,14,0,0,7);ctx.fill();ctx.stroke();ctx.restore()}
     const stare=v>=1.5&&v<3.5;if(stare){ctx.save();ctx.globalAlpha=.5;ctx.fillStyle='#000';ctx.fillRect(0,0,W,110);ctx.fillRect(0,H-110,W,110);ctx.restore();BB.text('. . .',LCH.x+20,LCH.y-330,64,'#fff',{stroke:6});BB.text('. . .',JR.x,JR.y-360,64,'#fff',{stroke:6});BB.text('THE STANDOFF',W/2,200,72,'#ffd63c',{font:'Rammetto One',stroke:10,strokeCol:'#782814'})}
+    if(v>1.6&&v<3.6)this.q(()=>{const a=clamp(Math.min((v-1.6)/.25,(3.6-v)/.25),0,1),sl=(1-a)*80;ctx.save();ctx.globalAlpha=a;
+      BB.panel(60-sl,H-330,520,130,24);BB.text('SPROCKET',320-sl,H-290,52,'#7ef0ff',{font:'Rammetto One',stroke:7});BB.text('Chief Rhythm Engineer',320-sl,H-235,34,'#fff',{stroke:5});
+      BB.panel(W-580+sl,H-330,520,130,24);BB.text('STATIC JR.',W-320+sl,H-290,52,'#ff8adf',{font:'Rammetto One',stroke:7});BB.text('Fuzz Menace (very silly)',W-320+sl,H-235,34,'#fff',{stroke:5});ctx.restore()})
     const beck=v>=20.2&&v<22;BB.staticJr(fx,JR.y+230-hop,300,{flip:true,glitch:.15+.1*Math.sin(t*20),rot:beck?Math.sin(t*10)*.08:0});
     if(beck){const bx=fx-190,by=JR.y-20,c=Math.sin(t*12);ctx.save();ctx.translate(bx,by);BB.rrect(-40,-30,70,60,22,BB.lg(-30,30,['#ecc088','#b88246']),'#5a3a1e',4);BB.rrect(-70,-14+c*10,40,22,10,'#ecc088','#5a3a1e',4);ctx.restore();BB.text('COME AT ME, BRO!',W/2+120,230,92,'#ff8adf',{font:'Rammetto One',stroke:12,strokeCol:'#3a1040'})}
     if(v>=17.6&&v<20.2){const u=v-17.6,S=BB.sfx,ch=Math.floor(u/.45);if(ch!==this.chompN&&u<1.9){this.chompN=ch;S.clunk&&S.clunk();S.pop&&S.pop()}if(u>=2&&!this.burped){this.burped=1;S.glitch&&S.glitch();BB.burst(JR.x-60,JR.y-120,20,{cols:['#7ef0ff','#fff'],kind:'spark',size:10,speed:400,g:-100})}
@@ -364,7 +378,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       if(u>=2)BB.text('BURP! bzzt!',JR.x-40,JR.y-260,56,'#7ef0ff',{font:'Rammetto One',stroke:7});else BB.text('CHOMP!',JR.x-300,JR.y-260,52,'#ffe066',{font:'Rammetto One',stroke:7})}
     let cur=null;for(const l of SJ)if(v>=l[0])cur=l;if(cur&&v<cur[0]+2.4&&cur[1]!=='bb_sj6'){if(cur[1]==='bb_sp1')R.bubble(LCH.x-10,LCH.y-310,cur[2].toLowerCase());else R.bubble(JR.x-40,JR.y-360,cur[2].toLowerCase(),'#2a6f8a')}
     if(v>=22){const u=v-22,s=u<.2?lerp(3.2,1,u/.2):1+.03*Math.sin(t*20);if(!this.fightSlam){this.fightSlam=1;BB.shake(26);BB.sfx.pkTa&&BB.sfx.pkTa();BB.sfx.bonk&&BB.sfx.bonk();BB.burst(W/2,480,50,{cols:['#ffe066','#ff8adf','#fff'],kind:'star',size:16,speed:1200,g:300})}ctx.save();ctx.translate(W/2,480);ctx.scale(s,s);BB.text('FIGHT!',0,0,220,'#ffd63c',{font:'Rammetto One',stroke:16,strokeCol:'#782814'});ctx.restore()}
-    BB.button(W-300,30,260,90,'SKIP',{size:40,id:'soskip',onClick:()=>{if(this.state==='intro')this.startKO()}})}
+    this.q(()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'soskip',onClick:()=>{if(this.state==='intro')this.startKO()}}))}
   drawDmg(d,t,wreck){/* cumulative cartoon damage on Jr (local sprite coords: feet y=230, screen ~(-15,-40), antenna knob (0,-175)). No gore: dents, tape, patches, fuzz, stars. */
     if(wreck)d=1;const ink='#3a2a1e';ctx.save();
     const tape=(x,y,r,w=70)=>{ctx.save();ctx.translate(x,y);ctx.rotate(r);BB.rrect(-w/2,-12,w,24,6,'#f3e2c0','#b89a6a',2);ctx.fillStyle='#e8c9a0';ctx.fillRect(-8,-8,16,16);ctx.restore()};
@@ -375,6 +389,40 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       if(Math.sin(t*13)>.3)BB.burst&&0;ctx.strokeStyle='#ffe066';ctx.lineWidth=3;if(Math.floor(t*8)%3===0){ctx.beginPath();ctx.moveTo(110,-90);ctx.lineTo(135,-100);ctx.lineTo(125,-80);ctx.lineTo(150,-88);ctx.stroke()}}
     if(d>.8){tape(-15,-40,.7,150);tape(-15,-40,-.7,150)}
     if(this.flinch&&!wreck){ctx.fillStyle='#0e2a33';ctx.fillRect(-115,-105,200,130);ctx.strokeStyle='#7ef0ff';ctx.lineWidth=9;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-80,-75);ctx.lineTo(-50,-55);ctx.lineTo(-80,-35);ctx.moveTo(50,-75);ctx.lineTo(20,-55);ctx.lineTo(50,-35);ctx.moveTo(-60,0);for(let i=0;i<6;i++)ctx.lineTo(-60+i*20+10,i%2?-12:0);ctx.stroke();BB.text('OOF!',90,-170,40,'#fff',{font:'Rammetto One',stroke:6})}
+    ctx.restore()}
+  /* v14.3.4 CAMERA: gentle action-movie moves (zoom always >= tilt cover, max 1.14x, max 2 deg tilt, eased; no shake added here) */
+  q(f){(this.qq=this.qq||[]).push(f)}
+  camFor(k){const E=x=>{x=clamp(x,0,1);return x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2},win=(v,a,b,r=.4)=>E((v-a)/r)*(1-E((v-b+r)/r));let z=1,cx=W/2,cy=H/2,rot=0,px=0,lb=0;
+    if(this.state==='intro'&&this.move&&k>=14){const v=k-14;
+      {const w=win(v,1.5,3.6,.5);z+=.08*w;lb=Math.max(lb,w)}
+      for(const a of[3.3,5.8,8.3,10.8,13.3,17.6]){const w=win(v,a,a+(a===17.6?2.6:2.4),.35);rot-=.035*w;z+=.075*w;cx=lerp(cx,JR.x-120,w*.6);cy=lerp(cy,JR.y-100,w*.6)}
+      {const w=win(v,15.8,18,.35);z+=.12*w;cx=lerp(cx,LCH.x+80,w*.7);cy=lerp(cy,LCH.y+120,w*.7)}
+      {const w=win(v,20.2,22,.3);z+=.1*w;cx=lerp(cx,JR.x,w*.6)}
+      lb=Math.max(lb,win(v,0,3.8,.6),win(v,20.2,23,.3))}
+    if(this.state==='end'){const bi=barAt(k),b=KO_BARS[bi],u=b?(k-BS[bi])/BL[bi]:0,p=KO_BARS[bi-1];
+      if(b&&p&&p.turn!==b.turn&&b.turn&&u<.3){const d=(b.turn==='us'?-1:1)*50*(1-E(u/.3));px+=d;z+=.04*(1-E(u/.3))}
+      if(b&&b.chantIntro){z+=.05*(1-E(u))}
+      if(b&&b.shout){const w=Math.sin(Math.min(1,u)*Math.PI);z+=.05*w;cx=lerp(cx,JR.x-200,w*.6);cy=lerp(cy,JR.y-60,w*.6)}
+      if(b&&b.chant==='all'&&b.lay===4){z+=.03+.02*Math.sin(k*Math.PI*110/60/2)}
+      if(k>KO_BIG&&k<KO_CEL+1){const w=E((k-KO_BIG)/.6)*(1-E((k-KO_CEL)/1));z+=.07*w;px+=Math.sin((k-KO_BIG)*.9)*60*w;lb=Math.max(lb,w)}}
+    z=Math.min(z,1.16);rot=Math.max(rot,-.04);const need=1+Math.abs(rot)*1.9+Math.abs(px)/W*2;z=Math.max(z,need);
+    const mx=(z-1)*W/2,my=(z-1)*H/2;let tx=(W/2-cx)*(z-1),ty=(H/2-cy)*(z-1);tx=clamp(tx+px,-mx,mx);ty=clamp(ty,-my,my);return{z,rot,tx,ty,lb}}
+  drawLetterbox(lb){if(lb<=.01)return;const h=78*lb;ctx.save();ctx.fillStyle='#0b0f14';ctx.fillRect(0,0,W,h);ctx.fillRect(0,H-h,W,h);ctx.restore()}
+  drawReplay(k,t){if(this.state!=='end')return;const bi=barAt(k),b=KO_BARS[bi],p=KO_BARS[bi-1];if(!b||!p||!(p.shout&&p.ws[0]==='RHYTHM ENGINEERS!')&&!(KO_BARS[bi-2]&&KO_BARS[bi-2].shout&&KO_BARS[bi-2].ws[0]==='RHYTHM ENGINEERS!'))return;
+    const v=k-BS[KO_BARS.indexOf(p.shout?p:KO_BARS[bi-2])+1];if(v<0||v>2.6)return;const a=clamp(Math.min(v/.2,(2.6-v)/.3),0,1),x=W-470,y=H-420,w=420,h=280;
+    ctx.save();ctx.globalAlpha=a;BB.panel(x,y,w,h,24);ctx.beginPath();ctx.rect(x+14,y+14,w-28,h-28);ctx.clip();ctx.fillStyle='#24323a';ctx.fillRect(x+14,y+14,w-28,h-28);
+    const s=v*.35,jx=x+120+s*260,jy=y+190-Math.sin(Math.min(1,s)*Math.PI)*90;ctx.translate(jx,jy);ctx.rotate(s*5);ctx.scale(.42,.42);BB.staticJr(0,230,300,{dizzy:true,glitch:.3});ctx.restore();
+    ctx.save();ctx.globalAlpha=a;BB.text('REPLAY',x+90,y+52,40,'#ff5a5a',{font:'Rammetto One',stroke:6});BB.text('slow-mo x4',x+w-100,y+h-36,30,'#fff',{stroke:5});ctx.restore()}
+  drawChant(k,t){const bi=barAt(k),b=KO_BARS[bi];if(!b||!(b.chant||b.chantIntro))return;const bt=(k-BS[bi])/BL[bi]*4,beat=Math.min(3,Math.floor(bt)),fr=bt-beat,pw=1140,ph=250,px=W/2-pw/2,py=300,ee=1-Math.pow(1-clamp((k-BS[bi])/.3,0,1),3),cw=pw/4;
+    ctx.save();if(b.chantIntro){const s=lerp(.6,1,ee);ctx.translate(W/2,py+ph/2);ctx.scale(s,s);ctx.translate(-W/2,-(py+ph/2));BB.panel(px,py,pw,ph,30);BB.text('SING-ALONG!',W/2,py+100,90,'#ffe066',{font:'Rammetto One',stroke:9});BB.text('STOMP  STOMP  CLAP!  Everybody sing!',W/2,py+190,48,'#fff',{stroke:6});ctx.restore();return}
+    BB.panel(px,py,pw,ph,30);const hd={lead:['SPROCKET SINGS...','#7ec8ff'],echo:['YOUR TURN! SING IT BACK!','#6ee678'],crowd:['EVERYBODY SHOUT!','#ff8adf'],all:['EVERYBODY TOGETHER!','#ffe066']}[b.chant];
+    BB.text(hd[0],W/2,py+46,40,hd[1],{stroke:5});
+    if(b.ws.length===1){const s=b.shout?1+.25*Math.exp(-((k-BS[bi])*6)):1;ctx.save();ctx.translate(W/2,py+140);ctx.scale(s,s);BB.text(b.ws[0],0,0,b.shout?84:76,b.shout?'#ffe066':'#fff',{font:b.shout?'Rammetto One':'Lilita One',stroke:9,maxW:pw-80});ctx.restore()}
+    else{b.ws.forEach((w,i)=>{const x=px+cw*(i+.5),on=i===beat;BB.text(w,x,py+140-(on?8*Math.sin(Math.min(1,fr*3)*Math.PI):0),on?74:64,on?'#ffe066':i<beat?'#cfe8ff':'#ffffff',{stroke:on?9:6})});
+      ctx.save();ctx.fillStyle='#ff8adf';ctx.strokeStyle='#3a1040';ctx.lineWidth=4;ctx.beginPath();ctx.arc(px+cw*(beat+.5),py+86-Math.abs(Math.sin(fr*Math.PI))*30,14,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore()}
+    for(const[x,ic]of[[0,'S'],[.5,'S'],[1,'C'],[2,'S'],[2.5,'S'],[3,'C']]){const on=bt>=x&&bt<x+.4,cx=px+cw*(Math.floor(x)+.5)+(ic==='C'?0:x%1?36:-36),cy=py+214,sc=on?1.25:1;ctx.save();ctx.translate(cx,cy);ctx.scale(sc,sc);
+      if(ic==='S')BB.text('STOMP',0,8,on?24:20,on?'#ffe066':'#e2b272',{stroke:4});else BB.text('CLAP!',0,8,on?30:24,on?'#ffe066':'#cfe8ff',{stroke:4});ctx.restore()}
+    if((beat===1||beat===3)&&fr<.25){ctx.save();ctx.globalAlpha=.1*(1-fr/.25)*((b.lay||1)/2);ctx.fillStyle='#fff3c0';ctx.fillRect(0,0,W,H);ctx.restore()}
     ctx.restore()}
   drawReward(k,t){/* v14.3.2 reward intro (~14 s, SKIP): factory fixed, Levels 1-4 badges, then the reward reveal */
     ctx.save();ctx.fillStyle='rgba(8,12,24,.55)';ctx.fillRect(0,0,W,H);ctx.restore();
@@ -391,7 +439,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     else if(k<11.2){const v=k-8,s=v<.3?lerp(3,1,v/.3):1+.04*Math.sin(t*8);if(v<.05&&!this.rvl){this.rvl=1;BB.shake(18);BB.sfx.pkTa&&BB.sfx.pkTa();BB.sfx.bonk&&BB.sfx.bonk();BB.burst(W/2,400,50,{cols:['#ffe066','#ff8adf','#7ef0ff','#6ee678'],kind:'star',size:15,speed:1100,g:400})}
       ctx.save();ctx.translate(W/2,330);ctx.scale(s,s);BB.text('YOUR REWARD:',0,-90,64,'#fff',{stroke:9});BB.text('BOSS BRAIN BREAK!',0,30,120,'#ff8adf',{font:'Rammetto One',stroke:14,strokeCol:'#3a1040'});ctx.restore();if(v<.12){ctx.fillStyle=`rgba(255,255,255,${.5*(1-v/.12)})`;ctx.fillRect(0,0,W,H)}}
     else{BB.panel(W/2-560,140,1120,200,30);BB.text('STAND UP, RHYTHM ENGINEERS!',W/2,190,64,COL.yellow,{stroke:8,maxW:1060});BB.text('DODGE: duck, lean, freeze, jump.  ATTACK: CLAP! Faster = stronger!  Everybody wins!',W/2,265,34,'#fff',{stroke:5,maxW:1040})}
-    BB.button(W-300,30,260,90,'SKIP',{size:40,id:'rwskip',onClick:()=>{if(this.state==='intro'){BB.sayStop&&BB.sayStop();this.startKO()}}})}
+    this.q(()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'rwskip',onClick:()=>{if(this.state==='intro'){BB.sayStop&&BB.sayStop();this.startKO()}}}))}
   drawTease(k,t){/* v14.3.2 next-adventure tease: light through the roof, Sprocket looks up. Deliberately vague: no theme, no villain */
     const v=k-(KO_CEL+3);if(v<0)return;if(!this.teased){this.teased=1;BB.say('bb_tease',{overlap:true})}const a=clamp(v/1,0,1);
     ctx.save();ctx.globalAlpha=a*.55;const g=ctx.createLinearGradient(LCH.x,0,LCH.x-120,LCH.y);g.addColorStop(0,'rgba(255,250,220,.9)');g.addColorStop(1,'rgba(255,250,220,0)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(LCH.x-260,0);ctx.lineTo(LCH.x+60,0);ctx.lineTo(LCH.x+40,LCH.y+80);ctx.lineTo(LCH.x-420,LCH.y+80);ctx.fill();ctx.restore();
@@ -418,11 +466,11 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     else if(ic==='freeze'){ctx.strokeStyle='#bff8ff';ctx.lineWidth=8;for(let j=0;j<3;j++){ctx.save();ctx.rotate(j*Math.PI/3);ctx.beginPath();ctx.moveTo(-55,0);ctx.lineTo(55,0);ctx.stroke();ctx.restore()}}
     else if(ic==='stomp'){for(const d of[-30,30]){BB.rrect(d-22,-30+(Math.sin(t*10+d)>0?-8:0),44,70,10,'#ffe066','#5a3a1e',4)}}
     else BB.text('!',0,10,100,'#ffe066',{font:'Rammetto One',stroke:6});ctx.restore()}
-  draw(){const t=BB.t,k=t-this.st;if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#111';ctx.fillRect(0,0,W,H)}R.drawMotes(this.motes,BB.dt||.016,t);if(this.state==='load')return;
+  draw(){const t=BB.t,k=t-this.st;if(this.static)ctx.drawImage(this.static,0,0,W,H);else{ctx.fillStyle='#111';ctx.fillRect(0,0,W,H)}R.drawMotes(this.motes,BB.dt||.016,t);if(this.state==='load')return;const CAM=this.camFor(k);this.qq=[];ctx.save();ctx.translate(W/2+CAM.tx,H/2+CAM.ty);ctx.rotate(CAM.rot);ctx.scale(CAM.z,CAM.z);ctx.translate(-W/2,-H/2);
     const end=this.state==='end',dx=end?Math.max(0,k-(KO_BIG+1.2))**2*260:0,fill=end?clamp(Math.floor(barAt(k)/(KO_BARS.length-1)*TOTAL)+1,0,TOTAL):Math.min(TOTAL,this.n);
     R.paint(ctx,()=>this.drawTruck(TRK.x+dx,TRK.y,fill,{spin:end?Math.max(0,k-(KO_BIG+1.2))*14:0}));
     if(!end&&!(this.move&&this.state==='intro')){this.drawJr();this.drawHP()}
-    else if(!(this.move&&this.state==='intro')){const hv=this.heroV(k);let z=1;if(hv!=null)z=hv<0?1+(this.heroS===3?.35:.22)*clamp(1+hv/this.heroW,0,1):1+.22*Math.max(0,1-hv/.15);ctx.save();if(z>1){ctx.translate(JR.x,JR.y-90);ctx.scale(z,z);ctx.translate(-JR.x,-(JR.y-90))}this.drawKO(k,t);ctx.restore()}
+    else if(!(this.move&&this.state==='intro')){const hv=this.heroV(k);let z=1;if(hv!=null)z=hv<0?1+(this.heroS===3?.35:.22)*clamp(1+hv/this.heroW,0,1):1+.22*Math.max(0,1-hv/.15);ctx.save();if(z>1){ctx.translate(JR.x,JR.y-90);ctx.scale(z,z);ctx.translate(-JR.x,-(JR.y-90))}this.drawKO(k,t);ctx.restore();this.drawChant(k,t)}
     R.paint(ctx,()=>this.drawLauncher());
     // current box: sits on the launcher pad, then flies at Jr.
     if(this.seq&&!end&&this.state!=='intro'){let bx=760,by=470,s=1,rot=0,show=this.seq;
@@ -445,5 +493,6 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     if(this.state==='intro'&&this.move){if(k<14)this.drawReward(k,t);else this.drawStandoff(k-14,t)}
     if(end)this.drawTease(k,t);
     if(end&&k>KO_CEL+2){/* v14.2: last room -> back to the room map (finale done) */BB.button(W/2-520,860,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('finale')});BB.button(W/2+40,860,480,130,'PLAY AGAIN',{size:50,id:'again',onClick:()=>BB.go(new DeliveryRoom())})}
+    ctx.restore();this.drawLetterbox(CAM.lb);for(const f of this.qq)f();this.drawReplay(k,t);
     if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}}
 BB.DeliveryRoom=DeliveryRoom})();

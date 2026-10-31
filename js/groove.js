@@ -32,7 +32,14 @@ const STY={
   keys:[2,6,10,14],keysB:[2,6,10,13,14],keyWave:'triangle',keyLen:.3,keyLp:1300,
   hook:[[0,77],[4,81],[6,79],[8,77],[12,72]],hookB:[[0,79],[2,77],[4,76],[8,74],[10,76],[12,77]],hookWave:'sine',hookAmp:.07,
   kick:[0,8],kickB:[0,8,10],sh:[2,6,10,14],swing:.06,lead:'whistle'},
+ chant:{// v14.3.4 "Rhythm Engineers" stadium chant: A minor Am-F-C-G, stomp-stomp-CLAP kick, big octave bass, sparse power stabs
+  ch:[[45,[57,60,64]],[41,[57,60,65]],[48,[55,60,64]],[43,[55,59,62]]],chB:[[45,[57,60,64]],[41,[57,60,65]],[48,[55,60,64]],[43,[55,59,62]]],
+  bass:[[0,0],[2,0],[8,0],[10,0]],fill:[[0,0],[2,0],[8,0],[10,0],[12,7],[14,12]],
+  keys:[4,12],keysB:[4,12],keyWave:'sawtooth',keyLen:.35,keyLp:1400,
+  hook:[[0,69],[4,72],[8,76],[12,72]],hookB:[[0,69],[4,72],[8,76],[12,79]],hookWave:'triangle',hookAmp:.04,
+  kick:[0,2,8,10],kickB:[0,2,8,10],sh:[4,12],swing:0,lead:'bloop'},
 };
+{const c=STY.chant,up=x=>x.map(([r,ns])=>[r+2,ns.map(n=>n+2)]);STY.chantUp=Object.assign({},c,{ch:up(c.ch),chB:up(c.chB),keys:[2,4,6,10,12,14],keysB:[2,4,6,10,12,14],hook:c.hook.map(([a,m])=>[a,m+2]),hookB:c.hookB.map(([a,m])=>[a,m+2]),hookAmp:.06,sh:[2,4,6,10,12,14]})}
 BB.GROOVE_STY=STY;
 BB.makeGroove=(ac,out,o={})=>{const lite=!!o.lite;
   const bus=ac.createGain();bus.gain.value=0;bus.connect(out);
