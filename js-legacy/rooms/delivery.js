@@ -2730,46 +2730,76 @@
       for (let j = 0; j < 3; j++) {
         const x = X0 + j * 140, fl = clamp(f - j, 0, 1), y = Y0;
         ctx.save();
-        ctx.fillStyle = "rgba(20,30,40,.55)";
-        ctx.strokeStyle = "#eee4cc";
-        ctx.lineWidth = 7;
-        ctx.beginPath();
-        ctx.roundRect(x - JW / 2, y, JW, JH, 26);
-        ctx.fill();
+        ctx.fillStyle = "rgba(15,25,35,.6)";
+        ctx.fillRect(x - JW / 2 + 10, y, JW - 20, JH);
         if (fl > 0) {
-          const lh = (JH - 16) * fl, wv = Math.sin(t * 9 + j) * 6;
+          const lh = JH * fl, wv = Math.sin(t * 9 + j) * 5;
           ctx.save();
           ctx.beginPath();
-          ctx.roundRect(x - JW / 2 + 8, y + 8, JW - 16, JH - 16, 20);
+          ctx.rect(x - JW / 2 + 10, y, JW - 20, JH);
           ctx.clip();
-          ctx.fillStyle = cols[j];
+          const g = ctx.createLinearGradient(x - JW / 2, 0, x + JW / 2, 0);
+          g.addColorStop(0, cols[j]);
+          g.addColorStop(0.5, "#fff");
+          g.addColorStop(1, cols[j]);
+          ctx.fillStyle = g;
+          ctx.globalAlpha = 0.9;
           ctx.beginPath();
           ctx.moveTo(x - JW / 2, y + JH);
-          ctx.lineTo(x - JW / 2, y + JH - 8 - lh + wv);
-          ctx.quadraticCurveTo(x, y + JH - 8 - lh - wv, x + JW / 2, y + JH - 8 - lh + wv);
+          ctx.lineTo(x - JW / 2, y + JH - lh + wv);
+          ctx.quadraticCurveTo(x, y + JH - lh - wv, x + JW / 2, y + JH - lh + wv);
           ctx.lineTo(x + JW / 2, y + JH);
           ctx.fill();
-          ctx.fillStyle = "rgba(255,255,255,.55)";
-          for (let q = 0; q < 5; q++) {
-            const by = y + JH - (t * 120 + q * 53 + j * 30) % Math.max(20, lh);
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = "rgba(255,255,255,.8)";
+          ctx.lineWidth = 3;
+          for (let q = 0; q < 3; q++) {
+            const zy = y + JH - (t * 160 + q * 70 + j * 40) % Math.max(30, lh);
             ctx.beginPath();
-            ctx.arc(x - 25 + q * 12, by, 4, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.moveTo(x - 18, zy);
+            ctx.lineTo(x - 4, zy - 10);
+            ctx.lineTo(x + 4, zy + 4);
+            ctx.lineTo(x + 18, zy - 6);
+            ctx.stroke();
           }
           ctx.restore();
         }
-        ctx.beginPath();
-        ctx.roundRect(x - JW / 2, y, JW, JH, 26);
-        ctx.stroke();
-        ctx.fillStyle = "#7a4a24";
-        ctx.beginPath();
-        ctx.roundRect(x - JW / 2 - 8, y - 30, JW + 16, 34, 10);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = "#ffd84a";
-        ctx.beginPath();
-        ctx.arc(x, y - 13, 8, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.strokeStyle = "#eee4cc";
+        ctx.lineWidth = 6;
+        ctx.strokeRect(x - JW / 2 + 10, y, JW - 20, JH);
+        ctx.fillStyle = "rgba(255,255,255,.25)";
+        ctx.fillRect(x - JW / 2 + 18, y + 8, 8, JH - 16);
+        ctx.strokeStyle = "#1a1a1a";
+        ctx.lineWidth = 3;
+        for (let q = 1; q < 5; q++) {
+          const ty = y + JH * q / 5;
+          ctx.beginPath();
+          ctx.moveTo(x + JW / 2 - 10, ty);
+          ctx.lineTo(x + JW / 2 - (q % 2 ? 24 : 32), ty);
+          ctx.stroke();
+        }
+        const cap = (cy, h) => {
+          const g = ctx.createLinearGradient(x - JW / 2, 0, x + JW / 2, 0);
+          g.addColorStop(0, "#6d7880");
+          g.addColorStop(0.45, "#cfd8dc");
+          g.addColorStop(1, "#56616a");
+          ctx.fillStyle = g;
+          ctx.strokeStyle = "#eee4cc";
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.roundRect(x - JW / 2 - 6, cy, JW + 12, h, 8);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#3a4248";
+          for (const rx of [-JW / 2 + 6, 0, JW / 2 - 6]) {
+            ctx.beginPath();
+            ctx.arc(x + rx, cy + h / 2, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        };
+        const pop = this.vBurst && k - this.vBurst < 0.5 ? (k - this.vBurst) / 0.5 : 0, po = pop ? -60 * Math.sin(pop * Math.PI) : 0;
+        cap(y - 34 + po, 38);
+        cap(y + JH - 4, 34);
         if (fl >= 1) {
           ctx.globalCompositeOperation = "lighter";
           const g = ctx.createRadialGradient(x, y + JH / 2, 10, x, y + JH / 2, 170);
@@ -2777,6 +2807,27 @@
           g.addColorStop(1, cols[j] + "00");
           ctx.fillStyle = g;
           ctx.fillRect(x - 170, y - 60, 340, JH + 120);
+          ctx.globalCompositeOperation = "source-over";
+          ctx.fillStyle = "rgba(240,240,240,.5)";
+          for (let q = 0; q < 4; q++) {
+            const u = (t * 1.4 + q * 0.25 + j * 0.13) % 1;
+            ctx.globalAlpha = 0.6 * (1 - u);
+            ctx.beginPath();
+            ctx.arc(x + (q % 2 ? 1 : -1) * (JW / 2 + 6 + u * 30), y - 20 - u * 70, 10 + u * 22, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
+        if (pop) {
+          ctx.strokeStyle = "#ffd84a";
+          ctx.lineWidth = 4;
+          for (let q = 0; q < 8; q++) {
+            const a = -Math.PI / 2 + (q - 3.5) * 0.3, r0 = 30 + pop * 120;
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(a) * r0 * 0.5, y - 30 + Math.sin(a) * r0 * 0.5);
+            ctx.lineTo(x + Math.cos(a) * r0, y - 30 + Math.sin(a) * r0);
+            ctx.stroke();
+          }
         }
         ctx.restore();
       }
