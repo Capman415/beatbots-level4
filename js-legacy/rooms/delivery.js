@@ -141,7 +141,7 @@
   KO_BARS.forEach((b, i) => b.clear && KO_PHASE_END.push(BS[i]));
   const KO_HITS = [];
   KO_BARS.forEach((b, i) => b.h.forEach(([bt, kind]) => KO_HITS.push([BS[i] + bt * BL[i] / 4, kind])));
-  const KO_BIG = BS[KO_BARS.length - 1], KO_TF = 6.4, KO_LAUNCH = KO_BIG + KO_TF, KO_CEL = KO_LAUNCH + 2.4, KO_ATK = (k) => ["bomb", "junkT", "junkL", "junkR", "junkF", "zap"].includes(k);
+  const KO_BIG = BS[KO_BARS.length - 1], KO_TF = 8.6, KO_LAUNCH = KO_BIG + KO_TF, KO_CEL = KO_LAUNCH + 2.4, KO_ATK = (k) => ["bomb", "junkT", "junkL", "junkR", "junkF", "zap"].includes(k);
   const bossMode = () => {
     try {
       const q = new URLSearchParams(location.search).get("boss");
@@ -1124,8 +1124,10 @@
       const x = LCH.x, y = LCH.y, k = this.state === "throw" ? BB.t - this.st : 9, rc = k < 0.25 ? Math.sin(k / 0.25 * Math.PI) * 18 : 0;
       if (BB.IMG.sprocket) {
         const tk = BB.isTalking && BB.isTalking("sprocket"), cheer = this.state === "end" || this.jrK && this.jrK.ph === "hit" && BB.t - this.jrK.t < 1.2;
-        BB.contactShadow && BB.contactShadow(x - 175, y + 100, 100, 0.5);
-        BB.sprite("sprocket", x - 175, y + 100, 330, { squash: (tk ? Math.sin(BB.t * 16) * 0.02 : Math.sin(BB.t * 2) * 6e-3) + (cheer ? Math.abs(Math.sin(BB.t * 8)) * 0.04 : 0), rot: Math.sin(BB.t * 1.3) * 0.015 });
+        if (!(this.spIn && BB.t - this.spIn < 0.15)) {
+          BB.contactShadow && BB.contactShadow(x - 175, y + 100, 100, 0.5);
+          BB.sprite("sprocket", x - 175, y + 100, 330, { squash: (tk ? Math.sin(BB.t * 16) * 0.02 : Math.sin(BB.t * 2) * 6e-3) + (cheer ? Math.abs(Math.sin(BB.t * 8)) * 0.04 : 0), rot: Math.sin(BB.t * 1.3) * 0.015 });
+        }
       }
       {
         const fv = BB.t - (this.cFire || -9), rr = rc + (fv < 0.35 ? Math.sin(Math.min(1, fv / 0.35) * Math.PI) * 34 : 0), ang = -0.5, mx = x - rr + Math.cos(ang) * 200, my = y + Math.sin(ang) * 200;
@@ -2103,76 +2105,84 @@
           this["ev" + n] = 1;
           f();
         }
-      }, lab = this.deluxe ? "DELUXE ULTRA RETURN" : "RETURN TO SENDER", top = BY - 60 * BS2;
-      if (v < 0.45) {
-        ctx.save();
-        ctx.globalAlpha = 0.25 + 0.25 * Math.sin(t * 50);
-        for (let i = 0; i < 8; i++) {
-          ctx.fillStyle = i % 2 ? "#7ef0ff" : "#ff8adf";
-          ctx.fillRect(JR.x - 200 + Math.random() * 400, JR.y - 300 + Math.random() * 420, 80 + Math.random() * 120, 10);
-        }
-        ctx.restore();
-      }
-      let bx = BX, by = BY, bs = BS2, br = 0;
-      if (v > 2.5 && v < 3.9) br = Math.sin(t * 40) * 0.05 * (v < 3.6 ? 1 : 0.3);
-      if (v >= 4 && v < 4.9) {
-        const u = (v - 4) / 0.9, e = u * u * (3 - 2 * u);
+      }, lab = this.deluxe ? "DELUXE ULTRA RETURN" : "RETURN TO SENDER", top = BY - 60 * BS2, jx = JR.x, jy = JR.y - 100;
+      let bx = BX, by = BY, bs = BS2;
+      if (v >= 3.7 && v < 4.6) {
+        const u = (v - 3.7) / 0.9, e = u * u * (3 - 2 * u);
         bx = lerp(BX, TRK.x + 300, e);
         by = lerp(BY, TRK.y + 150, e) - Math.sin(u * Math.PI) * 160;
         bs = lerp(BS2, 1.25, e);
       }
-      if (v >= 4.9) {
-        bx = TRK.x + 300 + Math.max(0, v - 4.9) ** 2 * 520;
+      if (v >= 4.6) {
+        bx = TRK.x + 300 + (v - 4.6) ** 2 * 520;
         by = TRK.y + 150;
         bs = 1.25;
         ev("go", () => {
           S.wobble && S.wobble();
-          BB.say && BB.say("dl_done", { overlap: true });
         });
       }
-      if (v >= 0.45 && v < 1.6) {
-        const u = clamp((v - 0.45) / 0.8, 0, 1);
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(-200, -400, W + 400, top + 10 + 400);
-        ctx.clip();
-        ctx.translate(BX, lerp(-500, BY - 40, u * u));
-        ctx.rotate(u * 2.5);
-        BB.staticJr(0, 0, 260, { dizzy: true, glitch: 0.3, noShadow: true });
-        ctx.restore();
-        if (u >= 1) ev("thunk", () => {
-          BB.shake(16);
-          S.clunk && S.clunk();
-          BB.burst(BX, top, 24, { cols: ["#e8e0d0", "#ffe066"], kind: "star", size: 12, speed: 600, g: 300 });
-        });
-      }
-      if (v >= 2.8 && v < 3.8) {
-        const u = v - 2.8, pop = u < 0.25 ? u / 0.25 : u > 0.8 ? 1 - (u - 0.8) / 0.2 : 1;
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(-200, -400, W + 400, top + 400);
-        ctx.clip();
-        this.drawMini(BX, top + 60 - pop * 190, 0.6, t, { rot: Math.sin(t * 30) * 0.06 });
-        ctx.restore();
-        ev("mini", () => {
-          S.glitch && S.glitch();
-        });
-        if (u > 0.25 && u < 0.8) {
-          BB.panel(BX - 700, top - 330, 560, 170, 26);
-          BB.text("BEEP-BOOP! BZZT!", BX - 420, top - 280, 34, "#7ef0ff", { stroke: 0 });
-          BB.text("YOU HAVEN'T SEEN THE LAST OF ME!!", BX - 420, top - 220, 32, "#ff5a5a", { stroke: 0, maxW: 520 });
-        }
-      }
-      if (bx < W + 400) {
+      if (v >= 0.9 && bx < W + 400) {
         ctx.save();
         ctx.translate(bx, by);
-        ctx.rotate(br);
         ctx.scale(bs, bs);
-        this.paintBox(v < 1.5, v >= 2.15 ? lab : null);
+        this.paintBox(v < 2.6, v >= 2.95 ? lab : null);
         ctx.restore();
       }
-      if (v >= 1.8 && v < 2.6) {
-        const u = (v - 1.8) / 0.35, y = u < 1 ? lerp(-260, top + 20, u * u) : lerp(top + 20, -260, Math.min(1, (u - 1) * 1.3));
+      if (v >= 1.2 && v < 2.5) {
+        const u = (v - 1.2) / 1.3, e = u * u, mx = lerp(jx, BX, e) + Math.sin(u * 9) * 40 * (1 - u), my = lerp(jy - 120, top + 40, e) - Math.sin(u * Math.PI) * 260;
+        ev("nooo", () => {
+          BB.say("bb_nooo", { overlap: true });
+        });
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-200, -600, W + 400, u > 0.8 ? top + 600 : H + 600);
+        ctx.clip();
+        this.drawMini(mx, my, 0.55, t, { rot: u * 9 });
+        ctx.restore();
+        if (u < 0.95) BB.text("NOOOOOOOOOO!", mx, my - 120, 44 + u * 20, "#7ef0ff", { font: "Rammetto One", stroke: 6 });
+        if (u >= 0.97) ev("plop", () => {
+          BB.shake(10);
+          S.clunk && S.clunk();
+        });
+      }
+      if (v < 1.6) {
+        const u = v / 1.6;
+        ctx.save();
+        if (u < 0.15) {
+          ctx.globalAlpha = 1 - u / 0.15;
+          ctx.fillStyle = "#fff8e0";
+          ctx.fillRect(0, 0, W, H);
+          ctx.globalAlpha = 1;
+        }
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = "rgba(255,".concat(180 - u * 100 | 0, ",60,").concat(0.9 * (1 - u), ")");
+        ctx.beginPath();
+        ctx.arc(jx, jy, 80 + u * 260, 0, 7);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = "rgba(255,246,200,".concat(1 - u, ")");
+        ctx.lineWidth = 20 * (1 - u) + 2;
+        ctx.beginPath();
+        ctx.arc(jx, jy, 60 + u * 700, 0, 7);
+        ctx.stroke();
+        for (let q = 0; q < 14; q++) {
+          const a = q / 14 * 7, d = 40 + u * (180 + q % 3 * 60);
+          ctx.globalAlpha = Math.min(1, (1.6 - v) * 1.2) * 0.85;
+          ctx.fillStyle = q % 2 ? "#8a8378" : "#bdb6aa";
+          ctx.beginPath();
+          ctx.arc(jx + Math.cos(a) * d, jy + Math.sin(a) * d * 0.7 - u * 60, 60 + u * 90, 0, 7);
+          ctx.fill();
+        }
+        ctx.restore();
+        ev("boom", () => {
+          BB.shake(30);
+          S.boom ? S.boom() : S.clunk && S.clunk();
+          BB.burst(jx, jy, 50, { cols: ["#ffe066", "#ff8a3a", "#fff"], kind: "star", size: 16, speed: 1100, g: 200 });
+        });
+        if (v < 1) BB.text("KA-BOOOM!", jx, jy - 260, 120, "#ffe066", { font: "Rammetto One", stroke: 12, strokeCol: "#782814" });
+      }
+      if (v >= 2.6 && v < 3.4) {
+        const u = (v - 2.6) / 0.35, y = u < 1 ? lerp(-260, top + 20, u * u) : lerp(top + 20, -260, Math.min(1, (u - 1) * 1.3));
         ctx.save();
         ctx.fillStyle = "#7d8c96";
         ctx.fillRect(BX - 14, -40, 28, y + 40);
@@ -2187,7 +2197,20 @@
         });
         if (u >= 1 && u < 1.8) BB.text("KA-CHUNK!", BX, top - 120, 90, "#ffe066", { font: "Rammetto One", stroke: 10, strokeCol: "#3a1040" });
       }
-      if (v >= 4.9) BB.text(lab + "!", W / 2, 300, 96, "#ffe066", { font: "Rammetto One", stroke: 12, strokeCol: "#782814", maxW: W - 120 });
+      if (v >= 4.6 && v < 5.6) BB.text(lab + "!", W / 2, 300, 96, "#ffe066", { font: "Rammetto One", stroke: 12, strokeCol: "#782814", maxW: W - 120 });
+      if (v >= 5.6) {
+        const u = Math.min(1, (v - 5.6) / 0.5);
+        this.spIn = BB.t;
+        ev("saved", () => {
+          BB.say("sp_saved", { overlap: true });
+          S.fanfare && S.fanfare();
+          BB.burst(W / 2, 260, 60, { cols: ["#ffe066", "#7ef0ff", "#ff8adf", "#6ee678"], kind: "star", size: 14, speed: 1e3, g: 500 });
+        });
+        const sx = lerp(LCH.x - 175, W / 2 - 120, u * u * (3 - 2 * u)), hop = Math.abs(Math.sin(t * 7)) * 40;
+        BB.sprite("sprocket", sx, LCH.y + 100 - hop, 420, {});
+        R.bubble(sx + 40, LCH.y - 330 - hop, "rhythm engineers... you saved the day!");
+        BB.text("YOU SAVED THE DAY!", W / 2 + 220, 300, 92, "#ffe066", { font: "Rammetto One", stroke: 12, strokeCol: "#3a1040", maxW: W - 500 });
+      }
     }
     drawCard(b, u, t) {
       const cx = 760, cy = 345, w = 620, h = 230, pre = u < 0;
@@ -3157,7 +3180,7 @@
         else this.cf = 3;
         this.cBurst = k;
       }
-      if (this.cBurst && k - this.cBurst > 0.6 && (b.clear || b.rest || this.cf >= 3 && !b.cw) && !b.voice && !b.rush) this.cf = 0;
+      if (this.cBurst && k - this.cBurst > 0.6 && (b.clear || b.rest || this.cf >= 3 && !b.cw) && !b.voice && !b.rush) this.cf = 0, this.spIn = 0, ["evboom", "evnooo", "evplop", "evstamp", "evgo", "evsaved", "evthunk", "evmini"].forEach((n) => this[n] = 0);
     }
     drawClapWin(k, t) {
       if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
@@ -3810,8 +3833,8 @@
       ctx.scale(CAM.z, CAM.z);
       ctx.translate(-W / 2, -H / 2);
       this.drawSceneBack(k, t);
-      const end = this.state === "end", dx = end ? Math.max(0, k - (KO_BIG + 4.9)) ** 2 * 520 : 0, fill = end ? clamp(Math.floor(barAt(k) / (KO_BARS.length - 1) * TOTAL) + 1, 0, TOTAL) : Math.min(TOTAL, this.n);
-      if (!(this.state === "end" && k < KO_BIG && (KO_BARS[barAt(k)] || {}).read)) R.paint(ctx, () => this.drawTruck(TRK.x + dx, TRK.y, fill, { spin: end ? Math.max(0, k - (KO_BIG + 4.9)) * 14 : 0 }));
+      const end = this.state === "end", dx = end ? Math.max(0, k - (KO_BIG + 4.6)) ** 2 * 520 : 0, fill = end ? clamp(Math.floor(barAt(k) / (KO_BARS.length - 1) * TOTAL) + 1, 0, TOTAL) : Math.min(TOTAL, this.n);
+      if (!(this.state === "end" && k < KO_BIG && (KO_BARS[barAt(k)] || {}).read)) R.paint(ctx, () => this.drawTruck(TRK.x + dx, TRK.y, fill, { spin: end ? Math.max(0, k - (KO_BIG + 4.6)) * 14 : 0 }));
       if (!end && !(this.move && this.state === "intro")) {
         this.drawJr();
         this.drawHP();
