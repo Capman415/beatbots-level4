@@ -62,83 +62,12 @@
     return [KB(tp.def, "clap", [], { count: 1, pwr: 1, tp }), KB(tp.w + "! CLAP CLAP CLAP!", "clap", [], { pwr: 2, tp })];
   };
   const A_ = (cue, h) => KB(cue, "clap", h, { atk: 1 }), C4 = (k) => A_("CLAP NOW! SLAP HIM SILLY!", [[0, "L"], [1, "R"], [2, "L"], [2.5, "R"], [3, k]]), CT = (k) => A_("CLAP CLAP CLAP! SLAP-HAPPY!", [[0, "L"], [0.5, "R"], [1, "L"], [1.5, "R"], [2, k]]), BOMBS = () => KB("FUZZ BOMBS! FREEZE... then SHAKE!", "freeze", [[1, "bomb"], [3, "bomb"]], { mode: "throw" }), DK = () => KB("DUCK!", "duck", [[2, "junkT"]], { mode: "throw" }), DL = () => KB("LEAN LEFT!", "L", [[2, "junkR"]], { mode: "throw" }), DR = () => KB("LEAN RIGHT!", "R", [[2, "junkL"]], { mode: "throw" }), JP = () => KB("JUMP! (rolling tire!)", "jump", [[2, "junkF"]], { mode: "throw" });
+  const CW = () => [KB("CLAP ATTACK! CHARGE IT UP!", "clap", [], { cw: 1 }), KB("CLAP ATTACK! KEEP CLAPPING!", "clap", [], { cw: 2 })], HIT = () => KB("HERE IT COMES...", "ready", [[1, "chunk"]], { clear: 1 }), OOF = (g) => KB(g ? "Uh-oh... what is he doing?" : "OOF! He felt that!", "ready", [], { rest: 1, gag: g }), RND = (n, name, d, g) => [KB("ROUND " + n + ": " + name, "ready", [], { count: 1, phase: n, rn: 1 }), ...d, ...CW(), HIT(), OOF(g)];
   const KO_BARS = [
-    PH(1, "SHAKE & FREEZE"),
-    SH(),
-    FRZ(2),
-    C4("L"),
-    C4("R"),
-    SOFT(),
-    BOMBS(),
-    CT("L"),
-    FRZ(1),
-    C4("stomp"),
-    ...PWR(),
-    CLR(),
-    PH(2, "DUCK & LEAN"),
-    DK(),
-    DL(),
-    C4("R"),
-    DR(),
-    CT("L"),
-    KB("DUCK, LEFT, RIGHT!", "duck", [[1, "junkT"], [2, "junkR"], [3, "junkL"]], { mode: "throw" }),
-    C4("rain"),
-    DL(),
-    CT("R"),
-    ...PWR(),
-    CLR(),
-    PH(3, "JUMP & FREEZE"),
-    JP(),
-    C4("stomp"),
-    FRZ(2),
-    CT("rain"),
-    JP(),
-    DK(),
-    A_("CLAP! BIG BOOMS!", [[0, "stomp"], [2, "stomp"]]),
-    BOMBS(),
-    C4("L"),
-    ...PWR(),
-    CLR(),
-    PH(4, "FACTORY CLAPS"),
-    DL(),
-    A_("MINE: CLAP to swing the pickaxe!", FOUR("pick")),
-    DK(),
-    A_("PACKING: CLAP to pat the box!", FOUR("pat")),
-    DR(),
-    A_("LABEL: CLAP to STAMP!", [[0, "stamp"], [1, "stamp"], [2, "stamp"], [2.5, "stamp"], [3, "stamp"]]),
-    JP(),
-    A_("DELIVERY: CLAP to push!", [[0, "push"], [2, "push"]]),
-    A_("ALL OF THEM: CLAP CLAP CLAP CLAP!", [[0, "pick"], [1, "pat"], [2, "stamp"], [3, "push"]]),
-    ...PWR(),
-    CLR(),
-    PH(5, "CLAP BACK FINALE!"),
-    C4("L"),
-    C4("R"),
-    BOMBS(),
-    CT("L"),
-    KB("DUCK! (it bounces back!)", "duck", [[2, "zap"]], { mode: "throw" }),
-    A_("CLAP AS FAST AS YOU CAN!", [[0, "L"], [0.5, "R"], [1, "L"], [1.5, "R"], [2, "L"], [2.5, "R"], [3, "L"]]),
-    DL(),
-    C4("stomp"),
-    JP(),
-    A_("CLAP CLAP CLAP CLAP!", [[0, "L"], [1, "R"], [2, "rain"], [3, "stomp"]]),
-    ...[0, 1, 2, 3].map((j) => KB("CHARGE UP! Sing AHHH and go HIGHER!", "ready", [], { voice: 1, vi: j, bpm: 100 })),
-    ...PWR(),
-    PH(6, "AIR JUGGLE PARTY!"),
-    ...[
-      ["ALLEGRO", 120, [["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"]]],
-      ["ALLEGRO", 120, [["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"]]],
-      ["ALLEGRO", 120, [["q", "q", "q", "q"], ["q", "q", "q", "q"], ["q", "q", "q", "q"]]]
-    ].flatMap(([w, bpm, cards]) => cards.map((pat, j) => {
-      let x = 0, h = [], n = 0;
-      for (const k of pat) {
-        const st = k === "q" ? [0] : k === "e" ? [0, 0.5] : [0, 0.25, 0.5, 0.75];
-        st.forEach((o) => h.push([x + o, n++ % 2 ? "R" : "L"]));
-        x++;
-      }
-      return KB("AIR JUGGLE! ta ta ta ta!", "read", h, { read: pat, bpm, tw: w, cardN: j });
-    })),
-    /* v14.3.4 SING-ALONG CHANT (user's own lyrics): stomp-stomp-CLAP at 110 BPM; Sprocket leads, class echoes, then everybody; Jr gets slapped on the claps */
+    ...RND(1, "DUCK & LEAN", [DK(), DL(), DR(), DK()]),
+    ...RND(2, "JUMP & LEAN", [JP(), DR(), DL(), JP(), DK()], "67"),
+    ...RND(3, "FREEZE & DODGE", [FRZ(2), DL(), JP(), DR()], "mw"),
+    ...RND(4, "ALL THE MOVES!", [DK(), JP(), DL(), DR(), FRZ(2)]),
     ...(() => {
       const L1 = ["Rhythm,", "Rhythm", "Engi-", "neers."], L2 = ["Pull the", "levers,", "turn your", "gears."], CH = (who, ws, o = {}) => KB("SING-ALONG! STOMP STOMP CLAP!", "clap", [[1, "L"], [3, "R"]], Object.assign({ chant: who, ws, bpm: 110, sty: "chant" }, o)), CR = (q, a, vo) => [CH("lead", [q], { vo, ask: 1 }), CH("crowd", [a], { shout: 1, h: [[0, "chunk"]] })];
       return [
@@ -147,21 +76,15 @@
         CH("echo", L1),
         CH("lead", L2, { vo: "bb_ch2" }),
         CH("echo", L2),
-        CH("lead", L1, { vo: "bb_ch1", lay: 2 }),
-        CH("echo", L1, { lay: 2 }),
-        CH("lead", L2, { vo: "bb_ch2", lay: 2 }),
-        CH("echo", L2, { lay: 2 }),
         ...CR("Who fixed the factory?", "WE DID!", "bb_who1"),
-        CH("all", L1, { vo: "bb_ch1", lay: 3 }),
-        CH("all", L2, { vo: "bb_ch2", lay: 3 }),
         ...CR("Who are we?", "RHYTHM ENGINEERS!", "bb_who2"),
         CH("all", L1, { vo: "bb_ch1", lay: 4, sty: "chantUp" }),
         CH("all", L2, { vo: "bb_ch2", lay: 4, sty: "chantUp" })
       ];
     })(),
-    Object.assign(C4("L"), { bpm: 110, sty: "chantUp" }),
-    Object.assign(CT("R"), { bpm: 110, sty: "chantUp" }),
-    Object.assign(C4("stomp"), { bpm: 110, sty: "chantUp" }),
+    ...[0, 1, 2, 3].map((j) => KB("CHARGE UP! Sing AHHH and go HIGHER!", "ready", [], { voice: 1, vi: j, bpm: 100 })),
+    KB("FINALE! EVERY CLAP = ONE PUNCH!", "ready", [], { count: 1 }),
+    ...[0, 1, 2].map((j) => KB("PUNCH RUSH! CLAP CLAP CLAP!", "clap", [[0, "L"], [1, "R"], [2, "L"], [3, "R"]], { rush: 1 })),
     Object.assign(KB("EVERYBODY GET LOW...", "duck", [], { count: 2 }), { bpm: 110, sty: "chantUp" }),
     Object.assign(KB("EVERYBODY JUMP!", "jump", [[0, "big"]]), { bpm: 110, sty: "chantUp" })
   ];
@@ -199,7 +122,7 @@
   }
   BB.KO_BARS = KO_BARS;
   KO_BARS.forEach((b) => {
-    b.turn = b.mode ? "jr" : b.atk || b.pwr || b.clear ? "us" : "";
+    b.turn = b.mode ? "jr" : b.cw || b.rush || b.atk || b.pwr ? "us" : "";
   });
   let RUN = 0;
   KO_BARS.forEach((b, i) => {
@@ -655,6 +578,27 @@
               BB.shake(5);
               BB.burst(p.x, p.y, 26, { cols: ["#7ef0ff", "#ff8adf", "#ffe066", "#fff"], kind: "star", size: 13, speed: 700, g: 250 });
             } else if (KO_ATK(kind)) {
+            } else if (kind === "chunk" && (KO_BARS[barAt(hk)] || {}).clear) {
+              const lv = this.hitLv || 0, bl = BL[barAt(hk)] / 4, A = (x) => this.a0 + x - KO_T0, S = BB.sfx;
+              this.hitShow = { k: hk, lv };
+              BB.shake([10, 18, 40][lv]);
+              this.impact(lv + 1, 0);
+              BB.burst(JR.x, JR.y - 80, [14, 24, 60][lv], { cols: ["#ffe066", "#fff", "#ff8adf", "#7ef0ff"], kind: "star", size: 14, speed: [600, 900, 1400][lv], g: 400 });
+              BB.say(["bb_g1", "bb_g2", "bb_g3"][lv], { overlap: true });
+              if (lv === 1) [1, 2].forEach((q) => {
+                S.pkTa && S.pkTa(A(hk + q * bl));
+                S.bonk && S.bonk(A(hk + q * bl));
+                setTimeout(() => {
+                  if (BB.scene !== this) return;
+                  BB.shake(16);
+                  this.impact(2, q % 2 ? 1 : -1);
+                  BB.burst(JR.x + (q % 2 ? 60 : -60), JR.y - 80, 18, { cols: ["#ffe066", "#fff"], kind: "star", size: 13, speed: 800, g: 300 });
+                }, q * bl * 1e3);
+              });
+              if (lv === 2) {
+                S.wobble && S.wobble(A(hk + bl));
+                S.pop && S.pop(A(hk + bl));
+              }
             } else if (kind === "chunk") {
               BB.shake(26);
               BB.burst(JR.x, JR.y - 60, 40, { cols: ["#ff8adf", "#7ef0ff", "#ffe066", "#6ee678", "#f4ecd8"], kind: "spark", size: 14, speed: 1200, g: 500, life: 1.6 });
@@ -683,11 +627,11 @@
                   BB.sfx.bonk && BB.sfx.bonk();
                 } else if (!g || gv > 2.6) {
                   const bt = 60 / (240 / (BL[barAt(BB.t - this.st)] || 2.4));
-                  if (this.hitN === 38 && (this.mwN || 0) < 1) {
+                  if (0) {
                     this.mwN = (this.mwN || 0) + 1;
                     this.gag = { kind: "mw", t: BB.t, dur: 4 * (BL[barAt(BB.t - this.st)] || 2.4) / 4, beat: (BL[barAt(BB.t - this.st)] || 2.4) / 4 };
                     BB.say("bb_heehee", { overlap: true });
-                  } else if (!KO_HITS.some((h) => KO_ATK(h[1]) && Math.abs(h[0] - (BB.t - this.st)) < 2.2) && !(KO_BARS[barAt(BB.t - this.st)] || {}).chant && (KO_BARS[barAt(BB.t - this.st)] || {}).atk && (this.n67 || 0) < 1 && this.hitN - (this.gagLast || -9) > 4 && Math.random() < 1 / 10) {
+                  } else if (!KO_HITS.some((h) => KO_ATK(h[1]) && Math.abs(h[0] - (BB.t - this.st)) < 2.2) && !(KO_BARS[barAt(BB.t - this.st)] || {}).chant && (KO_BARS[barAt(BB.t - this.st)] || {}).atk && 0) {
                     this.n67 = (this.n67 || 0) + 1;
                     this.gagLast = this.hitN;
                     this.gag = { kind: "67", t: BB.t, dur: 1.6 };
@@ -715,11 +659,19 @@
               this.cf = Math.min(3, (this.cf || 0) + 0.05 + 0.035 * (tr || 0));
               this.combo = (BB.t - (this.lastCl || 0) < 0.8 ? this.combo || 0 : 0) + 1;
               this.lastCl = BB.t;
-              this.blasts.push({ t: BB.t, x: W * (0.3 + Math.random() * 0.4), s: 1 + tr * 0.35 });
+              if (b.rush) {
+                this.rushN = (this.rushN || 0) + 1;
+                this.impact(1, this.rushN % 2 ? -1 : 1);
+                BB.shake(Math.min(26, 5 + this.rushN * 0.7));
+                BB.sfx.bonk && BB.sfx.bonk();
+              } else if (!b.cw) this.blasts.push({ t: BB.t, x: W * (0.3 + Math.random() * 0.4), s: 1 + tr * 0.35 });
+              if (b.cw) BB.sfx.chime && BB.sfx.chime();
               BB.sfx.pkTa && BB.sfx.pkTa();
-              if (tr >= 2) BB.sfx.bonk && BB.sfx.bonk();
-              BB.shake(3 + tr * 3);
-              BB.burst(JR.x + (Math.random() - 0.5) * 120, JR.y - 60, 10 + tr * 8, { cols: ["#ffe066", "#fff", TIERS[tr][2]], kind: "star", size: 10 + tr * 3, speed: 500 + tr * 200, g: 200 });
+              if (!b.cw) {
+                if (tr >= 2) BB.sfx.bonk && BB.sfx.bonk();
+                BB.shake(3 + tr * 3);
+                BB.burst(JR.x + (Math.random() - 0.5) * 120, JR.y - 60, 10 + tr * 8, { cols: ["#ffe066", "#fff", TIERS[tr][2]], kind: "star", size: 10 + tr * 3, speed: 500 + tr * 200, g: 200 });
+              }
             }
           }
           if (this.manualPc && us) {
@@ -735,7 +687,7 @@
           }
           {
             const tn = tierOf(this.cpm);
-            if (us && tn === 4 && this.fireRun !== b.run) {
+            if (us && tn === 4 && !b.cw && !b.rush && this.fireRun !== b.run) {
               this.fireRun = b.run;
               this.fire = BB.t;
               BB.say("bb_fire", { overlap: true });
@@ -790,8 +742,18 @@
           const bi = barAt(t), b = KO_BARS[bi], bt = (t - BS[bi]) / BL[bi];
           if (b && this.lastBi !== bi) {
             this.lastBi = bi;
+            if (b.rest) {
+              if (b.gag === "67") {
+                this.gag = { kind: "67", t: BB.t, dur: 1.6 };
+                BB.say("bb_6", { overlap: true });
+                setTimeout(() => BB.scene === this && BB.say("bb_7", { overlap: true }), 800);
+              } else if (b.gag === "mw") {
+                this.gag = { kind: "mw", t: BB.t, dur: BL[bi] * 0.9, beat: BL[bi] / 4 };
+                BB.say("bb_heehee", { overlap: true });
+              }
+            }
             if (b.phase) {
-              BB.say("bb_p" + b.phase, { overlap: true });
+              if (!b.rn) BB.say("bb_p" + b.phase, { overlap: true });
               const sty = ["pack", "pack", "mine", "smash", "pack", "smash", "pack"][b.phase];
               BB.groove.start(100, sty);
               BB.groove.t0 = this.a0 + BS[bi] - KO_T0 + KO_B;
@@ -1134,14 +1096,14 @@
       if (bar && bar.turn && !gone) {
         const us = bar.turn === "us", BY = 318;
         BB.rrect(W / 2 - 330, BY, 660, 66, 22, us ? "#ffe066" : "#ff8adf", COL.ink, 4);
-        BB.text(us ? "CLAP PARTY! FASTER = SILLIER!" : "STATIC JR. ATTACKS: DODGE!", W / 2, BY + 34, 38, us ? "#3a2a00" : "#3a1040", { stroke: 0, maxW: 620 });
+        BB.text(us ? bar.rush ? "EVERY CLAP = ONE PUNCH!" : "MORE + FASTER CLAPS = BIGGER HIT!" : "STATIC JR. ATTACKS: DODGE!", W / 2, BY + 34, 38, us ? "#3a2a00" : "#3a1040", { stroke: 0, maxW: 620 });
       }
       {
-        const lc = KO_PHASE_END.filter((x) => x <= k).pop();
-        if (lc && k - lc < 1.4) BB.text("-1 POWER!", JR.x, JR.y - 330 - (k - lc) * 50, 80, "#ff8adf", { font: "Rammetto One", stroke: 9 });
-        if (lc && k - lc < 0.5) {
+        const lc = KO_PHASE_END.filter((x) => x <= k).pop(), hs = this.hitShow;
+        if (hs && k - hs.k >= 0 && k - hs.k < 1.6) BB.text(["SLAP!", "PUNCH COMBO!", "MEGA BLAST!"][hs.lv], W / 2, 640 - (k - hs.k) * 30, [90, 104, 124][hs.lv], ["#ffe066", "#ff8adf", "#7ef0ff"][hs.lv], { font: "Rammetto One", stroke: 10, strokeCol: "#1a1a1a" });
+        if (lc && k - lc > 0.6 && k - lc < 1.1 && this.hitLv === 2) {
           ctx.save();
-          ctx.globalAlpha = 1 - (k - lc) / 0.5;
+          ctx.globalAlpha = 1 - (k - lc - 0.6) / 0.5;
           ctx.strokeStyle = "#ffe066";
           ctx.shadowColor = "#ffe066";
           ctx.shadowBlur = 60;
@@ -1472,7 +1434,7 @@
           const fl = 1.2, v = (k - (hk - fl)) / fl;
           if (v < 0 || v > 1.8) continue;
           const i = KO_HITS.findIndex((h) => h[0] === hk && h[1] === kind), bp = kind === "bomb" ? this.bombAt(i) : null;
-          const tg = kind === "junkL" ? { x: 170, y: 520 } : kind === "junkR" ? { x: W - 170, y: 520 } : kind === "junkT" ? { x: W / 2, y: 90 } : kind === "junkF" ? { x: W / 2, y: H - 60 } : { x: bp.x, y: bp.y };
+          const tg = kind === "junkL" ? { x: W / 2 - 150, y: H / 2 } : kind === "junkR" ? { x: W / 2 + 150, y: H / 2 } : kind === "junkT" ? { x: W / 2, y: H / 2 - 130 } : kind === "junkF" ? { x: W / 2, y: H / 2 + 140 } : { x: W / 2, y: H / 2 };
           const junk = kind === "bomb" ? "bomb" : kind === "junkF" || kind === "junkR" && i % 2 ? "tire" : kind === "junkT" ? "sock" : "chicken";
           if (v < 1) {
             const z = v * v, sc = 0.35 + z * 3.6, x = lerp(jx - 40, tg.x, z), y = lerp(jy - 120, tg.y, z) - Math.sin(v * Math.PI) * 80 * (1 - z);
@@ -1602,7 +1564,7 @@
           if (L) ctx.restore();
         }
       }
-      const WD = { pick: ["TINK!", "CLINK!"], pat: ["PAT!", "PAT-PAT!"], stamp: ["STAMP!", "KA-CHUNK!"], push: ["SHOVE!", "VROOM!"], chunk: ["SUPER BEAT BLAST!"], L: ["POW!", "BONK!", "BAM!"], R: ["WHAM!", "BOP!", "SMACK!"], stomp: ["THUD!"], rain: ["CLONK!"], zap: ["ZZT-OOPS!"] };
+      const WD = { pick: ["TINK!", "CLINK!"], pat: ["PAT!", "PAT-PAT!"], stamp: ["STAMP!", "KA-CHUNK!"], push: ["SHOVE!", "VROOM!"], chunk: ["WHAM!"], L: ["POW!", "BONK!", "BAM!"], R: ["WHAM!", "BOP!", "SMACK!"], stomp: ["THUD!"], rain: ["CLONK!"], zap: ["ZZT-OOPS!"] };
       KO_HITS.forEach(([hk, kind], i) => {
         const v = k - hk;
         if (kind === "big" || v < 0 || v >= 0.4 || !WD[kind]) return;
@@ -2315,7 +2277,8 @@
     /* v14.3.5 ANIME SET-PIECES (see preview/boss_storyboard.md). sceneOf: which set-piece a bar belongs to */
     sceneOf(b) {
       if (!b) return "";
-      if (b.voice) return "aura";
+      if (b.voice || b.cw) return "aura";
+      if (b.rush) return "rush";
       if (b.beam) return "beam";
       if (b.pwr) return "aura";
       if (b.read) return "air";
@@ -2359,7 +2322,7 @@
         return;
       }
       if (sc === "aura" || sc === "beam") {
-        const p = clamp((KO_BARS[barAt(k)] || {}).voice ? (this.vf || 0) / 3 : this.pw || 0, 0, 1), a = sc === "beam" ? 0.45 : 0.35 + 0.25 * p;
+        const p = clamp((KO_BARS[barAt(k)] || {}).voice ? (this.vf || 0) / 3 : (this.cf || 0) / 3, 0, 1), a = sc === "beam" ? 0.45 : 0.35 + 0.25 * p;
         ctx.save();
         ctx.globalAlpha = a * inA;
         ctx.fillStyle = "#0a0c18";
@@ -2909,14 +2872,15 @@
       }
       if (!win && BB.mic && BB.mic.onsets && BB.mic.onsets.length && !b.read && !b.chant) BB.mic.take();
       if (b.voice) this.cf = Math.max(this.cf || 0, this.vf || 0);
-      else if (win && !b.clear && !b.beam) this.cf = Math.min(3, (this.cf || 0) + dt * 0.1);
+      else if (win && !b.rush && !b.beam) this.cf = Math.min(3, (this.cf || 0) + dt * 0.04);
       const big = b.clear || b.beam && !(KO_BARS[bi - 1] || {}).beam || k >= KO_BIG;
       if (big && this.cbBar !== (k >= KO_BIG ? -1 : bi)) {
         this.cbBar = k >= KO_BIG ? -1 : bi;
-        this.cf = 3;
+        if (b.clear && k < KO_BIG) this.hitLv = (this.cf || 0) >= 2.4 ? 2 : (this.cf || 0) >= 1 ? 1 : 0;
+        else this.cf = 3;
         this.cBurst = k;
       }
-      if (this.cBurst && k - this.cBurst > 0.6 && this.cf >= 3 && !b.voice) this.cf = 0;
+      if (this.cBurst && k - this.cBurst > 0.6 && (b.clear || b.rest || this.cf >= 3 && !b.cw) && !b.voice && !b.rush) this.cf = 0;
     }
     drawClapWin(k, t) {
       if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
@@ -2939,10 +2903,27 @@
         ctx.restore();
       }
     }
+    /* v14.4 centred CLAP METER: the 3 POWER canisters fill from claps in the window; fill picks the hit size */
+    drawMeter(k, t) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
+      const bi = barAt(k), b = KO_BARS[bi] || {};
+      if (b.cw) {
+        const f = this.cf || 0, X0 = W / 2 - 140, Y0 = 420, lv = f >= 2.4 ? 2 : f >= 1 ? 1 : 0;
+        this.drawCans(X0, Y0, f, k, t, 0);
+        const s0 = BS[bi - (b.cw - 1)], left = Math.max(0, 8 - Math.floor((k - s0) / (BL[bi] / 4)));
+        for (let q = 0; q < 8; q++) BB.rrect(W / 2 - 236 + q * 60, Y0 + 300, 44, 22, 10, q < 8 - left ? "#2d4744" : "#6ee678", "#fff", 3);
+        ["SLAP", "PUNCH COMBO", "MEGA BLAST"].forEach((w, q) => {
+          const x = W / 2 + (q - 1) * 300;
+          BB.rrect(x - 135, Y0 + 340, 270, 56, 18, q === lv ? ["#ffe066", "#ff8adf", "#7ef0ff"][q] : "rgba(20,30,40,.75)", "#fff", 3);
+          BB.text(w, x, Y0 + 369, 34, q === lv ? "#1a1a1a" : "#9fb0b8", { stroke: 0, maxW: 250 });
+        });
+      }
+      if (b.rush && this.rushN) BB.text(this.rushN + (this.rushN === 1 ? " PUNCH!" : " PUNCHES!"), W / 2, 660, Math.min(130, 70 + this.rushN * 2), this.rushN > 30 ? "#ff5a5a" : this.rushN > 15 ? "#ffb020" : "#ffe066", { font: "Rammetto One", stroke: 10, strokeCol: "#1a1a1a" });
+    }
     drawPowerHud(k, t) {
       if (this.state !== "end" || k < KO_T0 || k > KO_BIG + 1) return;
       const b = KO_BARS[barAt(k)] || {};
-      if (b.voice || b.chant || b.chantIntro || b.phase) return;
+      if (b.cw || b.rush || b.voice || b.chant || b.chantIntro || b.phase) return;
       ctx.save();
       ctx.translate(40, 170);
       ctx.scale(0.36, 0.36);
@@ -3092,6 +3073,13 @@
             z += 0.03 * e;
           }
         }
+        if (b && b.clear && this.hitLv === 2) {
+          const w = win(k - BS[bi], 0.35, BL[bi] + 0.3, 0.3);
+          z += 0.05 * w;
+          cx = lerp(cx, (LCH.x + JR.x) / 2, w);
+          cy = lerp(cy, H / 2 + 30, w);
+          lb = Math.max(lb, w);
+        }
         if (b && b.chantIntro) {
           z += 0.05 * (1 - E(u));
         }
@@ -3106,11 +3094,12 @@
         }
         if (k > KO_BIG && k < KO_CEL + 1) {
           const w = E((k - KO_BIG) / 0.6) * (1 - E((k - KO_CEL) / 1));
-          z += 0.09 * w;
+          z += 0.05 * w;
           const o = Math.sin((k - KO_BIG) * 1.1) * w;
-          px += o * 70;
-          orb = o * 50;
-          rot += o * 0.012;
+          px += o * 25;
+          orb = o * 15;
+          rot += o * 6e-3;
+          cy = lerp(cy, H / 2 + 40, w);
           lb = Math.max(lb, w);
         }
       }
@@ -3126,7 +3115,7 @@
     }
     drawLetterbox(lb) {
       if (lb <= 0.01) return;
-      const h = 78 * lb;
+      const h = 64 * lb;
       ctx.save();
       ctx.fillStyle = "#0b0f14";
       ctx.fillRect(0, 0, W, h);
@@ -3698,6 +3687,7 @@
       this.drawCloseup(k);
       this.drawVoice(k, t);
       this.drawClapWin(k, t);
+      this.drawMeter(k, t);
       this.drawFreeze(k, t);
       this.drawPowerHud(k, t);
       this.drawLetterbox(CAM.lb);
