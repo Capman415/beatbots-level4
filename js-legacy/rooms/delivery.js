@@ -25,6 +25,8 @@
     ["bb_g3", "Oof!", "jr"],
     ["bb_6", "Six!", "jr"],
     ["bb_7", "Seven!", "jr"],
+    ["bb_clapgo", "Clap attack! Go!", "sp"],
+    ["bb_stop", "Stop! Freeze!", "sp"],
     ["bb_heehee", "Hee-hee! Hee-hee!", "jr"],
     ["bb_laugh", "Ha ha ha! Hee hee!", "sprocket"],
     ["bb_sj1", "Your claps are softer than a marshmallow!", "jr"],
@@ -536,6 +538,7 @@
     }
     update(dt) {
       this.voiceTick(dt);
+      this.powerTick(dt, BB.t - this.st);
       if (BB.keys.includes("p")) {
         this.pause();
         return;
@@ -709,6 +712,7 @@
             for (const o of on) if (BB.t - (this.lastBl || 0) > 0.1) {
               this.lastBl = BB.t;
               this.cts.push(BB.t);
+              this.cf = Math.min(3, (this.cf || 0) + 0.05 + 0.035 * (tr || 0));
               this.combo = (BB.t - (this.lastCl || 0) < 0.8 ? this.combo || 0 : 0) + 1;
               this.lastCl = BB.t;
               this.blasts.push({ t: BB.t, x: W * (0.3 + Math.random() * 0.4), s: 1 + tr * 0.35 });
@@ -720,6 +724,7 @@
           }
           if (this.manualPc && us) {
             this.cts.push(BB.t);
+            this.cf = Math.min(3, (this.cf || 0) + 0.05 + 0.035 * (tr || 0));
             this.blasts.push({ t: BB.t, x: W / 2, s: 1 });
           }
           this.cts = (this.cts || []).filter((x) => BB.t - x < 1.5);
@@ -1221,7 +1226,7 @@
             ctx.translate(W / 2, 540);
             ctx.scale(s, s);
             ctx.rotate(-0.06);
-            BB.text(bar.turn === "us" ? "CLAP ATTACK!" : "DODGE!", 0, 0, 190, bar.turn === "us" ? "#ffe066" : "#7ef0ff", { font: "Rammetto One", stroke: 16, strokeCol: "#2a1040" });
+            BB.text(bar.turn === "us" ? "CLAP ATTACK!" : "DODGE!", 0, 0, 190, bar.turn === "us" ? "#6ee678" : "#7ef0ff", { font: "Rammetto One", stroke: 16, strokeCol: "#2a1040" });
             ctx.restore();
             if (v < 0.04) {
               ctx.fillStyle = "rgba(255,255,255,.45)";
@@ -2727,6 +2732,59 @@
       if (!b || !b.voice) return;
       const f = this.vf || 0, X0 = 470, Y0 = 470, JW = 110, JH = 250, cols = ["#ffd84a", "#7ef0ff", "#ff8adf"];
       if (f > 1) BB.shake(1 + f * 2);
+      this.drawCans(X0, Y0, f, k, t, this.vBurst);
+      const LX = X0 + 380, LY = Y0 + JH, LH = 320;
+      ctx.save();
+      ctx.strokeStyle = "#eee4cc";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(LX, LY);
+      ctx.lineTo(LX, LY - LH);
+      ctx.moveTo(LX + 50, LY);
+      ctx.lineTo(LX + 50, LY - LH);
+      for (let r = 0; r <= 7; r++) {
+        ctx.moveTo(LX, LY - r * LH / 7);
+        ctx.lineTo(LX + 50, LY - r * LH / 7);
+      }
+      ctx.stroke();
+      const ay = LY - clamp(this.vPit || 0, 0, 1) * LH;
+      ctx.fillStyle = "#ffd84a";
+      ctx.strokeStyle = "#1a1a1a";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(LX - 6, ay);
+      ctx.lineTo(LX - 36, ay - 20);
+      ctx.lineTo(LX - 28, ay);
+      ctx.lineTo(LX - 36, ay + 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(LX + 25, LY - LH - 58);
+      ctx.lineTo(LX - 5, LY - LH - 18);
+      ctx.lineTo(LX + 55, LY - LH - 18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      const msg = b.vi === 0 ? "LISTEN... then you try!" : f >= 3 ? "FULL POWER!" : "HIGHER! HIGHER!";
+      BB.text(msg, X0 + 140, Y0 + JH + 70, f >= 3 ? 64 : 48, f >= 3 ? "#ffd84a" : "#fff", { font: f >= 3 ? "Rammetto One" : "Lilita One", stroke: 8, strokeCol: "#1a1a1a", maxW: 700 });
+      if (this.vBurst && k - this.vBurst < 0.6) {
+        const u = (k - this.vBurst) / 0.6;
+        ctx.save();
+        ctx.globalAlpha = 1 - u;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 14;
+        for (let j = 0; j < 3; j++) {
+          ctx.beginPath();
+          ctx.arc(X0 + j * 140, Y0 + JH / 2, 40 + u * 400, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+    drawCans(X0, Y0, f, k, t, bt) {
+      const JW = 110, JH = 250, cols = ["#ffd84a", "#7ef0ff", "#ff8adf"];
       for (let j = 0; j < 3; j++) {
         const x = X0 + j * 140, fl = clamp(f - j, 0, 1), y = Y0;
         ctx.save();
@@ -2797,7 +2855,7 @@
             ctx.fill();
           }
         };
-        const pop = this.vBurst && k - this.vBurst < 0.5 ? (k - this.vBurst) / 0.5 : 0, po = pop ? -60 * Math.sin(pop * Math.PI) : 0;
+        const pop = bt && k - bt < 0.5 ? (k - bt) / 0.5 : 0, po = pop ? -60 * Math.sin(pop * Math.PI) : 0;
         cap(y - 34 + po, 38);
         cap(y + JH - 4, 34);
         if (fl >= 1) {
@@ -2831,55 +2889,66 @@
         }
         ctx.restore();
       }
-      const LX = X0 + 380, LY = Y0 + JH, LH = 320;
-      ctx.save();
-      ctx.strokeStyle = "#eee4cc";
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(LX, LY);
-      ctx.lineTo(LX, LY - LH);
-      ctx.moveTo(LX + 50, LY);
-      ctx.lineTo(LX + 50, LY - LH);
-      for (let r = 0; r <= 7; r++) {
-        ctx.moveTo(LX, LY - r * LH / 7);
-        ctx.lineTo(LX + 50, LY - r * LH / 7);
+    }
+    /* shared POWER system: claps (only inside prompted CLAP ATTACK windows) surge the canisters, faster = bigger surge; the AHHH scene fills them too; full canisters unleash KNOCKBACK blasts, the beam and the final blow */
+    powerTick(dt, k) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG + 1) {
+        return;
       }
-      ctx.stroke();
-      const ay = LY - clamp(this.vPit || 0, 0, 1) * LH;
-      ctx.fillStyle = "#ffd84a";
-      ctx.strokeStyle = "#1a1a1a";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(LX - 6, ay);
-      ctx.lineTo(LX - 36, ay - 20);
-      ctx.lineTo(LX - 28, ay);
-      ctx.lineTo(LX - 36, ay + 20);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(LX + 25, LY - LH - 58);
-      ctx.lineTo(LX - 5, LY - LH - 18);
-      ctx.lineTo(LX + 55, LY - LH - 18);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-      const msg = b.vi === 0 ? "LISTEN... then you try!" : f >= 3 ? "FULL POWER!" : "HIGHER! HIGHER!";
-      BB.text(msg, X0 + 140, Y0 + JH + 70, f >= 3 ? 64 : 48, f >= 3 ? "#ffd84a" : "#fff", { font: f >= 3 ? "Rammetto One" : "Lilita One", stroke: 8, strokeCol: "#1a1a1a", maxW: 700 });
-      if (this.vBurst && k - this.vBurst < 0.6) {
-        const u = (k - this.vBurst) / 0.6;
+      const bi = barAt(k), b = KO_BARS[bi] || {};
+      const win = b.turn === "us";
+      if (win && !this.cwOn) {
+        this.cwOn = 1;
+        this.cwT = k;
+        BB.say && BB.say("bb_clapgo", { overlap: true });
+      } else if (!win && this.cwOn) {
+        this.cwOn = 0;
+        this.cwStop = k;
+        BB.mic && BB.mic.take && BB.mic.take();
+        if (!b.voice && !b.phase) BB.say && BB.say("bb_stop", { overlap: true });
+      }
+      if (!win && BB.mic && BB.mic.onsets && BB.mic.onsets.length && !b.read && !b.chant) BB.mic.take();
+      if (b.voice) this.cf = Math.max(this.cf || 0, this.vf || 0);
+      else if (win && !b.clear && !b.beam) this.cf = Math.min(3, (this.cf || 0) + dt * 0.1);
+      const big = b.clear || b.beam && !(KO_BARS[bi - 1] || {}).beam || k >= KO_BIG;
+      if (big && this.cbBar !== (k >= KO_BIG ? -1 : bi)) {
+        this.cbBar = k >= KO_BIG ? -1 : bi;
+        this.cf = 3;
+        this.cBurst = k;
+      }
+      if (this.cBurst && k - this.cBurst > 0.6 && this.cf >= 3 && !b.voice) this.cf = 0;
+    }
+    drawClapWin(k, t) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
+      const b = KO_BARS[barAt(k)] || {};
+      if (b.turn === "us") {
+        const a = 0.75 + 0.25 * Math.sin(t * 10);
         ctx.save();
-        ctx.globalAlpha = 1 - u;
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 14;
-        for (let j = 0; j < 3; j++) {
-          ctx.beginPath();
-          ctx.arc(X0 + j * 140, Y0 + JH / 2, 40 + u * 400, 0, Math.PI * 2);
-          ctx.stroke();
-        }
+        ctx.strokeStyle = "rgba(110,230,120," + a + ")";
+        ctx.lineWidth = 22;
+        ctx.strokeRect(11, 11, W - 22, H - 22);
+        ctx.restore();
+      } else if (this.cwStop != null && k - this.cwStop < 0.9 && !b.voice && !b.phase) {
+        const u = (k - this.cwStop) / 0.9;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, (1 - u) * 3);
+        ctx.strokeStyle = "#ff5a5a";
+        ctx.lineWidth = 22;
+        ctx.strokeRect(11, 11, W - 22, H - 22);
+        BB.text("STOP!", W / 2, H * 0.62, 130 * (1 + 0.2 * Math.max(0, 1 - u * 4)), "#ff5a5a", { font: "Rammetto One", stroke: 12, strokeCol: "#1a1a1a" });
         ctx.restore();
       }
+    }
+    drawPowerHud(k, t) {
+      if (this.state !== "end" || k < KO_T0 || k > KO_BIG + 1) return;
+      const b = KO_BARS[barAt(k)] || {};
+      if (b.voice || b.chant || b.chantIntro || b.phase) return;
+      ctx.save();
+      ctx.translate(40, 170);
+      ctx.scale(0.36, 0.36);
+      this.drawCans(70, 60, this.cf || 0, k, t, this.cBurst);
+      ctx.restore();
+      BB.text("POWER", 40 + 0.36 * 210, 170 + 0.36 * 360, 30, "#ffd84a", { stroke: 6, strokeCol: "#1a1a1a" });
     }
     drawFreeze(k, t) {
       if (this.state !== "end" || k < KO_T0 || k > KO_BIG) return;
@@ -3628,7 +3697,9 @@
       this.drawSplit(k);
       this.drawCloseup(k);
       this.drawVoice(k, t);
+      this.drawClapWin(k, t);
       this.drawFreeze(k, t);
+      this.drawPowerHud(k, t);
       this.drawLetterbox(CAM.lb);
       for (const f of this.qq) f();
       this.drawReplay(k, t);
