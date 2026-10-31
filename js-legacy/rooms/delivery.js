@@ -2935,7 +2935,7 @@
         ctx.strokeStyle = "#ff5a5a";
         ctx.lineWidth = 22;
         ctx.strokeRect(11, 11, W - 22, H - 22);
-        BB.text("STOP!", W / 2, H * 0.62, 130 * (1 + 0.2 * Math.max(0, 1 - u * 4)), "#ff5a5a", { font: "Rammetto One", stroke: 12, strokeCol: "#1a1a1a" });
+        BB.text("STOP!", W / 2, H * 0.85, 110 * (1 + 0.2 * Math.max(0, 1 - u * 4)), "#ff5a5a", { font: "Rammetto One", stroke: 12, strokeCol: "#1a1a1a" });
         ctx.restore();
       }
     }
