@@ -246,6 +246,7 @@ let paperPat=null;R.paper=(x,y,w,h)=>{if(!paperPat){const c=document.createEleme
   ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.clip();ctx.fillStyle=paperPat;ctx.fillRect(x,y,w,h);const e=ctx.createRadialGradient(x+w/2,y+h/2,Math.min(w,h)*.3,x+w/2,y+h/2,Math.max(w,h)*.75);e.addColorStop(0,'rgba(120,90,40,0)');e.addColorStop(1,'rgba(120,90,40,.18)');ctx.fillStyle=e;ctx.fillRect(x,y,w,h);ctx.restore()};
 // v12.6: unmistakable "YOUR TURN" cue (Smartboard-readable): retro ding-ding, full-width pulsing banner, green listening border, robots pointing at the class
 R.turnCue=t=>{const s=BB.sfx;if(s.ding){s.ding(t);s.ding(t+.22)}};
+R.turnBorder=(cl,pu)=>{if(pu==null)pu=.5+.5*Math.sin(BB.t*Math.PI*2*1.4);ctx.save();const bw=cl?26:16;ctx.lineWidth=bw;ctx.strokeStyle=cl?`rgba(110,230,120,${.55+.4*pu})`:`rgba(255,224,102,${.4+.3*pu})`;ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=40;ctx.strokeRect(bw/2,bw/2,W-bw,H-bw);ctx.restore()};
 R.yourTurn=(ph,rb,py)=>{const t=BB.t,pu=.5+.5*Math.sin(t*Math.PI*2*1.4),cl=ph==='clap';
   // green border glow while listening
   ctx.save();const bw=cl?26:16;ctx.lineWidth=bw;ctx.strokeStyle=cl?`rgba(110,230,120,${.55+.4*pu})`:`rgba(255,224,102,${.4+.3*pu})`;ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=40;ctx.strokeRect(bw/2,bw/2,W-bw,H-bw);ctx.restore();

@@ -1042,6 +1042,17 @@
       s.ding(t + 0.22);
     }
   };
+  R.turnBorder = (cl, pu) => {
+    if (pu == null) pu = 0.5 + 0.5 * Math.sin(BB.t * Math.PI * 2 * 1.4);
+    ctx.save();
+    const bw = cl ? 26 : 16;
+    ctx.lineWidth = bw;
+    ctx.strokeStyle = cl ? "rgba(110,230,120,".concat(0.55 + 0.4 * pu, ")") : "rgba(255,224,102,".concat(0.4 + 0.3 * pu, ")");
+    ctx.shadowColor = cl ? "#6ee678" : "#ffe066";
+    ctx.shadowBlur = 40;
+    ctx.strokeRect(bw / 2, bw / 2, W - bw, H - bw);
+    ctx.restore();
+  };
   R.yourTurn = (ph, rb, py) => {
     const t = BB.t, pu = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 1.4), cl = ph === "clap";
     ctx.save();
