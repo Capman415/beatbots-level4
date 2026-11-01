@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.4.3";
+BB.VERSION = "v14.4.4";
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -1057,6 +1057,7 @@ mic.update = (dt) => {
   }
   const r = MicCore.read();
   const rms = r.rms;
+  if (r.max >= 0.98) mic.clipN = (mic.clipN || 0) + 1;
   mic.rms = rms;
   mic.raw = rms;
   mic.max = r.max;

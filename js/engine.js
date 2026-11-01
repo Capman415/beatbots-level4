@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.4.3';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.4.4';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -295,7 +295,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   {const TL=window.ClapDet&&ClapDet.TickLat;if(TL&&TL.active()&&MicCore.an){const an=MicCore.an,fb=mic._tfb=mic._tfb||new Float32Array(an.frequencyBinCount),hz=MicCore.ctx.sampleRate/an.fftSize;an.getFloatFrequencyData(fb);
     const was=TL.lat;TL.frame(ac.currentTime-.02,f=>{const k=Math.round(f/hz);return Math.max(fb[k-1],fb[k],fb[k+1])});// v13.2 metronome ticks -> live latency
     if(TL.lat!=null&&TL.lat!==was&&window.GroupGate)GroupGate.setLat(TL.lat)}}
-  const r=MicCore.read();const rms=r.rms;mic.rms=rms;mic.raw=rms;mic.max=r.max;const sens=sensSteps[mic.sensIdx];
+  const r=MicCore.read();const rms=r.rms;if(r.max>=.98)mic.clipN=(mic.clipN||0)+1;/* v14.4.4 diagnostics: frames where the mic hit full scale (loud-clap report) */mic.rms=rms;mic.raw=rms;mic.max=r.max;const sens=sensSteps[mic.sensIdx];
   const lvl=window.GroupGate?GroupGate.lvl(rms,sens):clamp(Math.sqrt(rms*sens*6),0,1);// same scale as the meter and the soft-clap threshold
   mic.level=Math.max(lvl,mic.level-dt*1.8);
   const tNow=ac.currentTime-.02;

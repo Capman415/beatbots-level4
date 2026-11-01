@@ -969,6 +969,16 @@
         return "session_id,date,day,class,timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing\n" + BB.clapLog.rows().map((r) => [r.s.id || "", r.s.date || "", r.s.day || "", r.s.cls || "", r.ts, r.room, r.bpm, r.i, r.exp, r.on, r.off, r.peak, r.thr, r.res, r.pl].map(q).join(",")).join("\n");
       },
       summaryCsv() {
+        const micInfo = () => {
+          let t = {};
+          try {
+            const k = BB.mic && BB.mic.track;
+            t = k && k.getSettings ? k.getSettings() : {};
+          } catch (e) {
+          }
+          const b = (v) => v == null ? "" : v ? 1 : 0;
+          return [b(t.echoCancellation), b(t.noiseSuppression), b(t.autoGainControl), t.sampleRate || (window.MicCore && MicCore.ctx ? MicCore.ctx.sampleRate : ""), BB.mic && BB.mic.clipN || 0];
+        };
         const g = /* @__PURE__ */ new Map();
         for (const r of BB.clapLog.rows()) {
           const k = (r.s.id || "") + "|" + r.room;
@@ -987,9 +997,9 @@
           x = x.slice().sort((a, b) => a - b);
           return x[x.length >> 1];
         };
-        return "session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms\n" + [...g.values()].map((a) => {
+        return "session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames\n" + [...g.values()].map((a) => {
           const c = (k) => a.c[k] || 0, h = c("hit"), den = h + c("miss") + c("too soft") + c("early") + c("late");
-          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs)].map(q).join(",");
+          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs), ...micInfo()].map(q).join(",");
         }).join("\n");
       },
       download() {
