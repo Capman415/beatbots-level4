@@ -1,5 +1,5 @@
 (function(root) {
-  var NF = 1024, NB = 24, P = { k: 0.2, A: 1, B: 0.6, C: 1.5, TAILW: 0.25, MINSEP: 0.07, OVER: 3, PRE: 0.06, FG: 0.16, CF: 0.3, PREF: 0.45 };
+  var NF = 1024, NB = 24, P = { k: 0.2, A: 1, B: 0.6, C: 1.5, TAILW: 0.25, MINSEP: 0.07, OVER: 3, PRE: 0.06, FG: 0.16, CF: 0.3, PREF: 0.45, VS: 2, VS2: 1.5, LMIN: -1.4 };
   function edges() {
     var e = [], lo = Math.log(700), hi = Math.log(12e3);
     for (var i = 0; i <= NB; i++) e.push(Math.exp(lo + (hi - lo) * i / NB));
@@ -103,6 +103,7 @@
     decide: function(st, nov, ts, te, lat, gap, floor, pfn) {
       var post = Math.min(0.1, 0.5 * gap), fast = gap < P.FG, pre = fast ? Math.min(P.PRE, P.PREF * gap) : P.PRE, Cw = fast ? P.C * P.CF : P.C, c = te + lat, i0 = Core.idx(ts, c - pre), i1 = Core.idx(ts, c + post);
       if (i1 <= i0) {
+        st.last = { v: 0, p: null, s: null, f: floor, r: "no-window" };
         st.got.push(null);
         st.vals.push(0);
         return null;
@@ -113,13 +114,14 @@
       var edge = j === i0 && nov[Math.max(0, j - 1)] >= v || j === i1 - 1, near = false, G = st.got;
       for (i = Math.max(0, G.length - 2); i < G.length; i++) if (G[i] != null && ts[j] - G[i] < P.MINSEP) near = true;
       var ok = false;
+      st.last = { v, p: null, s: null, f: floor, r: v > floor ? edge ? "edge" : near ? "double" : null : "below-floor" };
       if (v > floor && !edge && !near) {
         var r = st.ref.length >= 3 ? Core.pct(st.ref.slice(-12), 50) : v, p = Math.min(Math.max(pfn(ts[j]), 1e-4), 1 - 1e-4), pv = 0;
         for (i = Math.max(0, G.length - 2); i < G.length; i++) if (G[i] != null && ts[j] - G[i] < P.TAILW) pv = Math.max(pv, st.vals[i]);
-        var s = P.A * Math.log(v / Math.max(P.k * r, floor)) + P.B * Math.log(p / (1 - p));
+        var s = P.A * Math.log(v / Math.max(P.k * r, floor)) + P.B * Math.max(Math.log(p / (1 - p)), v >= P.VS2 * floor ? 0 : v >= P.VS * floor ? P.LMIN : -1e9);
         if (pv) s += Cw * Math.min(0, Math.log(v / pv));
         ok = s > 0;
-        st.last = { v, p, s };
+        st.last = { v, p, s, f: floor, r: ok ? null : "not-clap-shape" };
       }
       if (ok) st.ref.push(v);
       st.got.push(ok ? ts[j] : null);
