@@ -200,7 +200,7 @@ BB.clapStats={heard:0,hit:0,exp:0,talk:0,stray:0,peak:0,slow:0};
 /* v14.2.1 local clap diagnostics log: numbers only (never audio), localStorage on this device, last 30000 events.
    Compact rows: [t (0.1 s since epoch base), session idx, room code, bpm, beat, exp*1000, on*1000, peak*1000, thr*1000, result code, playing] */
 {const KEY='bb_claplog2',SKEY='bb_clsess',CAP=30000,WARN=27000,T0=17e9,
- RES=['hit','miss','early','late','too soft','ignored-during-playback','rejected-as-double','clap_during_listen','not-clap-shape','manual-override'];
+ RES=['hit','miss','early','late','too soft','ignored-during-playback','rejected-as-double','clap_during_listen','not-clap-shape','manual-override','too-loud'];
  const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')||d}catch(e){return d}};
  let ev=ld(KEY,[]),sess=ld(SKEY,[]);
  const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());

@@ -185,16 +185,18 @@ class MineRoom{
     if(Math.abs(tg-G.lat)>.015)G.lat+=(tg-G.lat)*.5}
   handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||(this.state!=='dig'&&this.state!=='count'))return;if(window.ClapDet&&ClapDet.expect)ClapDet.expect(b.spb,BB.ac.currentTime+.5);if(BB.MLP&&BB.MLP.on)BB.MLP.openWin('mine',b.t0-.12,BB.ac.currentTime+.3);if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p'){BB.softClap=BB.t;if(b.spb<.5)BB.fastSoft=BB.t}
     const G=window.GroupGate,tol=G?G.tol(b.spb):Math.min(.17,b.spb*.4);
-    for(const o of ons){if(BB.talking&&BB.t<BB.talking.until&&!BB.debug)continue;// ignore our own voice lines
-      const bi=Math.round((o.t-b.t0-(G?G.lat:0))/b.spb),dt=o.t-(b.t0+bi*b.spb),inT=G?G.inTol(dt,b.spb):Math.abs(dt)<=tol;
+    for(const o of ons){const pk=o.v??o.lvl??o.e;if(BB.talking&&BB.t<BB.talking.until&&!BB.debug){this.log({on:o.t,peak:pk,res:'ignored-during-playback'});continue}// ignore our own voice lines
+      const bi=Math.round((o.t-b.t0-(G?G.lat:0))/b.spb),dt=o.t-(b.t0+bi*b.spb),inT=G?G.inTol(dt,b.spb):Math.abs(dt)<=tol,ex=b.t0+bi*b.spb;
       if(G&&bi>=4&&!o.up&&dt>-.1&&dt<.3)this.autoLat(dt);// v13.2: learn this mic's real latency (USB mics / boards add 50-150 ms)
-      if(bi>=4&&!inT){if(this.gated()&&!o.up&&(this._dts||[]).length>=8&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
-      if((bi<4&&this.state!=='count')||bi<0||!inT||b.hits[bi]||(b.pend&&b.pend[bi]))continue;
+      if(bi>=4&&!inT){if(!o.up)this.log({i:bi,exp:ex,on:o.t,peak:pk,res:dt<0?'early':'late'});if(this.gated()&&!o.up&&(this._dts||[]).length>=8&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
+      if((bi<4&&this.state!=='count')||bi<0||!inT)continue;if(b.hits[bi]||(b.pend&&b.pend[bi])||o.up){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'rejected-as-double'});continue}
       const d=this.R.dyn;
-      if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*1.3)){this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
-      if(d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN)){this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
-      if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;continue}// wait for the beat window to close, then ask: was that the whole group?
-      if(this.state==='count')this.warmClap(bi);else this.hit(bi)}}
+      if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*1.3)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too-loud'});this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
+      if(d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too soft'});this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
+      if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;(b.pon=b.pon||{})[bi]=[o.t,pk];continue}// wait for the beat window to close, then ask: was that the whole group?
+      this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'hit'});if(this.state==='count')this.warmClap(bi);else this.hit(bi)}}
+  // v14.4.8: Note Mine clap log (timing only, never audio); can never break gameplay
+  log(o){try{if(BB.clapLog&&BB.clapLog.add)BB.clapLog.add(Object.assign({bpm:this.R&&this.R.bpm},o))}catch(e){}}
   gated(){return BB.mic.ok&&window.GroupGate&&!BB.debug}
   hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;this.swingT=BB.t;this.strikes++;{const n=strikesFor(this.R),st=Math.floor(this.strikes*NEED/n+1e-9);while(this.stage<st&&this.stage<NEED)this.crack(1)}// v12.6 cave-in (fast + piano): a soft, purely tonal tink so it can't mask the next whisper clap
     if(d==='p'&&b.spb<.5)BB.sfx.tink(undefined,.3,true);else BB.sfx.tink();if(d==='f'){BB.sfx.boom();BB.shake(5)}
@@ -202,7 +204,7 @@ class MineRoom{
   resolveGroup(){const b=this.beat,G=window.GroupGate;if(!b||!G)return;const now=BB.ac.currentTime-.02;
     if(b.strays)b.strays=b.strays.filter(t=>{if(now<t+.12)return true;G.stray(t);return false});
     if(b.pend)for(const k in b.pend){if(this.beat!==b)return;const bi=+k,tc=b.t0+bi*b.spb;if(now<tc+G.lat+Math.max(G.W1,G.win(b.spb)[1])+.02)continue;delete b.pend[k];
-      const m=G.judge(tc,this.R.dyn==='p',b.spb);if(m.ok&&this.state==='count')this.warmClap(bi);else if(m.ok&&this.state==='dig')this.hit(bi);else{this.fewHands=BB.t;if(this.state==='count')this.warm=0}}}
+      const m=G.judge(tc,this.R.dyn==='p',b.spb),po=(b.pon&&b.pon[k])||[];this.log({i:bi,exp:tc,on:po[0],peak:po[1],res:m.ok?'hit':'too soft'});if(m.ok&&this.state==='count')this.warmClap(bi);else if(m.ok&&this.state==='dig')this.hit(bi);else{this.fewHands=BB.t;if(this.state==='count')this.warm=0}}}
   // v13.2 warm-up: the first FOUR claps in a row on the beat are the count-in; then every on-beat clap is a pickaxe strike
   warmClap(bi){const b=this.beat;b.hits[bi]=1;this.warm=bi===this.warmLast+1?this.warm+1:1;this.warmLast=bi;this.marks=[0,0,0,0];for(let i=0;i<this.warm;i++)this.marks[(bi-i)%4]=.01;// v14.0: light the slot the clap was ON (was filled from slot 1 -> every clap looked one marker late)BB.sfx.tink(undefined,.5,true);
     if(this.warm>=WARM){this.state='dig';this.marks=[0,0,0,0];b.evalM=Math.floor(bi/4)+1;this.warmEnd=bi;b.chk=bi+1}}
@@ -217,7 +219,7 @@ class MineRoom{
   // v14.0 rule: after the warm-up, strikes must be CONSECUTIVE beats; miss one and the rock goes back to whole
   streakCheck(){const b=this.beat,G=window.GroupGate;if(!b||b.chk==null)return;const close=(G?G.lat+Math.max(G.W1,G.win(b.spb)[1]):.2)+.06;
     while(this.beat===b&&this.state==='dig'&&BB.ac.currentTime>b.t0+b.chk*b.spb+close){const bi=b.chk++;if(b.hits[bi]||(b.pend&&b.pend[bi]))continue;
-      if((BB.talking&&BB.t<BB.talking.until&&!BB.debug)||this.ovPop&&BB.t-this.ovPop<1)continue;
+      if((BB.talking&&BB.t<BB.talking.until&&!BB.debug)||this.ovPop&&BB.t-this.ovPop<1)continue;this.log({i:bi,exp:b.t0+bi*b.spb,res:'miss'});
       if(this.strikes>0){this.strikes=0;this.stage=0;this.healT=BB.t;BB.sfx.wobble();this.wob=1;BB.burst(ROCK_X,rail(this.R.f)-120,10,{world:1,col:'#c8b49a',kind:'dust',size:18,g:-60,speed:160});if(!this.missVO){this.missVO=true;BB.say('keepgoing')}}}}
   crack(one){const R=this.R;this.stage+=one?1:(R.bonus?2:1);BB.sfx.crack();BB.shake(4);this.shk=1;
     {const ix=ROCK_X-30,iy=rail(R.f)-170,lq=!BB.q;BB.burst(ix,iy,lq?8:18,{world:1,cols:['#a08c78','#6e5a4a','#cbb79c'],speed:520,size:10,kind:'dot'});if(!lq)BB.burst(ix,iy,10,{world:1,cols:['rgba(210,190,160,.5)'],speed:160,size:22,kind:'dot',g:-40})}// v12.6 chips + dust at the impact point
@@ -230,7 +232,7 @@ class MineRoom{
     if(R.f===4&&this.caveRocks){this.caveCleared=(this.caveCleared||0)+1;this.caveClearT=BB.t;
       if(this.caveCleared>=2&&!this.chipFly){const c=this.cam;this.chipFly={t:BB.t+.3,x0:(ROCK_X-c.x)*c.z+W/2,y0:(rail(4)-160-c.y)*c.z+H/2};
         BB.caption={txt:'Cave-in cleared! You earned a Level 4 Beat Chip piece!',who:'sprocket',until:BB.t+3,start:BB.t}}}}
-  manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;
+  manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;try{this.log({i:this.beat?Math.round(this.beatNow()):'',res:'manual-override'})}catch(e){}
     if(this.state==='dig'||this.state==='count'){this.marks=[1,1,1,1];if(this.state==='count'){this.state='dig';this.beat.evalM=Math.max(1,Math.ceil(this.beatNow()/4))}
       this.beat.evalM=Math.max(this.beat.evalM,Math.ceil(this.beatNow()/4));this.strikes=Math.max(this.strikes||0,Math.ceil((this.stage+(this.R.bonus?2:1))*strikesFor(this.R)/NEED));this.crack()}}
   pause(){BB.paused=true;BB.ac.suspend()}

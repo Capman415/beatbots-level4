@@ -607,6 +607,7 @@
       if (Math.abs(tg - G.lat) > 0.015) G.lat += (tg - G.lat) * 0.5;
     }
     handleOnsets() {
+      var _a, _b;
       const b = this.beat, ons = BB.mic.take();
       if (!b || this.state !== "dig" && this.state !== "count") return;
       if (window.ClapDet && ClapDet.expect) ClapDet.expect(b.spb, BB.ac.currentTime + 0.5);
@@ -618,32 +619,52 @@
       }
       const G = window.GroupGate, tol = G ? G.tol(b.spb) : Math.min(0.17, b.spb * 0.4);
       for (const o of ons) {
-        if (BB.talking && BB.t < BB.talking.until && !BB.debug) continue;
-        const bi = Math.round((o.t - b.t0 - (G ? G.lat : 0)) / b.spb), dt = o.t - (b.t0 + bi * b.spb), inT = G ? G.inTol(dt, b.spb) : Math.abs(dt) <= tol;
+        const pk = (_b = (_a = o.v) != null ? _a : o.lvl) != null ? _b : o.e;
+        if (BB.talking && BB.t < BB.talking.until && !BB.debug) {
+          this.log({ on: o.t, peak: pk, res: "ignored-during-playback" });
+          continue;
+        }
+        const bi = Math.round((o.t - b.t0 - (G ? G.lat : 0)) / b.spb), dt = o.t - (b.t0 + bi * b.spb), inT = G ? G.inTol(dt, b.spb) : Math.abs(dt) <= tol, ex = b.t0 + bi * b.spb;
         if (G && bi >= 4 && !o.up && dt > -0.1 && dt < 0.3) this.autoLat(dt);
         if (bi >= 4 && !inT) {
+          if (!o.up) this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: dt < 0 ? "early" : "late" });
           if (this.gated() && !o.up && (this._dts || []).length >= 8 && G.isStray(dt, b.spb)) (b.strays = b.strays || []).push(o.t);
           continue;
         }
-        if (bi < 4 && this.state !== "count" || bi < 0 || !inT || b.hits[bi] || b.pend && b.pend[bi]) continue;
+        if (bi < 4 && this.state !== "count" || bi < 0 || !inT) continue;
+        if (b.hits[bi] || b.pend && b.pend[bi] || o.up) {
+          this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "rejected-as-double" });
+          continue;
+        }
         const d = this.R.dyn;
         if (d === "p" && o.lvl > Math.min(0.95, SOFT_MAX * 1.3)) {
+          this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "too-loud" });
           this.tooLoud = BB.t;
           BB.sfx.wobble();
           BB.burst(ROCK_X, rail(this.R.f) - 170, 14, { world: 1, cols: ["#cfefff", "#fff", "#9fe0ff"], kind: "star", size: 9, g: 200, speed: 300 });
           continue;
         }
         if (d === "f" && !(G && o.rms ? G.isLoud(o.rms, G.sensMul || 1) : o.lvl >= LOUD_MIN)) {
+          this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "too soft" });
           this.tooSoft = BB.t;
           BB.burst(ROCK_X - 120, rail(this.R.f) - 150, 6, { world: 1, col: "#b9a58c", kind: "dust", size: 16, g: -40, speed: 120 });
           continue;
         }
         if (this.gated() && !o.sim) {
           (b.pend = b.pend || {})[bi] = 1;
+          (b.pon = b.pon || {})[bi] = [o.t, pk];
           continue;
         }
+        this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "hit" });
         if (this.state === "count") this.warmClap(bi);
         else this.hit(bi);
+      }
+    }
+    // v14.4.8: Note Mine clap log (timing only, never audio); can never break gameplay
+    log(o) {
+      try {
+        if (BB.clapLog && BB.clapLog.add) BB.clapLog.add(Object.assign({ bpm: this.R && this.R.bpm }, o));
+      } catch (e) {
       }
     }
     gated() {
@@ -682,7 +703,8 @@
         const bi = +k, tc = b.t0 + bi * b.spb;
         if (now < tc + G.lat + Math.max(G.W1, G.win(b.spb)[1]) + 0.02) continue;
         delete b.pend[k];
-        const m = G.judge(tc, this.R.dyn === "p", b.spb);
+        const m = G.judge(tc, this.R.dyn === "p", b.spb), po = b.pon && b.pon[k] || [];
+        this.log({ i: bi, exp: tc, on: po[0], peak: po[1], res: m.ok ? "hit" : "too soft" });
         if (m.ok && this.state === "count") this.warmClap(bi);
         else if (m.ok && this.state === "dig") this.hit(bi);
         else {
@@ -744,6 +766,7 @@
         const bi = b.chk++;
         if (b.hits[bi] || b.pend && b.pend[bi]) continue;
         if (BB.talking && BB.t < BB.talking.until && !BB.debug || this.ovPop && BB.t - this.ovPop < 1) continue;
+        this.log({ i: bi, exp: b.t0 + bi * b.spb, res: "miss" });
         if (this.strikes > 0) {
           this.strikes = 0;
           this.stage = 0;
@@ -798,6 +821,10 @@
       if (BB.t - this.lastOverride < 0.5) return;
       this.lastOverride = BB.t;
       this.ovPop = BB.t;
+      try {
+        this.log({ i: this.beat ? Math.round(this.beatNow()) : "", res: "manual-override" });
+      } catch (e) {
+      }
       if (this.state === "dig" || this.state === "count") {
         this.marks = [1, 1, 1, 1];
         if (this.state === "count") {

@@ -825,7 +825,7 @@
   };
   BB.clapStats = { heard: 0, hit: 0, exp: 0, talk: 0, stray: 0, peak: 0, slow: 0 };
   {
-    const KEY = "bb_claplog2", SKEY = "bb_clsess", CAP = 3e4, WARN = 27e3, T0 = 17e9, RES = ["hit", "miss", "early", "late", "too soft", "ignored-during-playback", "rejected-as-double", "clap_during_listen", "not-clap-shape", "manual-override"];
+    const KEY = "bb_claplog2", SKEY = "bb_clsess", CAP = 3e4, WARN = 27e3, T0 = 17e9, RES = ["hit", "miss", "early", "late", "too soft", "ignored-during-playback", "rejected-as-double", "clap_during_listen", "not-clap-shape", "manual-override", "too-loud"];
     const ld = (k, d) => {
       try {
         return JSON.parse(localStorage.getItem(k) || "null") || d;
