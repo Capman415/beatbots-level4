@@ -189,14 +189,14 @@ class MineRoom{
       const bi=Math.round((o.t-b.t0-(G?G.lat:0))/b.spb),dt=o.t-(b.t0+bi*b.spb),inT=G?G.inTol(dt,b.spb):Math.abs(dt)<=tol,ex=b.t0+bi*b.spb;
       if(G&&bi>=4&&!o.up&&dt>-.1&&dt<.3)this.autoLat(dt);// v13.2: learn this mic's real latency (USB mics / boards add 50-150 ms)
       if(bi>=4&&!inT){if(!o.up)this.log({i:bi,exp:ex,on:o.t,peak:pk,res:dt<0?'early':'late'});if(this.gated()&&!o.up&&(this._dts||[]).length>=8&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
-      if((bi<4&&this.state!=='count')||bi<0||!inT)continue;if(b.hits[bi]||(b.pend&&b.pend[bi])||o.up){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'rejected-as-double'});continue}
+      if((bi<4&&this.state!=='count')||bi<0||!inT)continue;if(BB.kMode&&b.lastOn!=null&&o.t-b.lastOn<.15)continue;/* K: bounce = same clap */if(b.hits[bi]||(b.pend&&b.pend[bi])||o.up){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'rejected-as-double'});continue}
       const d=this.R.dyn;
-      if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*1.3)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too-loud'});this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
-      if(d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too soft'});this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
+      if(BB.kMode){}else if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*1.3)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too-loud'});this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
+      if(!BB.kMode&&d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too soft'});this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
       if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;(b.pon=b.pon||{})[bi]=[o.t,pk];continue}// wait for the beat window to close, then ask: was that the whole group?
-      this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'hit'});if(this.state==='count')this.warmClap(bi);else this.hit(bi)}}
+      b.lastOn=o.t;this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'hit'});if(this.state==='count')this.warmClap(bi);else this.hit(bi)}}
   // v14.4.8: Note Mine clap log (timing only, never audio); can never break gameplay
-  log(o){try{if(BB.clapLog&&BB.clapLog.add)BB.clapLog.add(Object.assign({bpm:this.R&&this.R.bpm},o))}catch(e){}}
+  log(o){try{if(BB.clapLog&&BB.clapLog.add)BB.clapLog.add(Object.assign({bpm:this.beat?Math.round(60/this.beat.spb):this.R&&this.R.bpm},o))}catch(e){}}
   gated(){return BB.mic.ok&&window.GroupGate&&!BB.debug}
   hit(bi){const b=this.beat,d=this.R.dyn;b.hits[bi]=1;this.marks[bi%4]=.01;this.hitT=BB.t;this.swingT=BB.t;this.strikes++;{const n=strikesFor(this.R),st=Math.floor(this.strikes*NEED/n+1e-9);while(this.stage<st&&this.stage<NEED)this.crack(1)}// v12.6 cave-in (fast + piano): a soft, purely tonal tink so it can't mask the next whisper clap
     if(d==='p'&&b.spb<.5)BB.sfx.tink(undefined,.3,true);else BB.sfx.tink();if(d==='f'){BB.sfx.boom();BB.shake(5)}

@@ -118,7 +118,7 @@
       if (v > floor && !edge && !near) {
         var r = st.ref.length >= 3 ? Core.pct(st.ref.slice(-12), 50) : v, p = Math.min(Math.max(pfn(ts[j]), 1e-4), 1 - 1e-4), pv = 0;
         for (i = Math.max(0, G.length - 2); i < G.length; i++) if (G[i] != null && ts[j] - G[i] < P.TAILW) pv = Math.max(pv, st.vals[i]);
-        var s = P.A * Math.log(v / Math.max(P.k * r, floor)) + P.B * Math.max(Math.log(p / (1 - p)), v >= P.VS2 * floor ? 0 : v >= P.VS * floor ? P.LMIN : -1e9);
+        var s = P.A * Math.log(v / Math.max(P.k * r, floor)) + P.B * Math.max(Math.log(p / (1 - p)), v >= (window.BB && BB.kMode ? 1.2 : P.VS2) * floor ? 0 : v >= P.VS * floor ? P.LMIN : -1e9);
         if (pv) s += Cw * Math.min(0, Math.log(v / pv));
         ok = s > 0;
         st.last = { v, p, s, f: floor, r: ok ? null : "not-clap-shape" };
@@ -153,8 +153,8 @@
     state: "off",
     why: "",
     init: function() {
-      var BB = root.BB, q;
-      if (!BB) return;
+      var BB2 = root.BB, q;
+      if (!BB2) return;
       try {
         q = new URLSearchParams(location.search);
       } catch (e) {
@@ -162,14 +162,14 @@
           return null;
         } };
       }
-      this.on = q.get("det") !== "old" && !root.BB_LEGACY && !(BB.MLP && BB.MLP.on);
+      this.on = q.get("det") !== "old" && !root.BB_LEGACY && !(BB2.MLP && BB2.MLP.on);
       this.dbg = q.get("debug") === "1";
     },
     start: function() {
-      var BB = root.BB, MC = root.MicCore, self = this;
+      var BB2 = root.BB, MC = root.MicCore, self = this;
       if (this.state === "on" && this.ctx !== MC.ctx) {
         try {
-          BB.outBus.disconnect(this.no);
+          BB2.outBus.disconnect(this.no);
         } catch (e) {
         }
         this.state = "off";
@@ -180,7 +180,7 @@
       if (!MC || !MC.ctx || !MC.ctx.audioWorklet || !root.AudioWorkletNode || !root.Blob) return this.fail("no worklet");
       this.state = "loading";
       var code = "const NF=1024,NB=24;class B extends AudioWorkletProcessor{constructor(o){super();const a=o.processorOptions;this.map=a.map;this.win=a.win;this.H=Math.round(sampleRate*.005);this.raw=!!a.raw;this.buf=new Float32Array(NF*4);this.n=0;this.cnt=0;this.re=new Float64Array(NF);this.im=new Float64Array(NF);this.out=[];this.ts=[];this.rq=[];this.rr=new Float32Array(32768);this.rc=0}fft(re,im){const n=NF;for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}for(let l=2;l<=n;l<<=1){const a=-2*Math.PI/l,h=l/2;for(let k=0;k<h;k++){const c=Math.cos(a*k),s=Math.sin(a*k);for(let i=0;i<n;i+=l){const p=i+k+h,xr=re[p]*c-im[p]*s,xi=re[p]*s+im[p]*c;re[p]=re[i+k]-xr;im[p]=im[i+k]-xi;re[i+k]+=xr;im[i+k]+=xi}}}}process(inp){const x=inp[0]&&inp[0][0];if(!x)return true;const f0=currentFrame;for(let i=0;i<x.length;i++){if(this.n>=this.buf.length){this.buf.copyWithin(0,this.buf.length-NF);this.n=NF}this.buf[this.n++]=x[i];this.cnt++;if(this.raw)this.rr[this.rc++%32768]=x[i];if(this.n>=NF&&this.cnt>=this.H){this.cnt=0;const o=this.n-NF;for(let k=0;k<NF;k++){this.re[k]=this.buf[o+k]*this.win[k];this.im[k]=0}this.fft(this.re,this.im);const p=new Float32Array(NB);for(let k=0;k<=NF/2;k++){const m=this.map[k];if(m>=0)p[m]+=this.re[k]*this.re[k]+this.im[k]*this.im[k]}this.out.push(p);this.ts.push((f0+i+1-NF/2)/sampleRate)}}if(this.out.length>=4){this.port.postMessage({t:this.ts,p:this.out,now:(f0+x.length)/sampleRate,raw:this.raw?this.take():null});this.out=[];this.ts=[]}return true}take(){const n=this.rc-(this.rs||0),o=new Float32Array(Math.min(n,32768));for(let i=0;i<o.length;i++)o[i]=this.rr[(this.rc-o.length+i)%32768];this.rs=this.rc;return o}}registerProcessor('bb-c96',B);";
-      var url = URL.createObjectURL(new Blob([code], { type: "application/javascript" })), ac = BB.ac;
+      var url = URL.createObjectURL(new Blob([code], { type: "application/javascript" })), ac = BB2.ac;
       this.mic = { P: [], t: [], raw: new Float32Array(MC.ctx.sampleRate * 2 | 0), rawEnd: 0, sr: MC.ctx.sampleRate };
       this.out = { P: [], t: [] };
       this.off = null;
@@ -203,7 +203,7 @@
         MC.src.connect(self.nm);
         self.nm.connect(MC.sink);
         self.no = mk(ac, false);
-        BB.outBus.connect(self.no);
+        BB2.outBus.connect(self.no);
         var z = ac.createGain();
         z.gain.value = 0;
         self.no.connect(z);
@@ -235,12 +235,12 @@
       this.on = false;
     },
     active: function() {
-      var BB = root.BB;
-      return this.on && this.state === "on" && BB.mic.ok && !BB.debug;
+      var BB2 = root.BB;
+      return this.on && this.state === "on" && BB2.mic.ok && !BB2.debug;
     },
     // mic frames: worklet time -> game (BB.ac) time
     onMic: function(d) {
-      var BB = root.BB, M = this.mic, off = BB.ac.currentTime - root.MicCore.ctx.currentTime;
+      var BB2 = root.BB, M = this.mic, off = BB2.ac.currentTime - root.MicCore.ctx.currentTime;
       this.off = this.off == null ? off : this.off + (off - this.off) * 0.05;
       for (var i = 0; i < d.p.length; i++) {
         M.P.push(d.p[i]);

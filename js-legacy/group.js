@@ -19,18 +19,19 @@
       this.lat = measured == null ? 0 : Math.min(0.25, Math.max(0, measured - this.LAT_BASE));
     },
     early(spb) {
-      return Math.min(0.12, spb * 0.28);
+      return BB.kMode ? Math.min(0.17, spb * 0.36) : Math.min(0.12, spb * 0.28);
     },
     late(spb) {
-      return Math.min(0.18, spb * 0.4);
+      return BB.kMode ? Math.min(0.32, spb * 0.6) : Math.min(0.18, spb * 0.4);
     },
+    /* v14.5 K mode: ~1.4x early, ~1.8x late */
     // v13.2: ~-120/+180 ms at 100 bpm (group claps of young kids drag)
     inTol(dt, spb) {
       const d = dt - this.lat;
       return d >= -this.early(spb) && d <= this.late(spb);
     },
     win(spb) {
-      return [-Math.min(0.12, spb * 0.26), Math.min(0.2, spb * 0.44)];
+      return BB.kMode ? [-Math.min(0.17, spb * 0.34), Math.min(0.34, spb * 0.62)] : [-Math.min(0.12, spb * 0.26), Math.min(0.2, spb * 0.44)];
     },
     K_FLOOR: 0.5,
     // window energy must exceed this many "quiet windows"
@@ -127,7 +128,7 @@
       return Math.min(1, Math.max(0.1, Math.pow(10, (a[a.length >> 1] + 40) / 20)));
     },
     onsetThr(floor, sens, soft) {
-      const k = this.absScale(), t = Math.max(floor * this.ONSET_K + this.ONSET_ADD * k, this.ONSET_MIN * k) / (sens || 1);
+      const k = this.absScale(), kk = BB.kMode ? 0.65 : 1, t = kk * Math.max(floor * (BB.kMode ? 1.6 : this.ONSET_K) + this.ONSET_ADD * k, this.ONSET_MIN * k) / (sens || 1);
       return soft ? Math.min(t, Math.max(floor * 1.6, this.rmsForLvl(this.SOFT_BAR, sens))) : t;
     },
     reset() {
@@ -186,7 +187,8 @@
       tc += this.lat;
       const [w0, w1] = spb ? this.win(spb) : [this.W0, this.W1];
       const m = this.measure(tc + w0, tc + w1, soft ? 1.05 : 1.5);
-      const thr = soft ? Math.pow(this.floor, this.PW) * (w1 - w0) * this.K_FLOOR * 0.35 / this.sensMul : this.thresh() * (w1 - w0) / (this.W1 - this.W0);
+      let thr = soft ? Math.pow(this.floor, this.PW) * (w1 - w0) * this.K_FLOOR * 0.35 / this.sensMul : this.thresh() * (w1 - w0) / (this.W1 - this.W0);
+      if (BB.kMode) thr *= 0.6;
       m.ok = m.E > thr && m.dur >= (soft ? this.MIN_DUR * 0.6 : this.MIN_DUR);
       m.thr = thr;
       if (m.ok && !soft) {
@@ -199,7 +201,7 @@
     // beat tolerance and stray test scale with tempo: at Allegro (145 bpm, 0.41 s/beat) a slightly late GROUP clap
     // must never be mistaken for a lone stray, or it teaches the gate that the group is 'single-kid' loud.
     tol(spb) {
-      return Math.min(0.17, spb * 0.36);
+      return BB.kMode ? Math.min(0.3, spb * 0.5) : Math.min(0.17, spb * 0.36);
     },
     isStray(dt, spb) {
       let d = (dt - this.lat) % spb;

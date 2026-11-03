@@ -967,7 +967,7 @@
         var _a, _b, _c;
         try {
           const m = BB.mic || {}, n = BB.scene && BB.scene.constructor && BB.scene.constructor.name || "";
-          ev.push([Math.round(Date.now() / 100) - T0, curSess(), ROOMN[n] || n, o.bpm || "", (_a = o.i) != null ? _a : "", ms(o.exp), ms(o.on), ms((_b = o.peak) != null ? _b : m.level), ms((_c = o.thr) != null ? _c : m.floor), Math.max(0, RES.indexOf(o.res)), playing() ? 1 : 0, BB.VERSION || "", m.clipN || 0]);
+          ev.push([Math.round(Date.now() / 100) - T0, curSess(), ROOMN[n] || n, o.bpm || "", (_a = o.i) != null ? _a : "", ms(o.exp), ms(o.on), ms((_b = o.peak) != null ? _b : m.level), ms((_c = o.thr) != null ? _c : m.floor), Math.max(0, RES.indexOf(o.res)), playing() ? 1 : 0, BB.VERSION || "", m.clipN || 0, BB.kMode ? 1 : 0]);
           if (ev.length > CAP) ev.splice(0, ev.length - CAP);
           dirty = 1;
         } catch (e) {
@@ -982,11 +982,11 @@
         return ev.map((r) => {
           var _a;
           const S = sess[r[1]] || {}, e = r[5], o = r[6];
-          return { ts: r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", s: S, room: r[2], bpm: r[3], i: r[4], exp: e === "" ? "" : e / 1e3, on: o === "" ? "" : o / 1e3, off: e !== "" && o !== "" ? o - e : "", peak: r[7] === "" ? "" : r[7] / 1e3, thr: r[8] === "" ? "" : r[8] / 1e3, res: RES[r[9]], pl: r[10], ver: r[11] || "", clip: (_a = r[12]) != null ? _a : "" };
+          return { ts: r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", s: S, room: r[2], bpm: r[3], i: r[4], exp: e === "" ? "" : e / 1e3, on: o === "" ? "" : o / 1e3, off: e !== "" && o !== "" ? o - e : "", peak: r[7] === "" ? "" : r[7] / 1e3, thr: r[8] === "" ? "" : r[8] / 1e3, res: RES[r[9]], pl: r[10], ver: r[11] || "", clip: (_a = r[12]) != null ? _a : "", k: r[13] ? 1 : 0 };
         });
       },
       csv() {
-        return "session_id,date,day,class,timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing,app_version\n" + BB.clapLog.rows().map((r) => [r.s.id || "", r.s.date || "", r.s.day || "", r.s.cls || "", r.ts, r.room, r.bpm, r.i, r.exp, r.on, r.off, r.peak, r.thr, r.res, r.pl, r.ver].map(q).join(",")).join("\n");
+        return "session_id,date,day,class,timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing,app_version,k_mode\n" + BB.clapLog.rows().map((r) => [r.s.id || "", r.s.date || "", r.s.day || "", r.s.cls || "", r.ts, r.room, r.bpm, r.i, r.exp, r.on, r.off, r.peak, r.thr, r.res, r.pl, r.ver, r.k].map(q).join(",")).join("\n");
       },
       summaryCsv() {
         const micInfo = () => {
@@ -1011,6 +1011,7 @@
           a.c[r.res] = (a.c[r.res] || 0) + 1;
           a.last = r.ts;
           if (r.ver) a.ver = r.ver;
+          if (r.k) a.k = 1;
           if (r.clip !== "") {
             if (a.c0 == null) a.c0 = r.clip;
             a.c1 = r.clip;
@@ -1022,9 +1023,9 @@
           x = x.slice().sort((a, b) => a - b);
           return x[x.length >> 1];
         };
-        return "session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames,not_clap_shape,app_version,manual_override\n" + [...g.values()].map((a) => {
-          const c = (k) => a.c[k] || 0, h = c("hit"), den = h + c("miss") + c("too soft") + c("not-clap-shape") + c("early") + c("late");
-          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs), ...micInfo(), a.c0 == null ? "" : Math.max(0, a.c1 - a.c0), c("not-clap-shape"), a.ver, c("manual-override")].map(q).join(",");
+        return "session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames,not_clap_shape,app_version,manual_override,k_mode\n" + [...g.values()].map((a) => {
+          const c = (k) => +(a.c[k] || 0), h = c("hit"), den = h + c("miss") + c("too soft") + c("not-clap-shape") + c("early") + c("late");
+          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs), ...micInfo(), a.c0 == null ? "" : Math.max(0, a.c1 - a.c0), c("not-clap-shape"), a.ver, Number(c("manual-override")) || 0, a.k ? 1 : 0].map(q).join(",");
         }).join("\n");
       },
       download() {

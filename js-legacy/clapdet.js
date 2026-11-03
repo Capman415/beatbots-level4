@@ -13,6 +13,10 @@
     fastUntil: -1,
     // fastUntil: audio time until which 16th-note (tika-tika) rhythms are expected (set by the clap-back)
     refractory(t) {
+      if (window.BB && BB.kMode) return Math.max(0.15, this.refractory0(t));
+    },
+    /* v14.5 K mode: a bounce within 150 ms is the same clap */
+    refractory0(t) {
       if (this.V133 && this.expGap && (t == null || t < this.expUntil)) return Math.min(this.MIN_IOI, Math.max(this.REF_MIN, this.expGap * this.REF_K));
       return this.fast || t != null && t < this.fastUntil ? this.MIN_IOI_FAST : this.MIN_IOI;
     },
@@ -99,7 +103,7 @@
     gapOk(st, tNow, x) {
       const g = tNow - st.lastOn;
       if (g > this.refractory(tNow) && (!this.active(tNow) || st.armed || g > this.MIN_IOI || st.armed == null)) return 1;
-      if (g > this.MIN_IOI_FAST && !st.up && x > st.lastX * this.UP_K) return 2;
+      if (g > (window.BB && BB.kMode ? 0.15 : this.MIN_IOI_FAST) && !st.up && x > st.lastX * this.UP_K) return 2;
       return 0;
     }
   };

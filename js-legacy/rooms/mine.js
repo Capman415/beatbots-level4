@@ -632,19 +632,21 @@
           continue;
         }
         if (bi < 4 && this.state !== "count" || bi < 0 || !inT) continue;
+        if (BB.kMode && b.lastOn != null && o.t - b.lastOn < 0.15) continue;
         if (b.hits[bi] || b.pend && b.pend[bi] || o.up) {
           this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "rejected-as-double" });
           continue;
         }
         const d = this.R.dyn;
-        if (d === "p" && o.lvl > Math.min(0.95, SOFT_MAX * 1.3)) {
+        if (BB.kMode) {
+        } else if (d === "p" && o.lvl > Math.min(0.95, SOFT_MAX * 1.3)) {
           this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "too-loud" });
           this.tooLoud = BB.t;
           BB.sfx.wobble();
           BB.burst(ROCK_X, rail(this.R.f) - 170, 14, { world: 1, cols: ["#cfefff", "#fff", "#9fe0ff"], kind: "star", size: 9, g: 200, speed: 300 });
           continue;
         }
-        if (d === "f" && !(G && o.rms ? G.isLoud(o.rms, G.sensMul || 1) : o.lvl >= LOUD_MIN)) {
+        if (!BB.kMode && d === "f" && !(G && o.rms ? G.isLoud(o.rms, G.sensMul || 1) : o.lvl >= LOUD_MIN)) {
           this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "too soft" });
           this.tooSoft = BB.t;
           BB.burst(ROCK_X - 120, rail(this.R.f) - 150, 6, { world: 1, col: "#b9a58c", kind: "dust", size: 16, g: -40, speed: 120 });
@@ -655,6 +657,7 @@
           (b.pon = b.pon || {})[bi] = [o.t, pk];
           continue;
         }
+        b.lastOn = o.t;
         this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "hit" });
         if (this.state === "count") this.warmClap(bi);
         else this.hit(bi);
@@ -663,7 +666,7 @@
     // v14.4.8: Note Mine clap log (timing only, never audio); can never break gameplay
     log(o) {
       try {
-        if (BB.clapLog && BB.clapLog.add) BB.clapLog.add(Object.assign({ bpm: this.R && this.R.bpm }, o));
+        if (BB.clapLog && BB.clapLog.add) BB.clapLog.add(Object.assign({ bpm: this.beat ? Math.round(60 / this.beat.spb) : this.R && this.R.bpm }, o));
       } catch (e) {
       }
     }

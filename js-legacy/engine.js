@@ -55,7 +55,29 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.4.8";
+BB.VERSION = "v14.5.0";
+try {
+  BB.kMode = localStorage.getItem("bb_kmode") === "1";
+} catch (e) {
+  BB.kMode = false;
+}
+BB.setK = (v) => {
+  BB.kMode = !!v;
+  try {
+    localStorage.setItem("bb_kmode", v ? "1" : "0");
+  } catch (e) {
+  }
+};
+BB.kBadge = () => {
+  if (!BB.kMode) return;
+  try {
+    ctx.save();
+    BB.rrect(W / 2 - 44, 8, 88, 64, 18, "#ff8fc8", "#fff", 5);
+    BB.text("K", W / 2, 42, 46, "#fff", { font: "Rammetto One", stroke: 6 });
+    ctx.restore();
+  } catch (e) {
+  }
+};
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -1227,6 +1249,7 @@ function frame(ts) {
       if (BB.MLP && BB.MLP.on && mic.ok) BB.MLP.frame();
     }
     BB.scene.draw(ctx);
+    BB.kBadge();
     if (BB.R && BB.R.drawSneak && !BB.paused) BB.R.drawSneak();
     if (BB.MLP && BB.MLP.dbg) BB.MLP.draw(ctx);
   }

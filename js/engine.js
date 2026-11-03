@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.4.8';try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.5.0';/* v14.5 Kindergarten K mode (saved per device) */try{BB.kMode=localStorage.getItem('bb_kmode')==='1'}catch(e){BB.kMode=false}BB.setK=v=>{BB.kMode=!!v;try{localStorage.setItem('bb_kmode',v?'1':'0')}catch(e){}};BB.kBadge=()=>{if(!BB.kMode)return;try{ctx.save();BB.rrect(W/2-44,8,88,64,18,'#ff8fc8','#fff',5);BB.text('K',W/2,42,46,'#fff',{font:'Rammetto One',stroke:6});ctx.restore()}catch(e){}};try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -348,7 +348,7 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   ctx.setTransform(SC*BB.dpr,0,0,SC*BB.dpr,OX*BB.dpr,OY*BB.dpr);ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
   shakeAmt*=Math.pow(.02,dt);const sx=(Math.random()-.5)*2*shakeAmt,sy=(Math.random()-.5)*2*shakeAmt;
   BB.shakeXY=[sx,sy];
-  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);if(BB.R&&BB.R.drawSneak&&!BB.paused)BB.R.drawSneak();if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
+  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);BB.kBadge();if(BB.R&&BB.R.drawSneak&&!BB.paused)BB.R.drawSneak();if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
   BB.drawCelebrate&&BB.drawCelebrate();BB.drawParts&&0;
   ctx.restore();
   ctx.save();ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.font='13px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillStyle='rgba(255,255,255,.55)';

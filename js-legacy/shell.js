@@ -437,7 +437,8 @@
       });
       if (BB.session) {
         const L = BB.clapLog;
-        BB.panel(24, 24, 302, 76, 20);
+        BB.panel(24, 24, 446, 76, 20);
+        BB.button(322, 32, 138, 60, BB.kMode ? "K MODE ON" : "K MODE", { size: 20, style: BB.kMode ? "green" : "cream", id: "hkmode", onClick: () => BB.setK(!BB.kMode) });
         BB.button(34, 32, 138, 60, "DAY " + BB.session.day, { size: 22, id: "hday", onClick: () => BB.session.cycleDay() });
         BB.button(178, 32, 138, 60, "CLASS " + BB.session.cls, { size: 22, id: "hcls", onClick: () => BB.session.cycleClass() });
         {
