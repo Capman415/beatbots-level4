@@ -613,6 +613,7 @@
     override() {
       if (this.done) return;
       for (let i = 0; i < this.n; i++) if (!this.got[i]) {
+        if (!(this.logged && this.logged[i])) BB.clapLog.add({ bpm: this.bpm, i, res: "manual-override" });
         this.got[i] = 1;
         this.marks[i] = 0.01;
       }
@@ -824,7 +825,7 @@
   };
   BB.clapStats = { heard: 0, hit: 0, exp: 0, talk: 0, stray: 0, peak: 0, slow: 0 };
   {
-    const KEY = "bb_claplog2", SKEY = "bb_clsess", CAP = 3e4, WARN = 27e3, T0 = 17e9, RES = ["hit", "miss", "early", "late", "too soft", "ignored-during-playback", "rejected-as-double", "clap_during_listen", "not-clap-shape"];
+    const KEY = "bb_claplog2", SKEY = "bb_clsess", CAP = 3e4, WARN = 27e3, T0 = 17e9, RES = ["hit", "miss", "early", "late", "too soft", "ignored-during-playback", "rejected-as-double", "clap_during_listen", "not-clap-shape", "manual-override"];
     const ld = (k, d) => {
       try {
         return JSON.parse(localStorage.getItem(k) || "null") || d;
@@ -889,25 +890,45 @@
         }
       }
     }
-    let on = true;
     try {
-      on = localStorage.getItem("bb_clog") !== "0";
+      localStorage.removeItem("bb_clog");
     } catch (e) {
     }
-    let dirty = 1, full = 0;
+    let dirty = 0, full = 0;
     const save = () => {
       if (!dirty) return;
-      dirty = 0;
-      try {
-        localStorage.setItem(SKEY, JSON.stringify(sess));
-        localStorage.setItem(KEY, JSON.stringify(ev));
-        full = 0;
-      } catch (e) {
-        full = 1;
-        ev.splice(0, ev.length >> 3);
+      for (let k = 0; k < 6; k++) {
+        try {
+          localStorage.setItem(SKEY, JSON.stringify(sess));
+          localStorage.setItem(KEY, JSON.stringify(ev));
+          full = 0;
+          dirty = 0;
+          return;
+        } catch (e) {
+          full = 1;
+          if (ev.length < 8) break;
+          ev.splice(0, ev.length >> 3);
+        }
       }
     };
-    setInterval(save, 3e3);
+    setInterval(() => {
+      try {
+        save();
+      } catch (e) {
+      }
+    }, 3e3);
+    addEventListener("pagehide", () => {
+      try {
+        save();
+      } catch (e) {
+      }
+    });
+    document.addEventListener("visibilitychange", () => {
+      try {
+        save();
+      } catch (e) {
+      }
+    });
     const playing = () => {
       const t = ac.currentTime;
       return !!(BB.talking && BB.t < BB.talking.until || (BB.selfWins || []).some((w) => t >= w.t && t <= w.e + 0.05));
@@ -930,16 +951,7 @@
       }, 500);
     };
     BB.clapLog = {
-      get on() {
-        return on;
-      },
-      set on(v) {
-        on = !!v;
-        try {
-          localStorage.setItem("bb_clog", on ? "1" : "0");
-        } catch (e) {
-        }
-      },
+      on: true,
       count: () => ev.length,
       CAP,
       WARN,
@@ -953,11 +965,18 @@
       },
       add(o) {
         var _a, _b, _c;
-        if (!on) return;
-        const m = BB.mic || {}, n = BB.scene && BB.scene.constructor && BB.scene.constructor.name || "";
-        ev.push([Math.round(Date.now() / 100) - T0, curSess(), ROOMN[n] || n, o.bpm || "", (_a = o.i) != null ? _a : "", ms(o.exp), ms(o.on), ms((_b = o.peak) != null ? _b : m.level), ms((_c = o.thr) != null ? _c : m.floor), Math.max(0, RES.indexOf(o.res)), playing() ? 1 : 0, BB.VERSION || "", m.clipN || 0]);
-        if (ev.length > CAP) ev.splice(0, ev.length - CAP);
-        dirty = 1;
+        try {
+          const m = BB.mic || {}, n = BB.scene && BB.scene.constructor && BB.scene.constructor.name || "";
+          ev.push([Math.round(Date.now() / 100) - T0, curSess(), ROOMN[n] || n, o.bpm || "", (_a = o.i) != null ? _a : "", ms(o.exp), ms(o.on), ms((_b = o.peak) != null ? _b : m.level), ms((_c = o.thr) != null ? _c : m.floor), Math.max(0, RES.indexOf(o.res)), playing() ? 1 : 0, BB.VERSION || "", m.clipN || 0]);
+          if (ev.length > CAP) ev.splice(0, ev.length - CAP);
+          dirty = 1;
+        } catch (e) {
+          try {
+            ev.push([Math.round(Date.now() / 100) - T0, 0, "", o && o.bpm || "", "", "", "", "", "", Math.max(0, RES.indexOf(o && o.res)), 0, BB.VERSION || "", 0]);
+            dirty = 1;
+          } catch (e2) {
+          }
+        }
       },
       rows() {
         return ev.map((r) => {
@@ -1003,9 +1022,9 @@
           x = x.slice().sort((a, b) => a - b);
           return x[x.length >> 1];
         };
-        return "session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames,not_clap_shape,app_version\n" + [...g.values()].map((a) => {
+        return "session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames,not_clap_shape,app_version,manual_override\n" + [...g.values()].map((a) => {
           const c = (k) => a.c[k] || 0, h = c("hit"), den = h + c("miss") + c("too soft") + c("not-clap-shape") + c("early") + c("late");
-          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs), ...micInfo(), a.c0 == null ? "" : Math.max(0, a.c1 - a.c0), c("not-clap-shape"), a.ver].map(q).join(",");
+          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs), ...micInfo(), a.c0 == null ? "" : Math.max(0, a.c1 - a.c0), c("not-clap-shape"), a.ver, c("manual-override")].map(q).join(",");
         }).join("\n");
       },
       download() {

@@ -1326,8 +1326,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     if (BB.listenMode) BB.button(x + 40, y + 24, 290, 42, "LISTEN RULE: " + BB.listenMode.label(), { size: 19, id: "lrule", onClick: () => BB.listenMode.cycle() });
     if (BB.clapLog) {
       const L = BB.clapLog, bx = x + w - 330, bw = 290, warn = L.nearCap(), tw = (bw - 12) / 3;
-      BB.button(bx, y + 24, bw, 42, (warn ? "NEARLY FULL! " : "CLAP LOG: " + (L.on ? "ON " : "OFF ")) + L.count() + "/" + L.CAP, { style: warn ? "cream" : void 0, size: 19, id: "clog", onClick: () => {
-        L.on = !L.on;
+      BB.button(bx, y + 24, bw, 42, (warn ? "NEARLY FULL! " : "CLAP LOG ") + L.count() + "/" + L.CAP, { style: warn ? "cream" : void 0, size: 19, id: "clog", onClick: () => {
       } });
       BB.button(bx, y + 72, bw, 36, "Download clap log (CSV)", { size: 17, id: "clogdl", onClick: () => L.download() });
       BB.button(bx, y + 114, bw, 36, "Download summary (CSV)", { size: 17, id: "clogsum", onClick: () => L.downloadSummary() });

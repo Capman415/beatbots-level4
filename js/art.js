@@ -297,7 +297,7 @@ BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRec
   if(BB.listenMode)BB.button(x+40,y+24,290,42,'LISTEN RULE: '+BB.listenMode.label(),{size:19,id:'lrule',onClick:()=>BB.listenMode.cycle()});
   /* v14.2.1: clap log + session tag, compact column kept above the example picture (ends y+188) */
   if(BB.clapLog){const L=BB.clapLog,bx=x+w-330,bw=290,warn=L.nearCap(),tw=(bw-12)/3;
-   BB.button(bx,y+24,bw,42,(warn?'NEARLY FULL! ':'CLAP LOG: '+(L.on?'ON ':'OFF '))+L.count()+'/'+L.CAP,{style:warn?'cream':undefined,size:19,id:'clog',onClick:()=>{L.on=!L.on}});
+   BB.button(bx,y+24,bw,42,(warn?'NEARLY FULL! ':'CLAP LOG ')+L.count()+'/'+L.CAP,{style:warn?'cream':undefined,size:19,id:'clog',onClick:()=>{}});
    BB.button(bx,y+72,bw,36,'Download clap log (CSV)',{size:17,id:'clogdl',onClick:()=>L.download()});
    BB.button(bx,y+114,bw,36,'Download summary (CSV)',{size:17,id:'clogsum',onClick:()=>L.downloadSummary()});
    BB.button(bx,y+156,tw,36,'DAY '+BB.session.day,{size:16,id:'psday',onClick:()=>BB.session.cycleDay()});

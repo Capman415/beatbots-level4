@@ -147,7 +147,7 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     if(gated)this.pend=this.pend.filter(i=>{const te=C+this.snd[i].b*spb;if(ac.currentTime-.02<te+G.lat+Math.max(G.W1,G.win(spb)[1])+.02)return true;const m=G.judge(te,false,spb);if(m.ok)this.hit(i);else{this.got[i]=0;this.few=BB.t;BB.clapLog.add({bpm:this.bpm,i,exp:te,res:'too soft'})}return false});
     if(!this.done&&ac.currentTime>C+this.L*spb+.25&&!(this._k===1&&K.exp&&K.exp.key===this&&ac.currentTime<C+this.L*spb+1.2)){if(this._k===1&&K.exp&&K.exp.key===this)K.cancel();this.done=true;const sc=this.got.filter(x=>x===1).length/this.n;BB.clapStats.exp+=this.n;for(let i=0;i<this.n;i++)if(this.got[i]!==1&&!(this.logged&&this.logged[i]))BB.clapLog.add({bpm:this.bpm,i,exp:C+this.snd[i].b*spb,res:'miss'});BB.clapStats.hit+=this.got.filter(x=>x===1).length;this.score=sc;this.onDone&&this.onDone(sc)}}
   hit(i){this.got[i]=1;this.marks[i]=.01;BB.sfx.tink(undefined,.6)}
-  override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}
+  override(){if(this.done)return;for(let i=0;i<this.n;i++)if(!this.got[i]){/* v14.4.7: log override beats (was silent: override-only classes logged nothing) */if(!(this.logged&&this.logged[i]))BB.clapLog.add({bpm:this.bpm,i,res:'manual-override'});this.got[i]=1;this.marks[i]=.01}this.done=true;this.score=1;this.onDone&&this.onDone(1)}
   cursor(){const ph=this.phase();if(ph!=='clap')return -1;const b=this.beatNow()-this.base-this.L-4;for(let i=0;i<this.n;i++)if(!this.got[i]&&this.snd[i].b>=b-.12)return i;return -1}
   draw(cx,y){const ph=this.phase(),yt=ph==='ready'||ph==='clap';
     if(yt)R.yourTurn(ph,this.beatNowV()-this.base-this.L,y);
@@ -200,7 +200,7 @@ BB.clapStats={heard:0,hit:0,exp:0,talk:0,stray:0,peak:0,slow:0};
 /* v14.2.1 local clap diagnostics log: numbers only (never audio), localStorage on this device, last 30000 events.
    Compact rows: [t (0.1 s since epoch base), session idx, room code, bpm, beat, exp*1000, on*1000, peak*1000, thr*1000, result code, playing] */
 {const KEY='bb_claplog2',SKEY='bb_clsess',CAP=30000,WARN=27000,T0=17e9,
- RES=['hit','miss','early','late','too soft','ignored-during-playback','rejected-as-double','clap_during_listen','not-clap-shape'];
+ RES=['hit','miss','early','late','too soft','ignored-during-playback','rejected-as-double','clap_during_listen','not-clap-shape','manual-override'];
  const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')||d}catch(e){return d}};
  let ev=ld(KEY,[]),sess=ld(SKEY,[]);
  const pad=n=>String(n).padStart(2,'0'),dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -219,24 +219,24 @@ BB.clapStats={heard:0,hit:0,exp:0,talk:0,stray:0,peak:0,slow:0};
  {const old=ld('bb_claplog',null);if(old&&old.length){const si=sess.push({id:'v14.2-untagged',date:'',day:'',cls:''})-1;
    for(const r of old){const t=Date.parse(r[0]);ev.push([isNaN(t)?0:Math.round(t/100)-T0,si,r[1],r[2],r[3],r[4]===''?'':Math.round(r[4]*1000),r[5]===''?'':Math.round(r[5]*1000),r[7]===''?'':Math.round(r[7]*1000),r[8]===''?'':Math.round(r[8]*1000),Math.max(0,RES.indexOf(r[9])),r[10]])}
    try{localStorage.removeItem('bb_claplog')}catch(e){}}}
- let on=true;try{on=localStorage.getItem('bb_clog')!=='0'}catch(e){}
- let dirty=1,full=0;const save=()=>{if(!dirty)return;dirty=0;try{localStorage.setItem(SKEY,JSON.stringify(sess));localStorage.setItem(KEY,JSON.stringify(ev));full=0}catch(e){full=1;ev.splice(0,ev.length>>3)}};setInterval(save,3000);
+ /* v14.4.7: always on (no toggle) */try{localStorage.removeItem('bb_clog')}catch(e){}
+ let dirty=0,full=0;const save=()=>{if(!dirty)return;for(let k=0;k<6;k++){try{localStorage.setItem(SKEY,JSON.stringify(sess));localStorage.setItem(KEY,JSON.stringify(ev));full=0;dirty=0;return}catch(e){full=1;if(ev.length<8)break;ev.splice(0,ev.length>>3)}}};setInterval(()=>{try{save()}catch(e){}},3000);addEventListener('pagehide',()=>{try{save()}catch(e){}});document.addEventListener('visibilitychange',()=>{try{save()}catch(e){}});
  const playing=()=>{const t=ac.currentTime;return !!((BB.talking&&BB.t<BB.talking.until)||(BB.selfWins||[]).some(w=>t>=w.t&&t<=w.e+.05))};
  const ms=v=>v==null||v===''||isNaN(v)?'':Math.round(v*1000);
  const ROOMN={MineRoom:'mine',SmasherRoom:'smasher',PackingRoom:'packing',LabelRoom:'label',DeliveryRoom:'delivery'};
  const q=v=>{v=String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  const dl=(txt,name)=>{const b=new Blob([txt],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
- BB.clapLog={get on(){return on},set on(v){on=!!v;try{localStorage.setItem('bb_clog',on?'1':'0')}catch(e){}},count:()=>ev.length,CAP,WARN,
+ BB.clapLog={on:true,count:()=>ev.length,CAP,WARN,
   nearCap:()=>ev.length>=WARN||full,bytes:()=>{try{return((localStorage.getItem(KEY)||'').length+(localStorage.getItem(SKEY)||'').length)*2}catch(e){return 0}},
-  add(o){if(!on)return;const m=BB.mic||{},n=(BB.scene&&BB.scene.constructor&&BB.scene.constructor.name)||'';
+  add(o){try{const m=BB.mic||{},n=(BB.scene&&BB.scene.constructor&&BB.scene.constructor.name)||'';
    ev.push([Math.round(Date.now()/100)-T0,curSess(),ROOMN[n]||n,o.bpm||'',o.i??'',ms(o.exp),ms(o.on),ms(o.peak??m.level),ms(o.thr??m.floor),Math.max(0,RES.indexOf(o.res)),playing()?1:0,BB.VERSION||'',m.clipN||0]);
-   if(ev.length>CAP)ev.splice(0,ev.length-CAP);dirty=1},
+   if(ev.length>CAP)ev.splice(0,ev.length-CAP);dirty=1}catch(e){try{ev.push([Math.round(Date.now()/100)-T0,0,'',o&&o.bpm||'','','','','','',Math.max(0,RES.indexOf(o&&o.res)),0,BB.VERSION||'',0]);dirty=1}catch(e2){}}},
   rows(){return ev.map(r=>{const S=sess[r[1]]||{},e=r[5],o=r[6];return{ts:r[0]?new Date((r[0]+T0)*100).toISOString():'',s:S,room:r[2],bpm:r[3],i:r[4],exp:e===''?'':e/1000,on:o===''?'':o/1000,off:e!==''&&o!==''?o-e:'',peak:r[7]===''?'':r[7]/1000,thr:r[8]===''?'':r[8]/1000,res:RES[r[9]],pl:r[10],ver:r[11]||'',clip:r[12]??''}})},
   csv(){return 'session_id,date,day,class,timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing,app_version\n'+BB.clapLog.rows().map(r=>[r.s.id||'',r.s.date||'',r.s.day||'',r.s.cls||'',r.ts,r.room,r.bpm,r.i,r.exp,r.on,r.off,r.peak,r.thr,r.res,r.pl,r.ver].map(q).join(',')).join('\n')},
   summaryCsv(){/* v14.4.4: device mic settings + full-scale frame count (no audio, no student data) */const micInfo=()=>{let t={};try{const k=BB.mic&&BB.mic.track;t=k&&k.getSettings?k.getSettings():{}}catch(e){}const b=v=>v==null?'':v?1:0;return[b(t.echoCancellation),b(t.noiseSuppression),b(t.autoGainControl),t.sampleRate||(window.MicCore&&MicCore.ctx?MicCore.ctx.sampleRate:''),]};const g=new Map();for(const r of BB.clapLog.rows()){const k=(r.s.id||'')+'|'+r.room;let a=g.get(k);if(!a){a={s:r.s,room:r.room,c:{},n:0,offs:[],first:r.ts,last:r.ts,c0:null,c1:null,ver:''};g.set(k,a)}a.n++;a.c[r.res]=(a.c[r.res]||0)+1;a.last=r.ts;if(r.ver)a.ver=r.ver;if(r.clip!==''){if(a.c0==null)a.c0=r.clip;a.c1=r.clip}if(r.res==='hit'&&r.off!=='')a.offs.push(r.off)}
    const med=x=>{if(!x.length)return'';x=x.slice().sort((a,b)=>a-b);return x[x.length>>1]};
-   return 'session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames,not_clap_shape,app_version\n'+[...g.values()].map(a=>{const c=k=>a.c[k]||0,h=c('hit'),den=h+c('miss')+c('too soft')+c('not-clap-shape')+c('early')+c('late');
-    return[a.s.id||'',a.s.date||'',a.s.day||'',a.s.cls||'',a.room,a.first,a.last,a.n,h,c('miss'),c('early'),c('late'),c('too soft'),c('ignored-during-playback'),c('rejected-as-double'),c('clap_during_listen'),den?(h/den).toFixed(3):'',med(a.offs),...micInfo(),a.c0==null?'':Math.max(0,a.c1-a.c0),c('not-clap-shape'),a.ver].map(q).join(',')}).join('\n')},
+   return 'session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames,not_clap_shape,app_version,manual_override\n'+[...g.values()].map(a=>{const c=k=>a.c[k]||0,h=c('hit'),den=h+c('miss')+c('too soft')+c('not-clap-shape')+c('early')+c('late');
+    return[a.s.id||'',a.s.date||'',a.s.day||'',a.s.cls||'',a.room,a.first,a.last,a.n,h,c('miss'),c('early'),c('late'),c('too soft'),c('ignored-during-playback'),c('rejected-as-double'),c('clap_during_listen'),den?(h/den).toFixed(3):'',med(a.offs),...micInfo(),a.c0==null?'':Math.max(0,a.c1-a.c0),c('not-clap-shape'),a.ver,c('manual-override')].map(q).join(',')}).join('\n')},
   download(){save();dl(BB.clapLog.csv(),'beatbots_claplog_'+dstr(new Date())+'.csv')},
   downloadSummary(){save();dl(BB.clapLog.summaryCsv(),'beatbots_claplog_summary_'+dstr(new Date())+'.csv')},
   clear(){ev=[];sess=[];dirty=1;save();if(BB.clapStats)for(const k in BB.clapStats)BB.clapStats[k]=0}}}
