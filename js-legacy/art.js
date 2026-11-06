@@ -1355,6 +1355,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       } });
       BB.button(bx, y + 72, bw, 36, "Download clap log (CSV)", { size: 17, id: "clogdl", onClick: () => L.download() });
       BB.button(bx, y + 114, bw, 36, "Download summary (CSV)", { size: 17, id: "clogsum", onClick: () => L.downloadSummary() });
+      if (BB.assessLog) {
+        BB.button(bx, y + 192, bw, 32, "Download assess (CSV)", { size: 16, id: "asdl", onClick: () => BB.assessLog.download() });
+        BB.button(bx, y + 228, bw, 32, "Assess summary (CSV)", { size: 16, id: "asdls", onClick: () => BB.assessLog.downloadSummary() });
+      }
       BB.button(bx, y + 156, tw, 36, "DAY " + BB.session.day, { size: 16, id: "psday", onClick: () => BB.session.cycleDay() });
       BB.button(bx + tw + 6, y + 156, tw, 36, "GRADE " + BB.grade, { size: 16, id: "psgrade", onClick: () => BB.session.cycleGrade() });
       BB.button(bx + 2 * tw + 12, y + 156, tw, 36, "Clear", { size: 16, id: "clogclr", onClick: () => {
