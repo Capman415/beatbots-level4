@@ -43,7 +43,7 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   // v12.6 forte: firm, confident claps count. With the soft/loud check: anything past 45% of the way from the
   // soft level to the loud level (just below the midpoint). Without it: ~4 dB over the class's normal clap.
   FORTE_F:.45,FORTE_LVL:.7,isLoud(rms,sens){const L=this.loud;if(this.calOk())return this.dB(rms)>=L.calLo+this.FORTE_F*(L.calHi-L.calLo);return this.lvl(rms,sens)>=this.FORTE_LVL},
-  SOFT_BAR:.1,SOFT_MAX:.65,LOUD_MIN:.8,// SOFT_BAR = first green meter segment lit
+  SOFT_BAR:.1,SOFT_MAX:.72,LOUD_MIN:.8,// SOFT_BAR = first green meter segment lit; v14.5.2 piano more forgiving of ambient class / soft group claps (was .65)
   rmsForLvl(l,sens){const c=this.centre(sens),d=l>=.5?(l-.5)*20:(l-.5)*60;return Math.pow(10,(c+d)/20)},
   // soft=true (piano challenge): anything that lights the soft bar is an onset, as long as it clears the room floor
   // v13.2 quiet-mic scale: low-gain USB mics put whole-class claps 10-20 dB lower, so the absolute parts of the bar shrink with

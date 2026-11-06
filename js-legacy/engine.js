@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.5.1";
+BB.VERSION = "v14.5.2";
 try {
   BB.kMode = localStorage.getItem("bb_kmode") === "1";
 } catch (e) {

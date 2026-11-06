@@ -49,7 +49,7 @@
   const LIGHT = [{ rim: "#ffd08a", amb: "#ff9a40", haze: "60,34,18" }, { rim: "#ffc070", amb: "#ff8030", haze: "64,32,16" }, { rim: "#bfe6ff", amb: "#6a8cff", haze: "24,26,60" }, { rim: "#ffb060", amb: "#ff6a30", haze: "66,28,14" }, { rim: "#ffa070", amb: "#d05030", haze: "58,24,16" }];
   const NEED = 4, WARM = 4;
   const strikesFor = (R) => R ? R.bonus ? 4 : R.st || 4 : 4;
-  const SOFT_MAX = window.GroupGate ? GroupGate.SOFT_MAX : 0.62, LOUD_MIN = window.GroupGate ? GroupGate.LOUD_MIN : 0.7;
+  const SOFT_MAX = window.GroupGate ? GroupGate.SOFT_MAX : 0.72, LOUD_MIN = window.GroupGate ? GroupGate.LOUD_MIN : 0.7;
   let dirtPat = null;
   function dirt() {
     if (dirtPat) return dirtPat;
@@ -119,7 +119,7 @@
   }
   const howTo = {
     title: "NOTE MINE: dig up the whole notes!",
-    steps: ["Watch the green beat lights.", "WARM UP: 4 claps in a row on the lights.", "Then 4 MORE claps in a row strike the rock. Miss a beat and the rock goes back to whole!", "Tougher rocks later need 6 or 8 strikes.", "Piano = soft claps. Forte = loud claps.", "No mic? Tap MANUAL OVERRIDE when they nail it."],
+    steps: ["Watch the green beat lights.", "WARM UP: 4 claps in a row on the lights.", "Then 4 MORE claps in a row strike the rock. Miss a beat and you lose one strike.", "Tougher rocks later need 6 or 8 strikes.", "Piano = soft claps. Forte = loud claps.", "No mic? Tap MANUAL OVERRIDE when they nail it."],
     words: '"ta - a - a - a" (one whole note = 4 beats)   andante = walking speed,  allegro = fast',
     example: (x, y, w, h, t) => {
       const bpm = 90, ph = t * bpm / 60, b = Math.floor(ph) % 4, f = ph % 1;
@@ -639,7 +639,7 @@
         }
         const d = this.R.dyn;
         if (BB.kMode) {
-        } else if (d === "p" && o.lvl > Math.min(0.95, SOFT_MAX * 1.3)) {
+        } else if (d === "p" && o.lvl > Math.min(0.95, SOFT_MAX * 1.4)) {
           this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "too-loud" });
           this.tooLoud = BB.t;
           BB.sfx.wobble();
@@ -760,7 +760,7 @@
         }
       }
     }
-    // v14.0 rule: after the warm-up, strikes must be CONSECUTIVE beats; miss one and the rock goes back to whole
+    // v14.0 / v14.5.2: after warm-up, strikes are consecutive; a miss drops ONE strike (not a full reset)
     streakCheck() {
       const b = this.beat, G = window.GroupGate;
       if (!b || b.chk == null) return;
@@ -771,12 +771,15 @@
         if (BB.talking && BB.t < BB.talking.until && !BB.debug || this.ovPop && BB.t - this.ovPop < 1) continue;
         this.log({ i: bi, exp: b.t0 + bi * b.spb, res: "miss" });
         if (this.strikes > 0) {
-          this.strikes = 0;
-          this.stage = 0;
-          this.healT = BB.t;
+          this.strikes = Math.max(0, this.strikes - 1);
+          const n = strikesFor(this.R), want = Math.floor(this.strikes * NEED / n + 1e-9);
+          if (this.stage > want) {
+            this.stage = want;
+            this.healT = BB.t;
+          }
           BB.sfx.wobble();
           this.wob = 1;
-          BB.burst(ROCK_X, rail(this.R.f) - 120, 10, { world: 1, col: "#c8b49a", kind: "dust", size: 18, g: -60, speed: 160 });
+          BB.burst(ROCK_X, rail(this.R.f) - 120, 8, { world: 1, col: "#c8b49a", kind: "dust", size: 14, g: -60, speed: 140 });
           if (!this.missVO) {
             this.missVO = true;
             BB.say("keepgoing");

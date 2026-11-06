@@ -41,9 +41,9 @@ const ROCKS=[
 // tunnel boxes (props are clamped inside) + lantern light colour per floor
 const TBOX=k=>({x0:1480,x1:3320,y0:top(k)+34,y1:rail(k)});
 const LIGHT=[{rim:'#ffd08a',amb:'#ff9a40',haze:'60,34,18'},{rim:'#ffc070',amb:'#ff8030',haze:'64,32,16'},{rim:'#bfe6ff',amb:'#6a8cff',haze:'24,26,60'},{rim:'#ffb060',amb:'#ff6a30',haze:'66,28,14'},{rim:'#ffa070',amb:'#d05030',haze:'58,24,16'}];
-const NEED=4,WARM=4;// v13.2 4+4 loop: 4-beat warm-up, then 4 strikes break a rock. Scaling: rock.st = strikes needed (floors 1-2: 4, soft crystals: 6, loud boulders: 8, bonus: 4). A broken streak keeps the strikes already landed.
+const NEED=4,WARM=4;// v13.2 4+4 loop: 4-beat warm-up, then strikes break a rock. Scaling: rock.st = strikes needed (floors 1-2: 4, soft crystals: 6, loud boulders: 8, bonus: 4). v14.5.2: a miss drops one strike (not a full reset).
 const strikesFor=R=>R?(R.bonus?4:(R.st||4)):4;// steady measures per whole note (bonus rocks need 2)
-const SOFT_MAX=window.GroupGate?GroupGate.SOFT_MAX:.62,LOUD_MIN=window.GroupGate?GroupGate.LOUD_MIN:.7;
+const SOFT_MAX=window.GroupGate?GroupGate.SOFT_MAX:.72,LOUD_MIN=window.GroupGate?GroupGate.LOUD_MIN:.7;
 // dirt pattern
 let dirtPat=null;function dirt(){if(dirtPat)return dirtPat;const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
   g.fillStyle='#78503a';g.fillRect(0,0,256,256);let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;
@@ -58,7 +58,7 @@ function litC(k,amb){if(litCache[k])return litCache[k];const im=BB.V2['tun'+k];i
   const gr=g.createLinearGradient(0,GY,0,rail(4)+200);gr.addColorStop(0,'rgba(20,10,5,.15)');gr.addColorStop(1,'rgba(10,5,3,.55)');g.fillStyle=gr;g.fillRect(0,GY,e.width,D);
   const p=ctx.createPattern(c,'repeat-x');p.setTransform(new DOMMatrix([1,0,0,1,0,GY]));return ePat=p}
 const howTo={title:'NOTE MINE: dig up the whole notes!',
-  steps:['Watch the green beat lights.','WARM UP: 4 claps in a row on the lights.','Then 4 MORE claps in a row strike the rock. Miss a beat and the rock goes back to whole!','Tougher rocks later need 6 or 8 strikes.','Piano = soft claps. Forte = loud claps.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  steps:['Watch the green beat lights.','WARM UP: 4 claps in a row on the lights.','Then 4 MORE claps in a row strike the rock. Miss a beat and you lose one strike.','Tougher rocks later need 6 or 8 strikes.','Piano = soft claps. Forte = loud claps.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
   words:'"ta - a - a - a" (one whole note = 4 beats)   andante = walking speed,  allegro = fast',
   example:(x,y,w,h,t)=>{const bpm=90,ph=t*bpm/60,b=Math.floor(ph)%4,f=ph%1;
     const lit=[0,0,0,0];lit[b]=1-f*.6;ctx.save();ctx.translate(x+w/2,y+h-80);ctx.scale(.62,.62);BB.beatPills(0,0,lit);ctx.restore();
@@ -191,7 +191,7 @@ class MineRoom{
       if(bi>=4&&!inT){if(!o.up)this.log({i:bi,exp:ex,on:o.t,peak:pk,res:dt<0?'early':'late'});if(this.gated()&&!o.up&&(this._dts||[]).length>=8&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
       if((bi<4&&this.state!=='count')||bi<0||!inT)continue;if(BB.kMode&&b.lastOn!=null&&o.t-b.lastOn<.15)continue;/* K: bounce = same clap */if(b.hits[bi]||(b.pend&&b.pend[bi])||o.up){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'rejected-as-double'});continue}
       const d=this.R.dyn;
-      if(BB.kMode){}else if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*1.3)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too-loud'});this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
+      if(BB.kMode){}else if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*1.4))/* v14.5.2: more room for soft group claps */{this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too-loud'});this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
       if(!BB.kMode&&d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too soft'});this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
       if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;(b.pon=b.pon||{})[bi]=[o.t,pk];continue}// wait for the beat window to close, then ask: was that the whole group?
       b.lastOn=o.t;this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'hit'});if(this.state==='count')this.warmClap(bi);else this.hit(bi)}}
@@ -216,11 +216,11 @@ class MineRoom{
       else{const talking=BB.talking&&BB.t<BB.talking.until;if(talking&&!BB.debug)continue;
         this.wob=1;BB.sfx.wobble();this.shrugT=BB.t;BB.burst(ROCK_X,rail(this.R.f)-60,10,{world:1,col:'#c8b49a',kind:'dust',size:18,g:-60,speed:160});
         if(!this.missVO&&n<2){this.missVO=true;BB.say('keepgoing')}}}}
-  // v14.0 rule: after the warm-up, strikes must be CONSECUTIVE beats; miss one and the rock goes back to whole
+  // v14.0 / v14.5.2: after warm-up, strikes are consecutive; a miss drops ONE strike (not a full reset)
   streakCheck(){const b=this.beat,G=window.GroupGate;if(!b||b.chk==null)return;const close=(G?G.lat+Math.max(G.W1,G.win(b.spb)[1]):.2)+.06;
     while(this.beat===b&&this.state==='dig'&&BB.ac.currentTime>b.t0+b.chk*b.spb+close){const bi=b.chk++;if(b.hits[bi]||(b.pend&&b.pend[bi]))continue;
       if((BB.talking&&BB.t<BB.talking.until&&!BB.debug)||this.ovPop&&BB.t-this.ovPop<1)continue;this.log({i:bi,exp:b.t0+bi*b.spb,res:'miss'});
-      if(this.strikes>0){this.strikes=0;this.stage=0;this.healT=BB.t;BB.sfx.wobble();this.wob=1;BB.burst(ROCK_X,rail(this.R.f)-120,10,{world:1,col:'#c8b49a',kind:'dust',size:18,g:-60,speed:160});if(!this.missVO){this.missVO=true;BB.say('keepgoing')}}}}
+      if(this.strikes>0){this.strikes=Math.max(0,this.strikes-1);const n=strikesFor(this.R),want=Math.floor(this.strikes*NEED/n+1e-9);if(this.stage>want){this.stage=want;this.healT=BB.t}BB.sfx.wobble();this.wob=1;BB.burst(ROCK_X,rail(this.R.f)-120,8,{world:1,col:'#c8b49a',kind:'dust',size:14,g:-60,speed:140});if(!this.missVO){this.missVO=true;BB.say('keepgoing')}}}}
   crack(one){const R=this.R;this.stage+=one?1:(R.bonus?2:1);BB.sfx.crack();BB.shake(4);this.shk=1;
     {const ix=ROCK_X-30,iy=rail(R.f)-170,lq=!BB.q;BB.burst(ix,iy,lq?8:18,{world:1,cols:['#a08c78','#6e5a4a','#cbb79c'],speed:520,size:10,kind:'dot'});if(!lq)BB.burst(ix,iy,10,{world:1,cols:['rgba(210,190,160,.5)'],speed:160,size:22,kind:'dot',g:-40})}// v12.6 chips + dust at the impact point
     if(this.stage>=NEED)this.popNote()}

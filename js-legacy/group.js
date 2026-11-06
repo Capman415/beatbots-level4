@@ -111,9 +111,9 @@
       return this.lvl(rms, sens) >= this.FORTE_LVL;
     },
     SOFT_BAR: 0.1,
-    SOFT_MAX: 0.65,
+    SOFT_MAX: 0.72,
     LOUD_MIN: 0.8,
-    // SOFT_BAR = first green meter segment lit
+    // SOFT_BAR = first green meter segment lit; v14.5.2 piano more forgiving of ambient class / soft group claps (was .65)
     rmsForLvl(l, sens) {
       const c = this.centre(sens), d = l >= 0.5 ? (l - 0.5) * 20 : (l - 0.5) * 60;
       return Math.pow(10, (c + d) / 20);
