@@ -437,13 +437,13 @@
       });
       if (BB.session) {
         const L = BB.clapLog;
-        BB.panel(24, 24, 446, 76, 20);
-        BB.button(322, 32, 138, 60, BB.kMode ? "K MODE ON" : "K MODE", { size: 20, style: BB.kMode ? "green" : "cream", id: "hkmode", onClick: () => BB.setK(!BB.kMode) });
+        BB.panel(24, 24, 302, 76, 20);
+        BB.button(34, 108, 170, 52, BB.kMode ? "K MODE ON" : "K MODE", { size: 20, style: BB.kMode ? "green" : "cream", id: "hkmode", onClick: () => BB.setK(!BB.kMode) });
         BB.button(34, 32, 138, 60, "DAY " + BB.session.day, { size: 22, id: "hday", onClick: () => BB.session.cycleDay() });
         BB.button(178, 32, 138, 60, "CLASS " + BB.session.cls, { size: 22, id: "hcls", onClick: () => BB.session.cycleClass() });
         {
           const n = L ? L.count() : 0, f = L && L.nearCap();
-          BB.text(f ? "Clap log nearly full (" + n + "): download + clear in Pause" : "Clap log: " + n + " events", 30, 124, 20, f ? "#ffd35c" : "#cfe8e2", { stroke: 4, align: "left" });
+          BB.text(f ? "Clap log nearly full (" + n + "): download + clear in Pause" : "Clap log: " + n + " events", 30, 184, 20, f ? "#ffd35c" : "#cfe8e2", { stroke: 4, align: "left" });
         }
       }
       BB.button(W - 250, 24, 226, 76, "MIC SETUP", { size: 30, id: "mic", onClick: () => BB.go(new MicScene()) });

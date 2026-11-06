@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.5.0";
+BB.VERSION = "v14.5.1";
 try {
   BB.kMode = localStorage.getItem("bb_kmode") === "1";
 } catch (e) {
@@ -72,8 +72,8 @@ BB.kBadge = () => {
   if (!BB.kMode) return;
   try {
     ctx.save();
-    BB.rrect(W / 2 - 44, 8, 88, 64, 18, "#ff8fc8", "#fff", 5);
-    BB.text("K", W / 2, 42, 46, "#fff", { font: "Rammetto One", stroke: 6 });
+    BB.rrect(W - 354, 30, 88, 64, 18, "#ff8fc8", "#fff", 5);
+    BB.text("K", W - 310, 64, 46, "#fff", { font: "Rammetto One", stroke: 6 });
     ctx.restore();
   } catch (e) {
   }

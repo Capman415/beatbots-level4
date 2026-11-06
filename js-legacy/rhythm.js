@@ -361,6 +361,13 @@
       tone("triangle", 1050, t, 0.07, 0.3 * v, 700);
       nz(t, 0.03, 0.2 * v, "bandpass", 2500, 4);
     },
+    /* v14.5.1: punchy countable count-in (woodblock + low thump) that drives the beat without sounding like a clap */
+    countPulse: (t = now(), acc = false, v = 1) => {
+      const pk = 0.28 * v * (acc ? 1.25 : 1);
+      tone("triangle", acc ? 1480 : 1180, t, 0.05, pk * 0.55, 900);
+      tone("sine", acc ? 180 : 140, t, 0.12, pk * 0.7, 70);
+      nz(t, 0.028, pk * 0.45, "bandpass", acc ? 3200 : 2400, 5);
+    },
     crunch: (t = now()) => {
       nz(t, 0.35, 0.6, "lowpass", 3e3, 1, 200);
       tone("square", 90, t, 0.18, 0.25, 45);
@@ -450,8 +457,11 @@
       }
       const ahead = ac.currentTime + 0.12, spb = this.spb, T0 = this.t0 + this.base * spb;
       while (this.t0 + this.next * spb < ahead && this.next < this.base + 2 * this.L + 4) {
-        const t = this.t0 + this.next * spb, rd = this.next >= this.base + this.L && this.next < this.base + this.L + 4;
-        BB.sfx.tick(t, this.next % 4 === 0 || rd, rd ? 1 : 0.8);
+        const t = this.t0 + this.next * spb, rd = this.next >= this.base + this.L && this.next < this.base + this.L + 4, cl = this.next >= this.base + this.L + 4 && this.next < this.base + 2 * this.L + 4;
+        if (rd) {
+          BB.sfx.countPulse(t, this.next % 4 === 0, 1.15);
+          BB.sfx.tick(t, true, 0.55);
+        } else BB.sfx.tick(t, this.next % 4 === 0 || cl, cl ? 0.7 : 0.8);
         if (this.next === this.base + this.L) R.turnCue(t);
         this.next++;
       }
@@ -646,12 +656,8 @@
       if (ph === "count") {
         const n = 4 - Math.floor(bn);
         msg = n > 0 ? "Listen... " + n : "";
-      } else if (ph === "listen") msg = this.read ? "READ IT... (silently)" : "MY TURN: listen!";
-      else if (ph === "ready") {
-        const n = Math.floor(bn - this.base - this.L) + 1;
-        msg = ["", "1", "2", "READY", "GO!"][n] || "";
-      } else if (ph === "clap") msg = "YOUR TURN: clap it!";
-      if (msg) BB.text(msg, cx, y - 125, ph === "ready" ? 56 : 40, ph === "clap" || msg === "GO!" ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 7 });
+      } else if (ph === "clap") msg = "CLAP THE RHYTHM!";
+      if (msg) BB.text(msg, cx, y - 125, 40, ph === "clap" ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 7 });
       if (ph !== "end" && bn >= 0) {
         const rd = ph === "ready", nd = rd ? 4 : this.L, tot = 4 * 120 + 3 * 24, step = (tot - 150) / (nd - 1), rel = bn - this.base, bi = rd ? Math.floor(rel - this.L) : ph === "clap" ? Math.floor(rel - this.L - 4) : ph === "listen" ? Math.floor(rel) : Math.floor(bn) % 4;
         for (let i = 0; i < nd; i++) {
@@ -705,67 +711,76 @@
     }
   };
   R.listenBanner = (cb) => {
-    const t = BB.t, by = 118, bh = 150, bw = 980, bx = W / 2 - bw / 2, lc = cb.lc, sh = BB.t - cb.lcT < 0.35 ? Math.sin(BB.t * 90) * 10 * (1 - (BB.t - cb.lcT) / 0.35) : 0;
+    const t = BB.t, lc = cb.lc, sh = BB.t - cb.lcT < 0.35 ? Math.sin(BB.t * 90) * 10 * (1 - (BB.t - cb.lcT) / 0.35) : 0;
+    ctx.save();
+    ctx.fillStyle = "rgba(8,18,17,.42)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    const by = 210, bh = 220, bw = Math.min(1480, W - 80), bx = W / 2 - bw / 2;
     ctx.save();
     ctx.translate(sh, 0);
-    BB.rrect(bx, by - bh / 2 + 8, bw, bh, 34, "rgba(0,0,0,.35)");
-    BB.rrect(bx, by - bh / 2, bw, bh, 34, "#183e3e", "#eee4cc", 8);
-    const ex = bx + 95, ey = by;
+    BB.rrect(bx, by - bh / 2 + 10, bw, bh, 44, "rgba(0,0,0,.4)");
+    BB.rrect(bx, by - bh / 2, bw, bh, 44, "#143838", "#ffd84a", 10);
+    const hx = bx + 150;
     ctx.save();
-    ctx.translate(ex, ey);
-    ctx.fillStyle = "#f3c9a2";
-    ctx.strokeStyle = "#5a3a24";
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 34, 48, 0, 0, 7);
-    ctx.fill();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(2, -6, 18, Math.PI * 0.9, Math.PI * 2.2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(6, 10);
-    ctx.quadraticCurveTo(-6, 24, 4, 30);
-    ctx.stroke();
-    for (let i = 0; i < 3; i++) {
-      ctx.strokeStyle = "rgba(255,216,74,".concat(0.9 - 0.25 * i, ")");
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(-52, 0, 16 + i * 14 + t * 30 % 14, -0.7, 0.7);
-      ctx.stroke();
-    }
-    ctx.restore();
-    const hx = bx + bw - 95;
-    ctx.save();
-    ctx.translate(hx, by);
+    ctx.translate(hx, by + 8);
+    BB.rrect(-70, 18, 140, 38, 18, "#3a2818", "#5a3a24", 4);
     for (const s of [-1, 1]) {
       ctx.save();
-      ctx.translate(s * 22, -8);
-      ctx.fillStyle = "#f3c9a2";
-      ctx.strokeStyle = "#5a3a24";
-      ctx.lineWidth = 4;
-      BB.rrect(-14, -34, 28, 52, 12, "#f3c9a2", "#5a3a24", 4);
+      ctx.translate(s * 36, -6);
+      ctx.rotate(s * 0.12);
+      BB.rrect(-22, -48, 44, 70, 16, "#f3c9a2", "#5a3a24", 5);
+      for (let f2 = 0; f2 < 4; f2++) {
+        const fx = -16 + f2 * 10;
+        BB.rrect(fx, -68, 8, 26, 4, "#f3c9a2", "#5a3a24", 3);
+      }
       ctx.restore();
     }
     ctx.strokeStyle = "#ffd84a";
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 7;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(0, 26);
-    ctx.lineTo(0, 54);
-    ctx.moveTo(-12, 42);
-    ctx.lineTo(0, 56);
-    ctx.lineTo(12, 42);
+    ctx.moveTo(0, 64);
+    ctx.lineTo(0, 96);
+    ctx.moveTo(-16, 80);
+    ctx.lineTo(0, 98);
+    ctx.lineTo(16, 80);
     ctx.stroke();
     ctx.restore();
-    BB.text("LISTEN", W / 2, by - 26, 72, "#ffd84a", { font: "Rammetto One", stroke: 10 });
+    const ex = bx + bw - 150;
+    ctx.save();
+    ctx.translate(ex, by);
+    ctx.fillStyle = "#f3c9a2";
+    ctx.strokeStyle = "#5a3a24";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 42, 58, 0, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(2, -8, 22, Math.PI * 0.9, Math.PI * 2.2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(8, 12);
+    ctx.quadraticCurveTo(-8, 28, 6, 36);
+    ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      ctx.strokeStyle = "rgba(255,216,74,".concat(0.95 - 0.28 * i, ")");
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(-62, 0, 20 + i * 16 + t * 30 % 14, -0.7, 0.7);
+      ctx.stroke();
+    }
     ctx.restore();
-    const mw = 520, mx = W / 2 - mw / 2, my = by + 22, mh = 34, spb = cb.spb, f = Math.max(0, Math.min(1, (cb.beatNowV() - cb.base) / cb.L)), cr = lc > 0;
+    BB.text("HANDS DOWN", W / 2, by - 46, 92, "#ffd84a", { font: "Rammetto One", stroke: 12, maxW: bw - 360 });
+    BB.text(cb.read ? "READ IT SILENTLY" : "LISTEN  \xB7  no clapping yet", W / 2, by + 48, 44, "#fff", { font: "Rammetto One", stroke: 8, maxW: bw - 360 });
+    ctx.restore();
+    const mw = 560, mx = W / 2 - mw / 2, my = by + bh / 2 + 18, mh = 36, f = Math.max(0, Math.min(1, (cb.beatNowV() - cb.base) / cb.L)), cr = lc > 0;
     ctx.save();
     ctx.translate(sh * 0.6, 0);
     BB.rrect(mx - 6, my - 6, mw + 12, mh + 12, 22, "#0f2a2a", "#eee4cc", 3);
     if (f > 0) BB.rrect(mx, my, Math.max(mh, mw * f), mh, 17, cr ? "#8aa39d" : BB.lg(my, my + mh, ["#9ff5b0", "#46b45a"]));
-    BB.text(cr ? lc >= 2 && BB.listenMode.v === "on" ? "TOO NOISY!" : "SHHH..." : cb.read ? "QUIET: read it silently" : "QUIET: hands down, ears on", W / 2, my + mh / 2 + 2, 22, "#fff", { stroke: 4 });
+    BB.text(cr ? lc >= 2 && BB.listenMode.v === "on" ? "TOO NOISY!" : "SHHH..." : cb.read ? "eyes on the notes" : "hands on lap \xB7 ears on", W / 2, my + mh / 2 + 2, 24, "#fff", { stroke: 4 });
     if (cr) {
       ctx.strokeStyle = "#1e2b29";
       ctx.lineWidth = 3;
@@ -781,7 +796,7 @@
       ctx.stroke();
     }
     const q = R.qStars();
-    if (q > 0 || BB.scene._qStars != null) {
+    if (q > 0 || BB.scene && BB.scene._qStars != null) {
       BB.star(mx + mw + 36, my + mh / 2, 16, COL.yellow, 0);
       BB.text("x" + q, mx + mw + 70, my + mh / 2 + 2, 24, "#fff", { stroke: 4 });
     }
@@ -1075,7 +1090,11 @@
     const s = BB.sfx;
     if (s.ding) {
       s.ding(t);
-      s.ding(t + 0.22);
+      s.ding(t + 0.18);
+    }
+    if (s.countPulse) {
+      s.countPulse(t, true, 1.3);
+      s.countPulse(t + 0.18, false, 1);
     }
   };
   R.turnBorder = (cl, pu) => {
@@ -1090,26 +1109,28 @@
     ctx.restore();
   };
   R.yourTurn = (ph, rb, py) => {
-    const t = BB.t, pu = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 1.4), cl = ph === "clap";
+    const t = BB.t, frac = rb - Math.floor(rb), beatPu = Math.max(0, 1 - frac * 3.2), pu = 0.35 + 0.65 * beatPu, cl = ph === "clap";
     ctx.save();
-    const bw = cl ? 26 : 16;
+    const bw = cl ? 30 : 20;
     ctx.lineWidth = bw;
-    ctx.strokeStyle = cl ? "rgba(110,230,120,".concat(0.55 + 0.4 * pu, ")") : "rgba(255,224,102,".concat(0.4 + 0.3 * pu, ")");
+    ctx.strokeStyle = cl ? "rgba(110,230,120,".concat(0.5 + 0.45 * pu, ")") : "rgba(255,224,102,".concat(0.45 + 0.45 * pu, ")");
     ctx.shadowColor = cl ? "#6ee678" : "#ffe066";
-    ctx.shadowBlur = 40;
+    ctx.shadowBlur = 50 + 40 * pu;
     ctx.strokeRect(bw / 2, bw / 2, W - bw, H - bw);
     ctx.restore();
-    const by = 118, bh = 150;
+    if (!cl) {
+      ctx.save();
+      ctx.globalAlpha = 0.18 * beatPu;
+      ctx.fillStyle = "#fff7c2";
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+    const by = 128, bh = 160;
     ctx.save();
     ctx.shadowColor = cl ? "#6ee678" : "#ffe066";
-    ctx.shadowBlur = 30 + 30 * pu;
+    ctx.shadowBlur = 30 + 40 * pu;
     BB.rrect(30, by - bh / 2 + 8, W - 60, bh, 34, "rgba(0,0,0,.35)");
-    BB.rrect(30, by - bh / 2, W - 60, bh, 34, BB.lg(
-      -bh / 2,
-      bh / 2,
-      cl ? ["#86e486", "#3fae4c"] : ["#f6d65e", "#e3b02a"]
-      /* v12.8 glare pass: even marquee fill */
-    ), "#1e2b29", 8);
+    BB.rrect(30, by - bh / 2, W - 60, bh, 34, BB.lg(-bh / 2, bh / 2, cl ? ["#86e486", "#3fae4c"] : ["#f6d65e", "#e3b02a"]), "#1e2b29", 8);
     ctx.restore();
     for (let i = 0; i < 14; i++) {
       const bx = 70 + i * (W - 140) / 13, on = (Math.floor(t * 6) + i) % 2;
@@ -1119,8 +1140,18 @@
       ctx.arc(bx, by + bh / 2 - 16, 7, 0, 7);
       ctx.fill();
     }
-    const big = cl ? "YOUR TURN, ENGINEERS! CLAP!" : ["GET READY... 1", "GET READY... 2", "READY...", "GO!"][Math.max(0, Math.min(3, Math.floor(rb)))];
-    BB.text(big, W / 2, by + 4, (cl ? 84 : 90) * (1 + 0.04 * pu) * (cl ? 1 + 0.3 * Math.max(0, 1 - (rb - 4) * 2.5) : 1), "#fffdf2", { font: "Rammetto One", stroke: 12, maxW: W - 420 });
+    if (cl) {
+      const pop = 1 + 0.28 * Math.max(0, 1 - (rb - 4) * 2.5);
+      BB.text("YOUR TURN!", W / 2, by - 18, 96 * pop * (1 + 0.05 * pu), "#fffdf2", { font: "Rammetto One", stroke: 14, maxW: W - 200 });
+      BB.text("CLAP THE RHYTHM, ENGINEERS!", W / 2, by + 48, 42, "#fffdf2", { font: "Rammetto One", stroke: 8, maxW: W - 240 });
+    } else {
+      const n = Math.max(0, Math.min(3, Math.floor(rb)));
+      const lab = ["1", "2", "3", "GO!"][n];
+      BB.text("GET READY...", W / 2, by - 36, 48, "#fffdf2", { font: "Rammetto One", stroke: 8 });
+      const sc = (1 + 0.18 * beatPu) * (n === 3 ? 1.15 : 1);
+      BB.text(lab, W / 2, H / 2 - 20, 220 * sc, n === 3 ? COL.green : "#fffdf2", { font: "Rammetto One", stroke: 18 });
+      BB.text(n === 3 ? "CLAP NEXT!" : "count with the beat", W / 2, H / 2 + 140, 40, "#ffe066", { font: "Rammetto One", stroke: 7 });
+    }
     for (const sd of [-1, 1]) {
       const rx = W / 2 + sd * (W / 2 - 130), ry = by + 70;
       ctx.save();

@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.5.0';/* v14.5 Kindergarten K mode (saved per device) */try{BB.kMode=localStorage.getItem('bb_kmode')==='1'}catch(e){BB.kMode=false}BB.setK=v=>{BB.kMode=!!v;try{localStorage.setItem('bb_kmode',v?'1':'0')}catch(e){}};BB.kBadge=()=>{if(!BB.kMode)return;try{ctx.save();BB.rrect(W/2-44,8,88,64,18,'#ff8fc8','#fff',5);BB.text('K',W/2,42,46,'#fff',{font:'Rammetto One',stroke:6});ctx.restore()}catch(e){}};try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.5.1';/* v14.5 Kindergarten K mode (saved per device) */try{BB.kMode=localStorage.getItem('bb_kmode')==='1'}catch(e){BB.kMode=false}BB.setK=v=>{BB.kMode=!!v;try{localStorage.setItem('bb_kmode',v?'1':'0')}catch(e){}};BB.kBadge=()=>{if(!BB.kMode)return;try{ctx.save();BB.rrect(W-354,30,88,64,18,'#ff8fc8','#fff',5);BB.text('K',W-310,64,46,'#fff',{font:'Rammetto One',stroke:6});ctx.restore()}catch(e){}};try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;

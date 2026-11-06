@@ -104,6 +104,8 @@ function nz(t,d,pk,type,f,q=1,f2){BB.selfSound(t,d,null);if(!nb){nb=ac.createBuf
 const now=()=>ac.currentTime;
 Object.assign(BB.sfx,{
   block:(t=now(),v=1)=>{tone('triangle',1050,t,.07,.3*v,700);nz(t,.03,.2*v,'bandpass',2500,4)},
+  /* v14.5.1: punchy countable count-in (woodblock + low thump) that drives the beat without sounding like a clap */
+  countPulse:(t=now(),acc=false,v=1)=>{const pk=.28*v*(acc?1.25:1);tone('triangle',acc?1480:1180,t,.05,pk*.55,900);tone('sine',acc?180:140,t,.12,pk*.7,70);nz(t,.028,pk*.45,'bandpass',acc?3200:2400,5)},
   crunch:(t=now())=>{nz(t,.35,.6,'lowpass',3000,1,200);tone('square',90,t,.18,.25,45);for(let i=0;i<4;i++)tone('sine',2600+Math.random()*2400,t+.05+i*.05,.12,.06)},
   ting:(t=now())=>{for(let i=0;i<3;i++)tone('sine',3000+Math.random()*1800,t+i*.06,.15,.07)},
   bell:(t=now())=>{tone('sine',1760,t,.7,.22);tone('sine',2637,t,.5,.08);tone('sine',1760,t+.22,.8,.22);tone('sine',2637,t+.22,.6,.08)},
@@ -125,7 +127,7 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
   beatNowV(){return(ac.currentTime-BB.visLat()-this.t0)/this.spb}// v13.2 visual clock = audible beat
   phase(){const b=this.beatNow()-this.base;return b<0?'count':b<this.L?'listen':b<this.L+4?'ready':b<2*this.L+4?'clap':'end'}// v12.2: 4-beat count-in between listen and clap
   update(dt){{const ph=this.phase();BB.listening=ph==='clap'?2:ph==='ready'?1:0}const ahead=ac.currentTime+.12,spb=this.spb,T0=this.t0+this.base*spb;
-    while(this.t0+this.next*spb<ahead&&this.next<this.base+2*this.L+4){const t=this.t0+this.next*spb,rd=this.next>=this.base+this.L&&this.next<this.base+this.L+4;BB.sfx.tick(t,this.next%4===0||rd,rd?1:.8);if(this.next===this.base+this.L)R.turnCue(t);this.next++}
+    while(this.t0+this.next*spb<ahead&&this.next<this.base+2*this.L+4){const t=this.t0+this.next*spb,rd=this.next>=this.base+this.L&&this.next<this.base+this.L+4,cl=this.next>=this.base+this.L+4&&this.next<this.base+2*this.L+4;/* v14.5.1: soft tick on listen; big countable pulses on ready (drive the beat); soft ticks under clap */if(rd){BB.sfx.countPulse(t,this.next%4===0,1.15);BB.sfx.tick(t,true,.55)}else BB.sfx.tick(t,this.next%4===0||cl,cl?.7:.8);if(this.next===this.base+this.L)R.turnCue(t);this.next++}
     // machine plays the rhythm in measure "listen"
     if(!this.sched){this.sched=1;this.snd.forEach((s,i)=>{const t=T0+s.b*spb;if(this.read)return;BB.sfx.block(t);setTimeout(()=>this.voice(s),Math.max(0,(t-ac.currentTime)*1000))});
       if(BB.debug)this.snd.forEach((s,i)=>{if(Math.random()<.93){const t=T0+(this.L+4+s.b)*spb+(Math.random()-.5)*.05;setTimeout(()=>BB.simClap(t,.7),Math.max(0,(t-ac.currentTime)*1000+30))}})}
@@ -156,9 +158,10 @@ class ClapBack{constructor(seq,o={}){this.seq=seq;this.bpm=o.bpm||84;this.spb=60
     if(yt){ctx.save();ctx.translate(cx,y);ctx.scale(1.18,1.18);ctx.translate(-cx,-y);}// bigger beat lights while it's the class's turn
     R.pills(cx,y,this.seq,{lit:this.lit,marks:this.marks,cur:this.cursor(),words:true});if(yt)ctx.restore();
     const bn=this.beatNowV();let msg='';
-    if(ph==='count'){const n=4-Math.floor(bn);msg=n>0?'Listen... '+n:'';}
-    else if(ph==='listen')msg=this.read?'READ IT... (silently)':'MY TURN: listen!';else if(ph==='ready'){const n=Math.floor(bn-this.base-this.L)+1;msg=['','1','2','READY','GO!'][n]||'';}else if(ph==='clap')msg='YOUR TURN: clap it!';
-    if(msg)BB.text(msg,cx,y-125,ph==='ready'?56:40,ph==='clap'||msg==='GO!'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
+    /* v14.5.1: listen/ready use the big centered banners; keep a small bottom cue only on clap */
+    if(ph==='count'){const n=4-Math.floor(bn);msg=n>0?'Listen... '+n:''}
+    else if(ph==='clap')msg='CLAP THE RHYTHM!';
+    if(msg)BB.text(msg,cx,y-125,40,ph==='clap'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
     // beat dots under the pills
     if(ph!=='end'&&bn>=0){const rd=ph==='ready',nd=rd?4:this.L,tot=4*120+3*24,step=(tot-150)/(nd-1),rel=bn-this.base,bi=rd?Math.floor(rel-this.L):ph==='clap'?Math.floor(rel-this.L-4):ph==='listen'?Math.floor(rel):Math.floor(bn)%4;for(let i=0;i<nd;i++){const on=rd?i<=bi:i===bi;ctx.fillStyle=on?(rd?COL.green:COL.yellow):'rgba(255,255,255,.25)';ctx.beginPath();ctx.arc(cx-tot/2+75+i*step,y+62,on?(rd?13:9):6,0,7);ctx.fill();if(rd&&on&&BB.q)BB.glow(cx-tot/2+75+i*step,y+62,40,'rgba(110,230,120,A)',.5)}}}}
 R.ClapBack=ClapBack;
@@ -169,23 +172,30 @@ R.qStars=()=>{const S=BB.scene||{};return S._qStars||0};
 R.listenResult=cb=>{const S=BB.scene;if(!S||BB.listenMode.v==='off')return;
   if(cb.lc===0){S._qStars=(S._qStars||0)+1;cb.oQuiet&&cb.oQuiet();BB.sfx.tink&&BB.sfx.tink(undefined,.5);BB.burst&&BB.burst(W/2+250,232,16,{col:COL.yellow,kind:'star',size:15,speed:500,g:300});S._qFx={t:BB.t,k:'star'}}
   else if(cb.lc>=2&&BB.listenMode.v==='on'){if(S._qStars>0)S._qStars--;cb.oSneak&&cb.oSneak();S._sneak={t:BB.t};BB.sfx.glitch?BB.sfx.glitch():BB.sfx.zap()}};
-R.listenBanner=cb=>{const t=BB.t,by=118,bh=150,bw=980,bx=W/2-bw/2,lc=cb.lc,sh=BB.t-cb.lcT<.35?Math.sin(BB.t*90)*10*(1-(BB.t-cb.lcT)/.35):0;
+R.listenBanner=cb=>{const t=BB.t,lc=cb.lc,sh=BB.t-cb.lcT<.35?Math.sin(BB.t*90)*10*(1-(BB.t-cb.lcT)/.35):0;
+  /* v14.5.1: hard-to-miss HANDS DOWN / LISTEN (centered, Smartboard-readable) so kids don't clap along */
+  ctx.save();ctx.fillStyle='rgba(8,18,17,.42)';ctx.fillRect(0,0,W,H);ctx.restore();
+  const by=210,bh=220,bw=Math.min(1480,W-80),bx=W/2-bw/2;
   ctx.save();ctx.translate(sh,0);
-  BB.rrect(bx,by-bh/2+8,bw,bh,34,'rgba(0,0,0,.35)');BB.rrect(bx,by-bh/2,bw,bh,34,'#183e3e','#eee4cc',8);
-  // ear + hands-down icons
-  const ex=bx+95,ey=by;ctx.save();ctx.translate(ex,ey);ctx.fillStyle='#f3c9a2';ctx.strokeStyle='#5a3a24';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,0,34,48,0,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(2,-6,18,Math.PI*.9,Math.PI*2.2);ctx.stroke();ctx.beginPath();ctx.moveTo(6,10);ctx.quadraticCurveTo(-6,24,4,30);ctx.stroke();
-   for(let i=0;i<3;i++){ctx.strokeStyle=`rgba(255,216,74,${.9-.25*i})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(-52,0,16+i*14+((t*30)%14),-.7,.7);ctx.stroke()}ctx.restore();
-  const hx=bx+bw-95;ctx.save();ctx.translate(hx,by);for(const s of[-1,1]){ctx.save();ctx.translate(s*22,-8);ctx.fillStyle='#f3c9a2';ctx.strokeStyle='#5a3a24';ctx.lineWidth=4;BB.rrect(-14,-34,28,52,12,'#f3c9a2','#5a3a24',4);ctx.restore()}
-   ctx.strokeStyle='#ffd84a';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,26);ctx.lineTo(0,54);ctx.moveTo(-12,42);ctx.lineTo(0,56);ctx.lineTo(12,42);ctx.stroke();ctx.restore();
-  BB.text('LISTEN',W/2,by-26,72,'#ffd84a',{font:'Rammetto One',stroke:10});
+  BB.rrect(bx,by-bh/2+10,bw,bh,44,'rgba(0,0,0,.4)');BB.rrect(bx,by-bh/2,bw,bh,44,'#143838','#ffd84a',10);
+  /* big hands-on-lap icon (left) */
+  const hx=bx+150;ctx.save();ctx.translate(hx,by+8);
+  BB.rrect(-70,18,140,38,18,'#3a2818','#5a3a24',4);/* lap */
+  for(const s of[-1,1]){ctx.save();ctx.translate(s*36,-6);ctx.rotate(s*.12);BB.rrect(-22,-48,44,70,16,'#f3c9a2','#5a3a24',5);for(let f=0;f<4;f++){const fx=-16+f*10;BB.rrect(fx,-68,8,26,4,'#f3c9a2','#5a3a24',3)}ctx.restore()}
+  ctx.strokeStyle='#ffd84a';ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,64);ctx.lineTo(0,96);ctx.moveTo(-16,80);ctx.lineTo(0,98);ctx.lineTo(16,80);ctx.stroke();ctx.restore();
+  /* ear icon (right) */
+  const ex=bx+bw-150;ctx.save();ctx.translate(ex,by);ctx.fillStyle='#f3c9a2';ctx.strokeStyle='#5a3a24';ctx.lineWidth=6;ctx.beginPath();ctx.ellipse(0,0,42,58,0,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(2,-8,22,Math.PI*.9,Math.PI*2.2);ctx.stroke();ctx.beginPath();ctx.moveTo(8,12);ctx.quadraticCurveTo(-8,28,6,36);ctx.stroke();
+   for(let i=0;i<3;i++){ctx.strokeStyle=`rgba(255,216,74,${.95-.28*i})`;ctx.lineWidth=5;ctx.beginPath();ctx.arc(-62,0,20+i*16+((t*30)%14),-.7,.7);ctx.stroke()}ctx.restore();
+  BB.text('HANDS DOWN',W/2,by-46,92,'#ffd84a',{font:'Rammetto One',stroke:12,maxW:bw-360});
+  BB.text(cb.read?'READ IT SILENTLY':'LISTEN  ·  no clapping yet',W/2,by+48,44,'#fff',{font:'Rammetto One',stroke:8,maxW:bw-360});
   ctx.restore();
-  // quiet meter under the banner
-  const mw=520,mx=W/2-mw/2,my=by+22,mh=34,spb=cb.spb,f=Math.max(0,Math.min(1,(cb.beatNowV()-cb.base)/cb.L)),cr=lc>0;
+  /* quiet meter under the banner */
+  const mw=560,mx=W/2-mw/2,my=by+bh/2+18,mh=36,f=Math.max(0,Math.min(1,(cb.beatNowV()-cb.base)/cb.L)),cr=lc>0;
   ctx.save();ctx.translate(sh*.6,0);BB.rrect(mx-6,my-6,mw+12,mh+12,22,'#0f2a2a','#eee4cc',3);
   if(f>0)BB.rrect(mx,my,Math.max(mh,mw*f),mh,17,cr?'#8aa39d':BB.lg(my,my+mh,['#9ff5b0','#46b45a']));
-  BB.text(cr?(lc>=2&&BB.listenMode.v==='on'?'TOO NOISY!':'SHHH...'):(cb.read?'QUIET: read it silently':'QUIET: hands down, ears on'),W/2,my+mh/2+2,22,'#fff',{stroke:4});
+  BB.text(cr?(lc>=2&&BB.listenMode.v==='on'?'TOO NOISY!':'SHHH...'):(cb.read?'eyes on the notes':'hands on lap · ears on'),W/2,my+mh/2+2,24,'#fff',{stroke:4});
   if(cr){ctx.strokeStyle='#1e2b29';ctx.lineWidth=3;ctx.beginPath();const n=Math.min(lc,4);for(let k=0;k<n;k++){const cx=mx+60+k*110;ctx.moveTo(cx,my);ctx.lineTo(cx+12,my+12);ctx.lineTo(cx-6,my+22);ctx.lineTo(cx+8,my+mh)}ctx.stroke()}
-  const q=R.qStars();if(q>0||BB.scene._qStars!=null){BB.star(mx+mw+36,my+mh/2,16,COL.yellow,0);BB.text('x'+q,mx+mw+70,my+mh/2+2,24,'#fff',{stroke:4})}
+  const q=R.qStars();if(q>0||(BB.scene&&BB.scene._qStars!=null)){BB.star(mx+mw+36,my+mh/2,16,COL.yellow,0);BB.text('x'+q,mx+mw+70,my+mh/2+2,24,'#fff',{stroke:4})}
   ctx.restore()};
 R.turnFlash=dt=>{if(dt<0||dt>.45)return;const k=1-dt/.45;ctx.save();ctx.globalAlpha=.55*k;ctx.fillStyle='#fffbe0';ctx.fillRect(0,0,W,H);ctx.restore()};
 /* sneak overlay: drawn by every ClapBack room after its scene (see BB.drawSneak in engine loop) */
@@ -244,22 +254,24 @@ BB.clapStats={heard:0,hit:0,exp:0,talk:0,stray:0,peak:0,slow:0};
 // v12.6: paper fibre texture (cached pattern) for tickets
 let paperPat=null;R.paper=(x,y,w,h)=>{if(!paperPat){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');for(let i=0;i<1400;i++){const v=Math.random();g.fillStyle=v<.5?`rgba(120,95,60,${Math.random()*.06})`:`rgba(255,255,255,${Math.random()*.12})`;g.fillRect(Math.random()*128,Math.random()*128,1+Math.random()*3,1)}paperPat=ctx.createPattern(c,'repeat')}
   ctx.save();ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.clip();ctx.fillStyle=paperPat;ctx.fillRect(x,y,w,h);const e=ctx.createRadialGradient(x+w/2,y+h/2,Math.min(w,h)*.3,x+w/2,y+h/2,Math.max(w,h)*.75);e.addColorStop(0,'rgba(120,90,40,0)');e.addColorStop(1,'rgba(120,90,40,.18)');ctx.fillStyle=e;ctx.fillRect(x,y,w,h);ctx.restore()};
-// v12.6: unmistakable "YOUR TURN" cue (Smartboard-readable): retro ding-ding, full-width pulsing banner, green listening border, robots pointing at the class
-R.turnCue=t=>{const s=BB.sfx;if(s.ding){s.ding(t);s.ding(t+.22)}};
+// v12.6 / v14.5.1: unmistakable listen→YOUR TURN cue: ding + countable pulses, big centered beat numbers, pulsing border
+R.turnCue=t=>{const s=BB.sfx;if(s.ding){s.ding(t);s.ding(t+.18)}if(s.countPulse){s.countPulse(t,true,1.3);s.countPulse(t+.18,false,1)}};
 R.turnBorder=(cl,pu)=>{if(pu==null)pu=.5+.5*Math.sin(BB.t*Math.PI*2*1.4);ctx.save();const bw=cl?26:16;ctx.lineWidth=bw;ctx.strokeStyle=cl?`rgba(110,230,120,${.55+.4*pu})`:`rgba(255,224,102,${.4+.3*pu})`;ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=40;ctx.strokeRect(bw/2,bw/2,W-bw,H-bw);ctx.restore()};
-R.yourTurn=(ph,rb,py)=>{const t=BB.t,pu=.5+.5*Math.sin(t*Math.PI*2*1.4),cl=ph==='clap';
-  // green border glow while listening
-  ctx.save();const bw=cl?26:16;ctx.lineWidth=bw;ctx.strokeStyle=cl?`rgba(110,230,120,${.55+.4*pu})`:`rgba(255,224,102,${.4+.3*pu})`;ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=40;ctx.strokeRect(bw/2,bw/2,W-bw,H-bw);ctx.restore();
-  // full-width banner
-  const by=118,bh=150;ctx.save();ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=30+30*pu;
-  BB.rrect(30,by-bh/2+8,W-60,bh,34,'rgba(0,0,0,.35)');BB.rrect(30,by-bh/2,W-60,bh,34,BB.lg(-bh/2,bh/2,cl?['#86e486','#3fae4c']:['#f6d65e','#e3b02a']/* v12.8 glare pass: even marquee fill */),'#1e2b29',8);ctx.restore();
-  for(let i=0;i<14;i++){const bx=70+i*(W-140)/13,on=(Math.floor(t*6)+i)%2;ctx.fillStyle=on?'#fffbe0':'rgba(80,60,20,.5)';ctx.beginPath();ctx.arc(bx,by-bh/2+16,7,0,7);ctx.arc(bx,by+bh/2-16,7,0,7);ctx.fill()}// marquee bulbs
-  const big=cl?'YOUR TURN, ENGINEERS! CLAP!':(['GET READY... 1','GET READY... 2','READY...','GO!'][Math.max(0,Math.min(3,Math.floor(rb)))]);
-  BB.text(big,W/2,by+4,(cl?84:90)*(1+.04*pu)*(cl?1+.3*Math.max(0,1-(rb-4)*2.5):1),'#fffdf2',{font:'Rammetto One',stroke:12,maxW:W-420});
-  // robots turn and point at the class
+R.yourTurn=(ph,rb,py)=>{const t=BB.t,frac=rb-Math.floor(rb),beatPu=Math.max(0,1-frac*3.2),pu=.35+.65*beatPu,cl=ph==='clap';
+  /* beat-locked border pulse (drives the pulse, not just a flash of text) */
+  ctx.save();const bw=cl?30:20;ctx.lineWidth=bw;ctx.strokeStyle=cl?`rgba(110,230,120,${.5+.45*pu})`:`rgba(255,224,102,${.45+.45*pu})`;ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=50+40*pu;ctx.strokeRect(bw/2,bw/2,W-bw,H-bw);ctx.restore();
+  if(!cl){ctx.save();ctx.globalAlpha=.18*beatPu;ctx.fillStyle='#fff7c2';ctx.fillRect(0,0,W,H);ctx.restore()}
+  const by=128,bh=160;ctx.save();ctx.shadowColor=cl?'#6ee678':'#ffe066';ctx.shadowBlur=30+40*pu;
+  BB.rrect(30,by-bh/2+8,W-60,bh,34,'rgba(0,0,0,.35)');BB.rrect(30,by-bh/2,W-60,bh,34,BB.lg(-bh/2,bh/2,cl?['#86e486','#3fae4c']:['#f6d65e','#e3b02a']),'#1e2b29',8);ctx.restore();
+  for(let i=0;i<14;i++){const bx=70+i*(W-140)/13,on=(Math.floor(t*6)+i)%2;ctx.fillStyle=on?'#fffbe0':'rgba(80,60,20,.5)';ctx.beginPath();ctx.arc(bx,by-bh/2+16,7,0,7);ctx.arc(bx,by+bh/2-16,7,0,7);ctx.fill()}
+  if(cl){const pop=1+.28*Math.max(0,1-(rb-4)*2.5);BB.text('YOUR TURN!',W/2,by-18,96*pop*(1+.05*pu),'#fffdf2',{font:'Rammetto One',stroke:14,maxW:W-200});BB.text('CLAP THE RHYTHM, ENGINEERS!',W/2,by+48,42,'#fffdf2',{font:'Rammetto One',stroke:8,maxW:W-240})}
+  else{/* v14.5.1: huge countable 1–2–3–GO! locked to the beat so kids don't rush */
+    const n=Math.max(0,Math.min(3,Math.floor(rb)));const lab=['1','2','3','GO!'][n];
+    BB.text('GET READY...',W/2,by-36,48,'#fffdf2',{font:'Rammetto One',stroke:8});
+    const sc=(1+.18*beatPu)*(n===3?1.15:1);BB.text(lab,W/2,H/2-20,220*sc,n===3?COL.green:'#fffdf2',{font:'Rammetto One',stroke:18});
+    BB.text(n===3?'CLAP NEXT!':'count with the beat',W/2,H/2+140,40,'#ffe066',{font:'Rammetto One',stroke:7})}
   for(const sd of[-1,1]){const rx=W/2+sd*(W/2-130),ry=by+70;ctx.save();ctx.translate(rx,ry);ctx.scale(-sd,1);
     if(BB.IMG&&BB.IMG.sprocket)BB.sprite('sprocket',0,0,150,{parts:false});
-    // v14.0: hand-drawn pointing arm removed (teacher: 'weird arm' on the green countdown)
     ctx.restore()}};
 // ---------- shared room bits ----------
 // bake a static layer once (background + anything that never moves). Phones bake at half size.
