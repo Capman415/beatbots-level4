@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.5.4';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
+BB.VERSION='v14.5.5';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
 BB.GRADES=['K','1','2','3','4','5','6'];
 (()=>{let g='2';try{const s=localStorage.getItem('bb_grade');if(BB.GRADES.includes(s))g=s;else if(localStorage.getItem('bb_kmode')==='1')g='K';else{const c=JSON.parse(localStorage.getItem('bb_sessclass')||'null');if(BB.GRADES.includes(c))g=c}}catch(e){}BB.grade=g})();
 BB.gradeBand=()=>{const g=BB.grade;return(g==='K'||g==='1')?'k1':(g==='2'||g==='3')?'m':'u'};
@@ -19,8 +19,8 @@ BB.bounceMs=()=>({k1:.15,m:.12,u:.1}[BB.gradeBand()]);
 BB.syncK=()=>{BB.kMode=BB.gradeBand()==='k1'};BB.syncK();
 BB.setGrade=v=>{if(!BB.GRADES.includes(v))return;BB.grade=v;BB.syncK();try{localStorage.setItem('bb_grade',v);localStorage.setItem('bb_sessclass',JSON.stringify(v))}catch(e){};if(BB.session&&BB.session.setGrade)BB.session.setGrade(v)};
 BB.setK=v=>BB.setGrade(v?'K':(BB.grade==='K'||BB.grade==='1'?'2':BB.grade));/* legacy: K on → grade K */
-BB.gradeBadge=()=>{try{const b=BB.gradeBand(),col=b==='k1'?'#ff8fc8':b==='m'?'#7ec8ff':'#ffe066';ctx.save();BB.rrect(W-354,30,88,64,18,col,'#fff',5);BB.text(BB.grade,W-310,64,b==='k1'&&BB.grade==='K'?46:40,'#fff',{font:'Rammetto One',stroke:6});ctx.restore()}catch(e){}};
-BB.kBadge=()=>BB.gradeBadge();try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.gradeBadge=()=>{};/* v14.5.5: floating grade badge removed; grade is set at start + GRADE on map */
+BB.kBadge=()=>{};try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -359,7 +359,7 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   ctx.setTransform(SC*BB.dpr,0,0,SC*BB.dpr,OX*BB.dpr,OY*BB.dpr);ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
   shakeAmt*=Math.pow(.02,dt);const sx=(Math.random()-.5)*2*shakeAmt,sy=(Math.random()-.5)*2*shakeAmt;
   BB.shakeXY=[sx,sy];
-  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);BB.kBadge();if(BB.R&&BB.R.drawSneak&&!BB.paused)BB.R.drawSneak();if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
+  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);if(BB.R&&BB.R.drawSneak&&!BB.paused)BB.R.drawSneak();if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
   BB.drawCelebrate&&BB.drawCelebrate();BB.drawParts&&0;
   ctx.restore();
   ctx.save();ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.font='13px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillStyle='rgba(255,255,255,.55)';

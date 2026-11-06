@@ -58,7 +58,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.5.4";
+BB.VERSION = "v14.5.5";
 BB.GRADES = ["K", "1", "2", "3", "4", "5", "6"];
 (() => {
   let g = "2";
@@ -102,16 +102,9 @@ BB.setGrade = (v) => {
 };
 BB.setK = (v) => BB.setGrade(v ? "K" : BB.grade === "K" || BB.grade === "1" ? "2" : BB.grade);
 BB.gradeBadge = () => {
-  try {
-    const b = BB.gradeBand(), col = b === "k1" ? "#ff8fc8" : b === "m" ? "#7ec8ff" : "#ffe066";
-    ctx.save();
-    BB.rrect(W - 354, 30, 88, 64, 18, col, "#fff", 5);
-    BB.text(BB.grade, W - 310, 64, b === "k1" && BB.grade === "K" ? 46 : 40, "#fff", { font: "Rammetto One", stroke: 6 });
-    ctx.restore();
-  } catch (e) {
-  }
 };
-BB.kBadge = () => BB.gradeBadge();
+BB.kBadge = () => {
+};
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
 } catch (e) {
@@ -1373,7 +1366,6 @@ function frame(ts) {
         BB.MLP.frame();
     }
     BB.scene.draw(ctx);
-    BB.kBadge();
     if (BB.R && BB.R.drawSneak && !BB.paused)
       BB.R.drawSneak();
     if (BB.MLP && BB.MLP.dbg)

@@ -6,7 +6,7 @@
     { id: "smasher", name: "NOTE SMASHER", sub: "Meet tika-tika", create: () => new BB.SmasherRoom(), col: "#5a8cb4" },
     { id: "packing", name: "PACKING STATION", sub: "Cargo Code", create: () => new BB.PackingRoom(), col: "#c89632" },
     { id: "label", name: "NAME THAT RHYTHM", sub: "Label Room", create: () => BB.LabelRoom && new BB.LabelRoom(), col: "#b45aa0" },
-    { id: "finale", name: "DELIVERY", sub: "Boss checkpoint first", create: () => BB.openDelivery ? BB.openDelivery() : BB.DeliveryRoom && new BB.DeliveryRoom(), col: "#3c5a8c" }
+    { id: "finale", name: "DELIVERY", sub: "Boss fight (pass Assess first)", create: () => BB.openDelivery ? BB.openDelivery() : BB.DeliveryRoom && new BB.DeliveryRoom(), col: "#3c5a8c" }
   ];
   const save = JSON.parse(localStorage.getItem("bb4") || '{"done":[]}');
   BB.save = save;
@@ -508,6 +508,7 @@
           BB.text(f ? "Clap log nearly full (" + n + "): download + clear in Pause" : "Clap log: " + n + " events", 30, 124, 20, f ? "#ffd35c" : "#cfe8e2", { stroke: 4, align: "left" });
         }
       }
+      BB.button(W - 470, 36, 200, 52, "ASSESSMENT", { size: 22, id: "assess", onClick: () => BB.go(new BB.AssessRoom()) });
       BB.button(W - 250, 24, 226, 76, "MIC SETUP", { size: 30, id: "mic", onClick: () => BB.go(new MicScene()) });
       if (this.toast && BB.t - this.toast.t < 2.5) {
         const k = Math.min(1, (BB.t - this.toast.t) * 5);

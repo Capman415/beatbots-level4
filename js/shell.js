@@ -8,7 +8,7 @@ BB.ROOMS=[
   {id:'smasher',name:'NOTE SMASHER',sub:'Meet tika-tika',create:()=>new BB.SmasherRoom(),col:'#5a8cb4'},
   {id:'packing',name:'PACKING STATION',sub:'Cargo Code',create:()=>new BB.PackingRoom(),col:'#c89632'},
   {id:'label',name:'NAME THAT RHYTHM',sub:'Label Room',create:()=>BB.LabelRoom&&new BB.LabelRoom(),col:'#b45aa0'},
-  {id:'finale',name:'DELIVERY',sub:'Boss checkpoint first',create:()=>BB.openDelivery?BB.openDelivery():(BB.DeliveryRoom&&new BB.DeliveryRoom()),col:'#3c5a8c'},
+  {id:'finale',name:'DELIVERY',sub:'Boss fight (pass Assess first)',create:()=>BB.openDelivery?BB.openDelivery():(BB.DeliveryRoom&&new BB.DeliveryRoom()),col:'#3c5a8c'},
 ];
 const save=JSON.parse(localStorage.getItem('bb4')||'{"done":[]}');BB.save=save;
 const persist=()=>localStorage.setItem('bb4',JSON.stringify(save));
@@ -164,6 +164,8 @@ class MapScene{constructor(justDone){this.justDone=justDone}
     /* v14.2.1 session tag for the clap log: set at the start of class */
     if(BB.session){const L=BB.clapLog,gb=BB.gradeBand&&BB.gradeBand(),gs=gb==='k1'?'green':gb==='m'?'cream':'cream';BB.panel(24,24,302,76,20);BB.button(34,32,138,60,'DAY '+BB.session.day,{size:22,id:'hday',onClick:()=>BB.session.cycleDay()});BB.button(178,32,138,60,'GRADE '+BB.grade,{size:22,style:gs,id:'hgrade',onClick:()=>BB.session.cycleGrade()});
      {const n=L?L.count():0,f=L&&L.nearCap();BB.text(f?'Clap log nearly full ('+n+'): download + clear in Pause':'Clap log: '+n+' events',30,124,20,f?'#ffd35c':'#cfe8e2',{stroke:4,align:'left'})}}
+    /* v14.5.5: compact secondary Assessment control (not a room bay) */
+    BB.button(W-470,36,200,52,'ASSESSMENT',{size:22,id:'assess',onClick:()=>BB.go(new BB.AssessRoom())});
     BB.button(W-250,24,226,76,'MIC SETUP',{size:30,id:'mic',onClick:()=>BB.go(new MicScene())});
     if(this.toast&&BB.t-this.toast.t<2.5){const k=Math.min(1,(BB.t-this.toast.t)*5);ctx.save();ctx.globalAlpha=k;BB.rrect(W/2-450,940,900,100,50,BB.lg(940,1040,['#ffffff','#e8e2cd']),COL.ink,5);BB.text(this.toast.txt,W/2,992,40,COL.ink);ctx.restore()}}}
 BB.MapScene=MapScene;BB.MicScene=MicScene;
