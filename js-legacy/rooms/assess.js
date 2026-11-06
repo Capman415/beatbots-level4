@@ -4,23 +4,111 @@
   BB._sw.push((g) => ctx = g);
   const COL = BB.COL, W = BB.W, H = BB.H, { clamp, lerp, ease } = BB, R = BB.R;
   BB.VO_LINES = (BB.VO_LINES || []).concat([
-    ["as_intro", "Checkpoint! Ten quick checks from every room. Get seven right and you can fight Static Jr.!", "sprocket"],
+    ["as_intro", "Checkpoint! Eight quick checks. Clap a steady beat, answer three music words, then match four rhythms. Get six right to fight Static Jr.!", "sprocket"],
     ["as_pass", "You passed! Rhythm Engineers... open the Delivery bay!", "sprocket"],
     ["as_fail", "Almost! Let's try those again. Tap RETRY when you're ready.", "sprocket"],
     ["as_next", "Next one!", "sprocket"]
   ]);
-  const PASS = 7, TOTAL = 10;
+  const PASS = 6, TOTAL = 8;
+  BB.assessTol = (spb) => {
+    const G = window.GroupGate;
+    if (G && G.early && G.late)
+      return { early: G.early(spb), late: G.late(spb), src: "GroupGate" };
+    const b = BB.gradeBand && BB.gradeBand();
+    if (b === "k1")
+      return { early: Math.min(0.17, spb * 0.36), late: Math.min(0.32, spb * 0.6), src: "k1" };
+    if (b === "m")
+      return { early: Math.min(0.14, spb * 0.32), late: Math.min(0.25, spb * 0.5), src: "m" };
+    return { early: Math.min(0.12, spb * 0.28), late: Math.min(0.18, spb * 0.4), src: "u" };
+  };
+  BB.assessMatchBeat = (onT, expT, spb, lat) => {
+    const tol = BB.assessTol(spb), dd = onT - (lat || 0) - expT, ok = dd >= -tol.early && dd <= tol.late;
+    return { ok, off: dd, tol };
+  };
   const QS = [
-    { id: "mn_steady", room: "mine", kind: "clap", prompt: "NOTE MINE: Clap 4 steady beats with the lights.", seq: ["q", "q", "q", "q"], bpm: 92, need: 0.6 },
-    { id: "mn_dyn", room: "mine", kind: "choice", prompt: "NOTE MINE: Which means SOFT (piano)?", choices: [{ k: "piano", lab: "PIANO", sub: "soft / quiet" }, { k: "forte", lab: "FORTE", sub: "loud / strong" }], ans: "piano" },
-    { id: "sm_tt", room: "smasher", kind: "clap", prompt: "NOTE SMASHER: Listen, then clap back: ta  ta  ti-ti", seq: ["q", "q", "e"], bpm: 84, need: 0.55 },
-    { id: "sm_wrong", room: "smasher", kind: "pickNote", prompt: "NOTE SMASHER: Tap the WRONG note on this ticket.", seq: ["q", "e", "q", "r"], wrong: 1, fix: ["q", "q", "q", "r"] },
-    { id: "pk_empty", room: "packing", kind: "pickBeat", prompt: "PACKING: Which beat on the pallet is EMPTY?", cells: ["q", "e", "q", null, "h", "q", "e", "q"], ans: 3 },
-    { id: "pk_swap", room: "packing", kind: "choice", prompt: "PACKING: Static Jr. swapped a crate! Which one does NOT belong?", choices: [{ k: "q", lab: "TA", sub: "1 beat" }, { k: "x", lab: "???", sub: "glitch crate!" }, { k: "e", lab: "TI-TI", sub: "2 quick" }], ans: "x" },
-    { id: "lb_match", room: "label", kind: "hearPick", prompt: "LABEL ROOM: Which label matches the rhythm you hear?", seq: ["q", "e", "q", "r"], choices: [{ k: "a", lab: ["q", "e", "q", "r"] }, { k: "b", lab: ["q", "q", "e", "r"] }, { k: "c", lab: ["e", "e", "q", "q"] }], ans: "a" },
-    { id: "lb_say", room: "label", kind: "choice", prompt: "LABEL ROOM: What do you SAY for this note?", show: "e", choices: [{ k: "ta", lab: "ta" }, { k: "titi", lab: "ti-ti" }, { k: "rest", lab: "(rest)" }], ans: "titi" },
-    { id: "dl_pkg", room: "delivery", kind: "clap", prompt: "DELIVERY: Clap the rhythm on the package.", seq: ["q", "r", "e", "q"], bpm: 90, need: 0.55 },
-    { id: "dl_mix", room: "delivery", kind: "clap", prompt: "DELIVERY: Listen, then clap it back.", seq: ["q", "e", "r", "q"], bpm: 88, need: 0.55 }
+    {
+      id: "as_pulse",
+      topic: "steady-beat",
+      room: "assess",
+      kind: "follow",
+      prompt: "FOLLOW THE BEAT: Clap with the lights \u2014 8 steady ta beats.",
+      bpm: 92,
+      countIn: 4,
+      practice: 4,
+      n: 8,
+      need: 0.625
+    },
+    {
+      id: "as_piano",
+      topic: "piano",
+      room: "assess",
+      kind: "choice",
+      prompt: "What does PIANO mean?",
+      choices: [{ k: "soft", lab: "SOFT / quiet", sub: "tiny quiet claps" }, { k: "slow", lab: "SLOW", sub: "not about speed" }, { k: "loud", lab: "LOUD", sub: "that is forte" }],
+      ans: "soft"
+    },
+    {
+      id: "as_andante",
+      topic: "andante",
+      room: "assess",
+      kind: "choice",
+      prompt: "What does ANDANTE mean?",
+      choices: [{ k: "walk", lab: "WALKING pace", sub: "moderately slow" }, { k: "loud", lab: "LOUD", sub: "not about volume" }, { k: "soft", lab: "SOFT", sub: "that is piano" }],
+      ans: "walk"
+    },
+    {
+      id: "as_allegro",
+      topic: "allegro",
+      room: "assess",
+      kind: "choice",
+      prompt: "What does ALLEGRO mean?",
+      choices: [{ k: "fast", lab: "FAST / lively", sub: "keep up!" }, { k: "loud", lab: "LOUD", sub: "not about volume" }, { k: "soft", lab: "SOFT", sub: "that is piano" }],
+      ans: "fast"
+    },
+    {
+      id: "as_hear1",
+      topic: "hear-pick",
+      room: "assess",
+      kind: "hearPick",
+      bpm: 88,
+      prompt: "Listen, then tap the matching rhythm.",
+      seq: ["q", "e", "q", "r"],
+      choices: [{ k: "a", lab: ["q", "e", "q", "r"] }, { k: "b", lab: ["q", "q", "e", "r"] }, { k: "c", lab: ["e", "q", "q", "r"] }],
+      ans: "a"
+    },
+    {
+      id: "as_hear2",
+      topic: "hear-pick",
+      room: "assess",
+      kind: "hearPick",
+      bpm: 88,
+      prompt: "Listen, then tap the matching rhythm.",
+      seq: ["e", "q", "e", "q"],
+      choices: [{ k: "a", lab: ["q", "e", "q", "e"] }, { k: "b", lab: ["e", "q", "e", "q"] }, { k: "c", lab: ["q", "q", "q", "q"] }],
+      ans: "b"
+    },
+    {
+      id: "as_hear3",
+      topic: "hear-pick",
+      room: "assess",
+      kind: "hearPick",
+      bpm: 90,
+      prompt: "Listen, then tap the matching rhythm.",
+      seq: ["q", "q", "q", "q"],
+      choices: [{ k: "a", lab: ["q", "q", "e", "r"] }, { k: "b", lab: ["e", "e", "q", "r"] }, { k: "c", lab: ["q", "q", "q", "q"] }],
+      ans: "c"
+    },
+    {
+      id: "as_hear4",
+      topic: "hear-pick",
+      room: "assess",
+      kind: "hearPick",
+      bpm: 86,
+      prompt: "Listen, then tap the matching rhythm.",
+      seq: ["q", "r", "e", "q"],
+      choices: [{ k: "a", lab: ["q", "e", "r", "q"] }, { k: "b", lab: ["q", "r", "e", "q"] }, { k: "c", lab: ["e", "q", "r", "q"] }],
+      ans: "b"
+    }
   ];
   {
     const KEY = "bb_assess2", SKEY = "bb_assess_sess", CAP = 2e3, T0 = 17e9;
@@ -94,10 +182,10 @@
         return sess[i];
       },
       add(o) {
-        var _a;
+        var _a, _b, _c;
         try {
-          const i = curRun(), S = sess[i], ms = (v) => v == null || v === "" || isNaN(v) ? "" : Math.round(+v * 1e3);
-          ev.push([Math.round(Date.now() / 100) - T0, i, o.qid || "", o.room || "", o.ok ? 1 : 0, o.choice || "", ms(o.ms), BB.VERSION || "", (_a = o.i) != null ? _a : ""]);
+          const i = curRun(), S = sess[i], ms = (v) => v == null || v === "" || isNaN(+v) ? "" : Math.round(+v * 1e3);
+          ev.push([Math.round(Date.now() / 100) - T0, i, o.qid || "", o.room || o.topic || "", o.ok ? 1 : 0, o.choice || "", ms(o.ms), BB.VERSION || "", (_a = o.i) != null ? _a : "", o.topic || "", (_b = o.matched) != null ? _b : "", (_c = o.expected) != null ? _c : "", ms(o.thrEarly), ms(o.thrLate), o.manual ? 1 : 0, o.offs || ""]);
           if (ev.length > CAP)
             ev.splice(0, ev.length - CAP);
           S.total++;
@@ -117,9 +205,9 @@
       },
       csv() {
         save();
-        return "session_id,date,day,class,grade,timestamp,q_id,room,correct,choice,offset_ms,app_version,beat_index\n" + ev.map((r) => {
+        return "session_id,date,day,class,grade,timestamp,q_id,room,topic,correct,choice,offset_ms,matched,expected,thr_early_ms,thr_late_ms,manual,offsets_ms,app_version,beat_index\n" + ev.map((r) => {
           const S = sess[r[1]] || {};
-          return [S.id || "", S.date || "", S.day || "", S.cls || "", S.grade || "", r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", r[2], r[3], r[4], r[5], r[6], r[7], r[8]].map(qcsv).join(",");
+          return [S.id || "", S.date || "", S.day || "", S.cls || "", S.grade || "", r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", r[2], r[3], r[9] || "", r[4], r[5], r[6], r[10], r[11], r[12], r[13], r[14], r[15], r[7], r[8]].map(qcsv).join(",");
         }).join("\n");
       },
       summaryCsv() {
@@ -132,8 +220,178 @@
       downloadSummary() {
         dl(BB.assessLog.summaryCsv(), "beatbots_assess_summary_" + dstr(/* @__PURE__ */ new Date()) + ".csv");
       },
-      count: () => ev.length
+      count: () => ev.length,
+      /* test hook */
+      _reset() {
+        ev = [];
+        sess = [];
+        dirty = 1;
+        save();
+      },
+      _peek: () => ({ ev, sess })
     };
+  }
+  class FollowPulse {
+    constructor(o = {}) {
+      this.bpm = o.bpm || 92;
+      this.spb = 60 / this.bpm;
+      this.n = o.n || 8;
+      this.countIn = o.countIn || 4;
+      this.practice = o.practice || 4;
+      this.need = o.need || 0.625;
+      this.onDone = o.onDone;
+      this.t0 = BB.ac.currentTime + 0.45;
+      this.next = 0;
+      this.got = new Array(this.n).fill(0);
+      this.offs = new Array(this.n).fill(null);
+      this.done = false;
+      this.manual = false;
+      this.lit = new Array(this.n).fill(0);
+      this.marks = new Array(this.n).fill(0);
+      this.tol = BB.assessTol(this.spb);
+      BB.mic && BB.mic.take && BB.mic.take();
+      BB.groove && BB.groove.sync(this.t0, this.spb);
+    }
+    scoreStart() {
+      return this.countIn + this.practice;
+    }
+    totalBeats() {
+      return this.scoreStart() + this.n;
+    }
+    beatNow() {
+      return (BB.ac.currentTime - this.t0) / this.spb;
+    }
+    beatNowV() {
+      return (BB.ac.currentTime - (BB.visLat ? BB.visLat() : 0) - this.t0) / this.spb;
+    }
+    phase() {
+      const b = this.beatNow();
+      if (b < 0)
+        return "wait";
+      if (b < this.countIn)
+        return "count";
+      if (b < this.scoreStart())
+        return "practice";
+      if (b < this.totalBeats())
+        return "score";
+      return "end";
+    }
+    expT(i) {
+      return this.t0 + (this.scoreStart() + i) * this.spb;
+    }
+    update(dt) {
+      const ac = BB.ac, ahead = ac.currentTime + 0.12, spb = this.spb, N = this.totalBeats();
+      while (this.t0 + this.next * spb < ahead && this.next < N) {
+        const t = this.t0 + this.next * spb, i = this.next, sc = i >= this.scoreStart();
+        BB.sfx.tick(t, i % 4 === 0 || sc, sc ? 1 : 0.7);
+        if (sc)
+          BB.sfx.countPulse && BB.sfx.countPulse(t, i % 4 === 0, 0.9);
+        this.next++;
+      }
+      const ph = this.phase();
+      BB.listening = ph === "score" ? 2 : ph === "practice" ? 1 : 0;
+      {
+        const tv = ac.currentTime - (BB.visLat ? BB.visLat() : 0);
+        for (let i = 0; i < this.n; i++) {
+          const d = tv - this.expT(i);
+          this.lit[i] = d >= 0 && d < 0.35 ? 1 - d / 0.35 : 0;
+        }
+      }
+      for (let i = 0; i < this.n; i++)
+        if (this.marks[i])
+          this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
+      if (ph === "score" || ph === "end") {
+        const ons = BB.mic.take ? BB.mic.take() : [], lat = window.GroupGate && GroupGate.lat || 0;
+        for (const o of ons) {
+          if (o.up)
+            continue;
+          if (BB.voBlocks && BB.voBlocks())
+            continue;
+          const bm = BB.bounceMs ? BB.bounceMs() : 0.1;
+          if (this._lastOn != null && o.t - this._lastOn < bm)
+            continue;
+          this._lastOn = o.t;
+          let best = -1, bd = 1;
+          for (let i = 0; i < this.n; i++) {
+            if (this.got[i])
+              continue;
+            const m = BB.assessMatchBeat(o.t, this.expT(i), spb, lat);
+            if (m.ok && Math.abs(m.off) < bd) {
+              bd = Math.abs(m.off);
+              best = i;
+            }
+          }
+          if (best >= 0) {
+            const m = BB.assessMatchBeat(o.t, this.expT(best), spb, lat);
+            this.got[best] = 1;
+            this.offs[best] = m.off;
+            this.marks[best] = 0.01;
+            BB.sfx.tink && BB.sfx.tink(void 0, 0.55);
+          }
+        }
+      }
+      if (!this.done && ac.currentTime > this.expT(this.n - 1) + this.tol.late + 0.35) {
+        this.finish(false);
+      }
+    }
+    finish(manual) {
+      if (this.done)
+        return;
+      this.done = true;
+      this.manual = !!manual;
+      const matched = this.got.filter((x) => x === 1).length;
+      const sc = manual ? 1 : matched / this.n;
+      const ok = manual ? true : sc >= this.need;
+      this.score = sc;
+      this.matched = matched;
+      this.onDone && this.onDone({
+        ok,
+        matched,
+        expected: this.n,
+        offs: this.offs.map((v) => v == null ? "" : Math.round(v * 1e3)).join("|"),
+        thrEarly: this.tol.early,
+        thrLate: this.tol.late,
+        manual: this.manual,
+        sc
+      });
+    }
+    override() {
+      if (this.done)
+        return;
+      for (let i = 0; i < this.n; i++) {
+        if (!this.got[i]) {
+          this.got[i] = 1;
+          this.marks[i] = 0.01;
+          this.offs[i] = null;
+        }
+      }
+      this.finish(true);
+    }
+    draw(cx, y) {
+      const ph = this.phase(), bn = this.beatNowV(), seq = Array(this.n).fill("q");
+      R.pills(cx, y, seq, { lit: this.lit, marks: this.marks, words: true, bw: 78, gap: 12 });
+      const nd = this.n, tot = nd * 90 + (nd - 1) * 10, x0 = cx - tot / 2;
+      for (let i = 0; i < nd; i++) {
+        const on = ph === "score" && Math.floor(bn - this.scoreStart()) === i;
+        ctx.fillStyle = on ? COL.green : this.got[i] ? COL.yellow : "rgba(255,255,255,.28)";
+        ctx.beginPath();
+        ctx.arc(x0 + i * 100 + 40, y + 70, on ? 14 : 8, 0, 7);
+        ctx.fill();
+      }
+      let msg = "";
+      if (ph === "count") {
+        const n = this.countIn - Math.floor(Math.max(0, bn));
+        msg = n > 0 ? "Get ready\u2026 " + n : "GO!";
+      } else if (ph === "practice")
+        msg = "PRACTICE \u2014 clap with the lights (not scored)";
+      else if (ph === "score")
+        msg = "SCORE \u2014 clap WITH the beat!";
+      else if (ph === "end")
+        msg = "";
+      if (msg)
+        BB.text(msg, cx, y - 130, 40, ph === "score" ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 7 });
+      BB.text("8 steady ta   \xB7   grade window " + Math.round(this.tol.early * 1e3) + "ms early / " + Math.round(this.tol.late * 1e3) + "ms late", cx, y + 130, 24, "#cfe8e2", { stroke: 4 });
+    }
   }
   class AssessRoom {
     constructor(o = {}) {
@@ -145,6 +403,7 @@
       this.state = "intro";
       this.st = BB.t;
       this.cb = null;
+      this.fp = null;
       this.flash = null;
       this.picked = null;
       this.run = BB.assessLog.startRun();
@@ -157,17 +416,19 @@
     }
     exit() {
       this.cb = null;
+      this.fp = null;
     }
     beginQ() {
       this.cb = null;
+      this.fp = null;
       this.picked = null;
       this.flash = null;
       this.hearPlayed = 0;
       this.state = "q";
       this.st = BB.t;
       this.Q = QS[this.qi];
-      if (this.Q.kind === "clap")
-        this.startClap();
+      if (this.Q.kind === "follow")
+        this.startFollow();
       if (this.Q.kind === "hearPick") {
         this.state = "hear";
         this.st = BB.t;
@@ -185,17 +446,24 @@
       });
       this.hearEnd = BB.t + seq.reduce((a, k) => a + R.BEATS[k], 0) * spb + 0.6;
     }
-    startClap() {
+    startFollow() {
       const Q = this.Q;
-      this.cb = new R.ClapBack(Q.seq, { bpm: Q.bpm || 88, onDone: (sc) => this.clapDone(sc) });
-      this.state = "clap";
+      this.fp = new FollowPulse({ bpm: Q.bpm, n: Q.n, countIn: Q.countIn, practice: Q.practice, need: Q.need, onDone: (r) => this.followDone(r) });
+      this.state = "follow";
     }
-    clapDone(sc) {
-      const need = this.Q.need || 0.6, ok = sc >= need;
-      this.cb = null;
-      this.grade(ok, "clap:" + (sc * 100 | 0) + "%");
+    followDone(r) {
+      this.fp = null;
+      this.grade(r.ok, r.manual ? "manual-override" : "follow:" + r.matched + "/" + r.expected, {
+        matched: r.matched,
+        expected: r.expected,
+        offs: r.offs,
+        thrEarly: r.thrEarly,
+        thrLate: r.thrLate,
+        manual: r.manual,
+        ms: null
+      });
     }
-    grade(ok, choice) {
+    grade(ok, choice, perf) {
       if (this.state === "graded" || this.state === "end")
         return;
       this.state = "graded";
@@ -203,7 +471,21 @@
       this.lastOk = ok;
       if (ok)
         this.score++;
-      BB.assessLog.add({ qid: this.Q.id, room: this.Q.room, ok, choice: choice || "", ms: this._off });
+      const Q = this.Q, p = perf || {};
+      BB.assessLog.add({
+        qid: Q.id,
+        room: Q.room,
+        topic: Q.topic,
+        ok,
+        choice: choice || "",
+        ms: p.ms,
+        matched: p.matched,
+        expected: p.expected,
+        thrEarly: p.thrEarly,
+        thrLate: p.thrLate,
+        manual: !!p.manual,
+        offs: p.offs || ""
+      });
       BB.sfx[ok ? "ding" : "wobble"]();
       BB.burst(W / 2, 420, ok ? 28 : 10, { cols: ok ? ["#6ee678", "#ffe066", "#fff"] : ["#c8b49a"], kind: ok ? "star" : "dust", size: ok ? 14 : 12, speed: ok ? 700 : 200 });
       setTimeout(() => {
@@ -251,20 +533,16 @@
       let ok = false;
       if (Q.kind === "choice" || Q.kind === "hearPick")
         ok = choice === Q.ans;
-      else if (Q.kind === "pickNote")
-        ok = +choice === Q.wrong;
-      else if (Q.kind === "pickBeat")
-        ok = +choice === Q.ans;
       this.picked = choice;
       this.grade(ok, String(choice));
     }
     override() {
-      if (this.cb) {
-        this.cb.override();
+      if (this.fp) {
+        this.fp.override();
         return;
       }
-      if (this.state === "q" || this.state === "hear" || this.state === "clap")
-        this.grade(true, "manual-override");
+      if (this.state === "q" || this.state === "hear" || this.state === "follow")
+        this.grade(true, "manual-override", { manual: 1 });
     }
     update(dt) {
       if (BB.keys.includes(" "))
@@ -275,9 +553,9 @@
         this.state = "q";
         this.st = BB.t;
       }
-      if (this.cb)
-        this.cb.update(dt);
-      if (BB.debug && (this.state === "q" || this.state === "clap" || this.state === "hear") && BB.t - this.st > 1.2 && !this._auto) {
+      if (this.fp)
+        this.fp.update(dt);
+      if (BB.debug && (this.state === "q" || this.state === "follow" || this.state === "hear") && BB.t - this.st > 1.2 && !this._auto) {
         this._auto = 1;
         setTimeout(() => {
           this._auto = 0;
@@ -289,37 +567,31 @@
     drawBanner() {
       BB.panel(80, 40, 1760, 110, 28);
       BB.text("CHECKPOINT  " + Math.min(this.qi + 1, TOTAL) + " / " + TOTAL, W / 2, 78, 36, COL.yellow, { font: "Rammetto One", stroke: 5 });
-      BB.text("Score  " + this.score + "  \xB7  need " + PASS + " to unlock Static Jr.", W / 2, 118, 28, "#cfe8e2", { stroke: 4 });
+      BB.text("Score  " + this.score + "  \xB7  need " + PASS + " of " + TOTAL + " to unlock Static Jr.", W / 2, 118, 28, "#cfe8e2", { stroke: 4 });
     }
     drawProgress() {
       for (let i = 0; i < TOTAL; i++) {
-        const x = 220 + i * 148, y = 155, done = i < this.qi, cur = i === this.qi && this.state !== "end" && this.state !== "intro";
-        BB.rrect(x, y, 120, 18, 9, done ? "#6ee678" : cur ? "#ffe066" : "#2a3a38", "#fff", 2);
+        const x = 260 + i * 175, y = 155, done = i < this.qi, cur = i === this.qi && this.state !== "end" && this.state !== "intro";
+        BB.rrect(x, y, 150, 18, 9, done ? "#6ee678" : cur ? "#ffe066" : "#2a3a38", "#fff", 2);
       }
     }
     drawPrompt(txt) {
       BB.text(txt, W / 2, 230, 40, "#fff", { font: "Rammetto One", stroke: 7, maxW: 1700 });
     }
-    drawClap() {
-      if (this.cb)
-        this.cb.draw(W / 2, 520);
-      BB.text("No mic? Teacher taps MANUAL OVERRIDE when the class nails it.", W / 2, 780, 26, COL.yellow, { stroke: 4 });
-      BB.button(W / 2 - 220, 820, 440, 100, "MANUAL OVERRIDE", { style: "cream", size: 34, id: "asov", onClick: () => this.override() });
+    drawFollow() {
+      if (this.fp)
+        this.fp.draw(W / 2, 500);
+      BB.text("No mic? Teacher taps MANUAL OVERRIDE when the class nails it (logged as override, not a measured clap).", W / 2, 780, 24, COL.yellow, { stroke: 4, maxW: 1600 });
+      BB.button(W / 2 - 220, 840, 440, 90, "MANUAL OVERRIDE", { style: "cream", size: 32, id: "asov", onClick: () => this.override() });
     }
     drawChoice() {
       const Q = this.Q, n = Q.choices.length, bw = Math.min(420, Math.floor(1500 / n) - 24), gap = 24, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2;
-      if (Q.show) {
-        R.tile(Q.show, W / 2 - 70, 300, 140, 160, { gs: 1.1 });
-        BB.text(R.SAY[Q.show] || "", W / 2, 500, 36, COL.yellow, { stroke: 5 });
-      }
       Q.choices.forEach((c, i) => {
         const x = x0 + i * (bw + gap), on = this.picked === c.k;
-        BB.button(x, 560, bw, 160, "", { style: on ? "green" : "cream", id: "asc" + i, onClick: () => this.pick(c.k) });
-        BB.text(c.lab, x + bw / 2, 620, c.lab.length > 6 ? 36 : 52, "#19191f", { font: "Rammetto One", maxW: bw - 20 });
+        BB.button(x, 420, bw, 220, "", { style: on ? "green" : "cream", id: "asc" + i, onClick: () => this.pick(c.k) });
+        BB.text(c.lab, x + bw / 2, 500, c.lab.length > 12 ? 32 : 44, "#19191f", { font: "Rammetto One", maxW: bw - 24 });
         if (c.sub)
-          BB.text(c.sub, x + bw / 2, 680, 26, "#3a4038", { maxW: bw - 24 });
-        if (c.lab && Array.isArray(c.lab)) {
-        }
+          BB.text(c.sub, x + bw / 2, 580, 26, "#3a4038", { maxW: bw - 24 });
       });
     }
     drawHearPick() {
@@ -330,34 +602,16 @@
         return;
       }
       const n = Q.choices.length, bw = 480, gap = 30, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2;
-      BB.text("Tap the matching label", W / 2, 300, 34, COL.yellow, { stroke: 4 });
+      BB.text("Tap the matching label", W / 2, 290, 34, COL.yellow, { stroke: 4 });
+      BB.button(W / 2 - 160, 320, 320, 64, "REPLAY RHYTHM", { size: 26, id: "asreplay", onClick: () => {
+        this.state = "hear";
+        this.st = BB.t;
+        this.playHear();
+      } });
       Q.choices.forEach((c, i) => {
         const x = x0 + i * (bw + gap);
-        BB.button(x, 360, bw, 280, "", { style: "cream", id: "ash" + i, onClick: () => this.pick(c.k) });
-        R.pills(x + bw / 2, 520, c.lab, { bw: 70, gap: 10, words: true });
-      });
-    }
-    drawPickNote() {
-      const Q = this.Q, seq = Q.fix, n = seq.length, bw = 200, gap = 28, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2;
-      BB.text("Ticket (one note is wrong)", W / 2, 320, 32, COL.yellow, { stroke: 4 });
-      seq.forEach((k, i) => {
-        const x = x0 + i * (bw + gap);
-        BB.button(x, 400, bw, 220, "", { style: "cream", id: "asn" + i, onClick: () => this.pick(i) });
-        R.tile(k, x + 30, 440, bw - 60, 120);
-        BB.text(R.SAY[k] || "", x + bw / 2, 580, 28, "#19191f");
-      });
-    }
-    drawPickBeat() {
-      const Q = this.Q, cells = Q.cells, n = cells.length, bw = 150, gap = 12, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2;
-      BB.text("8-beat pallet \u2014 tap the empty beat", W / 2, 320, 32, COL.yellow, { stroke: 4 });
-      cells.forEach((k, i) => {
-        const x = x0 + i * (bw + gap);
-        BB.button(x, 400, bw, 200, "", { style: k ? "cream" : "green", id: "asb" + i, onClick: () => this.pick(i) });
-        BB.text(String(i + 1), x + bw / 2, 430, 24, "#5a6058");
-        if (k)
-          R.tile(k, x + 20, 460, bw - 40, 100);
-        else
-          BB.text("EMPTY", x + bw / 2, 540, 28, COL.yellow, { stroke: 4 });
+        BB.button(x, 410, bw, 300, "", { style: "cream", id: "ash" + i, onClick: () => this.pick(c.k) });
+        R.pills(x + bw / 2, 560, c.lab, { bw: 70, gap: 10, words: true });
       });
     }
     draw() {
@@ -371,9 +625,10 @@
       BB.contactShadow(220, 980, 110, 0.45);
       BB.sprite && BB.sprite("sprocket", 220, 980, 360, { squash: BB.isTalking && BB.isTalking("sprocket") ? Math.sin(BB.t * 16) * 0.015 : 0 });
       if (this.state === "intro") {
-        BB.panel(260, 220, 1400, 520, 40);
-        BB.text("CHECKPOINT", W / 2, 320, 72, "#fff", { font: "Rammetto One", stroke: 10 });
-        BB.text("10 quick checks from every room. Get " + PASS + " right to unlock the boss.", W / 2, 420, 36, COL.yellow, { stroke: 5, maxW: 1200 });
+        BB.panel(260, 200, 1400, 560, 40);
+        BB.text("CHECKPOINT", W / 2, 300, 72, "#fff", { font: "Rammetto One", stroke: 10 });
+        BB.text(TOTAL + " checks: steady beat \xB7 piano \xB7 andante \xB7 allegro \xB7 4 rhythm matches.", W / 2, 390, 32, COL.yellow, { stroke: 5, maxW: 1200 });
+        BB.text("Get " + PASS + " right to unlock the boss. Class answers together \u2014 not a one-kid test.", W / 2, 450, 28, "#cfe8e2", { stroke: 4, maxW: 1200 });
         BB.button(W / 2 - 260, 560, 520, 120, "START CHECK", { style: "green", size: 48, id: "asstart", onClick: () => this.beginQ() });
         return;
       }
@@ -399,21 +654,21 @@
         return;
       }
       this.drawPrompt(this.Q.prompt);
-      if (this.Q.kind === "clap" || this.state === "clap")
-        this.drawClap();
+      if (this.Q.kind === "follow" || this.state === "follow")
+        this.drawFollow();
       else if (this.Q.kind === "choice")
         this.drawChoice();
       else if (this.Q.kind === "hearPick")
         this.drawHearPick();
-      else if (this.Q.kind === "pickNote")
-        this.drawPickNote();
-      else if (this.Q.kind === "pickBeat")
-        this.drawPickBeat();
       BB.button(W - 300, 24, 260, 70, "SKIP Q", { size: 28, id: "asskip", onClick: () => this.grade(false, "skip") });
       BB.captionBox();
     }
   }
   BB.AssessRoom = AssessRoom;
+  BB._assessQS = QS;
+  BB._assessPASS = PASS;
+  BB._assessTOTAL = TOTAL;
+  BB.FollowPulse = FollowPulse;
   BB.openDelivery = (o = {}) => {
     try {
       const q = new URLSearchParams(location.search).get("assess");
