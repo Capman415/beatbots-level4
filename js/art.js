@@ -301,7 +301,7 @@ BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRec
    BB.button(bx,y+72,bw,36,'Download clap log (CSV)',{size:17,id:'clogdl',onClick:()=>L.download()});
    BB.button(bx,y+114,bw,36,'Download summary (CSV)',{size:17,id:'clogsum',onClick:()=>L.downloadSummary()});
    BB.button(bx,y+156,tw,36,'DAY '+BB.session.day,{size:16,id:'psday',onClick:()=>BB.session.cycleDay()});
-   BB.button(bx+tw+6,y+156,tw,36,'CLASS '+BB.session.cls,{size:16,id:'pscls',onClick:()=>BB.session.cycleClass()});
+   BB.button(bx+tw+6,y+156,tw,36,'GRADE '+BB.grade,{size:16,id:'psgrade',onClick:()=>BB.session.cycleGrade()});
    BB.button(bx+2*tw+12,y+156,tw,36,'Clear',{size:16,id:'clogclr',onClick:()=>{if(window.confirm('Clear the clap log? Download it first.'))L.clear()}})}
   BB.button(x+480,y+h-200,400,120,'RESUME',{style:'green',size:54,id:'resume',onClick:onResume})};
 let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)/1000;rl=n;return rt};

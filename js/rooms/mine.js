@@ -185,14 +185,14 @@ class MineRoom{
     if(Math.abs(tg-G.lat)>.015)G.lat+=(tg-G.lat)*.5}
   handleOnsets(){const b=this.beat,ons=BB.mic.take();if(!b||(this.state!=='dig'&&this.state!=='count'))return;if(window.ClapDet&&ClapDet.expect)ClapDet.expect(b.spb,BB.ac.currentTime+.5);if(BB.MLP&&BB.MLP.on)BB.MLP.openWin('mine',b.t0-.12,BB.ac.currentTime+.3);if(this.R.dyn)BB.dynMode=BB.t;if(this.R.dyn==='p'){BB.softClap=BB.t;if(b.spb<.5)BB.fastSoft=BB.t}
     const G=window.GroupGate,tol=G?G.tol(b.spb):Math.min(.17,b.spb*.4);
-    for(const o of ons){const pk=o.v??o.lvl??o.e;if(BB.talking&&BB.t<BB.talking.until&&!BB.debug){this.log({on:o.t,peak:pk,res:'ignored-during-playback'});continue}// ignore our own voice lines
+    for(const o of ons){const pk=o.v??o.lvl??o.e;if((BB.voBlocks&&BB.voBlocks())||(!BB.voBlocks&&BB.talking&&BB.t<BB.talking.until&&!BB.debug)){this.log({on:o.t,peak:pk,res:'ignored-during-playback'});continue}// ignore our own voice lines (grade softens VO block length)
       const bi=Math.round((o.t-b.t0-(G?G.lat:0))/b.spb),dt=o.t-(b.t0+bi*b.spb),inT=G?G.inTol(dt,b.spb):Math.abs(dt)<=tol,ex=b.t0+bi*b.spb;
       if(G&&bi>=4&&!o.up&&dt>-.1&&dt<.3)this.autoLat(dt);// v13.2: learn this mic's real latency (USB mics / boards add 50-150 ms)
       if(bi>=4&&!inT){if(!o.up)this.log({i:bi,exp:ex,on:o.t,peak:pk,res:dt<0?'early':'late'});if(this.gated()&&!o.up&&(this._dts||[]).length>=8&&G.isStray(dt,b.spb))(b.strays=b.strays||[]).push(o.t);continue}// off-beat: never counts, teaches the gate what a stray clap sounds like
-      if((bi<4&&this.state!=='count')||bi<0||!inT)continue;if(BB.kMode&&b.lastOn!=null&&o.t-b.lastOn<.15)continue;/* K: bounce = same clap */if(b.hits[bi]||(b.pend&&b.pend[bi])||o.up){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'rejected-as-double'});continue}
-      const d=this.R.dyn;
-      if(BB.kMode){}else if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*1.4))/* v14.5.2: more room for soft group claps */{this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too-loud'});this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
-      if(!BB.kMode&&d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN)){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too soft'});this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
+      if((bi<4&&this.state!=='count')||bi<0||!inT)continue;{const bm=BB.bounceMs?BB.bounceMs():.1;if(b.lastOn!=null&&o.t-b.lastOn<bm)continue}/* grade bounce debounce */if(b.hits[bi]||(b.pend&&b.pend[bi])||o.up){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'rejected-as-double'});continue}
+      const d=this.R.dyn,gb=BB.gradeBand&&BB.gradeBand();
+      if(gb==='k1'){}else if(d==='p'&&o.lvl>Math.min(.95,SOFT_MAX*(gb==='m'?1.5:1.4)))/* v14.5.3: K–1 skip dyn; 2–3 mild room */{this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too-loud'});this.tooLoud=BB.t;BB.sfx.wobble();BB.burst(ROCK_X,rail(this.R.f)-170,14,{world:1,cols:['#cfefff','#fff','#9fe0ff'],kind:'star',size:9,g:200,speed:300});continue}
+      if(gb!=='k1'&&d==='f'&&!(G&&o.rms?G.isLoud(o.rms,G.sensMul||1):o.lvl>=LOUD_MIN*(gb==='m'?.92:1))){this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'too soft'});this.tooSoft=BB.t;BB.burst(ROCK_X-120,rail(this.R.f)-150,6,{world:1,col:'#b9a58c',kind:'dust',size:16,g:-40,speed:120});continue}
       if(this.gated()&&!o.sim){(b.pend=b.pend||{})[bi]=1;(b.pon=b.pon||{})[bi]=[o.t,pk];continue}// wait for the beat window to close, then ask: was that the whole group?
       b.lastOn=o.t;this.log({i:bi,exp:ex,on:o.t,peak:pk,res:'hit'});if(this.state==='count')this.warmClap(bi);else this.hit(bi)}}
   // v14.4.8: Note Mine clap log (timing only, never audio); can never break gameplay
@@ -213,7 +213,7 @@ class MineRoom{
       b.evalM++;this.marks=[0,0,0,0];
       if(m<=(this.warmEnd!=null?Math.floor(this.warmEnd/4):0))continue;// the warm-up measure itself is not judged
       if(n>=2){}// strikes already cracked the rock
-      else{const talking=BB.talking&&BB.t<BB.talking.until;if(talking&&!BB.debug)continue;
+      else{const talking=BB.voBlocks?BB.voBlocks():(BB.talking&&BB.t<BB.talking.until&&!BB.debug);if(talking)continue;
         this.wob=1;BB.sfx.wobble();this.shrugT=BB.t;BB.burst(ROCK_X,rail(this.R.f)-60,10,{world:1,col:'#c8b49a',kind:'dust',size:18,g:-60,speed:160});
         if(!this.missVO&&n<2){this.missVO=true;BB.say('keepgoing')}}}}
   // v14.0 / v14.5.2: after warm-up, strikes are consecutive; a miss drops ONE strike (not a full reset)

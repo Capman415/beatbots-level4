@@ -145,7 +145,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           ctx.beginPath();
           ctx.arc(x, y, r, 0, 7);
           ctx.fill();
-          if (!lq) ctx.stroke();
+          if (!lq)
+            ctx.stroke();
         }
         ctx.globalAlpha = 1;
         const fl = 1 + 0.12 * Math.sin(t * 31) + 0.08 * Math.sin(t * 17), L = h * 0.24 * f * fl;
@@ -189,7 +190,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           ctx.stroke();
           for (let i = 0; i < 6; i++) {
             const a = sp + i * Math.PI / 3, sn = Math.sin(a);
-            if (front !== sn > 0) continue;
+            if (front !== sn > 0)
+              continue;
             ctx.fillStyle = front ? "#ffd75a" : "#a8892e";
             ctx.beginPath();
             ctx.arc(x + Math.cos(a) * rx, ry0 + sn * ry, lw * 0.7, 0, 7);
@@ -214,7 +216,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         BB.glow(x, by, h * 0.05, "rgba(255,90,70,A)", 0.25 + 0.45 * bl);
         const bg = ctx.createRadialGradient(x - br * 0.35, by - br * 0.35, br * 0.1, x, by, br);
         bg.addColorStop(0, "#ffe0d8");
-        bg.addColorStop(0.35, "rgb(".concat(220 + 35 * bl | 0, ",").concat(80 + 40 * bl | 0, ",64)"));
+        bg.addColorStop(0.35, `rgb(${220 + 35 * bl | 0},${80 + 40 * bl | 0},64)`);
         bg.addColorStop(1, "#8a2018");
         ctx.fillStyle = bg;
         ctx.beginPath();
@@ -251,11 +253,12 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         const hd = t * (LQ() ? 3 : 6) % (n + 3);
         for (let i = 0; i < n; i++) {
           const d = Math.abs(i - hd);
-          if (d > 1.5) continue;
+          if (d > 1.5)
+            continue;
           const [x, y] = P(w, h, 0.35 + i * 0.0443, 0.543);
           ctx.save();
           ctx.globalAlpha = (1 - d / 1.5) * 0.9;
-          BB.glow(x, y, w * 0.06, "rgba(".concat(cols[i], ",A)"), 0.9);
+          BB.glow(x, y, w * 0.06, `rgba(${cols[i]},A)`, 0.9);
           ctx.restore();
         }
         const [sx, sy] = P(w, h, 0.8, 0.035);
@@ -319,7 +322,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   BB.sprite = (name, x, base, h, o = {}) => {
     var _a;
     const im = IMG[name];
-    if (!im) return;
+    if (!im)
+      return;
     const w = im.width * h / im.height;
     const sq = o.squash || 0;
     const pt = o.parts !== false && h >= 150 ? PARTS[name] : null;
@@ -348,8 +352,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       pt.clip(w, h);
       ctx.drawImage(im, -w / 2, -h, w, h);
       ctx.restore();
-    } else ctx.drawImage(im, -w / 2, -h, w, h);
-    if (o.cut) ctx.restore();
+    } else
+      ctx.drawImage(im, -w / 2, -h, w, h);
+    if (o.cut)
+      ctx.restore();
     if (pt && pt.post) {
       ctx.save();
       pt.post(w, h, im, o);
@@ -368,13 +374,13 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   };
   const chromeX = (x0, x1, a = 1) => {
     const G = ctx.createLinearGradient(x0, 0, x1, 0);
-    G.addColorStop(0, "rgba(58,64,70,".concat(a, ")"));
-    G.addColorStop(0.18, "rgba(150,160,168,".concat(a, ")"));
-    G.addColorStop(0.32, "rgba(250,252,253,".concat(a, ")"));
-    G.addColorStop(0.48, "rgba(170,180,188,".concat(a, ")"));
-    G.addColorStop(0.7, "rgba(96,104,112,".concat(a, ")"));
-    G.addColorStop(0.88, "rgba(196,206,214,".concat(a, ")"));
-    G.addColorStop(1, "rgba(70,76,84,".concat(a, ")"));
+    G.addColorStop(0, `rgba(58,64,70,${a})`);
+    G.addColorStop(0.18, `rgba(150,160,168,${a})`);
+    G.addColorStop(0.32, `rgba(250,252,253,${a})`);
+    G.addColorStop(0.48, `rgba(170,180,188,${a})`);
+    G.addColorStop(0.7, `rgba(96,104,112,${a})`);
+    G.addColorStop(0.88, `rgba(196,206,214,${a})`);
+    G.addColorStop(1, `rgba(70,76,84,${a})`);
     return G;
   };
   BB.pickbot = (x, base, h, swing, o = {}) => {
@@ -522,7 +528,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   const jrC = {};
   function jrCanvas(h) {
     const key = Math.round(h);
-    if (jrC[key]) return jrC[key];
+    if (jrC[key])
+      return jrC[key];
     const S = h < 160 ? 3 : 2, H2 = h * S, Wd = H2 * 1.08, P2 = Math.ceil(H2 * 0.03), c = document.createElement("canvas");
     c.width = Math.ceil(Wd + P2 * 2);
     c.height = Math.ceil(H2 + P2 * 2);
@@ -556,7 +563,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       g.fillRect(x, y, w, hh2);
       g.fillStyle = LG(x + w * 0.75, 0, x + w, 0, ["rgba(0,0,0,0)", "rgba(30,10,0,.35)"]);
       g.fillRect(x, y, w, hh2);
-      if (o.rust) o.rust(x, y, w, hh2);
+      if (o.rust)
+        o.rust(x, y, w, hh2);
       g.globalCompositeOperation = "source-atop";
       g.lineWidth = H2 * 0.014;
       g.strokeStyle = "rgba(255,236,200,.55)";
@@ -659,7 +667,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const tp = () => rp(tx, ty, tw, th, H2 * 0.07);
     g.save();
     g.fillStyle = "rgba(20,8,0,.35)";
-    g.filter = "blur(".concat(H2 * 0.01, "px)");
+    g.filter = `blur(${H2 * 0.01}px)`;
     rp(tx - H2 * 0.01, ty - H2 * 0.02, tw + H2 * 0.02, H2 * 0.06, H2 * 0.03);
     g.fill();
     g.restore();
@@ -715,7 +723,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       st(pw / 2, -ph / 2, pw / 2, ph / 2, 4);
       g.restore();
     }
-    for (const [rx, ry] of [[tx + H2 * 0.03, ty + H2 * 0.03], [tx + tw - H2 * 0.03, ty + H2 * 0.03], [tx + H2 * 0.03, ty + th - H2 * 0.035], [tx + tw - H2 * 0.03, ty + th - H2 * 0.035]]) rivet(rx, ry, H2 * 9e-3);
+    for (const [rx, ry] of [[tx + H2 * 0.03, ty + H2 * 0.03], [tx + tw - H2 * 0.03, ty + H2 * 0.03], [tx + H2 * 0.03, ty + th - H2 * 0.035], [tx + tw - H2 * 0.03, ty + th - H2 * 0.035]])
+      rivet(rx, ry, H2 * 9e-3);
     const hx = Wd * 0.07, hw = Wd * 0.86, hy = H2 * 0.08, hh = H2 * 0.53, hp = () => rp(hx, hy, hw, hh, H2 * 0.07);
     for (const s of [-1, 1]) {
       const ex = s < 0 ? hx - H2 * 0.035 : hx + hw - H2 * 0.015, ey = hy + hh * 0.28, ew = H2 * 0.05, eh = hh * 0.44;
@@ -771,7 +780,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
     const sx = hx + hw * 0.065, sy = hy + hh * 0.14, sw = hw * 0.66, sh = hh * 0.72, br = H2 * 0.055;
     g.save();
-    g.filter = "blur(".concat(H2 * 8e-3, "px)");
+    g.filter = `blur(${H2 * 8e-3}px)`;
     g.fillStyle = "rgba(30,10,0,.5)";
     rp(sx - H2 * 0.01, sy - H2 * 2e-3, sw + H2 * 0.03, sh + H2 * 0.03, br);
     g.fill();
@@ -912,15 +921,18 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       g.ellipse(dx - r * 0.35, dy - r * 0.42, r * 0.22, r * 0.1, -0.6, 0, 7);
       g.fill();
     }
-    for (const [rx, ry] of [[hx + H2 * 0.03, hy + H2 * 0.03], [hx + hw - H2 * 0.03, hy + H2 * 0.03], [hx + H2 * 0.03, hy + hh - H2 * 0.03], [hx + hw - H2 * 0.03, hy + hh - H2 * 0.03], [hx + hw * 0.5, hy + H2 * 0.022]]) rivet(rx, ry, H2 * 0.01);
+    for (const [rx, ry] of [[hx + H2 * 0.03, hy + H2 * 0.03], [hx + hw - H2 * 0.03, hy + H2 * 0.03], [hx + H2 * 0.03, hy + hh - H2 * 0.03], [hx + hw - H2 * 0.03, hy + hh - H2 * 0.03], [hx + hw * 0.5, hy + H2 * 0.022]])
+      rivet(rx, ry, H2 * 0.01);
     return jrC[key] = { c, w: Wd / S, h: H2 / S, pad: P2 / S };
   }
   const jrSp = {};
   function jrSprite(h) {
     const I = IMG.jr_a;
-    if (!I || /jr=code/.test(location.search)) return null;
+    if (!I || /jr=code/.test(location.search))
+      return null;
     const k = Math.round(h);
-    if (jrSp[k]) return jrSp[k];
+    if (jrSp[k])
+      return jrSp[k];
     const S = 2, H2 = Math.round(h * S), W2 = Math.round(H2 * I.width / I.height), P2 = 2, c = document.createElement("canvas");
     c.width = W2 + P2 * 2;
     c.height = H2 + P2 * 2;
@@ -931,7 +943,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   }
   BB.staticJr = (x, base, h, o = {}) => {
     const J = jrSprite(h * 1.2925) || jrCanvas(h), im = J.c;
-    if (J.sprite) h = J.h;
+    if (J.sprite)
+      h = J.h;
     const SPR = !!J.sprite;
     const t = BB.t, w = J.w, legH = SPR ? h * 0.195 : h * 0.3, run = o.run || 0;
     ctx.save();
@@ -939,13 +952,14 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const lift = o.lift || 0;
     if (!o.noShadow) {
       const k = 1 / (1 + lift / 60);
-      ctx.fillStyle = "rgba(0,0,0,".concat(0.28 * k, ")");
+      ctx.fillStyle = `rgba(0,0,0,${0.28 * k})`;
       ctx.beginPath();
       ctx.ellipse(0, lift, w * 0.4 * k, 10 * k, 0, 0, 7);
       ctx.fill();
     }
     ctx.rotate(o.rot || 0);
-    if (o.flip) ctx.scale(-1, 1);
+    if (o.flip)
+      ctx.scale(-1, 1);
     const spd = o.spd || 450, fq = Math.min(11, Math.max(3.5, spd / (4 * h * 0.16))), A = Math.min(h * 0.26, spd / (4 * fq)) * run, cyc = t * fq;
     const bob = run ? -Math.abs(Math.sin(cyc * Math.PI * 2)) * h * 0.035 * run : 0, hipY = -legH + bob, LL = legH * 0.56;
     for (const lx of [-0.2, 0.2]) {
@@ -963,7 +977,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       const hx = w * lx * 0.8, ax = fx, ay = fy - h * 0.06, dx = ax - hx, dy = ay - hipY, d = Math.hypot(dx, dy), bend = Math.sqrt(Math.max(0, LL * LL - d * d / 4));
       const kx = (hx + ax) / 2 + -dy / d * bend * -1, ky = (hipY + ay) / 2 + dx / d * bend * -1;
       const sa = o.noShadow || lift ? 0 : Math.max(0, 1 + fy / (h * 0.15));
-      if (sa) ctx.fillStyle = "rgba(0,0,0,".concat(0.25 * sa, ")");
+      if (sa)
+        ctx.fillStyle = `rgba(0,0,0,${0.25 * sa})`;
       if (sa) {
         ctx.beginPath();
         ctx.ellipse(fx + h * 0.03, 0, h * 0.1 * (0.6 + 0.4 * sa), h * 0.025, 0, 0, 7);
@@ -1068,7 +1083,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           ctx.fill();
         }
         const sp = Math.sin(t * 7 + s * 2) > 0.55;
-        if (sp) BB.glow(tx, ty, h * 0.25, "rgba(140,220,255,A)", 0.6);
+        if (sp)
+          BB.glow(tx, ty, h * 0.25, "rgba(140,220,255,A)", 0.6);
         {
           const r = h * 0.045, G = ctx.createRadialGradient(tx - r * 0.4, ty - r * 0.4, 0, tx, ty, r);
           G.addColorStop(0, sp ? "#ffffff" : "#e9eef1");
@@ -1102,7 +1118,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         const P2 = J.pad;
         ctx.drawImage(im, 0, P2 * 2 + sy * (im.height - P2 * 4) / im.height, im.width, (im.height - P2 * 4) / 8, -w / 2 - P2 + off, dy, w + P2 * 2, h / 8 + 1);
       }
-    } else ctx.drawImage(im, -w / 2 - J.pad, -h - J.pad, w + J.pad * 2, h + J.pad * 2);
+    } else
+      ctx.drawImage(im, -w / 2 - J.pad, -h - J.pad, w + J.pad * 2, h + J.pad * 2);
     if (o.stuffed) {
       ctx.fillStyle = "rgba(255,140,150,.95)";
       ctx.strokeStyle = COL.ink;
@@ -1125,12 +1142,14 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   };
   BB.solidWhole = (x, y, s, o = {}) => {
     const R = BB.R;
-    if (!R || !R.note3d) return BB.wholeNote(x, y, s, o);
+    if (!R || !R.note3d)
+      return BB.wholeNote(x, y, s, o);
     const n = s / 1.25, hh = n / 0.2, ww = n * 2.9, sp = R.note3d("w", ww, hh);
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(o.rot || 0);
-    if (o.glow) BB.glow(0, 0, s * 2.2, "rgba(255,245,190,A)", o.glow);
+    if (o.glow)
+      BB.glow(0, 0, s * 2.2, "rgba(255,245,190,A)", o.glow);
     const cw = sp.c.width / sp.sc, ch = sp.c.height / sp.sc;
     ctx.drawImage(sp.c, -cw / 2, -sp.gy, cw, ch);
     ctx.restore();
@@ -1139,7 +1158,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(o.rot || 0);
-    if (o.glow) BB.glow(0, 0, s * 2.2, "rgba(255,245,190,A)", o.glow);
+    if (o.glow)
+      BB.glow(0, 0, s * 2.2, "rgba(255,245,190,A)", o.glow);
     ctx.lineWidth = Math.max(3, s * 0.16);
     ctx.strokeStyle = "#fff";
     ctx.fillStyle = o.ring || COL.ink;
@@ -1167,7 +1187,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.restore();
       }
       const g = Math.round(40 + l * 70), gg = Math.round(60 + l * 170), bb = Math.round(60 + l * 60);
-      BB.rrect(x, yy, pw, ph, 14, BB.lg(yy, yy + ph, ["rgb(".concat(g + 40, ",").concat(Math.min(255, gg + 40), ",").concat(bb + 30, ")"), "rgb(".concat(g, ",").concat(gg, ",").concat(bb, ")"), "rgb(".concat(g * 0.7 | 0, ",").concat(gg * 0.75 | 0, ",").concat(bb * 0.75 | 0, ")")]), "rgba(235,245,240,.85)", 3);
+      BB.rrect(x, yy, pw, ph, 14, BB.lg(yy, yy + ph, [`rgb(${g + 40},${Math.min(255, gg + 40)},${bb + 30})`, `rgb(${g},${gg},${bb})`, `rgb(${g * 0.7 | 0},${gg * 0.75 | 0},${bb * 0.75 | 0})`]), "rgba(235,245,240,.85)", 3);
       ctx.fillStyle = "rgba(255,255,255,.18)";
       ctx.beginPath();
       ctx.roundRect(x + 8, yy + 5, pw - 16, 12, 6);
@@ -1205,8 +1225,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     for (let i = 0; i < n; i++) {
       const on = i < lvl * n, bx = x + 95 + i * 20;
       let c = on ? i < 4 ? "#6ee678" : i < 7 ? "#ffe066" : "#ff7b5c" : "#3c5050";
-      if (o.band === "soft" && i >= 4) c = on ? "#ff7b5c" : "#2a3a3a";
-      if (o.band === "loud" && i < 6) c = on ? "#8aa" : "#2a3a3a";
+      if (o.band === "soft" && i >= 4)
+        c = on ? "#ff7b5c" : "#2a3a3a";
+      if (o.band === "loud" && i < 6)
+        c = on ? "#8aa" : "#2a3a3a";
       const by = y + 22 + (9 - i) * 3, bh = 64 - (9 - i) * 3;
       BB.rrect(bx, by, 14, bh, 4, c);
       if (on) {
@@ -1233,7 +1255,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       icon: (ix, iy) => {
         ix = x + 48;
         ctx.fillStyle = COL.ink;
-        for (const bx of [ix - 13, ix + 4]) ctx.fillRect(bx, iy - 16, 10, 32);
+        for (const bx of [ix - 13, ix + 4])
+          ctx.fillRect(bx, iy - 16, 10, 32);
       }
     });
   };
@@ -1243,7 +1266,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   };
   BB.captionBox = () => {
     const c = BB.caption;
-    if (!c || BB.t > c.until) return;
+    if (!c || BB.t > c.until)
+      return;
     const k = Math.min(1, (BB.t - c.start) * 6);
     const cp = BB.scene && BB.scene.capPos && BB.scene.capPos() || {};
     const fs = 38, w = Math.min(cp.maxW || 1150, BB.measure(c.txt, fs) + 200), x = (cp.cx || W / 2) - w / 2, y = cp.y != null ? cp.y : H - 300;
@@ -1323,7 +1347,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         BB.text("CLAP READOUT  counted " + S.hit + "/" + S.exp + "  \u2022  heard " + S.heard + "  \u2022  off-beat " + S.stray + "  \u2022  blocked by voice " + S.talk + "  \u2022  mic peak " + Math.round(S.peak * 100) + "%  \u2022  slow frames " + S.slow + "  \u2022  mic " + (m.ok ? "on" : m.state) + (window.C96 && C96.active && C96.active() ? " (clap96)" : ""), W / 2, y + h - 38, 22, "#cfe8e2", { maxW: w - 80 });
       }
     }
-    if (BB.listenMode) BB.button(x + 40, y + 24, 290, 42, "LISTEN RULE: " + BB.listenMode.label(), { size: 19, id: "lrule", onClick: () => BB.listenMode.cycle() });
+    if (BB.listenMode)
+      BB.button(x + 40, y + 24, 290, 42, "LISTEN RULE: " + BB.listenMode.label(), { size: 19, id: "lrule", onClick: () => BB.listenMode.cycle() });
     if (BB.clapLog) {
       const L = BB.clapLog, bx = x + w - 330, bw = 290, warn = L.nearCap(), tw = (bw - 12) / 3;
       BB.button(bx, y + 24, bw, 42, (warn ? "NEARLY FULL! " : "CLAP LOG ") + L.count() + "/" + L.CAP, { style: warn ? "cream" : void 0, size: 19, id: "clog", onClick: () => {
@@ -1331,9 +1356,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       BB.button(bx, y + 72, bw, 36, "Download clap log (CSV)", { size: 17, id: "clogdl", onClick: () => L.download() });
       BB.button(bx, y + 114, bw, 36, "Download summary (CSV)", { size: 17, id: "clogsum", onClick: () => L.downloadSummary() });
       BB.button(bx, y + 156, tw, 36, "DAY " + BB.session.day, { size: 16, id: "psday", onClick: () => BB.session.cycleDay() });
-      BB.button(bx + tw + 6, y + 156, tw, 36, "CLASS " + BB.session.cls, { size: 16, id: "pscls", onClick: () => BB.session.cycleClass() });
+      BB.button(bx + tw + 6, y + 156, tw, 36, "GRADE " + BB.grade, { size: 16, id: "psgrade", onClick: () => BB.session.cycleGrade() });
       BB.button(bx + 2 * tw + 12, y + 156, tw, 36, "Clear", { size: 16, id: "clogclr", onClick: () => {
-        if (window.confirm("Clear the clap log? Download it first.")) L.clear();
+        if (window.confirm("Clear the clap log? Download it first."))
+          L.clear();
       } });
     }
     BB.button(x + 480, y + h - 200, 400, 120, "RESUME", { style: "green", size: 54, id: "resume", onClick: onResume });
@@ -1346,7 +1372,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     return rt;
   };
   BB.titleCard = (txt, sub, k) => {
-    if (k <= 0 || k >= 1) return;
+    if (k <= 0 || k >= 1)
+      return;
     const a = k < 0.15 ? k / 0.15 : k > 0.85 ? (1 - k) / 0.15 : 1;
     ctx.save();
     ctx.globalAlpha = a;
@@ -1376,9 +1403,11 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   const tcache = {};
   BB.tinted = (name, rim, amb, ambA = 0.18) => {
     const key = name + rim + amb + ambA;
-    if (tcache[key]) return tcache[key];
+    if (tcache[key])
+      return tcache[key];
     const im = BB.V2[name];
-    if (!im) return null;
+    if (!im)
+      return null;
     const c = document.createElement("canvas");
     c.width = im.width;
     c.height = im.height;
@@ -1407,8 +1436,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     ctx.translate(x, y);
     ctx.scale(1, 0.16);
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rw);
-    g.addColorStop(0, "rgba(10,5,2,".concat(a, ")"));
-    g.addColorStop(0.6, "rgba(10,5,2,".concat(a * 0.5, ")"));
+    g.addColorStop(0, `rgba(10,5,2,${a})`);
+    g.addColorStop(0.6, `rgba(10,5,2,${a * 0.5})`);
     g.addColorStop(1, "rgba(10,5,2,0)");
     ctx.fillStyle = g;
     ctx.fillRect(-rw, -rw, 2 * rw, 2 * rw);
@@ -1417,7 +1446,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   BB.prop = (name, x, base, h, o = {}) => {
     var _a, _b;
     const im = BB.V2[name];
-    if (!im) return;
+    if (!im)
+      return;
     let hh = h;
     const ar = im.width / im.height;
     if (o.box) {
@@ -1427,11 +1457,14 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       x = Math.max(o.box.x0 + w2 / 2, Math.min(o.box.x1 - w2 / 2, x));
     }
     const w = hh * ar, src = o.rim || o.amb ? BB.tinted(name, o.rim, o.amb, o.ambA) : im;
-    if (o.shadow !== false) BB.contactShadow(x, base, w * 0.55, (_a = o.shadowA) != null ? _a : 0.45);
+    if (o.shadow !== false)
+      BB.contactShadow(x, base, w * 0.55, (_a = o.shadowA) != null ? _a : 0.45);
     ctx.save();
     ctx.translate(x, base);
-    if (o.rot) ctx.rotate(o.rot);
-    if (o.flip) ctx.scale(-1, 1);
+    if (o.rot)
+      ctx.rotate(o.rot);
+    if (o.flip)
+      ctx.scale(-1, 1);
     ctx.globalAlpha = (_b = o.alpha) != null ? _b : 1;
     ctx.drawImage(src, -w / 2, -hh + (o.sink || 0), w, hh);
     ctx.restore();
@@ -1473,24 +1506,31 @@ BB.LoudCal = class {
     this.tA = tA;
     this.ph = "run";
     BB.mic.take();
-    for (let i = 0; i < 12; i++) BB.sfx.tick(tA + i * S, i === 0 || i === 4 || i === 8, i < 4 ? 1 : this.kind === "soft" ? 0.6 : 1);
+    for (let i = 0; i < 12; i++)
+      BB.sfx.tick(tA + i * S, i === 0 || i === 4 || i === 8, i < 4 ? 1 : this.kind === "soft" ? 0.6 : 1);
   }
   beatIdx() {
     return (BB.ac.currentTime - this.tA) / this.SPB;
   }
   update() {
     const t = BB.t;
-    if (this.ph === "gone") return;
+    if (this.ph === "gone")
+      return;
     BB.dynMode = t;
-    if (this.kind === "soft" && this.ph === "run") BB.softClap = t;
-    if (BB.MLP && BB.MLP.on && this.ph === "run") BB.MLP.micWant();
+    if (this.kind === "soft" && this.ph === "run")
+      BB.softClap = t;
+    if (BB.MLP && BB.MLP.on && this.ph === "run")
+      BB.MLP.micWant();
     const os = BB.mic.take();
-    if (this.ph === "intro" && t - this.t0 > this.wait) this.prep("soft");
-    else if (this.ph === "prep" && t - this.t0 > this.wait) this.run();
+    if (this.ph === "intro" && t - this.t0 > this.wait)
+      this.prep("soft");
+    else if (this.ph === "prep" && t - this.t0 > this.wait)
+      this.run();
     else if (this.ph === "run") {
       const a = this[this.kind], S = this.SPB, lat = BB.mic.lat != null ? BB.mic.lat : 0.06;
       for (const o of os) {
-        if (!o.rms) continue;
+        if (!o.rms)
+          continue;
         const x = (o.t - lat - this.tA) / S, i = Math.round(x), d = (x - i) * S;
         if (i >= 4 && i < 12 && d > -0.16 && d < 0.26 && !this.got[i]) {
           this.got[i] = 1;
@@ -1499,8 +1539,10 @@ BB.LoudCal = class {
         }
       }
       if (this.beatIdx() > 11.9) {
-        if (this.kind === "soft") this.prep("loud");
-        else this.finish();
+        if (this.kind === "soft")
+          this.prep("loud");
+        else
+          this.finish();
       }
     } else if (this.ph === "done" && this.ok && t - this.t0 > 2.6) {
       this.ph = "gone";
@@ -1523,19 +1565,22 @@ BB.LoudCal = class {
     this.ph = "done";
     this.t0 = BB.t;
     BB.say(this.ok ? "lc_done" : "lc_again");
-    if (this.ok) BB.sfx.ding();
+    if (this.ok)
+      BB.sfx.ding();
   }
   retry() {
     this.prep("soft");
   }
   skip() {
-    if (this.ph === "gone") return;
+    if (this.ph === "gone")
+      return;
     this.ph = "gone";
     this.onDone && this.onDone(false);
   }
   // defaults: adaptive scale from normal claps
   draw(cx, cy) {
-    if (this.ph === "gone") return;
+    if (this.ph === "gone")
+      return;
     const t = BB.t, COL = BB.COL, ctx = BB.ctx, pw = 980, ph = 520, x = cx - pw / 2, y = cy - ph / 2;
     BB.panel(x, y, pw, ph, 34);
     BB.text("CLAP CHECK", cx, y + 54, 42, COL.yellow, { font: "Rammetto One", stroke: 6 });
@@ -1545,7 +1590,7 @@ BB.LoudCal = class {
       BB.text("8 SOFT claps (piano), then 8 LOUD claps (forte)", cx, y + 200, 32, "#cfe", { stroke: 4, maxW: pw - 80 });
     } else if (done) {
       BB.text(this.ok ? "Got it! Soft and loud saved." : "Hmm, the loud claps need to be much louder.", cx, y + 130, 38, this.ok ? COL.green : "#ff9c8a", { stroke: 5, maxW: pw - 60 });
-      BB.text("soft claps heard: ".concat(this.soft.length, "   loud claps heard: ").concat(this.loud.length), cx, y + 200, 30, "#cfe", {});
+      BB.text(`soft claps heard: ${this.soft.length}   loud claps heard: ${this.loud.length}`, cx, y + 200, 30, "#cfe", {});
       if (!this.ok) {
         BB.button(cx - 260, y + ph - 130, 240, 80, "TRY AGAIN", { style: "green", size: 34, id: "lcretry", onClick: () => this.retry() });
         BB.button(cx + 20, y + ph - 130, 240, 80, "Skip", { size: 34, id: "lcskip2", onClick: () => this.skip() });
@@ -1561,10 +1606,12 @@ BB.LoudCal = class {
         const n = Math.min(3, Math.max(0, Math.floor(bi + 0.05)));
         const ph2 = bi - Math.floor(bi);
         BB.text(["1", "2", "3", "4"][n], cx, y + 235, 90 * (1 + Math.max(0, 0.25 - ph2)), COL.yellow, { font: "Rammetto One", stroke: 8 });
-      } else if (this.ph === "prep") BB.text("get ready...", cx, y + 225, 40, "rgba(255,255,255,.8)", {});
-      else BB.beatPills(cx, y + 235, lit, { pw: 70, gap: 18 });
+      } else if (this.ph === "prep")
+        BB.text("get ready...", cx, y + 225, 40, "rgba(255,255,255,.8)", {});
+      else
+        BB.beatPills(cx, y + 235, lit, { pw: 70, gap: 18 });
       const a = this[this.kind] || [];
-      BB.text("".concat(soft ? "soft" : "loud", " claps: ").concat(a.length, " / 8"), cx - 335, y + ph - 80, 34, a.length && this.pop && t - this.pop < 0.3 ? COL.green : "#fff", { stroke: 4 });
+      BB.text(`${soft ? "soft" : "loud"} claps: ${a.length} / 8`, cx - 335, y + ph - 80, 34, a.length && this.pop && t - this.pop < 0.3 ? COL.green : "#fff", { stroke: 4 });
       BB.micMeter(cx - 130, y + ph - 148, { band: soft ? "soft" : "loud" });
       BB.button(x + pw - 190, y + ph - 112, 150, 60, "Skip", { size: 28, id: "lcskip", onClick: () => this.skip() });
     }

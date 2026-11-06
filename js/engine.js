@@ -11,7 +11,16 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.5.2';/* v14.5 Kindergarten K mode (saved per device) */try{BB.kMode=localStorage.getItem('bb_kmode')==='1'}catch(e){BB.kMode=false}BB.setK=v=>{BB.kMode=!!v;try{localStorage.setItem('bb_kmode',v?'1':'0')}catch(e){}};BB.kBadge=()=>{if(!BB.kMode)return;try{ctx.save();BB.rrect(W-354,30,88,64,18,'#ff8fc8','#fff',5);BB.text('K',W-310,64,46,'#fff',{font:'Rammetto One',stroke:6});ctx.restore()}catch(e){}};try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
+BB.VERSION='v14.5.3';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
+BB.GRADES=['K','1','2','3','4','5','6'];
+(()=>{let g='2';try{const s=localStorage.getItem('bb_grade');if(BB.GRADES.includes(s))g=s;else if(localStorage.getItem('bb_kmode')==='1')g='K';else{const c=JSON.parse(localStorage.getItem('bb_sessclass')||'null');if(BB.GRADES.includes(c))g=c}}catch(e){}BB.grade=g})();
+BB.gradeBand=()=>{const g=BB.grade;return(g==='K'||g==='1')?'k1':(g==='2'||g==='3')?'m':'u'};
+BB.bounceMs=()=>({k1:.15,m:.12,u:.1}[BB.gradeBand()]);
+BB.syncK=()=>{BB.kMode=BB.gradeBand()==='k1'};BB.syncK();
+BB.setGrade=v=>{if(!BB.GRADES.includes(v))return;BB.grade=v;BB.syncK();try{localStorage.setItem('bb_grade',v);localStorage.setItem('bb_sessclass',JSON.stringify(v))}catch(e){};if(BB.session&&BB.session.setGrade)BB.session.setGrade(v)};
+BB.setK=v=>BB.setGrade(v?'K':(BB.grade==='K'||BB.grade==='1'?'2':BB.grade));/* legacy: K on → grade K */
+BB.gradeBadge=()=>{try{const b=BB.gradeBand(),col=b==='k1'?'#ff8fc8':b==='m'?'#7ec8ff':'#ffe066';ctx.save();BB.rrect(W-354,30,88,64,18,col,'#fff',5);BB.text(BB.grade,W-310,64,b==='k1'&&BB.grade==='K'?46:40,'#fff',{font:'Rammetto One',stroke:6});ctx.restore()}catch(e){}};
+BB.kBadge=()=>BB.gradeBadge();try{BB.echoOff=new URLSearchParams(location.search).get('echo')==='0'}catch(e){}
 let SC=1,OX=0,OY=0;
 // Phones only (never Chromebook/Smartboard/desktop): cap the canvas backing store and allow adaptive quality.
 BB.phone=/Android|iPhone|iPod|Mobile/i.test(navigator.userAgent)&&!/CrOS/.test(navigator.userAgent)&&matchMedia('(pointer:coarse)').matches&&Math.min(screen.width,screen.height)<=600;
@@ -244,7 +253,9 @@ BB.say=(k,o={})=>{const info=BB.voText[k]||{txt:k,who:'sprocket'};const b=VO[k];
   const dur=b?b.duration:Math.max(1.6,info.txt.length*.06);
   if(b){const s=ac.createBufferSource();s.buffer=b;s.connect(voBus);s.start();if(!o.overlap)voSrc=s}
   if(!o.nocap)BB.caption={txt:info.txt,who:info.who,until:BB.t+dur+.4,start:BB.t};
-  BB.talking={who:info.who,until:BB.t+dur};return dur};
+  BB.talking={who:info.who,until:BB.t+dur,start:BB.t,dur};return dur};
+BB.voBlockUntil=()=>{const T=BB.talking;if(!T)return 0;const f={k1:.55,m:.72,u:.88}[BB.gradeBand()];return(T.start!=null?T.start:T.until-(T.dur||0))+((T.dur!=null?T.dur:Math.max(0,T.until-(T.start||0)))*f)};
+BB.voBlocks=()=>!!(BB.talking&&BB.t<BB.voBlockUntil()&&!BB.debug);
 BB.isTalking=w=>BB.talking&&BB.talking.who===w&&BB.t<BB.talking.until;
 // ---------- microphone: RMS meter + clap onset detection ----------
 const mic=BB.mic={ok:false,state:'off',rms:0,level:0,peak:0,floor:.005,sens:1,onsets:[],lastOn:-1,tickLevel:0,hold:0};

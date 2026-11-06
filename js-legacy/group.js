@@ -18,20 +18,23 @@
     setLat(measured) {
       this.lat = measured == null ? 0 : Math.min(0.25, Math.max(0, measured - this.LAT_BASE));
     },
+    /* v14.5.3 grade bands: K–1 ~1.8x late / ~1.4x early; 2–3 ~1.4x late; 4–6 default */
     early(spb) {
-      return BB.kMode ? Math.min(0.17, spb * 0.36) : Math.min(0.12, spb * 0.28);
+      const b = BB.gradeBand && BB.gradeBand();
+      return b === "k1" ? Math.min(0.17, spb * 0.36) : b === "m" ? Math.min(0.14, spb * 0.32) : Math.min(0.12, spb * 0.28);
     },
     late(spb) {
-      return BB.kMode ? Math.min(0.32, spb * 0.6) : Math.min(0.18, spb * 0.4);
+      const b = BB.gradeBand && BB.gradeBand();
+      return b === "k1" ? Math.min(0.32, spb * 0.6) : b === "m" ? Math.min(0.25, spb * 0.5) : Math.min(0.18, spb * 0.4);
     },
-    /* v14.5 K mode: ~1.4x early, ~1.8x late */
     // v13.2: ~-120/+180 ms at 100 bpm (group claps of young kids drag)
     inTol(dt, spb) {
       const d = dt - this.lat;
       return d >= -this.early(spb) && d <= this.late(spb);
     },
     win(spb) {
-      return BB.kMode ? [-Math.min(0.17, spb * 0.34), Math.min(0.34, spb * 0.62)] : [-Math.min(0.12, spb * 0.26), Math.min(0.2, spb * 0.44)];
+      const b = BB.gradeBand && BB.gradeBand();
+      return b === "k1" ? [-Math.min(0.17, spb * 0.34), Math.min(0.34, spb * 0.62)] : b === "m" ? [-Math.min(0.14, spb * 0.3), Math.min(0.28, spb * 0.55)] : [-Math.min(0.12, spb * 0.26), Math.min(0.2, spb * 0.44)];
     },
     K_FLOOR: 0.5,
     // window energy must exceed this many "quiet windows"
@@ -76,7 +79,8 @@
     // normal-volume class falls short), piano line sits halfway between soft and loud.
     centre(sens) {
       const L = this.loud;
-      if (L.calLo != null && L.calHi != null && L.calHi - L.calLo > 4) return L.calHi - this.CAL_F * (L.calHi - L.calLo) - 6;
+      if (L.calLo != null && L.calHi != null && L.calHi - L.calLo > 4)
+        return L.calHi - this.CAL_F * (L.calHi - L.calLo) - 6;
       if (L.peaks.length >= 4) {
         const a = [...L.peaks].sort((x, y) => x - y);
         return a[a.length >> 1];
@@ -86,7 +90,8 @@
     notePeak(rms) {
       const L = this.loud;
       L.peaks.push(this.dB(rms));
-      if (L.peaks.length > 40) L.peaks.shift();
+      if (L.peaks.length > 40)
+        L.peaks.shift();
     },
     CAL_F: 0.3,
     calOk() {
@@ -107,7 +112,8 @@
     FORTE_LVL: 0.7,
     isLoud(rms, sens) {
       const L = this.loud;
-      if (this.calOk()) return this.dB(rms) >= L.calLo + this.FORTE_F * (L.calHi - L.calLo);
+      if (this.calOk())
+        return this.dB(rms) >= L.calLo + this.FORTE_F * (L.calHi - L.calLo);
       return this.lvl(rms, sens) >= this.FORTE_LVL;
     },
     SOFT_BAR: 0.1,
@@ -123,12 +129,13 @@
     // this mic's median clap peak (below -40 dBFS); the floor-relative part still keeps voice/noise out.
     absScale() {
       const p = this.loud.peaks;
-      if (p.length < 6) return 1;
+      if (p.length < 6)
+        return 1;
       const a = [...p].sort((x, y) => x - y);
       return Math.min(1, Math.max(0.1, Math.pow(10, (a[a.length >> 1] + 40) / 20)));
     },
     onsetThr(floor, sens, soft) {
-      const k = this.absScale(), kk = BB.kMode ? 0.65 : 1, t = kk * Math.max(floor * (BB.kMode ? 1.6 : this.ONSET_K) + this.ONSET_ADD * k, this.ONSET_MIN * k) / (sens || 1);
+      const b = BB.gradeBand && BB.gradeBand(), k = this.absScale(), kk = b === "k1" ? 0.65 : b === "m" ? 0.82 : 1, fk = b === "k1" ? 1.6 : b === "m" ? 1.9 : this.ONSET_K, t = kk * Math.max(floor * fk + this.ONSET_ADD * k, this.ONSET_MIN * k) / (sens || 1);
       return soft ? Math.min(t, Math.max(floor * 1.6, this.rmsForLvl(this.SOFT_BAR, sens))) : t;
     },
     reset() {
@@ -145,12 +152,15 @@
     push(t, e, dt) {
       const h = this.hist;
       h.push(t, e);
-      if (h.length > 2400) h.splice(0, h.length - 2e3);
+      if (h.length > 2400)
+        h.splice(0, h.length - 2e3);
       if (!this.fInit) {
         this.floor = e;
         this.fInit = 1;
-      } else if (e < this.floor * 2.5) this.floor += (e - this.floor) * Math.min(1, dt * 1.5);
-      else this.floor *= 1 + dt * 0.05;
+      } else if (e < this.floor * 2.5)
+        this.floor += (e - this.floor) * Math.min(1, dt * 1.5);
+      else
+        this.floor *= 1 + dt * 0.05;
     },
     // integrate excess energy in [t0,t1]
     measure(t0, t1, fm = 1.5) {
@@ -159,7 +169,8 @@
       const ev = [];
       for (let i = 0; i < h.length; i += 2) {
         const t = h[i];
-        if (t < t0 || t > t1) continue;
+        if (t < t0 || t > t1)
+          continue;
         const dt = last == null ? 1 / 60 : Math.min(0.05, t - last);
         last = t;
         const x = Math.pow(Math.max(0, h[i + 1] - f), this.PW);
@@ -171,15 +182,19 @@
         }
       }
       let dur = 0;
-      for (let i = 0; i < ev.length; i += 2) if (ev[i + 1] > pk * 0.25) dur += i ? Math.min(0.05, ev[i] - ev[i - 2]) : 1 / 60;
+      for (let i = 0; i < ev.length; i += 2)
+        if (ev[i + 1] > pk * 0.25)
+          dur += i ? Math.min(0.05, ev[i] - ev[i - 2]) : 1 / 60;
       return { E, pk, pt, dur };
     },
     thresh() {
       const win = this.W1 - this.W0;
       let thr = Math.pow(this.floor, this.PW) * win * this.K_FLOOR;
-      if (this.singleN >= 2) thr = Math.max(thr, this.single * this.K_SINGLE);
+      if (this.singleN >= 2)
+        thr = Math.max(thr, this.single * this.K_SINGLE);
       const g = this.cal && this.group ? Math.min(this.cal, this.group) : this.cal || this.group;
-      if (g) thr = Math.max(thr, g * this.K_GROUP);
+      if (g)
+        thr = Math.max(thr, g * this.K_GROUP);
       return thr / this.sensMul;
     },
     // decide one beat; tc = expected clap time on the mic clock
@@ -188,8 +203,12 @@
       const [w0, w1] = spb ? this.win(spb) : [this.W0, this.W1];
       const m = this.measure(tc + w0, tc + w1, soft ? 1.05 : 1.5);
       let thr = soft ? Math.pow(this.floor, this.PW) * (w1 - w0) * this.K_FLOOR * 0.35 / this.sensMul : this.thresh() * (w1 - w0) / (this.W1 - this.W0);
-      if (BB.kMode) thr *= 0.6;
-      m.ok = m.E > thr && m.dur >= (soft ? this.MIN_DUR * 0.6 : this.MIN_DUR);
+      const gb = BB.gradeBand && BB.gradeBand();
+      if (gb === "k1")
+        thr *= 0.6;
+      else if (gb === "m")
+        thr *= 0.8;
+      m.ok = m.E > thr && m.dur >= (soft ? gb === "k1" ? this.MIN_DUR * 0.6 : this.MIN_DUR * 0.8 : this.MIN_DUR);
       m.thr = thr;
       if (m.ok && !soft) {
         this.group = this.groupN ? this.group + (m.E - this.group) * (m.E > this.group ? 0.2 : 0.3) : m.E;
@@ -201,27 +220,33 @@
     // beat tolerance and stray test scale with tempo: at Allegro (145 bpm, 0.41 s/beat) a slightly late GROUP clap
     // must never be mistaken for a lone stray, or it teaches the gate that the group is 'single-kid' loud.
     tol(spb) {
-      return BB.kMode ? Math.min(0.3, spb * 0.5) : Math.min(0.17, spb * 0.36);
+      const b = BB.gradeBand && BB.gradeBand();
+      return b === "k1" ? Math.min(0.3, spb * 0.5) : b === "m" ? Math.min(0.24, spb * 0.45) : Math.min(0.17, spb * 0.36);
     },
     isStray(dt, spb) {
       let d = (dt - this.lat) % spb;
-      if (d < 0) d += spb;
+      if (d < 0)
+        d += spb;
       return d >= this.late(spb) + 0.05 && d <= spb - this.early(spb) - 0.05;
     },
     // v12.6: measured from the PREVIOUS beat, so a dragging group clap is never a 'stray'
     stray(t) {
       const m = this.measure(t - 0.03, t + 0.1);
-      if (m.E <= 0) return;
-      if (this.groupN >= 2 && m.E > this.group * 0.35) return;
+      if (m.E <= 0)
+        return;
+      if (this.groupN >= 2 && m.E > this.group * 0.35)
+        return;
       this.single = this.singleN ? Math.max(this.single * 0.9 + m.E * 0.1, Math.min(this.single, m.E)) : m.E;
       this.singleN++;
     },
     calibrate(Es) {
       Es = Es.filter((x) => x > 0).sort((a, b) => a - b);
-      if (Es.length >= 2) this.cal = Es[Es.length >> 1];
+      if (Es.length >= 2)
+        this.cal = Es[Es.length >> 1];
       return this.cal;
     }
   };
   root.GroupGate = G;
-  if (typeof module !== "undefined") module.exports = G;
+  if (typeof module !== "undefined")
+    module.exports = G;
 })(typeof window !== "undefined" ? window : globalThis);

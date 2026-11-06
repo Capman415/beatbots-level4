@@ -13,7 +13,8 @@
   const persist = () => localStorage.setItem("bb4", JSON.stringify(save));
   BB.unlocked = (i) => i === 0 || save.done.includes(BB.ROOMS[i - 1].id);
   BB.roomDone = (id) => {
-    if (!save.done.includes(id)) save.done.push(id);
+    if (!save.done.includes(id))
+      save.done.push(id);
     persist();
     BB.go(new MapScene(id));
   };
@@ -32,23 +33,25 @@
       g2.fillStyle = g;
       g2.fillRect(0, 0, W, H);
       if (dim) {
-        g2.fillStyle = "rgba(15,10,6,".concat(dim, ")");
+        g2.fillStyle = `rgba(15,10,6,${dim})`;
         g2.fillRect(0, 0, W, H);
       }
       bgCache[key] = c;
     }
-    if (im) ctx.drawImage(bgCache[key], 0, 0);
+    if (im)
+      ctx.drawImage(bgCache[key], 0, 0);
     else {
       ctx.fillStyle = "#c86a32";
       ctx.fillRect(0, 0, W, H);
     }
     ctx.fillStyle = "rgba(255,235,190,.35)";
-    if (BB.q) for (let i = 0; i < 18; i++) {
-      const x = (i * 397 + BB.t * (8 + i % 5 * 3)) % W, y = (i * 211 + Math.sin(BB.t * 0.5 + i) * 30) % (H * 0.8);
-      ctx.beginPath();
-      ctx.arc(x, y, 1.5 + i % 3, 0, 7);
-      ctx.fill();
-    }
+    if (BB.q)
+      for (let i = 0; i < 18; i++) {
+        const x = (i * 397 + BB.t * (8 + i % 5 * 3)) % W, y = (i * 211 + Math.sin(BB.t * 0.5 + i) * 30) % (H * 0.8);
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5 + i % 3, 0, 7);
+        ctx.fill();
+      }
   }
   BB.gear = (x, y, r, a, col) => {
     ctx.save();
@@ -80,7 +83,8 @@
         this.mus = 1;
         BB.groove.start(108, "title");
       }
-      if (BB.keys.includes("Enter")) this.start();
+      if (BB.keys.includes("Enter"))
+        this.start();
     }
     start() {
       BB.unlockAudio();
@@ -124,11 +128,13 @@
       this.state = "ask";
       this.t0 = BB.t;
       this.heard = 0;
-      if (BB.mic.ok) this.state = "on";
+      if (BB.mic.ok)
+        this.state = "on";
       setTimeout(() => BB.say("mic"), 300);
     }
     update(dt) {
-      if (BB.MLP && BB.MLP.on && (this.state === "on" || this.state === "calib" || this.state === "gcal" || this.lc || this.mlCal)) BB.MLP.micWant();
+      if (BB.MLP && BB.MLP.on && (this.state === "on" || this.state === "calib" || this.state === "gcal" || this.lc || this.mlCal))
+        BB.MLP.micWant();
       if (this.lc) {
         this.lc.update();
         return;
@@ -154,23 +160,29 @@
           const d = [];
           for (const x of times) {
             const h = c.find((y) => y > x - 0.02 && y < x + 0.4);
-            if (h != null) d.push(h - x);
+            if (h != null)
+              d.push(h - x);
           }
           if (d.length >= 2) {
             d.sort((a, b) => a - b);
             BB.mic.lat = Math.max(0, d[d.length >> 1]);
           }
-          if (window.GroupGate) GroupGate.setLat(BB.mic.lat);
+          if (window.GroupGate)
+            GroupGate.setLat(BB.mic.lat);
           BB.mic.onsets = [];
           this.state = "on";
-          if (!(window.GroupGate && GroupGate.calOk())) setTimeout(() => {
-            if (BB.scene === this) this.loudCal();
-          }, 1800);
+          if (!(window.GroupGate && GroupGate.calOk()))
+            setTimeout(() => {
+              if (BB.scene === this)
+                this.loudCal();
+            }, 1800);
         }, 2600);
-      } else this.state = "denied";
+      } else
+        this.state = "denied";
     }
     groupCal() {
-      if (this.state !== "on" || !window.GroupGate) return;
+      if (this.state !== "on" || !window.GroupGate)
+        return;
       this.state = "gcal";
       this.gIdx = -1;
       const t = BB.ac.currentTime + 1.2, times = [0, 1, 2, 3].map((i) => t + i * 0.75);
@@ -186,7 +198,8 @@
       }, (times[3] + 0.6 - BB.ac.currentTime) * 1e3);
     }
     loudCal() {
-      if (this.state !== "on" || this.lc) return;
+      if (this.state !== "on" || this.lc)
+        return;
       this.lc = new BB.LoudCal((ok) => {
         this.lc = null;
         this.lcRes = ok ? "Soft & loud saved!" : "";
@@ -214,36 +227,38 @@
         BB.text("Sprocket wants to hear your claps!", CX, 330, 40, "#fff", { maxW: 560 });
         BB.text("Your browser will ask to use the microphone.", CX, 390, 30, COL.yellow, { maxW: 560 });
         BB.button(CX - 250, 640, 500, 140, st === "asking" ? "ASKING..." : "TURN ON MIC", { style: "green", size: 56, id: "micon", onClick: () => this.state === "ask" && this.turnOn() });
-        BB.button(CX - 250, 800, 500, 80, "Play without mic", { size: 34, id: "nomic", onClick: () => BB.go(new MapScene()) });
+        BB.button(CX - 250, 800, 500, 80, "Play without mic", { size: 34, id: "nomic", onClick: () => BB.go(new GradePickScene()) });
       } else if (st === "calib") {
         BB.text("Shh... checking the room", CX, 360, 44, "#fff");
         BB.text("(listening to our own beat clicks)", CX, 420, 30, COL.yellow);
       } else if (st === "denied") {
         BB.text("No microphone? No problem!", CX, 330, 42, "#fff", { maxW: 560 });
-        if (BB.mic.err) BB.text(BB.mic.err, CX, 560, 26, "#ff9c8a", { maxW: 600 });
+        if (BB.mic.err)
+          BB.text(BB.mic.err, CX, 560, 26, "#ff9c8a", { maxW: 600 });
         BB.button(CX - 250, 800, 500, 80, "TRY MIC AGAIN", { size: 34, id: "retry", onClick: () => {
           this.state = "ask";
           this.turnOn();
         } });
         BB.text("Use the big MANUAL OVERRIDE button", CX, 395, 32, COL.yellow, { maxW: 560 });
         BB.text("when the class gets it right.", CX, 440, 32, COL.yellow, { maxW: 560 });
-        BB.button(CX - 250, 630, 500, 140, "CONTINUE", { style: "green", size: 56, id: "cont", onClick: () => BB.go(new MapScene()) });
+        BB.button(CX - 250, 630, 500, 140, "CONTINUE", { style: "green", size: 56, id: "cont", onClick: () => BB.go(new GradePickScene()) });
       } else if (st === "gcal") {
         BB.text("Everyone clap with the beeps!", CX, 360, 44, "#fff", { maxW: 620 });
         BB.text(this.gIdx >= 0 ? ["1", "2", "3", "4"][this.gIdx] : "Ready...", CX, 470, 90, COL.yellow, { font: "Rammetto One", stroke: 8 });
       } else {
         BB.text("Clap once to test!", CX, 350, 48, "#fff");
         const f = this.flash && BB.t - this.flash < 0.4;
-        BB.text(this.heard ? "Heard ".concat(this.heard, " clap").concat(this.heard > 1 ? "s" : "", "!") : "...", CX, 410, 40, f ? COL.green : COL.yellow);
+        BB.text(this.heard ? `Heard ${this.heard} clap${this.heard > 1 ? "s" : ""}!` : "...", CX, 410, 40, f ? COL.green : COL.yellow);
         BB.micMeter(CX - 165, 462);
         BB.text("Sensitivity", 1075 + 100, 630, 28, "#fff");
         BB.sensButtons(1075, 652);
-        BB.button(1310, 630, 275, 124, "CONTINUE", { style: "green", size: 44, id: "cont", onClick: () => BB.go(new MapScene()) });
+        BB.button(1310, 630, 275, 124, "CONTINUE", { style: "green", size: 44, id: "cont", onClick: () => BB.go(new GradePickScene()) });
         BB.button(1075, 780, 245, 76, "Class clap check", { size: 27, id: "gcal", onClick: () => this.groupCal() });
         BB.button(1340, 780, 245, 76, "Soft / loud check", { size: 27, id: "lcal", onClick: () => this.loudCal() });
         if (BB.MLP && BB.MLP.on && window.ClapNet && ClapNet.ready) {
           BB.button(1075, 870, 510, 60, this.mlCal ? "Clap 8 times with the ticks..." : this.mlRes || "Clap model: clap 8 times", { size: 24, id: "mlcal", onClick: () => {
-            if (this.mlCal) return;
+            if (this.mlCal)
+              return;
             this.mlCal = 1;
             BB.MLP.calibrate((ok, n) => {
               this.mlCal = 0;
@@ -252,7 +267,8 @@
           } });
         }
         const rs = [this.gRes, this.lcRes].filter(Boolean).join("  ");
-        if (rs) BB.text(rs, CX, 885, 24, COL.green, { maxW: 600 });
+        if (rs)
+          BB.text(rs, CX, 885, 24, COL.green, { maxW: 600 });
       }
       if (this.lc) {
         ctx.fillStyle = "rgba(10,20,20,.55)";
@@ -342,7 +358,8 @@
       wood(x, top + 6, 26, h - 6);
       wood(x + w - 26, top + 6, 26, h - 6);
       wood(x - 14, top - 10, w + 28, 30);
-      for (const bx of [x + 13, x + w - 13]) BB.rivet(bx, top + 5, 3.5);
+      for (const bx of [x + 13, x + w - 13])
+        BB.rivet(bx, top + 5, 3.5);
       const lx = cx + 80, ly = top + 70 + Math.sin(BB.t * 1.6) * 2;
       ctx.strokeStyle = "#222";
       ctx.lineWidth = 2;
@@ -376,7 +393,8 @@
         ctx.fill();
       }
       ctx.restore();
-      for (const bx of [x + 20, x + w - 20]) BB.rivet(bx, top + 5, 3.5);
+      for (const bx of [x + 20, x + w - 20])
+        BB.rivet(bx, top + 5, 3.5);
       if (!un) {
         const lk = BB.V2.lock;
         if (lk) {
@@ -389,6 +407,47 @@
     }
     BB.contactShadow(cx, bot, w * 0.6, 0.35);
   }
+  class GradePickScene {
+    enter() {
+      this.t0 = BB.t;
+      this.picked = BB.grade || "2";
+    }
+    update() {
+    }
+    pick(g) {
+      this.picked = g;
+      if (BB.setGrade)
+        BB.setGrade(g);
+      BB.sfx && BB.sfx.ting && BB.sfx.ting();
+    }
+    go() {
+      if (BB.setGrade)
+        BB.setGrade(this.picked || BB.grade || "2");
+      try {
+        sessionStorage.bbGradePicked = 1;
+      } catch (e) {
+      }
+      BB.go(new MapScene());
+    }
+    draw() {
+      menuBg("hub_bg", 0.2);
+      BB.panel(160, 100, 1600, 860, 44);
+      BB.text("WHO IS PLAYING?", W / 2, 190, 64, "#fff", { font: "Rammetto One", stroke: 8 });
+      BB.text("Pick the grade so the beat windows fit the whole class.", W / 2, 255, 34, COL.yellow, { stroke: 4, maxW: 1400 });
+      const G = BB.GRADES || ["K", "1", "2", "3", "4", "5", "6"], bw = 170, gap = 24, total = G.length * bw + (G.length - 1) * gap, x0 = W / 2 - total / 2, y = 340;
+      G.forEach((g, i) => {
+        const on = (this.picked || BB.grade) === g, b = g === "K" || g === "1" ? "k1" : g === "2" || g === "3" ? "m" : "u";
+        BB.button(x0 + i * (bw + gap), y, bw, 160, g, { style: on ? "green" : "cream", size: 72, font: "Rammetto One", id: "gr" + g, onClick: () => this.pick(g) });
+        BB.text(b === "k1" ? "extra help" : b === "m" ? "some help" : "on beat", x0 + i * (bw + gap) + bw / 2, y + 185, 22, on ? "#6ee678" : "#cfe8e2", { stroke: 3 });
+      });
+      BB.panel(260, 580, 1400, 220, 28);
+      BB.text("K\u20131: wider late window + bounce debounce  \xB7  2\u20133: medium help  \xB7  4\u20136: default timing", W / 2, 640, 30, "#fff", { stroke: 4, maxW: 1280 });
+      BB.text("You can change GRADE anytime on the room map (next to DAY).", W / 2, 700, 28, COL.yellow, { stroke: 4, maxW: 1280 });
+      BB.button(W / 2 - 280, 820, 560, 110, "LET'S GO!", { style: "green", size: 52, font: "Rammetto One", id: "gradego", onClick: () => this.go() });
+      BB.captionBox();
+    }
+  }
+  BB.GradePickScene = GradePickScene;
   class MapScene {
     constructor(justDone) {
       this.justDone = justDone;
@@ -396,7 +455,8 @@
     enter() {
       this.t0 = BB.t;
       this.toast = null;
-      if (this.justDone) BB.sfx.fanfare();
+      if (this.justDone)
+        BB.sfx.fanfare();
     }
     update() {
     }
@@ -408,7 +468,7 @@
         return;
       }
       if (!r.create || !r.create()) {
-        this.toast = { txt: "".concat(r.name, ": COMING SOON!"), t: BB.t };
+        this.toast = { txt: `${r.name}: COMING SOON!`, t: BB.t };
         BB.sfx.wobble();
         return;
       }
@@ -431,19 +491,21 @@
         BB.text("ROOM " + (i + 1), cx, 814, 24, COL.yellow, { stroke: 4 });
         BB.text(r.name, cx, 849, 27, "#fff", { font: "Rammetto One", stroke: 5, maxW: 230 });
         BB.text(r.sub, cx, 881, 21, "#bfe3dc", { maxW: 270 });
-        if (done) BB.star(cx + 118, 820, 15, COL.yellow, 0);
-        if (un) BB.button(cx - 120, 930, 240, 80, done ? "PLAY AGAIN" : ready ? "PLAY" : "PEEK", { style: ready ? "green" : "cream", size: 34, id: "room" + i, onClick: () => this.open(i) });
-        else BB.button(cx - 120, 930, 240, 80, "LOCKED", { size: 34, id: "room" + i, onClick: () => this.open(i) });
+        if (done)
+          BB.star(cx + 118, 820, 15, COL.yellow, 0);
+        if (un)
+          BB.button(cx - 120, 930, 240, 80, done ? "PLAY AGAIN" : ready ? "PLAY" : "PEEK", { style: ready ? "green" : "cream", size: 34, id: "room" + i, onClick: () => this.open(i) });
+        else
+          BB.button(cx - 120, 930, 240, 80, "LOCKED", { size: 34, id: "room" + i, onClick: () => this.open(i) });
       });
       if (BB.session) {
-        const L = BB.clapLog;
+        const L = BB.clapLog, gb = BB.gradeBand && BB.gradeBand(), gs = gb === "k1" ? "green" : gb === "m" ? "cream" : "cream";
         BB.panel(24, 24, 302, 76, 20);
-        BB.button(34, 108, 170, 52, BB.kMode ? "K MODE ON" : "K MODE", { size: 20, style: BB.kMode ? "green" : "cream", id: "hkmode", onClick: () => BB.setK(!BB.kMode) });
         BB.button(34, 32, 138, 60, "DAY " + BB.session.day, { size: 22, id: "hday", onClick: () => BB.session.cycleDay() });
-        BB.button(178, 32, 138, 60, "CLASS " + BB.session.cls, { size: 22, id: "hcls", onClick: () => BB.session.cycleClass() });
+        BB.button(178, 32, 138, 60, "GRADE " + BB.grade, { size: 22, style: gs, id: "hgrade", onClick: () => BB.session.cycleGrade() });
         {
           const n = L ? L.count() : 0, f = L && L.nearCap();
-          BB.text(f ? "Clap log nearly full (" + n + "): download + clear in Pause" : "Clap log: " + n + " events", 30, 184, 20, f ? "#ffd35c" : "#cfe8e2", { stroke: 4, align: "left" });
+          BB.text(f ? "Clap log nearly full (" + n + "): download + clear in Pause" : "Clap log: " + n + " events", 30, 124, 20, f ? "#ffd35c" : "#cfe8e2", { stroke: 4, align: "left" });
         }
       }
       BB.button(W - 250, 24, 226, 76, "MIC SETUP", { size: 30, id: "mic", onClick: () => BB.go(new MicScene()) });
@@ -468,14 +530,22 @@
     BB.loadVO(BB.VO_LINES || []);
     const p = new URLSearchParams(location.search);
     const ro = { skipIntro: p.has("skip"), startAt: +p.get("at") || 0, auto: p.has("auto") };
-    if (p.get("room") === "mine") BB.go(new BB.MineRoom(ro));
-    else if (p.get("room") === "smasher") BB.go(new BB.SmasherRoom(ro));
-    else if (p.get("room") === "packing") BB.go(new BB.PackingRoom(ro));
-    else if (p.get("room") === "label") BB.go(new BB.LabelRoom(ro));
-    else if (p.get("room") === "delivery") BB.go(new BB.DeliveryRoom(ro));
-    else if (p.get("room") === "map") BB.go(new MapScene());
-    else if (p.get("room") === "mic") BB.go(new MicScene());
-    else BB.go(new TitleScene());
+    if (p.get("room") === "mine")
+      BB.go(new BB.MineRoom(ro));
+    else if (p.get("room") === "smasher")
+      BB.go(new BB.SmasherRoom(ro));
+    else if (p.get("room") === "packing")
+      BB.go(new BB.PackingRoom(ro));
+    else if (p.get("room") === "label")
+      BB.go(new BB.LabelRoom(ro));
+    else if (p.get("room") === "delivery")
+      BB.go(new BB.DeliveryRoom(ro));
+    else if (p.get("room") === "map")
+      BB.go(new MapScene());
+    else if (p.get("room") === "mic")
+      BB.go(new MicScene());
+    else
+      BB.go(new TitleScene());
     BB.start();
   }
   boot();

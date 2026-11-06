@@ -14,7 +14,8 @@
     const o = [];
     let b = 0;
     seq.forEach((k, i) => {
-      for (const f of R.SUB[k]) o.push({ b: b + f, i, k, f });
+      for (const f of R.SUB[k])
+        o.push({ b: b + f, i, k, f });
       b += R.BEATS[k];
     });
     return o;
@@ -72,7 +73,8 @@
       }
       const bx0 = x0 + s * 0.86 - lw / 2, bx1 = x0 + gap * (n - 1) + s * 0.86 + lw / 2, bh = s * 0.62;
       g.fillRect(bx0, y - st, bx1 - bx0, bh);
-      if (k === "s") g.fillRect(bx0, y - st + bh * 1.7, bx1 - bx0, bh);
+      if (k === "s")
+        g.fillRect(bx0, y - st + bh * 1.7, bx1 - bx0, bh);
     } else if (k === "r") {
       g.lineWidth = lw * 1.2;
       g.lineJoin = "round";
@@ -109,7 +111,8 @@
   };
   R.note3d = (k, w, h, o = {}) => {
     const sc = 2, key = k + "|" + Math.round(w) + "|" + Math.round(h) + "|" + (o.gs || 1) + "|" + (o.ns ? o.ns.toFixed(1) : "");
-    if (n3c[key]) return n3c[key];
+    if (n3c[key])
+      return n3c[key];
     const s = (o.ns || R.noteSize(k, w, h)) * (o.gs || 1) * sc, PAD = Math.ceil(s * 0.9), cw = Math.ceil(w * sc) + PAD * 2, ch = Math.ceil(h * sc) + PAD * 2;
     const m = document.createElement("canvas");
     m.width = cw;
@@ -128,7 +131,8 @@
       mg.ellipse(0, 0, s * 0.55, s * 0.42, -0.8, 0, 7);
       mg.fill();
       mg.restore();
-    } else R.glyph(k, gx, gy, s, "#000", mg);
+    } else
+      R.glyph(k, gx, gy, s, "#000", mg);
     const c = R.COLS[k], out = document.createElement("canvas");
     out.width = cw;
     out.height = ch;
@@ -239,7 +243,8 @@
     ctx.save();
     ctx.globalAlpha = (_a = o.alpha) != null ? _a : 1;
     const fs = o.label ? Math.max(14, Math.min(21, h * 0.16)) : 0, tagH = o.label ? fs + 10 : 0, pad = o.label ? Math.max(6, h * 0.07) : 0;
-    if (o.label) h -= tagH + pad * 2;
+    if (o.label)
+      h -= tagH + pad * 2;
     if (o.shadow !== false) {
       const sw = Math.min(w * 0.46, (o.ns || R.noteSize(k, w, h)) * (k === "s" ? 4.6 : k === "e" ? 3.4 : 1.8));
       const gr = ctx.createRadialGradient(x + w / 2, y + h, 0, x + w / 2, y + h, sw);
@@ -304,8 +309,9 @@
             ctx.restore();
           }
           const g = Math.round(40 + l * 70), gg = Math.round(60 + l * 170), bb = Math.round(60 + l * 60);
-          BB.rrect(xx, y - ph / 2, ww, ph, 12, m ? BB.lg(y - ph / 2, y + ph / 2, ["#a6f5ae", "#6ee678", "#3fb45a"]) : BB.lg(y - ph / 2, y + ph / 2, ["rgb(".concat(g + 40, ",").concat(Math.min(255, gg + 40), ",").concat(bb + 30, ")"), "rgb(".concat(g, ",").concat(gg, ",").concat(bb, ")")]), cur ? COL.yellow : "rgba(235,245,240,.85)", cur ? 5 : 3);
-          if (m) BB.star(xx + ww / 2, y, 13 * ease.back(Math.min(1, m)), COL.yellow, BB.t);
+          BB.rrect(xx, y - ph / 2, ww, ph, 12, m ? BB.lg(y - ph / 2, y + ph / 2, ["#a6f5ae", "#6ee678", "#3fb45a"]) : BB.lg(y - ph / 2, y + ph / 2, [`rgb(${g + 40},${Math.min(255, gg + 40)},${bb + 30})`, `rgb(${g},${gg},${bb})`]), cur ? COL.yellow : "rgba(235,245,240,.85)", cur ? 5 : 3);
+          if (m)
+            BB.star(xx + ww / 2, y, 13 * ease.back(Math.min(1, m)), COL.yellow, BB.t);
           si++;
         });
       }
@@ -327,7 +333,8 @@
     const o = ac.createOscillator(), g = ac.createGain();
     o.type = type;
     o.frequency.setValueAtTime(f, t);
-    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+    if (f2)
+      o.frequency.exponentialRampToValueAtTime(f2, t + d);
     g.gain.setValueAtTime(1e-4, t);
     g.gain.exponentialRampToValueAtTime(pk, t + 4e-3);
     g.gain.exponentialRampToValueAtTime(1e-4, t + d);
@@ -340,13 +347,15 @@
     if (!nb) {
       nb = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
       const a = nb.getChannelData(0);
-      for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < a.length; i++)
+        a[i] = Math.random() * 2 - 1;
     }
     const s = ac.createBufferSource(), fl = ac.createBiquadFilter(), g = ac.createGain();
     s.buffer = nb;
     fl.type = type;
     fl.frequency.setValueAtTime(f, t);
-    if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + d);
+    if (f2)
+      fl.frequency.exponentialRampToValueAtTime(f2, t + d);
     fl.Q.value = q;
     g.gain.setValueAtTime(1e-4, t);
     g.gain.exponentialRampToValueAtTime(pk, t + 3e-3);
@@ -371,10 +380,12 @@
     crunch: (t = now()) => {
       nz(t, 0.35, 0.6, "lowpass", 3e3, 1, 200);
       tone("square", 90, t, 0.18, 0.25, 45);
-      for (let i = 0; i < 4; i++) tone("sine", 2600 + Math.random() * 2400, t + 0.05 + i * 0.05, 0.12, 0.06);
+      for (let i = 0; i < 4; i++)
+        tone("sine", 2600 + Math.random() * 2400, t + 0.05 + i * 0.05, 0.12, 0.06);
     },
     ting: (t = now()) => {
-      for (let i = 0; i < 3; i++) tone("sine", 3e3 + Math.random() * 1800, t + i * 0.06, 0.15, 0.07);
+      for (let i = 0; i < 3; i++)
+        tone("sine", 3e3 + Math.random() * 1800, t + i * 0.06, 0.15, 0.07);
     },
     bell: (t = now()) => {
       tone("sine", 1760, t, 0.7, 0.22);
@@ -461,24 +472,28 @@
         if (rd) {
           BB.sfx.countPulse(t, this.next % 4 === 0, 1.15);
           BB.sfx.tick(t, true, 0.55);
-        } else BB.sfx.tick(t, this.next % 4 === 0 || cl, cl ? 0.7 : 0.8);
-        if (this.next === this.base + this.L) R.turnCue(t);
+        } else
+          BB.sfx.tick(t, this.next % 4 === 0 || cl, cl ? 0.7 : 0.8);
+        if (this.next === this.base + this.L)
+          R.turnCue(t);
         this.next++;
       }
       if (!this.sched) {
         this.sched = 1;
         this.snd.forEach((s, i) => {
           const t = T0 + s.b * spb;
-          if (this.read) return;
+          if (this.read)
+            return;
           BB.sfx.block(t);
           setTimeout(() => this.voice(s), Math.max(0, (t - ac.currentTime) * 1e3));
         });
-        if (BB.debug) this.snd.forEach((s, i) => {
-          if (Math.random() < 0.93) {
-            const t = T0 + (this.L + 4 + s.b) * spb + (Math.random() - 0.5) * 0.05;
-            setTimeout(() => BB.simClap(t, 0.7), Math.max(0, (t - ac.currentTime) * 1e3 + 30));
-          }
-        });
+        if (BB.debug)
+          this.snd.forEach((s, i) => {
+            if (Math.random() < 0.93) {
+              const t = T0 + (this.L + 4 + s.b) * spb + (Math.random() - 0.5) * 0.05;
+              setTimeout(() => BB.simClap(t, 0.7), Math.max(0, (t - ac.currentTime) * 1e3 + 30));
+            }
+          });
       }
       {
         const tv = ac.currentTime - BB.visLat(), Cc = T0 + (this.L + 4) * spb;
@@ -486,13 +501,15 @@
           let l = 0;
           for (const b0 of [T0, Cc]) {
             const d = tv - (b0 + this.snd[i].b * spb);
-            if (d >= 0 && d < 0.4) l = Math.max(l, 1 - d * 2.5);
+            if (d >= 0 && d < 0.4)
+              l = Math.max(l, 1 - d * 2.5);
           }
           this.lit[i] = l;
         }
       }
       for (let i = 0; i < this.n; i++) {
-        if (this.marks[i]) this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
+        if (this.marks[i])
+          this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
       }
       const ons = BB.mic.take(), C = T0 + (this.L + 4) * spb;
       if (BB.MLP && BB.MLP.on) {
@@ -500,19 +517,23 @@
         BB.MLP.openWin("rhythm", C + Math.min(...bs) * spb - 0.12, C + Math.max(...bs) * spb + 0.18);
       }
       const G = window.GroupGate, gated = BB.mic.ok && G && !BB.debug;
-      if (window.ClapDet && this.seq.includes("s")) ClapDet.fastUntil = ac.currentTime + 0.5;
+      if (window.ClapDet && this.seq.includes("s"))
+        ClapDet.fastUntil = ac.currentTime + 0.5;
       if (window.ClapDet && ClapDet.expect && !this._gap) {
         const bs = this.snd.map((x) => x.b).sort((p, q) => p - q);
         let g = 1;
-        for (let i = 1; i < bs.length; i++) g = Math.min(g, bs[i] - bs[i - 1]);
+        for (let i = 1; i < bs.length; i++)
+          g = Math.min(g, bs[i] - bs[i - 1]);
         this._gap = Math.max(0.125, g) * spb;
       }
-      if (window.ClapDet && ClapDet.expect) ClapDet.expect(this._gap, ac.currentTime + 0.5);
+      if (window.ClapDet && ClapDet.expect)
+        ClapDet.expect(this._gap, ac.currentTime + 0.5);
       const K = window.C96;
       if (K && !this._k && K.active() && ac.currentTime > C - 0.3) {
         const bs = this.snd.map((x) => x.b).sort((p, q) => p - q);
         let g = 1;
-        for (let i = 1; i < bs.length; i++) g = Math.min(g, bs[i] - bs[i - 1]);
+        for (let i = 1; i < bs.length; i++)
+          g = Math.min(g, bs[i] - bs[i - 1]);
         this._k = K.expect(this, this.snd.map((x) => C + x.b * spb), Math.max(0.125, g) * spb) ? 1 : 2;
       }
       if (this._k === 1) {
@@ -521,8 +542,10 @@
           if (d.t != null) {
             BB.clapStats.heard++;
             BB.clapLog.add({ bpm: this.bpm, i: d.i, exp: te, on: d.t, peak: d.info && d.info.v, thr: d.info && d.info.s, res: this.got[d.i] ? "rejected-as-double" : "hit" });
-            if (!this.got[d.i]) this.hit(d.i);
-          } else BB.clapLog.add({ bpm: this.bpm, i: d.i, exp: te, peak: d.info && d.info.v, thr: d.info && d.info.s, res: d.info && d.info.r === "not-clap-shape" ? "not-clap-shape" : "miss" });
+            if (!this.got[d.i])
+              this.hit(d.i);
+          } else
+            BB.clapLog.add({ bpm: this.bpm, i: d.i, exp: te, peak: d.info && d.info.v, thr: d.info && d.info.s, res: d.info && d.info.r === "not-clap-shape" ? "not-clap-shape" : "miss" });
           this.logged = this.logged || {};
           this.logged[d.i] = 1;
         }
@@ -532,7 +555,8 @@
         const S = BB.clapStats, ph = this.phase();
         if (ph === "clap") {
           S.peak = Math.max(S.peak, BB.mic.level || 0);
-          if (dt > 0.05) S.slow++;
+          if (dt > 0.05)
+            S.slow++;
         }
       }
       for (let j = ons.length - 1; j >= 0; j--) {
@@ -553,16 +577,23 @@
           BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_b = o.v) != null ? _b : o.e, res: "rejected-as-double" });
           continue;
         }
+        {
+          const bm = BB.bounceMs ? BB.bounceMs() : 0.1;
+          if (this._lastOn != null && o.t - this._lastOn < bm)
+            continue;
+          this._lastOn = o.t;
+        }
         BB.clapStats.heard++;
-        if (BB.talking && BB.t < BB.talking.until && !BB.debug) {
+        if (BB.voBlocks ? BB.voBlocks() : BB.talking && BB.t < BB.talking.until && !BB.debug) {
           BB.clapStats.talk++;
           BB.clapLog.add({ bpm: this.bpm, on: o.t, peak: (_c = o.v) != null ? _c : o.e, res: "ignored-during-playback" });
           continue;
         }
         let best = -1, bd = 1;
         for (let i = 0; i < this.n; i++) {
-          if (this.got[i]) continue;
-          const s2 = this.snd[i], te = C + s2.b * spb, gapB = Math.min(...this.snd.filter((x, j) => j !== i).map((x) => Math.abs(x.b - s2.b)), 1), lat = G ? G.lat || 0 : 0, dd = o.t - lat - te, tol = dd < 0 ? Math.min(0.15, gapB * spb * 0.48) : Math.min(0.22, gapB * spb * 0.55), d = Math.abs(dd);
+          if (this.got[i])
+            continue;
+          const s2 = this.snd[i], te = C + s2.b * spb, gapB = Math.min(...this.snd.filter((x, j) => j !== i).map((x) => Math.abs(x.b - s2.b)), 1), lat = G ? G.lat || 0 : 0, dd = o.t - lat - te, ew = G ? G.early(spb) : 0.15, lw = G ? G.late(spb) : 0.22, tol = dd < 0 ? Math.min(ew, gapB * spb * 0.48) : Math.min(lw, gapB * spb * 0.55), d = Math.abs(dd);
           if (d < tol && d < bd) {
             bd = d;
             best = i;
@@ -581,7 +612,8 @@
             }
             BB.clapLog.add({ bpm: this.bpm, i: ni, exp: C + this.snd[ni].b * spb, on: o.t, peak: (_d = o.v) != null ? _d : o.e, res: this.got[ni] ? "rejected-as-double" : nd < 0 ? "early" : "late" });
           }
-          if (gated && o.t > C) G.stray(o.t);
+          if (gated && o.t > C)
+            G.stray(o.t);
           continue;
         }
         BB.clapLog.add({ bpm: this.bpm, i: best, exp: C + this.snd[best].b * spb, on: o.t, peak: (_e = o.v) != null ? _e : o.e, res: "hit" });
@@ -590,26 +622,33 @@
         if (gated && !o.sim && s.f === 0) {
           this.got[best] = 2;
           this.pend.push(best);
-        } else this.hit(best);
+        } else
+          this.hit(best);
       }
-      if (gated) this.pend = this.pend.filter((i) => {
-        const te = C + this.snd[i].b * spb;
-        if (ac.currentTime - 0.02 < te + G.lat + Math.max(G.W1, G.win(spb)[1]) + 0.02) return true;
-        const m = G.judge(te, false, spb);
-        if (m.ok) this.hit(i);
-        else {
-          this.got[i] = 0;
-          this.few = BB.t;
-          BB.clapLog.add({ bpm: this.bpm, i, exp: te, res: "too soft" });
-        }
-        return false;
-      });
+      if (gated)
+        this.pend = this.pend.filter((i) => {
+          const te = C + this.snd[i].b * spb;
+          if (ac.currentTime - 0.02 < te + G.lat + Math.max(G.W1, G.win(spb)[1]) + 0.02)
+            return true;
+          const m = G.judge(te, false, spb);
+          if (m.ok)
+            this.hit(i);
+          else {
+            this.got[i] = 0;
+            this.few = BB.t;
+            BB.clapLog.add({ bpm: this.bpm, i, exp: te, res: "too soft" });
+          }
+          return false;
+        });
       if (!this.done && ac.currentTime > C + this.L * spb + 0.25 && !(this._k === 1 && K.exp && K.exp.key === this && ac.currentTime < C + this.L * spb + 1.2)) {
-        if (this._k === 1 && K.exp && K.exp.key === this) K.cancel();
+        if (this._k === 1 && K.exp && K.exp.key === this)
+          K.cancel();
         this.done = true;
         const sc = this.got.filter((x) => x === 1).length / this.n;
         BB.clapStats.exp += this.n;
-        for (let i = 0; i < this.n; i++) if (this.got[i] !== 1 && !(this.logged && this.logged[i])) BB.clapLog.add({ bpm: this.bpm, i, exp: C + this.snd[i].b * spb, res: "miss" });
+        for (let i = 0; i < this.n; i++)
+          if (this.got[i] !== 1 && !(this.logged && this.logged[i]))
+            BB.clapLog.add({ bpm: this.bpm, i, exp: C + this.snd[i].b * spb, res: "miss" });
         BB.clapStats.hit += this.got.filter((x) => x === 1).length;
         this.score = sc;
         this.onDone && this.onDone(sc);
@@ -621,28 +660,37 @@
       BB.sfx.tink(void 0, 0.6);
     }
     override() {
-      if (this.done) return;
-      for (let i = 0; i < this.n; i++) if (!this.got[i]) {
-        if (!(this.logged && this.logged[i])) BB.clapLog.add({ bpm: this.bpm, i, res: "manual-override" });
-        this.got[i] = 1;
-        this.marks[i] = 0.01;
-      }
+      if (this.done)
+        return;
+      for (let i = 0; i < this.n; i++)
+        if (!this.got[i]) {
+          if (!(this.logged && this.logged[i]))
+            BB.clapLog.add({ bpm: this.bpm, i, res: "manual-override" });
+          this.got[i] = 1;
+          this.marks[i] = 0.01;
+        }
       this.done = true;
       this.score = 1;
       this.onDone && this.onDone(1);
     }
     cursor() {
       const ph = this.phase();
-      if (ph !== "clap") return -1;
+      if (ph !== "clap")
+        return -1;
       const b = this.beatNow() - this.base - this.L - 4;
-      for (let i = 0; i < this.n; i++) if (!this.got[i] && this.snd[i].b >= b - 0.12) return i;
+      for (let i = 0; i < this.n; i++)
+        if (!this.got[i] && this.snd[i].b >= b - 0.12)
+          return i;
       return -1;
     }
     draw(cx, y) {
       const ph = this.phase(), yt = ph === "ready" || ph === "clap";
-      if (yt) R.yourTurn(ph, this.beatNowV() - this.base - this.L, y);
-      if (ph === "listen" || ph === "count" && this.beatNowV() >= this.base - 1) R.listenBanner(this);
-      if (ph === "clap") R.turnFlash((this.beatNowV() - this.base - this.L - 4) * this.spb);
+      if (yt)
+        R.yourTurn(ph, this.beatNowV() - this.base - this.L, y);
+      if (ph === "listen" || ph === "count" && this.beatNowV() >= this.base - 1)
+        R.listenBanner(this);
+      if (ph === "clap")
+        R.turnFlash((this.beatNowV() - this.base - this.L - 4) * this.spb);
       if (yt) {
         ctx.save();
         ctx.translate(cx, y);
@@ -650,14 +698,17 @@
         ctx.translate(-cx, -y);
       }
       R.pills(cx, y, this.seq, { lit: this.lit, marks: this.marks, cur: this.cursor(), words: true });
-      if (yt) ctx.restore();
+      if (yt)
+        ctx.restore();
       const bn = this.beatNowV();
       let msg = "";
       if (ph === "count") {
         const n = 4 - Math.floor(bn);
         msg = n > 0 ? "Listen... " + n : "";
-      } else if (ph === "clap") msg = "CLAP THE RHYTHM!";
-      if (msg) BB.text(msg, cx, y - 125, 40, ph === "clap" ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 7 });
+      } else if (ph === "clap")
+        msg = "CLAP THE RHYTHM!";
+      if (msg)
+        BB.text(msg, cx, y - 125, 40, ph === "clap" ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 7 });
       if (ph !== "end" && bn >= 0) {
         const rd = ph === "ready", nd = rd ? 4 : this.L, tot = 4 * 120 + 3 * 24, step = (tot - 150) / (nd - 1), rel = bn - this.base, bi = rd ? Math.floor(rel - this.L) : ph === "clap" ? Math.floor(rel - this.L - 4) : ph === "listen" ? Math.floor(rel) : Math.floor(bn) % 4;
         for (let i = 0; i < nd; i++) {
@@ -666,7 +717,8 @@
           ctx.beginPath();
           ctx.arc(cx - tot / 2 + 75 + i * step, y + 62, on ? rd ? 13 : 9 : 6, 0, 7);
           ctx.fill();
-          if (rd && on && BB.q) BB.glow(cx - tot / 2 + 75 + i * step, y + 62, 40, "rgba(110,230,120,A)", 0.5);
+          if (rd && on && BB.q)
+            BB.glow(cx - tot / 2 + 75 + i * step, y + 62, 40, "rgba(110,230,120,A)", 0.5);
         }
       }
     }
@@ -696,7 +748,8 @@
   };
   R.listenResult = (cb) => {
     const S = BB.scene;
-    if (!S || BB.listenMode.v === "off") return;
+    if (!S || BB.listenMode.v === "off")
+      return;
     if (cb.lc === 0) {
       S._qStars = (S._qStars || 0) + 1;
       cb.oQuiet && cb.oQuiet();
@@ -704,7 +757,8 @@
       BB.burst && BB.burst(W / 2 + 250, 232, 16, { col: COL.yellow, kind: "star", size: 15, speed: 500, g: 300 });
       S._qFx = { t: BB.t, k: "star" };
     } else if (cb.lc >= 2 && BB.listenMode.v === "on") {
-      if (S._qStars > 0) S._qStars--;
+      if (S._qStars > 0)
+        S._qStars--;
       cb.oSneak && cb.oSneak();
       S._sneak = { t: BB.t };
       BB.sfx.glitch ? BB.sfx.glitch() : BB.sfx.zap();
@@ -765,7 +819,7 @@
     ctx.quadraticCurveTo(-8, 28, 6, 36);
     ctx.stroke();
     for (let i = 0; i < 3; i++) {
-      ctx.strokeStyle = "rgba(255,216,74,".concat(0.95 - 0.28 * i, ")");
+      ctx.strokeStyle = `rgba(255,216,74,${0.95 - 0.28 * i})`;
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.arc(-62, 0, 20 + i * 16 + t * 30 % 14, -0.7, 0.7);
@@ -779,7 +833,8 @@
     ctx.save();
     ctx.translate(sh * 0.6, 0);
     BB.rrect(mx - 6, my - 6, mw + 12, mh + 12, 22, "#0f2a2a", "#eee4cc", 3);
-    if (f > 0) BB.rrect(mx, my, Math.max(mh, mw * f), mh, 17, cr ? "#8aa39d" : BB.lg(my, my + mh, ["#9ff5b0", "#46b45a"]));
+    if (f > 0)
+      BB.rrect(mx, my, Math.max(mh, mw * f), mh, 17, cr ? "#8aa39d" : BB.lg(my, my + mh, ["#9ff5b0", "#46b45a"]));
     BB.text(cr ? lc >= 2 && BB.listenMode.v === "on" ? "TOO NOISY!" : "SHHH..." : cb.read ? "eyes on the notes" : "hands on lap \xB7 ears on", W / 2, my + mh / 2 + 2, 24, "#fff", { stroke: 4 });
     if (cr) {
       ctx.strokeStyle = "#1e2b29";
@@ -803,7 +858,8 @@
     ctx.restore();
   };
   R.turnFlash = (dt) => {
-    if (dt < 0 || dt > 0.45) return;
+    if (dt < 0 || dt > 0.45)
+      return;
     const k = 1 - dt / 0.45;
     ctx.save();
     ctx.globalAlpha = 0.55 * k;
@@ -813,7 +869,8 @@
   };
   R.drawSneak = () => {
     const S = BB.scene;
-    if (!S || !S._sneak) return;
+    if (!S || !S._sneak)
+      return;
     const t = BB.t - S._sneak.t;
     if (t > 2) {
       S._sneak = null;
@@ -850,20 +907,26 @@
     };
     let ev = ld(KEY, []), sess = ld(SKEY, []);
     const pad = (n) => String(n).padStart(2, "0"), dstr = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
-    const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"], CLS = ["K", "1", "2", "3", "4"];
+    const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"], CLS = BB.GRADES || ["K", "1", "2", "3", "4", "5", "6"];
     const today = () => {
       const w = (/* @__PURE__ */ new Date()).getDay();
       return DAYS[w >= 1 && w <= 5 ? w - 1 : 0];
     };
     let tag = { day: today(), cls: (() => {
-      const c = ld("bb_sessclass", "K");
-      return CLS.includes(c) ? c : "K";
+      const g = BB.grade;
+      if (CLS.includes(g))
+        return g;
+      const c = ld("bb_sessclass", "2");
+      return CLS.includes(c) ? c : "2";
     })() };
+    if (BB.grade !== tag.cls && BB.setGrade)
+      BB.setGrade(tag.cls);
     const curSess = () => {
       const td = dstr(/* @__PURE__ */ new Date()), l = sess[sess.length - 1];
-      if (l && l.date === td && l.day === tag.day && l.cls === tag.cls) return sess.length - 1;
+      if (l && l.date === td && l.day === tag.day && l.cls === tag.cls && l.grade === tag.cls)
+        return sess.length - 1;
       const d = /* @__PURE__ */ new Date();
-      sess.push({ id: td.replace(/-/g, "") + "-" + pad(d.getHours()) + pad(d.getMinutes()) + "-" + tag.day + "-C" + tag.cls, date: td, day: tag.day, cls: tag.cls });
+      sess.push({ id: td.replace(/-/g, "") + "-" + pad(d.getHours()) + pad(d.getMinutes()) + "-" + tag.day + "-G" + tag.cls, date: td, day: tag.day, cls: tag.cls, grade: tag.cls });
       dirty = 1;
       return sess.length - 1;
     };
@@ -876,19 +939,38 @@
       get cls() {
         return tag.cls;
       },
+      get grade() {
+        return tag.cls;
+      },
       cycleDay() {
         tag.day = DAYS[(DAYS.indexOf(tag.day) + 1) % 5];
       },
       cycleClass() {
-        tag.cls = CLS[(CLS.indexOf(tag.cls) + 1) % 5];
-        try {
-          localStorage.setItem("bb_sessclass", JSON.stringify(tag.cls));
-        } catch (e) {
-        }
+        tag.cls = CLS[(CLS.indexOf(tag.cls) + 1) % CLS.length];
+        if (BB.setGrade)
+          BB.setGrade(tag.cls);
+        else
+          try {
+            localStorage.setItem("bb_sessclass", JSON.stringify(tag.cls));
+            localStorage.setItem("bb_grade", tag.cls);
+          } catch (e) {
+          }
+      },
+      cycleGrade() {
+        BB.session.cycleClass();
+      },
+      setGrade(g) {
+        if (CLS.includes(g))
+          tag.cls = g;
       },
       set(d, c) {
-        if (DAYS.includes(d)) tag.day = d;
-        if (CLS.includes(c)) tag.cls = c;
+        if (DAYS.includes(d))
+          tag.day = d;
+        if (CLS.includes(c)) {
+          tag.cls = c;
+          if (BB.setGrade)
+            BB.setGrade(c);
+        }
       }
     };
     {
@@ -911,7 +993,8 @@
     }
     let dirty = 0, full = 0;
     const save = () => {
-      if (!dirty) return;
+      if (!dirty)
+        return;
       for (let k = 0; k < 6; k++) {
         try {
           localStorage.setItem(SKEY, JSON.stringify(sess));
@@ -921,7 +1004,8 @@
           return;
         } catch (e) {
           full = 1;
-          if (ev.length < 8) break;
+          if (ev.length < 8)
+            break;
           ev.splice(0, ev.length >> 3);
         }
       }
@@ -982,12 +1066,13 @@
         var _a, _b, _c;
         try {
           const m = BB.mic || {}, n = BB.scene && BB.scene.constructor && BB.scene.constructor.name || "";
-          ev.push([Math.round(Date.now() / 100) - T0, curSess(), ROOMN[n] || n, o.bpm || "", (_a = o.i) != null ? _a : "", ms(o.exp), ms(o.on), ms((_b = o.peak) != null ? _b : m.level), ms((_c = o.thr) != null ? _c : m.floor), Math.max(0, RES.indexOf(o.res)), playing() ? 1 : 0, BB.VERSION || "", m.clipN || 0, BB.kMode ? 1 : 0]);
-          if (ev.length > CAP) ev.splice(0, ev.length - CAP);
+          ev.push([Math.round(Date.now() / 100) - T0, curSess(), ROOMN[n] || n, o.bpm || "", (_a = o.i) != null ? _a : "", ms(o.exp), ms(o.on), ms((_b = o.peak) != null ? _b : m.level), ms((_c = o.thr) != null ? _c : m.floor), Math.max(0, RES.indexOf(o.res)), playing() ? 1 : 0, BB.VERSION || "", m.clipN || 0, BB.kMode ? 1 : 0, BB.grade || ""]);
+          if (ev.length > CAP)
+            ev.splice(0, ev.length - CAP);
           dirty = 1;
         } catch (e) {
           try {
-            ev.push([Math.round(Date.now() / 100) - T0, 0, "", o && o.bpm || "", "", "", "", "", "", Math.max(0, RES.indexOf(o && o.res)), 0, BB.VERSION || "", 0]);
+            ev.push([Math.round(Date.now() / 100) - T0, 0, "", o && o.bpm || "", "", "", "", "", "", Math.max(0, RES.indexOf(o && o.res)), 0, BB.VERSION || "", 0, 0, ""]);
             dirty = 1;
           } catch (e2) {
           }
@@ -997,11 +1082,11 @@
         return ev.map((r) => {
           var _a;
           const S = sess[r[1]] || {}, e = r[5], o = r[6];
-          return { ts: r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", s: S, room: r[2], bpm: r[3], i: r[4], exp: e === "" ? "" : e / 1e3, on: o === "" ? "" : o / 1e3, off: e !== "" && o !== "" ? o - e : "", peak: r[7] === "" ? "" : r[7] / 1e3, thr: r[8] === "" ? "" : r[8] / 1e3, res: RES[r[9]], pl: r[10], ver: r[11] || "", clip: (_a = r[12]) != null ? _a : "", k: r[13] ? 1 : 0 };
+          return { ts: r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", s: S, room: r[2], bpm: r[3], i: r[4], exp: e === "" ? "" : e / 1e3, on: o === "" ? "" : o / 1e3, off: e !== "" && o !== "" ? o - e : "", peak: r[7] === "" ? "" : r[7] / 1e3, thr: r[8] === "" ? "" : r[8] / 1e3, res: RES[r[9]], pl: r[10], ver: r[11] || "", clip: (_a = r[12]) != null ? _a : "", k: r[13] ? 1 : 0, grade: r[14] != null && r[14] !== "" ? r[14] : S.grade || S.cls || "" };
         });
       },
       csv() {
-        return "session_id,date,day,class,timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing,app_version,k_mode\n" + BB.clapLog.rows().map((r) => [r.s.id || "", r.s.date || "", r.s.day || "", r.s.cls || "", r.ts, r.room, r.bpm, r.i, r.exp, r.on, r.off, r.peak, r.thr, r.res, r.pl, r.ver, r.k].map(q).join(",")).join("\n");
+        return "session_id,date,day,class,grade,timestamp,room,bpm,beat_index,expected_s,onset_s,offset_ms,peak_level,threshold,result,game_audio_playing,app_version,k_mode\n" + BB.clapLog.rows().map((r) => [r.s.id || "", r.s.date || "", r.s.day || "", r.s.cls || "", r.grade || "", r.ts, r.room, r.bpm, r.i, r.exp, r.on, r.off, r.peak, r.thr, r.res, r.pl, r.ver, r.k].map(q).join(",")).join("\n");
       },
       summaryCsv() {
         const micInfo = () => {
@@ -1019,28 +1104,35 @@
           const k = (r.s.id || "") + "|" + r.room;
           let a = g.get(k);
           if (!a) {
-            a = { s: r.s, room: r.room, c: {}, n: 0, offs: [], first: r.ts, last: r.ts, c0: null, c1: null, ver: "" };
+            a = { s: r.s, room: r.room, c: {}, n: 0, offs: [], first: r.ts, last: r.ts, c0: null, c1: null, ver: "", grade: r.grade || r.s.grade || r.s.cls || "" };
             g.set(k, a);
           }
           a.n++;
           a.c[r.res] = (a.c[r.res] || 0) + 1;
           a.last = r.ts;
-          if (r.ver) a.ver = r.ver;
-          if (r.k) a.k = 1;
+          if (r.ver)
+            a.ver = r.ver;
+          if (r.k)
+            a.k = 1;
+          if (r.grade)
+            a.grade = r.grade;
           if (r.clip !== "") {
-            if (a.c0 == null) a.c0 = r.clip;
+            if (a.c0 == null)
+              a.c0 = r.clip;
             a.c1 = r.clip;
           }
-          if (r.res === "hit" && r.off !== "") a.offs.push(r.off);
+          if (r.res === "hit" && r.off !== "")
+            a.offs.push(r.off);
         }
         const med = (x) => {
-          if (!x.length) return "";
+          if (!x.length)
+            return "";
           x = x.slice().sort((a, b) => a - b);
           return x[x.length >> 1];
         };
-        return "session_id,date,day,class,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames,not_clap_shape,app_version,manual_override,k_mode\n" + [...g.values()].map((a) => {
+        return "session_id,date,day,class,grade,room,first_event,last_event,events,hits,misses,early,late,too_soft,ignored_during_playback,rejected_double,clap_during_listen,hit_rate,median_hit_offset_ms,mic_echo_cancel,mic_noise_supp,mic_auto_gain,mic_rate,mic_clipped_frames,not_clap_shape,app_version,manual_override,k_mode\n" + [...g.values()].map((a) => {
           const c = (k) => +(a.c[k] || 0), h = c("hit"), den = h + c("miss") + c("too soft") + c("not-clap-shape") + c("early") + c("late");
-          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs), ...micInfo(), a.c0 == null ? "" : Math.max(0, a.c1 - a.c0), c("not-clap-shape"), a.ver, Number(c("manual-override")) || 0, a.k ? 1 : 0].map(q).join(",");
+          return [a.s.id || "", a.s.date || "", a.s.day || "", a.s.cls || "", a.grade || a.s.grade || a.s.cls || "", a.room, a.first, a.last, a.n, h, c("miss"), c("early"), c("late"), c("too soft"), c("ignored-during-playback"), c("rejected-as-double"), c("clap_during_listen"), den ? (h / den).toFixed(3) : "", med(a.offs), ...micInfo(), a.c0 == null ? "" : Math.max(0, a.c1 - a.c0), c("not-clap-shape"), a.ver, Number(c("manual-override")) || 0, a.k ? 1 : 0].map(q).join(",");
         }).join("\n");
       },
       download() {
@@ -1056,7 +1148,9 @@
         sess = [];
         dirty = 1;
         save();
-        if (BB.clapStats) for (const k in BB.clapStats) BB.clapStats[k] = 0;
+        if (BB.clapStats)
+          for (const k in BB.clapStats)
+            BB.clapStats[k] = 0;
       }
     };
   }
@@ -1068,7 +1162,7 @@
       const g = c.getContext("2d");
       for (let i = 0; i < 1400; i++) {
         const v = Math.random();
-        g.fillStyle = v < 0.5 ? "rgba(120,95,60,".concat(Math.random() * 0.06, ")") : "rgba(255,255,255,".concat(Math.random() * 0.12, ")");
+        g.fillStyle = v < 0.5 ? `rgba(120,95,60,${Math.random() * 0.06})` : `rgba(255,255,255,${Math.random() * 0.12})`;
         g.fillRect(Math.random() * 128, Math.random() * 128, 1 + Math.random() * 3, 1);
       }
       paperPat = ctx.createPattern(c, "repeat");
@@ -1098,11 +1192,12 @@
     }
   };
   R.turnBorder = (cl, pu) => {
-    if (pu == null) pu = 0.5 + 0.5 * Math.sin(BB.t * Math.PI * 2 * 1.4);
+    if (pu == null)
+      pu = 0.5 + 0.5 * Math.sin(BB.t * Math.PI * 2 * 1.4);
     ctx.save();
     const bw = cl ? 26 : 16;
     ctx.lineWidth = bw;
-    ctx.strokeStyle = cl ? "rgba(110,230,120,".concat(0.55 + 0.4 * pu, ")") : "rgba(255,224,102,".concat(0.4 + 0.3 * pu, ")");
+    ctx.strokeStyle = cl ? `rgba(110,230,120,${0.55 + 0.4 * pu})` : `rgba(255,224,102,${0.4 + 0.3 * pu})`;
     ctx.shadowColor = cl ? "#6ee678" : "#ffe066";
     ctx.shadowBlur = 40;
     ctx.strokeRect(bw / 2, bw / 2, W - bw, H - bw);
@@ -1113,7 +1208,7 @@
     ctx.save();
     const bw = cl ? 30 : 20;
     ctx.lineWidth = bw;
-    ctx.strokeStyle = cl ? "rgba(110,230,120,".concat(0.5 + 0.45 * pu, ")") : "rgba(255,224,102,".concat(0.45 + 0.45 * pu, ")");
+    ctx.strokeStyle = cl ? `rgba(110,230,120,${0.5 + 0.45 * pu})` : `rgba(255,224,102,${0.45 + 0.45 * pu})`;
     ctx.shadowColor = cl ? "#6ee678" : "#ffe066";
     ctx.shadowBlur = 50 + 40 * pu;
     ctx.strokeRect(bw / 2, bw / 2, W - bw, H - bw);
@@ -1157,7 +1252,8 @@
       ctx.save();
       ctx.translate(rx, ry);
       ctx.scale(-sd, 1);
-      if (BB.IMG && BB.IMG.sprocket) BB.sprite("sprocket", 0, 0, 150, { parts: false });
+      if (BB.IMG && BB.IMG.sprocket)
+        BB.sprite("sprocket", 0, 0, 150, { parts: false });
       ctx.restore();
     }
   };
@@ -1176,26 +1272,29 @@
     g.translate(x, y);
     g.scale(1, 0.16);
     const gr = g.createRadialGradient(0, 0, 0, 0, 0, rw);
-    gr.addColorStop(0, "rgba(10,5,2,".concat(a, ")"));
-    gr.addColorStop(0.6, "rgba(10,5,2,".concat(a * 0.5, ")"));
+    gr.addColorStop(0, `rgba(10,5,2,${a})`);
+    gr.addColorStop(0.6, `rgba(10,5,2,${a * 0.5})`);
     gr.addColorStop(1, "rgba(10,5,2,0)");
     g.fillStyle = gr;
     g.fillRect(-rw, -rw, 2 * rw, 2 * rw);
     g.restore();
   };
   R.lampGlow = (pts, t) => {
-    if (!BB.q) return;
+    if (!BB.q)
+      return;
     for (const [x, y, s] of pts) {
       BB.glow(x, y + 30, 180 * (s || 1), "rgba(255,220,150,A)", 0.13 + 0.03 * Math.sin(t * 2.3 + x));
     }
   };
   R.motes = (n) => {
     const a = [];
-    for (let i = 0; i < n; i++) a.push({ x: Math.random() * W, y: Math.random() * H, s: 1 + Math.random() * 2.5, v: 6 + Math.random() * 14, p: Math.random() * 6 });
+    for (let i = 0; i < n; i++)
+      a.push({ x: Math.random() * W, y: Math.random() * H, s: 1 + Math.random() * 2.5, v: 6 + Math.random() * 14, p: Math.random() * 6 });
     return a;
   };
   R.drawMotes = (m, dt, t) => {
-    if (!BB.q) return;
+    if (!BB.q)
+      return;
     ctx.fillStyle = "rgba(255,240,200,.28)";
     for (const d of m) {
       d.y -= d.v * dt;
@@ -1241,7 +1340,8 @@
   const R = BB.R;
   let L = null, grain = null;
   function grainPat(g) {
-    if (grain) return g.createPattern(grain, "repeat");
+    if (grain)
+      return g.createPattern(grain, "repeat");
     const c = document.createElement("canvas");
     c.width = c.height = 160;
     const x = c.getContext("2d");

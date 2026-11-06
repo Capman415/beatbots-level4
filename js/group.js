@@ -10,9 +10,10 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   // beep test). Kids clap to the beat they HEAR, so every window is centred on beat+lat. At fast tempos kids also
   // drag a little, so the late side of the window is wider than the early side.
   lat:0,LAT_BASE:.04,setLat(measured){this.lat=measured==null?0:Math.min(.25,Math.max(0,measured-this.LAT_BASE))},
-  early(spb){return BB.kMode?Math.min(.17,spb*.36):Math.min(.12,spb*.28)},late(spb){return BB.kMode?Math.min(.32,spb*.6):Math.min(.18,spb*.4)},/* v14.5 K mode: ~1.4x early, ~1.8x late */// v13.2: ~-120/+180 ms at 100 bpm (group claps of young kids drag)
+  /* v14.5.3 grade bands: K–1 ~1.8x late / ~1.4x early; 2–3 ~1.4x late; 4–6 default */
+  early(spb){const b=BB.gradeBand&&BB.gradeBand();return b==='k1'?Math.min(.17,spb*.36):b==='m'?Math.min(.14,spb*.32):Math.min(.12,spb*.28)},late(spb){const b=BB.gradeBand&&BB.gradeBand();return b==='k1'?Math.min(.32,spb*.6):b==='m'?Math.min(.25,spb*.5):Math.min(.18,spb*.4)},// v13.2: ~-120/+180 ms at 100 bpm (group claps of young kids drag)
   inTol(dt,spb){const d=dt-this.lat;return d>=-this.early(spb)&&d<=this.late(spb)},
-  win(spb){return BB.kMode?[-Math.min(.17,spb*.34),Math.min(.34,spb*.62)]:[-Math.min(.12,spb*.26),Math.min(.2,spb*.44)]},
+  win(spb){const b=BB.gradeBand&&BB.gradeBand();return b==='k1'?[-Math.min(.17,spb*.34),Math.min(.34,spb*.62)]:b==='m'?[-Math.min(.14,spb*.3),Math.min(.28,spb*.55)]:[-Math.min(.12,spb*.26),Math.min(.2,spb*.44)]},
   K_FLOOR:.5,          // window energy must exceed this many "quiet windows"
   K_SINGLE:1.6,         // ... and this many single stray claps
   K_GROUP:.15,          // ... and this fraction of the learned/calibrated group level
@@ -49,7 +50,7 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
   // v13.2 quiet-mic scale: low-gain USB mics put whole-class claps 10-20 dB lower, so the absolute parts of the bar shrink with
   // this mic's median clap peak (below -40 dBFS); the floor-relative part still keeps voice/noise out.
   absScale(){const p=this.loud.peaks;if(p.length<6)return 1;const a=[...p].sort((x,y)=>x-y);return Math.min(1,Math.max(.1,Math.pow(10,(a[a.length>>1]+40)/20)))},
-  onsetThr(floor,sens,soft){const k=this.absScale(),kk=BB.kMode?.65:1,t=kk*Math.max(floor*(BB.kMode?1.6:this.ONSET_K)+this.ONSET_ADD*k,this.ONSET_MIN*k)/(sens||1);
+  onsetThr(floor,sens,soft){const b=BB.gradeBand&&BB.gradeBand(),k=this.absScale(),kk=b==='k1'?.65:b==='m'?.82:1,fk=b==='k1'?1.6:b==='m'?1.9:this.ONSET_K,t=kk*Math.max(floor*fk+this.ONSET_ADD*k,this.ONSET_MIN*k)/(sens||1);
     return soft?Math.min(t,Math.max(floor*1.6,this.rmsForLvl(this.SOFT_BAR,sens))):t},
   reset(){this.hist.length=0},
   hf(buf){let s=0;for(let i=2;i<buf.length;i++){const d=buf[i]-2*buf[i-1]+buf[i-2];s+=d*d}return s/(buf.length-2)},
@@ -66,13 +67,13 @@ const G={hist:[],floor:1e-9,single:0,singleN:0,group:0,groupN:0,cal:0,sensMul:1,
     const g=this.cal&&this.group?Math.min(this.cal,this.group):(this.cal||this.group);if(g)thr=Math.max(thr,g*this.K_GROUP);return thr/this.sensMul},
   // decide one beat; tc = expected clap time on the mic clock
   judge(tc,soft,spb){tc+=this.lat;const[w0,w1]=spb?this.win(spb):[this.W0,this.W1];const m=this.measure(tc+w0,tc+w1,soft?1.05:1.5);let thr=(soft?Math.pow(this.floor,this.PW)*(w1-w0)*this.K_FLOOR*.35/this.sensMul:this.thresh()*(w1-w0)/(this.W1-this.W0));// piano: the onset already passed the soft-bar test; only demand it beats the room floor
-    if(BB.kMode)thr*=.6;m.ok=m.E>thr&&m.dur>=(soft?this.MIN_DUR*.6:this.MIN_DUR);m.thr=thr;
+    const gb=BB.gradeBand&&BB.gradeBand();if(gb==='k1')thr*=.6;else if(gb==='m')thr*=.8;m.ok=m.E>thr&&m.dur>=(soft?(gb==='k1'?this.MIN_DUR*.6:this.MIN_DUR*.8):this.MIN_DUR);m.thr=thr;
     if(m.ok&&!soft){this.group=this.groupN?this.group+(m.E-this.group)*(m.E>this.group?.2:.3):m.E;this.groupN++}
     return m},
   // a stray onset well away from any beat teaches us what one or two kids sound like here
   // beat tolerance and stray test scale with tempo: at Allegro (145 bpm, 0.41 s/beat) a slightly late GROUP clap
   // must never be mistaken for a lone stray, or it teaches the gate that the group is 'single-kid' loud.
-  tol(spb){return BB.kMode?Math.min(.3,spb*.5):Math.min(.17,spb*.36)},
+  tol(spb){const b=BB.gradeBand&&BB.gradeBand();return b==='k1'?Math.min(.3,spb*.5):b==='m'?Math.min(.24,spb*.45):Math.min(.17,spb*.36)},
   isStray(dt,spb){let d=(dt-this.lat)%spb;if(d<0)d+=spb;return d>=this.late(spb)+.05&&d<=spb-this.early(spb)-.05},// v12.6: measured from the PREVIOUS beat, so a dragging group clap is never a 'stray'
   stray(t){const m=this.measure(t-.03,t+.1);if(m.E<=0)return;if(this.groupN>=2&&m.E>this.group*.35)return;// v12.6: a dragging GROUP clap (big energy) is not a stray kid - don't let it raise the bar
     this.single=this.singleN?Math.max(this.single*.9+m.E*.1,Math.min(this.single,m.E)):m.E;this.singleN++},

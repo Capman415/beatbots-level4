@@ -32,7 +32,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     const s = Math.min(1, (BB.dpr || 1) * (ctx.canvas.width / (BB.dpr || 1)) / W * 1.15) || 0.5;
     let e = SPR.get(key);
     if (!e || e.s !== s) {
-      if (SPR.size > 80) SPR.clear();
+      if (SPR.size > 80)
+        SPR.clear();
       const c = document.createElement("canvas");
       c.width = Math.max(1, Math.ceil(w * s));
       c.height = Math.max(1, Math.ceil(h * s));
@@ -87,13 +88,15 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     } catch (e) {
     }
     const q = new URLSearchParams(location.search);
-    if (q.has("fixed")) return ORDERS;
+    if (q.has("fixed"))
+      return ORDERS;
     let seed = q.has("seed") ? +q.get("seed") || 1 : Date.now() % 2147483646 + 1;
     const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
     let pick;
     for (let n = 0; n < 6; n++) {
       pick = POOL.map((p) => Math.floor(rnd() * p.seqs.length));
-      if (!last || pick.some((v, i) => v !== last[i])) break;
+      if (!last || pick.some((v, i) => v !== last[i]))
+        break;
     }
     try {
       localStorage.setItem("bb_sm_last", JSON.stringify(pick));
@@ -124,7 +127,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       } else {
         const kk = ks[Math.min(4, st + 1)];
         const m = st === 0 ? 2 : st === 1 ? 2 : 1;
-        for (let i = 0; i < m; i++) R.tile(kk, -60 + (i - (m - 1) / 2) * 140 * Math.min(1, (f - 0.3) * 4), -20, 120, 80);
+        for (let i = 0; i < m; i++)
+          R.tile(kk, -60 + (i - (m - 1) / 2) * 140 * Math.min(1, (f - 0.3) * 4), -20, 120, 80);
       }
       BB.text(R.NAME[k] + "  \u2192  " + (SMASH[k] ? SMASH[k].map((z) => R.NAME[z]).join(" + ") : ""), 0, 140, 30, "#fff", { stroke: 4 });
       ctx.restore();
@@ -156,8 +160,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       this.state = "load";
       R.loadImgs([["smash_bg", "jpg"], ["press", "png"], ["hammer", "png"], ["customer", "png"], ["basket", "png"]]).then(() => {
         this.static = this.bake();
-        if (this.o.skipIntro || this.o.startAt) this.beginOrder();
-        else this.startIntro();
+        if (this.o.skipIntro || this.o.startAt)
+          this.beginOrder();
+        else
+          this.startIntro();
       });
       BB.mic.take();
     }
@@ -171,7 +177,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       const g = c.getContext("2d");
       g.scale(s, s);
       const V = BB.V2;
-      if (V.smash_bg) g.drawImage(V.smash_bg, 0, 0, W, H);
+      if (V.smash_bg)
+        g.drawImage(V.smash_bg, 0, 0, W, H);
       const gr = g.createRadialGradient(PX, FLOOR, 40, PX, FLOOR, 700);
       gr.addColorStop(0, "rgba(255,220,160,.18)");
       gr.addColorStop(1, "rgba(255,220,160,0)");
@@ -194,7 +201,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         g.closePath();
         g.fill();
       }
-      if (V.press) g.drawImage(V.press, PL, PT, PW, PH);
+      if (V.press)
+        g.drawImage(V.press, PL, PT, PW, PH);
       {
         const cx = PL + 339 * PS, cy = PT + 113 * PS, pw = (428 - 250) * PS - 14;
         g.textAlign = "center";
@@ -215,7 +223,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         fit("4000", 14, cy + 12 * PS, "#b5482a");
       }
       R.shadow(g, CART.x, CART.base, 190, 0.55);
-      if (V.cart) g.drawImage(V.cart, CART.x - 190, CART.base - 225, 380, 225);
+      if (V.cart)
+        g.drawImage(V.cart, CART.x - 190, CART.base - 225, 380, 225);
       return c;
     }
     // ---------- flow ----------
@@ -275,16 +284,19 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       if (this.oi === 0) {
         this.cardT = BB.t;
         setTimeout(() => BB.scene === this && BB.say("sm_how"), 2500);
-      } else if (O.rush) BB.say("sm_rush");
+      } else if (O.rush)
+        BB.say("sm_rush");
       else if (O.rest && !this.said.rest) {
         this.said.rest = 1;
         BB.say("sm_rest");
-      } else BB.say("sm_order");
+      } else
+        BB.say("sm_order");
       BB.sfx.bleep();
     }
     // ---------- actions ----------
     pick(k) {
-      if (this.state !== "order" && this.state !== "smashing") return;
+      if (this.state !== "order" && this.state !== "smashing")
+        return;
       if (k !== "w" && !this.inv[k]) {
         BB.sfx.bonk();
         this.empty = { k, t: BB.t };
@@ -304,7 +316,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         this.busy = { t: BB.t, txt: "You can't smash silence!" };
         return;
       }
-      if (k !== "w") this.inv[k]--;
+      if (k !== "w")
+        this.inv[k]--;
       const from = k === "w" ? [CART.x, CART.base - 200] : [BX[KINDS.indexOf(k)], BASE - 60];
       this.fly.push({ k, x0: from[0], y0: from[1], x1: PX, y1: ANVIL - 36, t0: BB.t, d: 0.45, end: () => {
         this.anvil = { k, t: BB.t };
@@ -316,10 +329,11 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       const used = R.len(this.tray), n = R.BEATS[k];
       if (used + n > 4) {
         BB.sfx.boing();
-        this.busy = { t: BB.t, txt: "Too big! ".concat(n, " beats > ").concat(4 - used, " left") };
+        this.busy = { t: BB.t, txt: `Too big! ${n} beats > ${4 - used} left` };
         return;
       }
-      if (k !== "w") this.inv[k]--;
+      if (k !== "w")
+        this.inv[k]--;
       const from = k === "w" ? [CART.x, CART.base - 200] : [BX[KINDS.indexOf(k)], BASE - 60], cx = this.slotX(used) + 60;
       this.tray.push({ k, t: BB.t, pending: 1 });
       const it = this.tray[this.tray.length - 1];
@@ -335,9 +349,11 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       return n * 132 - 12;
     }
     untray(i) {
-      if (this.state !== "order") return;
+      if (this.state !== "order")
+        return;
       const it = this.tray[i];
-      if (!it || it.pending) return;
+      if (!it || it.pending)
+        return;
       if (this.scrambled()) {
         this.swapTap(i);
         return;
@@ -347,11 +363,13 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         return;
       }
       this.tray.splice(i, 1);
-      if (it.k !== "w") this.inv[it.k]++;
+      if (it.k !== "w")
+        this.inv[it.k]++;
       BB.sfx.pop();
     }
     smash() {
-      if (!this.anvil || this.hamV) return;
+      if (!this.anvil || this.hamV)
+        return;
       const k = this.anvil.k;
       const slow = k === "e" && this.firstTika;
       this.hamV = { t: BB.t, d: slow ? 1.6 : 0.16, slow, k };
@@ -379,7 +397,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       this.anvil = null;
       BB.burst(PX, ANVIL - 20, slow ? 40 : 18, { cols: ["#ffe066", "#fff", "#ffb040"], kind: "spark", size: 10, speed: slow ? 900 : 600, g: 600 });
       if (k === "s") {
-        for (let i = 0; i < 26; i++) this.crumbs.push({ x: PX + (Math.random() - 0.5) * 260, y: ANVIL - 6 - Math.random() * 8, r: Math.random() * 6.3, s: 6 + Math.random() * 10, c: R.COLS.s[Math.random() * 3 | 0] });
+        for (let i = 0; i < 26; i++)
+          this.crumbs.push({ x: PX + (Math.random() - 0.5) * 260, y: ANVIL - 6 - Math.random() * 8, r: Math.random() * 6.3, s: 6 + Math.random() * 10, c: R.COLS.s[Math.random() * 3 | 0] });
         this.mess = BB.t;
         if (!this.said.oops) {
           this.said.oops = 1;
@@ -402,7 +421,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       if (slow) {
         this.fan = { t: BB.t };
         setTimeout(() => {
-          if (BB.scene !== this) return;
+          if (BB.scene !== this)
+            return;
           BB.say("sm_tika");
           this.echo = { t: BB.t + 2.6 };
           setTimeout(() => BB.scene === this && this.chant(), 2600);
@@ -421,10 +441,13 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     chant() {
       const t = BB.ac.currentTime + 0.3, spb = 60 / 84;
       BB.say("sm_echo", { overlap: true });
-      for (let r = 0; r < 2; r++) for (let i = 0; i < 4; i++) BB.sfx.block(t + 1.2 + r * spb * 2 + i * spb / 4, 0.8);
+      for (let r = 0; r < 2; r++)
+        for (let i = 0; i < 4; i++)
+          BB.sfx.block(t + 1.2 + r * spb * 2 + i * spb / 4, 0.8);
     }
     sweep() {
-      if (!this.crumbs.length) return;
+      if (!this.crumbs.length)
+        return;
       BB.sfx.sweep();
       this.sweepT = BB.t;
       this.fly.push({ k: "s", x0: PX, y0: ANVIL - 30, x1: BX[3], y1: BASE - 60, t0: BB.t + 0.4, d: 0.6, arc: 200, end: () => {
@@ -465,7 +488,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.fill();
         ctx.restore();
       }
-      if (ready && hq) BB.glow(0, -40, 140, "rgba(255,210,120,A)", 0.1 + 0.05 * Math.sin(t * 5));
+      if (ready && hq)
+        BB.glow(0, -40, 140, "rgba(255,210,120,A)", 0.1 + 0.05 * Math.sin(t * 5));
       const bw = 88, bt = -22, bb = 12, ry = 18;
       const base = () => {
         ctx.beginPath();
@@ -558,7 +582,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       if (fl > 0) {
         const sx = -DR + (1 - fl) * DR * 2.2, g = ctx.createLinearGradient(sx - 30, 0, sx + 30, 0);
         g.addColorStop(0, "rgba(255,230,160,0)");
-        g.addColorStop(0.5, "rgba(255,235,170,".concat(0.45 * fl, ")"));
+        g.addColorStop(0.5, `rgba(255,235,170,${0.45 * fl})`);
         g.addColorStop(1, "rgba(255,230,160,0)");
         ctx.fillStyle = g;
         ctx.fillRect(-DR, -DH, 2 * DR, DH + lr);
@@ -629,9 +653,12 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         this.busy = { t: BB.t, txt: "Swap the notes back to match the ticket first!" };
         return;
       }
-      if (this.prank && this.prank.ph === "fixed") return;
-      if (this.state === "order" && R.len(this.tray) >= 4 && !this.tray.some((x) => x.pending)) this.ringT = BB.t;
-      if (this.state !== "order" || R.len(this.tray) < 4 || this.tray.some((x) => x.pending)) return;
+      if (this.prank && this.prank.ph === "fixed")
+        return;
+      if (this.state === "order" && R.len(this.tray) >= 4 && !this.tray.some((x) => x.pending))
+        this.ringT = BB.t;
+      if (this.state !== "order" || R.len(this.tray) < 4 || this.tray.some((x) => x.pending))
+        return;
       BB.sfx.bell();
       if (this.tray.some((x) => x.k === "x")) {
         this.tossStatic(this.tray.findIndex((x) => x.k === "x"));
@@ -660,8 +687,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       }
       const keep = [];
       for (const it of this.tray) {
-        if (wantAt[b] === it.k && keep.length === this.tray.indexOf(it)) keep.push(it);
-        else if (it.k !== "w") this.fly.push({ k: it.k, x0: this.slotX(b) + this.slotW(R.BEATS[it.k]) / 2, y0: TRAY.y + 110, x1: BX[KINDS.indexOf(it.k)], y1: BASE - 60, t0: BB.t + 0.4, d: 0.6, arc: 200, end: () => this.inv[it.k]++ });
+        if (wantAt[b] === it.k && keep.length === this.tray.indexOf(it))
+          keep.push(it);
+        else if (it.k !== "w")
+          this.fly.push({ k: it.k, x0: this.slotX(b) + this.slotW(R.BEATS[it.k]) / 2, y0: TRAY.y + 110, x1: BX[KINDS.indexOf(it.k)], y1: BASE - 60, t0: BB.t + 0.4, d: 0.6, arc: 200, end: () => this.inv[it.k]++ });
         b += R.BEATS[it.k];
       }
       this.tray = keep;
@@ -687,12 +716,16 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       }
     }
     manualOverride() {
-      if (BB.t - this.lastOverride < 0.5) return;
+      if (BB.t - this.lastOverride < 0.5)
+        return;
       this.lastOverride = BB.t;
       this.ovPop = BB.t;
-      if (this.state === "clap" && this.cb) this.cb.override();
-      else if (this.state === "order" && this.scrambled()) this.fixOrder();
-      else if (this.state === "order" && this.anvil) this.smash();
+      if (this.state === "clap" && this.cb)
+        this.cb.override();
+      else if (this.state === "order" && this.scrambled())
+        this.fixOrder();
+      else if (this.state === "order" && this.anvil)
+        this.smash();
     }
     // v12.2 prank: once the class has built the order right, Static Jr. zaps the tray and SCRAMBLES the beats.
     // The class compares with the ticket and taps two notes to swap them; when it matches again he gets bonked and runs.
@@ -706,7 +739,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       let a = this.tray.slice();
       for (let n = 0; n < 20; n++) {
         a = this.tray.slice().sort(() => Math.random() - 0.5);
-        if (a.map((x) => x.k).join() !== want) break;
+        if (a.map((x) => x.k).join() !== want)
+          break;
       }
       this.tray = a;
       this.zapT = BB.t;
@@ -732,7 +766,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       this.checkFixed();
     }
     checkFixed() {
-      if (this.tray.map((x) => x.k).join() !== this.O.seq.join()) return;
+      if (this.tray.map((x) => x.k).join() !== this.O.seq.join())
+        return;
       const p = this.prank;
       BB.sfx.ding();
       this.fly.push({ k: "x", x0: TRAY.x + TRAY.w / 2, y0: TRAY.y + 110, x1: p.x, y1: FLOOR - 150, t0: BB.t, d: 0.5, arc: 300, end: () => {
@@ -757,14 +792,17 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       }
       if (p.ph === "wait") {
         p.x = JRX + Math.sin(BB.t * 6) * 6;
-        if (BB.t - p.t2 > 25) this.fixOrder();
+        if (BB.t - p.t2 > 25)
+          this.fixOrder();
       }
       if (p.ph === "hit") {
-        if (BB.t - p.t3 > 1.5) p.ph = "run";
+        if (BB.t - p.t3 > 1.5)
+          p.ph = "run";
       }
       if (p.ph === "run") {
         p.x += dt * 1100;
-        if (p.x > 2200) p.ph = "done";
+        if (p.x > 2200)
+          p.ph = "done";
       }
     }
     fixOrder() {
@@ -801,7 +839,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       BB.ensureMic();
     }
     next() {
-      if (BB.groove.on) BB.groove.sync(BB.ac.currentTime + 0.05, 0.6);
+      if (BB.groove.on)
+        BB.groove.sync(BB.ac.currentTime + 0.05, 0.6);
       this.done++;
       this.oi++;
       this.tray = [];
@@ -815,52 +854,65 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           BB.save.done.push("smasher");
           localStorage.setItem("bb4", JSON.stringify(BB.save));
         }
-      } else this.beginOrder();
+      } else
+        this.beginOrder();
     }
     // pointer: drag a basket straight onto the press or the tray (taps are handled by buttons)
     pdown(p) {
-      if (this.state !== "order") return false;
+      if (this.state !== "order")
+        return false;
       const k = this.hitBasket(p);
-      if (!k) return false;
+      if (!k)
+        return false;
       this.drag = { k, x0: p.x, y0: p.y };
       return true;
     }
     pup(p) {
       const d = this.drag;
       this.drag = null;
-      if (!d) return;
+      if (!d)
+        return;
       if (Math.hypot(p.x - d.x0, p.y - d.y0) < 30) {
         BB.sfx.click();
         this.pick(d.k);
         return;
       }
-      if (d.k !== "w" && !this.inv[d.k]) return;
-      if (Math.abs(p.x - PX) < PW / 2 && p.y > PT && p.y < FLOOR) this.toPress(d.k);
-      else if (p.x > TRAY.x && p.y > TRAY.y - 60 && p.y < TRAY.y + TRAY.h) this.toTray(d.k);
+      if (d.k !== "w" && !this.inv[d.k])
+        return;
+      if (Math.abs(p.x - PX) < PW / 2 && p.y > PT && p.y < FLOOR)
+        this.toPress(d.k);
+      else if (p.x > TRAY.x && p.y > TRAY.y - 60 && p.y < TRAY.y + TRAY.h)
+        this.toTray(d.k);
     }
     hitBasket(p) {
       var _a;
-      if (Math.abs(p.x - CART.x) < 190 && p.y > CART.base - 322 && p.y < CART.base) return "w";
+      if (Math.abs(p.x - CART.x) < 190 && p.y > CART.base - 322 && p.y < CART.base)
+        return "w";
       for (let i = 0; i < 5; i++) {
-        if (i === 4 && !((_a = this.O) == null ? void 0 : _a.rest)) continue;
-        if (Math.abs(p.x - BX[i]) < 62 && p.y > BASE - 150 && p.y < BASE + 50) return KINDS[i];
+        if (i === 4 && !((_a = this.O) == null ? void 0 : _a.rest))
+          continue;
+        if (Math.abs(p.x - BX[i]) < 62 && p.y > BASE - 150 && p.y < BASE + 50)
+          return KINDS[i];
       }
       return null;
     }
     update(dt) {
       BB.dt = dt;
-      if (BB.keys.includes(" ")) this.manualOverride();
+      if (BB.keys.includes(" "))
+        this.manualOverride();
       if (BB.keys.includes("p")) {
         this.pause();
         return;
       }
       if (this.state === "intro") {
         this.intro();
-        if (BB.keys.includes("s")) this.skipIntro();
+        if (BB.keys.includes("s"))
+          this.skipIntro();
       }
       if (this.hamV) {
         const h = this.hamV, t = (BB.t - h.t) / h.d;
-        if (t < 1) this.ham = ease.inOut(t) * 0.4 + t * t * 0.6;
+        if (t < 1)
+          this.ham = ease.inOut(t) * 0.4 + t * t * 0.6;
         else if (!h.hit) {
           h.hit = 1;
           this.ham = 1;
@@ -870,7 +922,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         if (h.hit) {
           const u = (BB.t - h.up) / 0.5;
           this.ham = 1 - ease.inOut(clamp(u, 0, 1));
-          if (u >= 1) this.hamV = null;
+          if (u >= 1)
+            this.hamV = null;
         }
       }
       {
@@ -879,7 +932,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           const nb = g.t0 + Math.ceil((now - g.t0 + 0.17) / g.spb) * g.spb;
           if (now >= nb - 0.17 && this.lastBeat !== nb) {
             this.lastBeat = nb;
-            if (this.anvil && BB.t - this.anvil.t > 0.05) this.smash();
+            if (this.anvil && BB.t - this.anvil.t > 0.05)
+              this.smash();
             else {
               this.hamV = { t: BB.t, d: 0.16, k: null, empty: 1 };
               BB.sfx.piston();
@@ -888,11 +942,13 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         }
       }
       const ons = this.state === "clap" ? [] : BB.mic.take();
-      if (BB.MLP && BB.MLP.on && this.state === "order" && this.anvil && !this.hamV && BB.t - this.anvil.t > 0.4) BB.MLP.micWant();
+      if (BB.MLP && BB.MLP.on && this.state === "order" && this.anvil && !this.hamV && BB.t - this.anvil.t > 0.4)
+        BB.MLP.micWant();
       if (this.state === "order" && this.anvil && !this.hamV && BB.t - this.anvil.t > 0.4) {
         const G = window.GroupGate;
         for (const o of ons) {
-          if (BB.talking && BB.t < BB.talking.until && !BB.debug) continue;
+          if (BB.talking && BB.t < BB.talking.until && !BB.debug)
+            continue;
           if (BB.mic.ok && G && !BB.debug && !o.sim) {
             this.pendSmash = o.t;
             break;
@@ -904,10 +960,13 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       if (this.pendSmash && BB.ac.currentTime - 0.02 > this.pendSmash + 0.2) {
         const m = window.GroupGate.judge(this.pendSmash);
         this.pendSmash = null;
-        if (m.ok) this.smash();
-        else this.few = BB.t;
+        if (m.ok)
+          this.smash();
+        else
+          this.few = BB.t;
       }
-      if (this.cb && this.state === "clap") this.cb.update(dt);
+      if (this.cb && this.state === "clap")
+        this.cb.update(dt);
       for (let i = this.fly.length - 1; i >= 0; i--) {
         const f = this.fly[i];
         if (BB.t - f.t0 >= f.d) {
@@ -916,26 +975,32 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         }
       }
       const c = this.cust;
-      if (this.state === "order" || this.state === "serve" || this.state === "clap") c.x = lerp(2200, WIN.x + 140, ease.out(clamp((BB.t - c.in) / 1.2, 0, 1)));
+      if (this.state === "order" || this.state === "serve" || this.state === "clap")
+        c.x = lerp(2200, WIN.x + 140, ease.out(clamp((BB.t - c.in) / 1.2, 0, 1)));
       if (this.state === "happy") {
         const t = BB.t - this.st;
-        if (t > 2.2) c.x += dt * 900;
+        if (t > 2.2)
+          c.x += dt * 900;
         this.trayOut = clamp((t - 1.6) / 1, 0, 1);
         if (t > 3.4) {
           this.trayOut = 0;
           this.next();
         }
       }
-      if (this.oi === this.prankAt && this.state === "order" && !this.prank && !this.anvil && R.len(this.tray) >= 4 && !this.tray.some((x) => x.pending) && this.tray.map((x) => x.k).join() === this.O.seq.join() && new Set(this.O.seq).size > 1) this.startPrank();
-      if (this.prank) this.updPrank(dt);
+      if (this.oi === this.prankAt && this.state === "order" && !this.prank && !this.anvil && R.len(this.tray) >= 4 && !this.tray.some((x) => x.pending) && this.tray.map((x) => x.k).join() === this.O.seq.join() && new Set(this.O.seq).size > 1)
+        this.startPrank();
+      if (this.prank)
+        this.updPrank(dt);
       if (this.crumbs.length && this.sweepT && BB.t - this.sweepT > 0.4) {
         this.crumbs = [];
         this.sweepT = 0;
       }
-      if (BB.debug && this.o.auto) this.autoplay();
+      if (BB.debug && this.o.auto)
+        this.autoplay();
     }
     autoplay() {
-      if (this.state !== "order" || this.fly.length || this.hamV || BB.t - (this.autoT || 0) < 0.7) return;
+      if (this.state !== "order" || this.fly.length || this.hamV || BB.t - (this.autoT || 0) < 0.7)
+        return;
       this.autoT = BB.t;
       if (this.tray.some((x) => x.k === "x")) {
         this.untray(this.tray.findIndex((x) => x.k === "x"));
@@ -954,7 +1019,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         }
         b += R.BEATS[k];
       }
-      if (!need) return;
+      if (!need)
+        return;
       if (need === "r" || this.inv[need] > 0) {
         this.toTray(need);
         return;
@@ -965,7 +1031,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       }
       const chain = { h: "w", q: "h", e: "q", s: "e" };
       let src = chain[need];
-      while (src !== "w" && !this.inv[src]) src = chain[src];
+      while (src !== "w" && !this.inv[src])
+        src = chain[src];
       this.toPress(src);
     }
     // ---------- drawing ----------
@@ -976,7 +1043,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       if (this.slowT) {
         const k = t - this.slowT;
         z = k < 1.6 ? 1 + 0.28 * ease.inOut(clamp(k / 1.2, 0, 1)) : 1 + 0.28 * (1 - ease.inOut(clamp((k - 3.2) / 1, 0, 1)));
-        if (k > 4.4) this.slowT = 0;
+        if (k > 4.4)
+          this.slowT = 0;
       }
       if (z !== 1) {
         ctx.translate(PX, ANVIL - 80);
@@ -984,7 +1052,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.translate(-PX, -(ANVIL - 80));
       }
       ctx.translate(sx, sy);
-      if (this.static) ctx.drawImage(this.static, 0, 0, W, H);
+      if (this.static)
+        ctx.drawImage(this.static, 0, 0, W, H);
       else {
         ctx.fillStyle = "#2a3a38";
         ctx.fillRect(0, 0, W, H);
@@ -997,14 +1066,17 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       this.drawMarquee();
       this.drawWindow();
       this.drawTray();
-      if (this.jr) BB.staticJr(this.jr.x, FLOOR - (this.jr.hop || 0), 130, { lift: this.jr.hop || 0, spd: 1400, run: this.jr.run, glitch: this.jr.hop ? 0.6 : 0 });
+      if (this.jr)
+        BB.staticJr(this.jr.x, FLOOR - (this.jr.hop || 0), 130, { lift: this.jr.hop || 0, spd: 1400, run: this.jr.run, glitch: this.jr.hop ? 0.6 : 0 });
       if (this.prank && this.prank.ph !== "done") {
         const p = this.prank;
         const gi = p.ph === "in" ? 1 - clamp((t - p.t) / 1, 0, 1) : 0;
         BB.staticJr(p.x, FLOOR, 90, { spd: 1100, run: p.ph === "run" ? 1 : 0, dizzy: p.ph === "hit", rot: p.ph === "hit" ? Math.sin(t * 10) * 0.15 : 0, glitch: p.ph === "hit" ? 0.7 : gi });
-        if (p.ph === "wait") R.bubble(p.x - 60, FLOOR - 210, "I mixed it up! hee hee");
+        if (p.ph === "wait")
+          R.bubble(p.x - 60, FLOOR - 210, "I mixed it up! hee hee");
       }
-      for (const f of this.fly) this.drawFly(f);
+      for (const f of this.fly)
+        this.drawFly(f);
       if (this.drag && Math.hypot(BB.ptr.x - this.drag.x0, BB.ptr.y - this.drag.y0) > 30 && (this.drag.k === "w" || this.inv[this.drag.k])) {
         ctx.save();
         ctx.globalAlpha = 0.9;
@@ -1027,15 +1099,19 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.stroke();
         ctx.restore();
       }
-      if (this.fan) this.drawFan();
+      if (this.fan)
+        this.drawFan();
       ctx.restore();
       R.drawMotes(this.motes, BB.paused ? 0 : Math.min(0.05, BB.dt || 0.016), t);
       BB.drawParts();
       this.drawHUD();
       BB.captionBox();
-      if (this.state === "order" && this.oi === 0 && BB.t - this.cardT < 2.6) BB.titleCard("ROOM 2: NOTE SMASHER", "Static Jr. broke the notes. Smash them into orders!", (BB.t - this.cardT) / 2.6);
-      if (this.state === "end") this.drawEnd();
-      if (BB.paused) BB.pauseOverlay(howTo, () => this.resume());
+      if (this.state === "order" && this.oi === 0 && BB.t - this.cardT < 2.6)
+        BB.titleCard("ROOM 2: NOTE SMASHER", "Static Jr. broke the notes. Smash them into orders!", (BB.t - this.cardT) / 2.6);
+      if (this.state === "end")
+        this.drawEnd();
+      if (BB.paused)
+        BB.pauseOverlay(howTo, () => this.resume());
     }
     drawCartNotes() {
       const t = BB.t, V = BB.V2 || {};
@@ -1056,13 +1132,15 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.restore();
       }
       BB.plaque(CART.x, CART.base - 345, 240, 46, "WHOLE NOTES", 26);
-      if (this.sel === "w") this.selRing(CART.x, CART.base - 120, 210);
+      if (this.sel === "w")
+        this.selRing(CART.x, CART.base - 120, 210);
     }
     // per-basket pile slots (stable jitter, so notes don't reshuffle); remembers counts to animate adds and lifts
     pileFor(k, n) {
       const P = this.piles = this.piles || {}, t = BB.t;
       let p = P[k];
-      if (!p) p = P[k] = { items: [] };
+      if (!p)
+        p = P[k] = { items: [] };
       const SL = [[-14, -82, -0.12], [18, -81, 0.14], [2, -89, -0.03], [-24, -79, -0.2]];
       while (p.items.length < n) {
         const j = p.items.length, sl = SL[j % 4];
@@ -1076,7 +1154,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
     drawLifts() {
       const t = BB.t;
-      if (!this.lifts) return;
+      if (!this.lifts)
+        return;
       this.lifts = this.lifts.filter((l) => t - l.t < 0.45);
       for (const l of this.lifts) {
         const f = (t - l.t) / 0.45, e = ease.out(f);
@@ -1092,14 +1171,16 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     drawBaskets() {
       const V = BB.V2, t = BB.t;
       KINDS.forEach((k, i) => {
-        if (k === "r" && !(this.O && this.O.rest)) return;
+        if (k === "r" && !(this.O && this.O.rest))
+          return;
         const x = BX[i], n = this.inv[k], pop = this.binPop && this.binPop.k === k && t - this.binPop.t < 0.35 ? 1 + 0.12 * Math.sin((t - this.binPop.t) / 0.35 * Math.PI) : 1;
         ctx.save();
         ctx.translate(x, BASE);
         ctx.scale(pop, pop);
         const pile = this.pileFor(k, k === "r" ? 2 : Math.min(n, 4));
         const bh = 104, bw = V.basket ? V.basket.width * bh / V.basket.height : 138;
-        if (V.basket) ctx.drawImage(V.basket, -bw / 2, -bh, bw, bh);
+        if (V.basket)
+          ctx.drawImage(V.basket, -bw / 2, -bh, bw, bh);
         {
           const gr = ctx.createRadialGradient(0, -66, 3, 0, -66, 50);
           gr.addColorStop(0, "rgba(20,10,4,.6)");
@@ -1116,7 +1197,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         }
         for (const p of pile) {
           const a = p.add ? ease.out(clamp((t - p.add) / 0.3, 0, 1)) : 1;
-          if (a <= 0) continue;
+          if (a <= 0)
+            continue;
           ctx.save();
           ctx.translate(p.x, p.y - (1 - a) * 70);
           ctx.rotate(p.r);
@@ -1133,7 +1215,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           ctx.drawImage(V.basket, -bw / 2, -bh, bw, bh);
           ctx.restore();
         }
-        if (k === "r") BB.plaque(0, -1, 124, 34, "REST", 20);
+        if (k === "r")
+          BB.plaque(0, -1, 124, 34, "REST", 20);
         else {
           spr("bs" + k + n, -70, -22, 140, 80, () => {
             BB.plaque(0, 16, 124, 62, "", 16);
@@ -1143,8 +1226,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           });
         }
         ctx.restore();
-        if (this.sel === k) this.selRing(x, BASE - 70, 90);
-        if (this.empty && this.empty.k === k && t - this.empty.t < 1.4) R.bubble(x, BASE - 200, k === "h" ? "smash a WHOLE" : "smash " + { q: "a HALF", e: "a TA", s: "a TI-TI" }[k], COL.ink);
+        if (this.sel === k)
+          this.selRing(x, BASE - 70, 90);
+        if (this.empty && this.empty.k === k && t - this.empty.t < 1.4)
+          R.bubble(x, BASE - 200, k === "h" ? "smash a WHOLE" : "smash " + { q: "a HALF", e: "a TA", s: "a TI-TI" }[k], COL.ink);
       });
       if (this.sel && this.state === "order") {
         const i = this.sel === "w" ? -1 : KINDS.indexOf(this.sel), x = i < 0 ? CART.x : BX[i], y = i < 0 ? CART.base - 370 : BASE + 40;
@@ -1181,7 +1266,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.scale(1 + sq * 0.4, (1 - sq) * k);
         R.tile(a.k, -80, -112, 160, 112, { label: true });
         ctx.restore();
-        if (this.state === "order" && !this.hamV && BB.q) BB.glow(PX, ANVIL - 40, 160, "rgba(255,230,140,A)", 0.18 + 0.08 * Math.sin(t * 5));
+        if (this.state === "order" && !this.hamV && BB.q)
+          BB.glow(PX, ANVIL - 40, 160, "rgba(255,230,140,A)", 0.18 + 0.08 * Math.sin(t * 5));
       }
       if (V.hammer) {
         ctx.save();
@@ -1198,9 +1284,12 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.drawImage(V.hammer, HAM.x, HAM.y + dy, HAM.w, HAM.h);
         ctx.restore();
       }
-      if (this.state === "order" || this.state === "intro") BB.button(PX - 150, FLOOR - 150, 300, 92, this.anvil ? "SMASH!" : "SMASH", { style: "red", size: 44, id: "smash", disabled: !this.anvil || !!this.hamV, onClick: () => this.smash() });
-      if (this.crumbs.length) BB.button(PX + 170, FLOOR - 150, 220, 92, "SWEEP", { size: 40, id: "sweep", onClick: () => this.sweep() });
-      if (this.busy && t - this.busy.t < 1.6) R.bubble(PX, PT + 60, this.busy.txt, COL.ink);
+      if (this.state === "order" || this.state === "intro")
+        BB.button(PX - 150, FLOOR - 150, 300, 92, this.anvil ? "SMASH!" : "SMASH", { style: "red", size: 44, id: "smash", disabled: !this.anvil || !!this.hamV, onClick: () => this.smash() });
+      if (this.crumbs.length)
+        BB.button(PX + 170, FLOOR - 150, 220, 92, "SWEEP", { size: 40, id: "sweep", onClick: () => this.sweep() });
+      if (this.busy && t - this.busy.t < 1.6)
+        R.bubble(PX, PT + 60, this.busy.txt, COL.ink);
     }
     drawWindow() {
       const V = BB.V2, t = BB.t, O = this.O;
@@ -1213,7 +1302,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       ctx.roundRect(WIN.x + 16, WIN.y + 16, WIN.w - 32, WIN.h - 32, 24);
       ctx.clip();
       const glowC = ["#ffe066", "#9ff09a", "#d8a6ff", "#8fd0ff", "#ffb08a"][this.cust.k % 5];
-      if (BB.q) BB.glow(WIN.x + 150, WIN.y + 260, 200, "rgba(255,240,200,A)", 0.12);
+      if (BB.q)
+        BB.glow(WIN.x + 150, WIN.y + 260, 200, "rgba(255,240,200,A)", 0.12);
       if (V.customer) {
         const c = this.cust, bop = this.custBop && t - this.custBop < 0.15 ? 0.05 : 0, mood = this.mood && t - this.mood.t < 2 ? this.mood.k : null;
         const h = 280, w = h, yy = WIN.y + WIN.h - 24 + Math.sin(t * 3) * 3;
@@ -1221,7 +1311,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.save();
         ctx.translate(c.x, yy);
         ctx.scale(1 + bop, 1 - bop);
-        if (mood === "huh") ctx.rotate(Math.sin(t * 20) * 0.05);
+        if (mood === "huh")
+          ctx.rotate(Math.sin(t * 20) * 0.05);
         ctx.drawImage(BB.tinted("customer", null, glowC, 0.12) || V.customer, -w / 2, -h, w, h);
         ctx.restore();
         if (mood === "love") {
@@ -1232,7 +1323,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
             ctx.globalAlpha = 1;
           }
         }
-        if (mood === "huh") BB.text("?", c.x + 70, yy - h - 10, 60, COL.yellow, { font: "Rammetto One", stroke: 6 });
+        if (mood === "huh")
+          BB.text("?", c.x + 70, yy - h - 10, 60, COL.yellow, { font: "Rammetto One", stroke: 6 });
       }
       ctx.restore();
       if (O && this.state !== "end") {
@@ -1267,7 +1359,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
             ctx.clip();
             R.tile(kk, x + 7, 64, w - 14, 96, {});
             ctx.restore();
-            for (const [sx, sy] of R.syl(kk, x + 7, w - 14, 96)) BB.text(sy, sx, 194, 16, "#5a5040");
+            for (const [sx, sy] of R.syl(kk, x + 7, w - 14, 96))
+              BB.text(sy, sx, 194, 16, "#5a5040");
             b += n;
           }
           {
@@ -1287,7 +1380,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           BB.text(f === 0 ? "take your time!" : "RUSH", px + 30, py + ph / 2, 22, f === 0 ? "#fff" : COL.yellow, { align: "left", stroke: 4 });
           const bx2 = px + (f === 0 ? 220 : 110), bw = pw - (f === 0 ? 220 : 110) - 30;
           BB.rrect(bx2, py + ph / 2 - 10, bw, 20, 10, "#233", "rgba(255,255,255,.7)", 2);
-          if (f > 0) BB.rrect(bx2, py + ph / 2 - 10, bw * f, 20, 10, BB.lg(py + ph / 2 - 10, py + ph / 2 + 10, f > 0.3 ? ["#fff3a6", "#e8b830"] : ["#ffc8a8", "#e0805a"]));
+          if (f > 0)
+            BB.rrect(bx2, py + ph / 2 - 10, bw * f, 20, 10, BB.lg(py + ph / 2 - 10, py + ph / 2 + 10, f > 0.3 ? ["#fff3a6", "#e8b830"] : ["#ffc8a8", "#e0805a"]));
         }
       }
       const ready = this.state === "order" && R.len(this.tray) >= 4 && !this.tray.some((x) => x.pending);
@@ -1320,13 +1414,16 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.fill();
         ctx.restore();
       }
-      if (BB.q) BB.glow(cx, cy, w * 0.75, "rgba(255,214,90,A)", (0.18 + 0.35 * fx) * fl);
+      if (BB.q)
+        BB.glow(cx, cy, w * 0.75, "rgba(255,214,90,A)", (0.18 + 0.35 * fx) * fl);
       const face = () => {
         BB.bevel(x, y, w, h, 26, ["#ff8f6a", "#e0503c", "#9e2c22"]);
         BB.rrect(x + 16, y + 30, w - 32, h - 60, 14, BB.lg(y + 30, y + h - 30, ["#173230", "#0d1f1d"]), "rgba(255,240,200,.5)", 2);
       };
-      if (fx > 0 || !lq()) face();
-      else spr("mq", x - 4, y - 4, w + 8, h + 8, face);
+      if (fx > 0 || !lq())
+        face();
+      else
+        spr("mq", x - 4, y - 4, w + 8, h + 8, face);
       const N = 26, per = 2 * (w + h);
       for (let i = 0; i < N; i++) {
         let d = i / N * per, bx, by;
@@ -1354,7 +1451,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.beginPath();
         ctx.arc(bx, by, 5.5, 0, 7);
         ctx.fill();
-        if (on && BB.q) ctx.restore();
+        if (on && BB.q)
+          ctx.restore();
         ctx.strokeStyle = "rgba(0,0,0,.4)";
         ctx.lineWidth = 1.2;
         ctx.stroke();
@@ -1386,8 +1484,10 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
         ctx.restore();
         BB.plaque(cx, y + h - 6, 120, 30, "4000", 22, "#b5482a", { font: "Rammetto One", noRivet: 1 });
       };
-      if (fx > 0 || !lq()) lab();
-      else spr("mql", x, y, w, h + 30, lab);
+      if (fx > 0 || !lq())
+        lab();
+      else
+        spr("mql", x, y, w, h + 30, lab);
     }
     drawTray() {
       const t = BB.t;
@@ -1417,7 +1517,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           if (it.k === "x") {
             BB.rrect(x, TRAY.y + 68, w, 120, 18, "#333", "#e65046", 4);
             for (let j = 0; j < 40; j++) {
-              ctx.fillStyle = "rgba(255,255,255,".concat(Math.random() * 0.8, ")");
+              ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.8})`;
               ctx.fillRect(x + 6 + Math.random() * (w - 16), TRAY.y + 74 + Math.random() * 106, 8, 4);
             }
             BB.text("???", x + w / 2, TRAY.y + 128, 36, "#ff9c8a", { stroke: 4 });
@@ -1427,17 +1527,19 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
               const y0 = TRAY.y + 68, pulse = 0.55 + 0.15 * Math.sin(t * 3 + i);
               for (let j = 1; j < n; j++) {
                 const hx = this.slotX(b + j);
-                BB.rrect(hx + 4, y0 + 4, 112, 112, 15, "rgba(255,214,90,".concat(0.22 * pulse, ")"), "rgba(230,170,40,".concat(0.7 * pulse, ")"), 3);
+                BB.rrect(hx + 4, y0 + 4, 112, 112, 15, `rgba(255,214,90,${0.22 * pulse})`, `rgba(230,170,40,${0.7 * pulse})`, 3);
               }
               const by = y0 + 86;
               ctx.save();
               ctx.globalAlpha = 0.9 * k;
               BB.rrect(x + 60, by - 7, (n - 1) * 132 + 6, 14, 7, BB.lg(by - 7, by + 7, ["#ffe48a", "#f0b43a"]), "rgba(25,25,31,.6)", 2);
               ctx.restore();
-              for (let j = 1; j < n; j++) BB.text("hold", this.slotX(b + j) + 60, y0 + 108, 18, "rgba(120,80,10,.8)");
+              for (let j = 1; j < n; j++)
+                BB.text("hold", this.slotX(b + j) + 60, y0 + 108, 18, "rgba(120,80,10,.8)");
             }
             const zt = this.zapT ? t - this.zapT : 9, gl = zt < 0.7 ? 1 - zt / 0.7 : 0;
-            if (this.swapSel === i) BB.rrect(x - 4, TRAY.y + 64, 128, 128, 20, "rgba(90,200,250,.18)", "#5ac8fa", 5);
+            if (this.swapSel === i)
+              BB.rrect(x - 4, TRAY.y + 64, 128, 128, 20, "rgba(90,200,250,.18)", "#5ac8fa", 5);
             ctx.save();
             ctx.translate(x + 60 + (gl ? (Math.random() - 0.5) * 24 * gl : 0), TRAY.y + 188);
             {
@@ -1448,12 +1550,13 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
             ctx.restore();
             if (gl > 0 && BB.q) {
               for (let j = 0; j < 6; j++) {
-                ctx.fillStyle = "rgba(".concat(Math.random() < 0.5 ? "176,124,255" : "90,200,250", ",").concat(0.6 * gl, ")");
+                ctx.fillStyle = `rgba(${Math.random() < 0.5 ? "176,124,255" : "90,200,250"},${0.6 * gl})`;
                 ctx.fillRect(x + Math.random() * 110, TRAY.y + 72 + Math.random() * 110, 20 + Math.random() * 50, 5);
               }
             }
           }
-          if (this.state === "order") BB.button(x, TRAY.y + 68, w, 120, "", { id: "tray" + i, style: "none", onClick: () => this.untray(i) });
+          if (this.state === "order")
+            BB.button(x, TRAY.y + 68, w, 120, "", { id: "tray" + i, style: "none", onClick: () => this.untray(i) });
         }
         b += n;
       });
@@ -1461,7 +1564,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
     drawFly(f) {
       const t = BB.t;
-      if (t < f.t0) return;
+      if (t < f.t0)
+        return;
       const k = clamp((t - f.t0) / f.d, 0, 1), e = ease.inOut(k), x = lerp(f.x0, f.x1, e), y = lerp(f.y0, f.y1, e) - Math.sin(k * Math.PI) * (f.arc || 160);
       ctx.save();
       ctx.translate(x, y);
@@ -1469,7 +1573,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       if (f.k === "x") {
         BB.rrect(-50, -40, 100, 80, 14, "#333", "#e65046", 4);
         BB.text("???", 0, 0, 30, "#ff9c8a", { stroke: 3 });
-      } else R.tile(f.k, -60, -42, 120, 84, { label: true });
+      } else
+        R.tile(f.k, -60, -42, 120, 84, { label: true });
       ctx.restore();
     }
     drawFan() {
@@ -1481,7 +1586,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       const k = ease.back(clamp(t / 0.6, 0, 1)), a = t < 3.6 ? 1 : 1 - (t - 3.6) / 0.6;
       ctx.save();
       ctx.globalAlpha = a;
-      if (BB.q) BB.glow(PX, ANVIL - 200, 420, "rgba(216,166,255,A)", 0.35);
+      if (BB.q)
+        BB.glow(PX, ANVIL - 200, 420, "rgba(216,166,255,A)", 0.35);
       const join = clamp((t - 1.1) / 0.5, 0, 1);
       ctx.save();
       ctx.translate(PX, ANVIL - 160);
@@ -1515,16 +1621,19 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       spr("hud" + this.done, 30, 14, 580, 150, () => {
         BB.panel(40, 24, 400, 110, 28);
         BB.text("ORDERS DONE", 64, 52, 30, COL.yellow, { align: "left", stroke: 4 });
-        BB.text("".concat(this.done, " of 5"), 64, 98, 28, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
-        for (let i = 0; i < 5; i++) BB.rrect(196 + i * 42, 80, 32, 36, 8, i < this.done ? BB.lg(80, 116, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
+        BB.text(`${this.done} of 5`, 64, 98, 28, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
+        for (let i = 0; i < 5; i++)
+          BB.rrect(196 + i * 42, 80, 32, 36, 8, i < this.done ? BB.lg(80, 116, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
       });
       BB.pauseBtn(() => this.pause());
-      if (this.state === "intro") BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
+      if (this.state === "intro")
+        BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
       else {
         BB.micMeter(40, H - 150);
         BB.overrideBtn(() => this.manualOverride(), { pop: this.ovPop && t - this.ovPop < 0.3 ? 1.08 : 1 });
       }
-      if (this.cb && this.state === "clap") this.cb.draw(W / 2, H - 95);
+      if (this.cb && this.state === "clap")
+        this.cb.draw(W / 2, H - 95);
       else if (this.state === "order") {
         const used = R.len(this.tray);
         const msg = this.anvil ? this.hamV ? "" : "CLAP together to SMASH!" : this.scrambled() ? "Scrambled! Tap two notes to swap them" : used >= 4 ? "Ring the bell!" : "Fill the tray: " + (4 - used) + " beat" + (4 - used === 1 ? "" : "s") + " left";
@@ -1533,14 +1642,17 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
           BB.text(msg, W / 2, H - 82, 38, "#fff", { stroke: 5 });
         }
       }
-      if (this.few && t - this.few < 1.2) R.bubble(PX, PT - 10, "Everyone together!", COL.ink);
-      if (this.cb && this.cb.few && t - this.cb.few < 1.2) R.bubble(W / 2, H - 300, "Everyone together!", COL.ink);
+      if (this.few && t - this.few < 1.2)
+        R.bubble(PX, PT - 10, "Everyone together!", COL.ink);
+      if (this.cb && this.cb.few && t - this.cb.few < 1.2)
+        R.bubble(W / 2, H - 300, "Everyone together!", COL.ink);
     }
     drawEnd() {
       const t = BB.t - this.st;
-      if (t < 0.4) return;
+      if (t < 0.4)
+        return;
       const k = ease.back(clamp((t - 0.4) / 0.6, 0, 1));
-      ctx.fillStyle = "rgba(8,18,17,".concat(0.5 * clamp(t, 0, 1), ")");
+      ctx.fillStyle = `rgba(8,18,17,${0.5 * clamp(t, 0, 1)})`;
       ctx.fillRect(0, 0, W, H);
       ctx.save();
       ctx.translate(W / 2, 360);

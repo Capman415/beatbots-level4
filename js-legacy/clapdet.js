@@ -13,11 +13,13 @@
     fastUntil: -1,
     // fastUntil: audio time until which 16th-note (tika-tika) rhythms are expected (set by the clap-back)
     refractory(t) {
-      if (window.BB && BB.kMode) return Math.max(0.15, this.refractory0(t));
+      if (window.BB && BB.bounceMs)
+        return Math.max(BB.bounceMs(), this.refractory0(t));
     },
-    /* v14.5 K mode: a bounce within 150 ms is the same clap */
+    /* v14.5.3 grade bounce debounce */
     refractory0(t) {
-      if (this.V133 && this.expGap && (t == null || t < this.expUntil)) return Math.min(this.MIN_IOI, Math.max(this.REF_MIN, this.expGap * this.REF_K));
+      if (this.V133 && this.expGap && (t == null || t < this.expUntil))
+        return Math.min(this.MIN_IOI, Math.max(this.REF_MIN, this.expGap * this.REF_K));
       return this.fast || t != null && t < this.fastUntil ? this.MIN_IOI_FAST : this.MIN_IOI;
     },
     // v13.3 fast rhythms: rooms announce the shortest note gap they expect (s) -> refractory = .6 x gap (>=70 ms)
@@ -38,14 +40,16 @@
     // clap's peak (or a local dip followed by a new rise = peak-picking inside a smeared group clap); the onset jump is
     // then measured from that valley, not from the decayed peak.
     track(st, x, t) {
-      if (!this.V133) return;
+      if (!this.V133)
+        return;
       if (!st.armed) {
         st.pk = Math.max(st.pk || 0, x);
         if (x < st.pk * this.REARM || this.DIP && st.px != null && t - st.lastOn > this.refractory(t) && x > st.px * this.DIP && st.px < st.pk * 0.7) {
           st.armed = 1;
           st.val = Math.min(x, st.px == null ? x : st.px);
         }
-      } else st.val = Math.min(st.val, x);
+      } else
+        st.val = Math.min(st.val, x);
       st.px = x;
     },
     fired(st, x) {
@@ -65,8 +69,10 @@
       const i0 = Math.floor(150 / hz), i2 = Math.floor(2e3 / hz), i1 = Math.min(nb, Math.floor(9e3 / hz));
       for (let i = i0; i < i1; i++) {
         const p = pw(i);
-        if (i < i2) lo += p;
-        else hi += p;
+        if (i < i2)
+          lo += p;
+        else
+          hi += p;
         lg += Math.log(p + 1e-20);
         n++;
       }
@@ -102,8 +108,10 @@
     // gap rule: inside MIN_IOI only a much louder burst (the main body of a smeared group clap) may count, once
     gapOk(st, tNow, x) {
       const g = tNow - st.lastOn;
-      if (g > this.refractory(tNow) && (!this.active(tNow) || st.armed || g > this.MIN_IOI || st.armed == null)) return 1;
-      if (g > (window.BB && BB.kMode ? 0.15 : this.MIN_IOI_FAST) && !st.up && x > st.lastX * this.UP_K) return 2;
+      if (g > this.refractory(tNow) && (!this.active(tNow) || st.armed || g > this.MIN_IOI || st.armed == null))
+        return 1;
+      if (g > (window.BB && BB.bounceMs ? BB.bounceMs() : this.MIN_IOI_FAST) && !st.up && x > st.lastX * this.UP_K)
+        return 2;
       return 0;
     }
   };
@@ -124,7 +132,8 @@
     note(t, dur, freqs) {
       if (freqs && freqs.length === 1 && dur <= 0.12 && freqs[0] > 500) {
         this.pend.push({ t, f: freqs[0], b: [] });
-        if (this.pend.length > 12) this.pend.shift();
+        if (this.pend.length > 12)
+          this.pend.shift();
       }
     },
     frame(tNow, binDb) {
@@ -139,13 +148,15 @@
           keep.push(p);
           continue;
         }
-        if (tNow > p.t + this.MAX) continue;
+        if (tNow > p.t + this.MAX)
+          continue;
         if (p.b.length) {
           const base = p.b.slice().sort((x, y) => x - y)[p.b.length >> 1];
           const pk = binDb(p.f);
           if (pk > base + this.RISE && pk - Math.max(binDb(p.f * 0.8), binDb(p.f * 1.25)) > this.TONAL) {
             this.d.push(tNow - p.t);
-            if (this.d.length > 9) this.d.shift();
+            if (this.d.length > 9)
+              this.d.shift();
             if (this.d.length >= 5) {
               this.lat = this.d.slice().sort((x, y) => x - y)[this.d.length >> 1];
               this.when = tNow;
@@ -165,5 +176,6 @@
     }
   };
   root.ClapDet = C;
-  if (typeof module !== "undefined") module.exports = C;
+  if (typeof module !== "undefined")
+    module.exports = C;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -2,7 +2,8 @@
   var NF = 1024, NB = 24, P = { k: 0.2, A: 1, B: 0.6, C: 1.5, TAILW: 0.25, MINSEP: 0.07, OVER: 3, PRE: 0.06, FG: 0.16, CF: 0.3, PREF: 0.45, VS: 2, VS2: 1.5, LMIN: -1.4 };
   function edges() {
     var e = [], lo = Math.log(700), hi = Math.log(12e3);
-    for (var i = 0; i <= NB; i++) e.push(Math.exp(lo + (hi - lo) * i / NB));
+    for (var i = 0; i <= NB; i++)
+      e.push(Math.exp(lo + (hi - lo) * i / NB));
     return e;
   }
   var Core = {
@@ -14,23 +15,26 @@
       for (var k = 0; k <= NF / 2; k++) {
         var f = k * sr / NF;
         m[k] = -1;
-        for (var b = 0; b < NB; b++) if (f >= e[b] && f < e[b + 1]) {
-          m[k] = b;
-          break;
-        }
+        for (var b = 0; b < NB; b++)
+          if (f >= e[b] && f < e[b + 1]) {
+            m[k] = b;
+            break;
+          }
       }
       return m;
     },
     hann: function() {
       var w = new Float32Array(NF);
-      for (var i = 0; i < NF; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (NF - 1));
+      for (var i = 0; i < NF; i++)
+        w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (NF - 1));
       return w;
     },
     fft: function(re, im) {
       var n = re.length, i, j, b, t;
       for (i = 1, j = 0; i < n; i++) {
         b = n >> 1;
-        for (; j & b; b >>= 1) j ^= b;
+        for (; j & b; b >>= 1)
+          j ^= b;
         j ^= b;
         if (i < j) {
           t = re[i];
@@ -62,28 +66,35 @@
         im[i] = 0;
       }
       Core.fft(re, im);
-      for (var b = 0; b < NB; b++) out[b] = 0;
+      for (var b = 0; b < NB; b++)
+        out[b] = 0;
       for (var k = 0; k <= NF / 2; k++) {
         var m = map[k];
-        if (m >= 0) out[m] += re[k] * re[k] + im[k] * im[k];
+        if (m >= 0)
+          out[m] += re[k] * re[k] + im[k] * im[k];
       }
       return out;
     },
     // SuperFlux on residual band powers: Pm,R arrays of Float32Array(NB) (R already delayed/max-filtered), g per-band gain
     flux: function(Pm, R, g, i) {
       var L = Core._L(Pm, R, g, i), L2 = Core._L(Pm, R, g, i - 2), s = 0;
-      if (!L2) return 0;
+      if (!L2)
+        return 0;
       for (var b = 0; b < NB; b++) {
         var mx = L2[b];
-        if (b > 0 && L2[b - 1] > mx) mx = L2[b - 1];
-        if (b < NB - 1 && L2[b + 1] > mx) mx = L2[b + 1];
+        if (b > 0 && L2[b - 1] > mx)
+          mx = L2[b - 1];
+        if (b < NB - 1 && L2[b + 1] > mx)
+          mx = L2[b + 1];
         var d = L[b] - mx;
-        if (d > 0) s += d;
+        if (d > 0)
+          s += d;
       }
       return s;
     },
     _L: function(Pm, R, g, i) {
-      if (i < 0 || !Pm[i]) return null;
+      if (i < 0 || !Pm[i])
+        return null;
       var o = new Float32Array(NB), p = Pm[i], r = R ? R[i] : null;
       for (var b = 0; b < NB; b++) {
         var v = p[b] - (r ? P.OVER * g[b] * r[b] : 0);
@@ -95,7 +106,8 @@
       var s = Array.prototype.slice.call(a).sort(function(x, y) {
         return x - y;
       });
-      if (!s.length) return 0;
+      if (!s.length)
+        return 0;
       var p = (s.length - 1) * q / 100, i = Math.floor(p), f = p - i;
       return i + 1 < s.length ? s[i] * (1 - f) + s[i + 1] * f : s[i];
     },
@@ -109,21 +121,29 @@
         return null;
       }
       var j = i0;
-      for (var i = i0; i < i1; i++) if (nov[i] > nov[j]) j = i;
+      for (var i = i0; i < i1; i++)
+        if (nov[i] > nov[j])
+          j = i;
       var v = nov[j];
       var edge = j === i0 && nov[Math.max(0, j - 1)] >= v || j === i1 - 1, near = false, G = st.got;
-      for (i = Math.max(0, G.length - 2); i < G.length; i++) if (G[i] != null && ts[j] - G[i] < P.MINSEP) near = true;
+      for (i = Math.max(0, G.length - 2); i < G.length; i++)
+        if (G[i] != null && ts[j] - G[i] < P.MINSEP)
+          near = true;
       var ok = false;
       st.last = { v, p: null, s: null, f: floor, r: v > floor ? edge ? "edge" : near ? "double" : null : "below-floor" };
       if (v > floor && !edge && !near) {
         var r = st.ref.length >= 3 ? Core.pct(st.ref.slice(-12), 50) : v, p = Math.min(Math.max(pfn(ts[j]), 1e-4), 1 - 1e-4), pv = 0;
-        for (i = Math.max(0, G.length - 2); i < G.length; i++) if (G[i] != null && ts[j] - G[i] < P.TAILW) pv = Math.max(pv, st.vals[i]);
-        var s = P.A * Math.log(v / Math.max(P.k * r, floor)) + P.B * Math.max(Math.log(p / (1 - p)), v >= (window.BB && BB.kMode ? 1.2 : P.VS2) * floor ? 0 : v >= P.VS * floor ? P.LMIN : -1e9);
-        if (pv) s += Cw * Math.min(0, Math.log(v / pv));
+        for (i = Math.max(0, G.length - 2); i < G.length; i++)
+          if (G[i] != null && ts[j] - G[i] < P.TAILW)
+            pv = Math.max(pv, st.vals[i]);
+        var s = P.A * Math.log(v / Math.max(P.k * r, floor)) + P.B * Math.max(Math.log(p / (1 - p)), v >= (window.BB && BB.gradeBand && BB.gradeBand() !== "u" ? 1.2 : P.VS2) * floor ? 0 : v >= P.VS * floor ? P.LMIN : -1e9);
+        if (pv)
+          s += Cw * Math.min(0, Math.log(v / pv));
         ok = s > 0;
         st.last = { v, p, s, f: floor, r: ok ? null : "not-clap-shape" };
       }
-      if (ok) st.ref.push(v);
+      if (ok)
+        st.ref.push(v);
       st.got.push(ok ? ts[j] : null);
       st.vals.push(v);
       return ok ? ts[j] : null;
@@ -132,8 +152,10 @@
       var b = [0, L0];
       for (var L = L0 - 0.04; L < L0 + 0.04 - 1e-9; L += 5e-3) {
         var s = 0;
-        for (var i = 0; i < notes.length; i++) s += nov[Math.min(nov.length - 1, Core.idx(ts, notes[i] + L))];
-        if (s > b[0]) b = [s, L];
+        for (var i = 0; i < notes.length; i++)
+          s += nov[Math.min(nov.length - 1, Core.idx(ts, notes[i] + L))];
+        if (s > b[0])
+          b = [s, L];
       }
       return b[1];
     },
@@ -141,8 +163,10 @@
       var lo = 0, hi = ts.length;
       while (lo < hi) {
         var m = lo + hi >> 1;
-        if (ts[m] < t) lo = m + 1;
-        else hi = m;
+        if (ts[m] < t)
+          lo = m + 1;
+        else
+          hi = m;
       }
       return lo;
     }
@@ -154,7 +178,8 @@
     why: "",
     init: function() {
       var BB2 = root.BB, q;
-      if (!BB2) return;
+      if (!BB2)
+        return;
       try {
         q = new URLSearchParams(location.search);
       } catch (e) {
@@ -175,9 +200,11 @@
         this.state = "off";
         this.exp = null;
       }
-      if (!this.on || this.state !== "off") return;
+      if (!this.on || this.state !== "off")
+        return;
       this.ctx = MC.ctx;
-      if (!MC || !MC.ctx || !MC.ctx.audioWorklet || !root.AudioWorkletNode || !root.Blob) return this.fail("no worklet");
+      if (!MC || !MC.ctx || !MC.ctx.audioWorklet || !root.AudioWorkletNode || !root.Blob)
+        return this.fail("no worklet");
       this.state = "loading";
       var code = "const NF=1024,NB=24;class B extends AudioWorkletProcessor{constructor(o){super();const a=o.processorOptions;this.map=a.map;this.win=a.win;this.H=Math.round(sampleRate*.005);this.raw=!!a.raw;this.buf=new Float32Array(NF*4);this.n=0;this.cnt=0;this.re=new Float64Array(NF);this.im=new Float64Array(NF);this.out=[];this.ts=[];this.rq=[];this.rr=new Float32Array(32768);this.rc=0}fft(re,im){const n=NF;for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}for(let l=2;l<=n;l<<=1){const a=-2*Math.PI/l,h=l/2;for(let k=0;k<h;k++){const c=Math.cos(a*k),s=Math.sin(a*k);for(let i=0;i<n;i+=l){const p=i+k+h,xr=re[p]*c-im[p]*s,xi=re[p]*s+im[p]*c;re[p]=re[i+k]-xr;im[p]=im[i+k]-xi;re[i+k]+=xr;im[i+k]+=xi}}}}process(inp){const x=inp[0]&&inp[0][0];if(!x)return true;const f0=currentFrame;for(let i=0;i<x.length;i++){if(this.n>=this.buf.length){this.buf.copyWithin(0,this.buf.length-NF);this.n=NF}this.buf[this.n++]=x[i];this.cnt++;if(this.raw)this.rr[this.rc++%32768]=x[i];if(this.n>=NF&&this.cnt>=this.H){this.cnt=0;const o=this.n-NF;for(let k=0;k<NF;k++){this.re[k]=this.buf[o+k]*this.win[k];this.im[k]=0}this.fft(this.re,this.im);const p=new Float32Array(NB);for(let k=0;k<=NF/2;k++){const m=this.map[k];if(m>=0)p[m]+=this.re[k]*this.re[k]+this.im[k]*this.im[k]}this.out.push(p);this.ts.push((f0+i+1-NF/2)/sampleRate)}}if(this.out.length>=4){this.port.postMessage({t:this.ts,p:this.out,now:(f0+x.length)/sampleRate,raw:this.raw?this.take():null});this.out=[];this.ts=[]}return true}take(){const n=this.rc-(this.rs||0),o=new Float32Array(Math.min(n,32768));for(let i=0;i<o.length;i++)o[i]=this.rr[(this.rc-o.length+i)%32768];this.rs=this.rc;return o}}registerProcessor('bb-c96',B);";
       var url = URL.createObjectURL(new Blob([code], { type: "application/javascript" })), ac = BB2.ac;
@@ -193,7 +220,8 @@
         }),
         self._net()
       ]).then(function(a) {
-        if (!root.ClapNet) throw "no clapnet";
+        if (!root.ClapNet)
+          throw "no clapnet";
         self.net = Object.create(root.ClapNet);
         self.net.load(a[2]);
         var mk = function(ctx, raw) {
@@ -220,7 +248,8 @@
       });
     },
     _net: function() {
-      if (root.ClapNet) return Promise.resolve();
+      if (root.ClapNet)
+        return Promise.resolve();
       return new Promise(function(res, rej) {
         var s = document.createElement("script");
         s.src = (root.BB_LEGACY ? "js-legacy/" : "js/") + "clapnet.js";
@@ -252,7 +281,8 @@
       }
       if (d.raw) {
         var r = M.raw, N = r.length;
-        for (i = 0; i < d.raw.length; i++) r[(M.rawEnd + i) % N] = d.raw[i];
+        for (i = 0; i < d.raw.length; i++)
+          r[(M.rawEnd + i) % N] = d.raw[i];
         M.rawEnd += d.raw.length;
         M.rawT = d.now + this.off;
       }
@@ -278,38 +308,53 @@
       var O = this.out, a = Core.idx(O.t, t - lat - 0.025), b = Core.idx(O.t, t - lat + 0.0101), r = null;
       for (var i = a; i < b; i++) {
         var p = O.P[i];
-        if (!r) r = Float32Array.from(p);
-        else for (var k = 0; k < NB; k++) if (p[k] > r[k]) r[k] = p[k];
+        if (!r)
+          r = Float32Array.from(p);
+        else
+          for (var k = 0; k < NB; k++)
+            if (p[k] > r[k])
+              r[k] = p[k];
       }
       return r;
     },
     learnGain: function() {
-      if (this.exp) return;
+      if (this.exp)
+        return;
       var M = this.mic, n = M.P.length;
-      if (n < 1) return;
+      if (n < 1)
+        return;
       var t = M.t[n - 1], r = this.refAt(t, this.lat());
-      if (!r) return;
+      if (!r)
+        return;
       var p = M.P[n - 1], q = new Float32Array(NB), rs = 0;
-      for (var k = 0; k < NB; k++) rs += r[k];
-      if (rs < 1e-3) return;
-      for (k = 0; k < NB; k++) q[k] = p[k] / (r[k] + 1e-12);
+      for (var k = 0; k < NB; k++)
+        rs += r[k];
+      if (rs < 1e-3)
+        return;
+      for (k = 0; k < NB; k++)
+        q[k] = p[k] / (r[k] + 1e-12);
       this.ratio.push(q);
-      if (this.ratio.length > 300) this.ratio.shift();
+      if (this.ratio.length > 300)
+        this.ratio.shift();
     },
     // speaker->mic gain per band: learned only on frames where we were playing something (same rule as research/clap96/sf.py)
     gain: function() {
       var g = new Float32Array(NB);
-      if (this.ratio.length < 20) return g.fill(0);
+      if (this.ratio.length < 20)
+        return g.fill(0);
       for (var k = 0; k < NB; k++) {
         var c = [];
-        for (var i = 0; i < this.ratio.length; i++) if (this.ratio[i][k] === this.ratio[i][k]) c.push(this.ratio[i][k]);
+        for (var i = 0; i < this.ratio.length; i++)
+          if (this.ratio[i][k] === this.ratio[i][k])
+            c.push(this.ratio[i][k]);
         g[k] = c.length >= 20 ? Core.pct(c, 90) : 0;
       }
       return g;
     },
     // a room declares its expected notes (game time, no latency); decisions arrive through poll()
     expect: function(key, notes, gap) {
-      if (!this.active()) return false;
+      if (!this.active())
+        return false;
       var M = this.mic;
       this.exp = { key, notes, gap, next: 0, g: this.gain(), st: { got: [], vals: [], ref: [] }, floor: null, res: [] };
       return true;
@@ -319,27 +364,34 @@
     },
     nov: function() {
       var E = this.exp, M = this.mic, lat = this.lat(), R = [];
-      for (var i = 0; i < M.P.length; i++) R.push(this.refAt(M.t[i], lat));
+      for (var i = 0; i < M.P.length; i++)
+        R.push(this.refAt(M.t[i], lat));
       var nv = new Float32Array(M.P.length);
-      for (i = 0; i < M.P.length; i++) nv[i] = Core.flux(M.P, R, E.g, i);
+      for (i = 0; i < M.P.length; i++)
+        nv[i] = Core.flux(M.P, R, E.g, i);
       return nv;
     },
     pclap: function(t) {
       var M = this.mic, sr = M.sr, n = Math.ceil(2048 * sr / 16e3) + 30, s0 = Math.round((t - 0.02 - M.rawT) * sr) + M.rawEnd;
-      if (s0 < M.rawEnd - M.raw.length || s0 + n > M.rawEnd) return 0.5;
+      if (s0 < M.rawEnd - M.raw.length || s0 + n > M.rawEnd)
+        return 0.5;
       var w = new Float32Array(n), N = M.raw.length;
-      for (var i = 0; i < n; i++) w[i] = M.raw[(s0 + i) % N];
+      for (var i = 0; i < n; i++)
+        w[i] = M.raw[(s0 + i) % N];
       return this.net.prob(this.net.resample(w, sr, 2048));
     },
     // returns [{i,t}] for notes whose window has closed: t = clap time or null (missed)
     poll: function(key) {
       var E = this.exp;
-      if (!E || E.key !== key) return [];
+      if (!E || E.key !== key)
+        return [];
       var M = this.mic, now = M.t[M.t.length - 1], lat0 = this.lat(), lat = lat0, out = [];
-      if (now == null) return out;
+      if (now == null)
+        return out;
       var post = Math.min(0.1, 0.5 * E.gap), nv = null, self = this;
       while (E.next < E.notes.length && now > E.notes[E.next] + lat0 + 0.04 + post + 0.03) {
-        if (!nv) nv = this.nov();
+        if (!nv)
+          nv = this.nov();
         lat = Core.estLat(nv, M.t, E.notes.slice(0, E.next + 1), lat0);
         E.lat = lat;
         if (E.floor == null) {
@@ -352,11 +404,13 @@
         out.push({ i: E.next, t, info: E.st.last });
         E.next++;
       }
-      if (E.next >= E.notes.length) this.exp = null;
+      if (E.next >= E.notes.length)
+        this.exp = null;
       return out;
     }
   };
-  if (typeof module !== "undefined" && module.exports) module.exports = C96;
+  if (typeof module !== "undefined" && module.exports)
+    module.exports = C96;
   else {
     root.C96 = C96;
     C96.init();

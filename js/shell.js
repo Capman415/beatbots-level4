@@ -72,18 +72,18 @@ class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)t
     if(st==='ask'||st==='asking'){BB.text('Sprocket wants to hear your claps!',CX,330,40,'#fff',{maxW:560});
       BB.text('Your browser will ask to use the microphone.',CX,390,30,COL.yellow,{maxW:560});
       BB.button(CX-250,640,500,140,st==='asking'?'ASKING...':'TURN ON MIC',{style:'green',size:56,id:'micon',onClick:()=>this.state==='ask'&&this.turnOn()});
-      BB.button(CX-250,800,500,80,'Play without mic',{size:34,id:'nomic',onClick:()=>BB.go(new MapScene())})}
+      BB.button(CX-250,800,500,80,'Play without mic',{size:34,id:'nomic',onClick:()=>BB.go(new GradePickScene())})}
     else if(st==='calib'){BB.text('Shh... checking the room',CX,360,44,'#fff');BB.text('(listening to our own beat clicks)',CX,420,30,COL.yellow)}
     else if(st==='denied'){BB.text('No microphone? No problem!',CX,330,42,'#fff',{maxW:560});
       if(BB.mic.err)BB.text(BB.mic.err,CX,560,26,'#ff9c8a',{maxW:600});BB.button(CX-250,800,500,80,'TRY MIC AGAIN',{size:34,id:'retry',onClick:()=>{this.state='ask';this.turnOn()}});
       BB.text('Use the big MANUAL OVERRIDE button',CX,395,32,COL.yellow,{maxW:560});BB.text('when the class gets it right.',CX,440,32,COL.yellow,{maxW:560});
-      BB.button(CX-250,630,500,140,'CONTINUE',{style:'green',size:56,id:'cont',onClick:()=>BB.go(new MapScene())})}
+      BB.button(CX-250,630,500,140,'CONTINUE',{style:'green',size:56,id:'cont',onClick:()=>BB.go(new GradePickScene())})}
     else if(st==='gcal'){BB.text('Everyone clap with the beeps!',CX,360,44,'#fff',{maxW:620});BB.text(this.gIdx>=0?['1','2','3','4'][this.gIdx]:'Ready...',CX,470,90,COL.yellow,{font:'Rammetto One',stroke:8})}
     else{BB.text('Clap once to test!',CX,350,48,'#fff');
       const f=this.flash&&BB.t-this.flash<.4;BB.text(this.heard?`Heard ${this.heard} clap${this.heard>1?'s':''}!`:'...',CX,410,40,f?COL.green:COL.yellow);
       BB.micMeter(CX-165,462);// meter (346 wide) centred over the Sensitivity + CONTINUE row
       BB.text('Sensitivity',1075+100,630,28,'#fff');BB.sensButtons(1075,652);
-      BB.button(1310,630,275,124,'CONTINUE',{style:'green',size:44,id:'cont',onClick:()=>BB.go(new MapScene())});// inside the frame (well ends at 1642)
+      BB.button(1310,630,275,124,'CONTINUE',{style:'green',size:44,id:'cont',onClick:()=>BB.go(new GradePickScene())});// inside the frame (well ends at 1642)
       BB.button(1075,780,245,76,'Class clap check',{size:27,id:'gcal',onClick:()=>this.groupCal()});BB.button(1340,780,245,76,'Soft / loud check',{size:27,id:'lcal',onClick:()=>this.loudCal()});if(BB.MLP&&BB.MLP.on&&window.ClapNet&&ClapNet.ready){BB.button(1075,870,510,60,this.mlCal?'Clap 8 times with the ticks...':(this.mlRes||'Clap model: clap 8 times'),{size:24,id:'mlcal',onClick:()=>{if(this.mlCal)return;this.mlCal=1;BB.MLP.calibrate((ok,n)=>{this.mlCal=0;this.mlRes=ok?'Clap model tuned to this room ('+n+' claps)':'Heard only '+(n||0)+' claps - try again'})}})}
       const rs=[this.gRes,this.lcRes].filter(Boolean).join('  ');if(rs)BB.text(rs,CX,885,24,COL.green,{maxW:600})}
     if(this.lc){ctx.fillStyle='rgba(10,20,20,.55)';ctx.fillRect(0,0,W,H);this.lc.draw(W/2,H/2-40)}
@@ -119,6 +119,25 @@ function drawBay(i,cx,top,bot,bw,un,ready){const x=cx-bw/2,w=bw,h=bot-top,im=BB.
     if(!un){const lk=BB.V2.lock;if(lk){const lh=120,lw=lk.width*lh/lk.height;ctx.drawImage(lk,cx-lw/2,top+h*.32+Math.sin(BB.t*2+i)*3,lw,lh)}}
     else if(!ready){BB.plaque(cx,top+h*.36,200,54,'COMING SOON',22,'#28403c',{font:'Rammetto One',noRivet:1})}}
   BB.contactShadow(cx,bot,w*.6,.35)}
+
+// ---- Grade picker (v14.5.3): teacher picks K–6 once before the map; saved per device ----
+class GradePickScene{enter(){this.t0=BB.t;this.picked=BB.grade||'2'}
+  update(){}
+  pick(g){this.picked=g;if(BB.setGrade)BB.setGrade(g);BB.sfx&&BB.sfx.ting&&BB.sfx.ting()}
+  go(){if(BB.setGrade)BB.setGrade(this.picked||BB.grade||'2');try{sessionStorage.bbGradePicked=1}catch(e){}BB.go(new MapScene())}
+  draw(){menuBg('hub_bg',.2);BB.panel(160,100,1600,860,44);
+    BB.text('WHO IS PLAYING?',W/2,190,64,'#fff',{font:'Rammetto One',stroke:8});
+    BB.text('Pick the grade so the beat windows fit the whole class.',W/2,255,34,COL.yellow,{stroke:4,maxW:1400});
+    const G=BB.GRADES||['K','1','2','3','4','5','6'],bw=170,gap=24,total=G.length*bw+(G.length-1)*gap,x0=W/2-total/2,y=340;
+    G.forEach((g,i)=>{const on=(this.picked||BB.grade)===g,b=g==='K'||g==='1'?'k1':(g==='2'||g==='3')?'m':'u';
+      BB.button(x0+i*(bw+gap),y,bw,160,g,{style:on?'green':'cream',size:72,font:'Rammetto One',id:'gr'+g,onClick:()=>this.pick(g)});
+      BB.text(b==='k1'?'extra help':b==='m'?'some help':'on beat',x0+i*(bw+gap)+bw/2,y+185,22,on?'#6ee678':'#cfe8e2',{stroke:3})});
+    BB.panel(260,580,1400,220,28);
+    BB.text('K–1: wider late window + bounce debounce  ·  2–3: medium help  ·  4–6: default timing',W/2,640,30,'#fff',{stroke:4,maxW:1280});
+    BB.text('You can change GRADE anytime on the room map (next to DAY).',W/2,700,28,COL.yellow,{stroke:4,maxW:1280});
+    BB.button(W/2-280,820,560,110,"LET'S GO!",{style:'green',size:52,font:'Rammetto One',id:'gradego',onClick:()=>this.go()});
+    BB.captionBox()}}
+BB.GradePickScene=GradePickScene;
 // ---- Room map ----
 class MapScene{constructor(justDone){this.justDone=justDone}
   enter(){this.t0=BB.t;this.toast=null;if(this.justDone)BB.sfx.fanfare()}
@@ -143,8 +162,8 @@ class MapScene{constructor(justDone){this.justDone=justDone}
       else BB.button(cx-120,930,240,80,'LOCKED',{size:34,id:'room'+i,onClick:()=>this.open(i)});
     });
     /* v14.2.1 session tag for the clap log: set at the start of class */
-    if(BB.session){const L=BB.clapLog;BB.panel(24,24,302,76,20);BB.button(34,108,170,52,BB.kMode?'K MODE ON':'K MODE',{size:20,style:BB.kMode?'green':'cream',id:'hkmode',onClick:()=>BB.setK(!BB.kMode)});BB.button(34,32,138,60,'DAY '+BB.session.day,{size:22,id:'hday',onClick:()=>BB.session.cycleDay()});BB.button(178,32,138,60,'CLASS '+BB.session.cls,{size:22,id:'hcls',onClick:()=>BB.session.cycleClass()});
-     {const n=L?L.count():0,f=L&&L.nearCap();BB.text(f?'Clap log nearly full ('+n+'): download + clear in Pause':'Clap log: '+n+' events',30,184,20,f?'#ffd35c':'#cfe8e2',{stroke:4,align:'left'})}}
+    if(BB.session){const L=BB.clapLog,gb=BB.gradeBand&&BB.gradeBand(),gs=gb==='k1'?'green':gb==='m'?'cream':'cream';BB.panel(24,24,302,76,20);BB.button(34,32,138,60,'DAY '+BB.session.day,{size:22,id:'hday',onClick:()=>BB.session.cycleDay()});BB.button(178,32,138,60,'GRADE '+BB.grade,{size:22,style:gs,id:'hgrade',onClick:()=>BB.session.cycleGrade()});
+     {const n=L?L.count():0,f=L&&L.nearCap();BB.text(f?'Clap log nearly full ('+n+'): download + clear in Pause':'Clap log: '+n+' events',30,124,20,f?'#ffd35c':'#cfe8e2',{stroke:4,align:'left'})}}
     BB.button(W-250,24,226,76,'MIC SETUP',{size:30,id:'mic',onClick:()=>BB.go(new MicScene())});
     if(this.toast&&BB.t-this.toast.t<2.5){const k=Math.min(1,(BB.t-this.toast.t)*5);ctx.save();ctx.globalAlpha=k;BB.rrect(W/2-450,940,900,100,50,BB.lg(940,1040,['#ffffff','#e8e2cd']),COL.ink,5);BB.text(this.toast.txt,W/2,992,40,COL.ink);ctx.restore()}}}
 BB.MapScene=MapScene;BB.MicScene=MicScene;

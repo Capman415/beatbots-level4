@@ -19,14 +19,17 @@
       this.hist[k + 1] = rms;
       this.hist[k + 2] = Math.max(0, rms - prev);
       this.i = (this.i + 1) % 512;
-      if (this.n < 512) this.n++;
+      if (this.n < 512)
+        this.n++;
     },
     // learn echo gain (mic rms per unit output rms) from frames where the app is loud; median of recent ratios ignores the odd clap
     learn(micRms, outRms) {
-      if (outRms < 0.02) return;
+      if (outRms < 0.02)
+        return;
       this.ratios[this.ri] = micRms / outRms;
       this.ri = (this.ri + 1) % 96;
-      if (this.rn < 96) this.rn++;
+      if (this.rn < 96)
+        this.rn++;
       if (this.ri % 8 === 0) {
         const a = Array.from(this.ratios.subarray(0, this.rn)).sort((x, y) => x - y);
         this.gain = Math.max(0.02, a[a.length >> 1]);
@@ -38,15 +41,19 @@
       const lo = T - lat - this.SLOP, hi = T - lat + this.SLOP;
       for (let j = 0; j < this.n; j++) {
         const k = j * 3, t = this.hist[k];
-        if (t < lo || t > hi) continue;
-        if (this.hist[k + 1] > peak) peak = this.hist[k + 1];
-        if (this.hist[k + 2] > jump) jump = this.hist[k + 2];
+        if (t < lo || t > hi)
+          continue;
+        if (this.hist[k + 1] > peak)
+          peak = this.hist[k + 1];
+        if (this.hist[k + 2] > jump)
+          jump = this.hist[k + 2];
       }
       return { peak, jump };
     },
     // v13.2 residual mic level after removing the predicted echo of our own output (= rms when nothing is playing)
     resid(T, micRms, lat) {
-      if (!this.on || !this.n) return micRms;
+      if (!this.on || !this.n)
+        return micRms;
       const g = this.rn < 24 ? Math.max(this.gain, 1.5) : this.gain, sl = this.SLOP;
       this.SLOP = this.RSLOP;
       const pk = this.outAt(T, lat).peak;
@@ -56,7 +63,8 @@
     },
     // true = real clap. Subtract the predicted echo energy; what is left must be a clear onset of its own.
     check(T, micRms, lat, thr) {
-      if (!this.on) return true;
+      if (!this.on)
+        return true;
       const o = this.outAt(T, lat), pred = this.gain * o.peak * 1.25;
       if (pred < 2e-3) {
         this.stats.passed++;
@@ -64,11 +72,14 @@
       }
       const resid = Math.sqrt(Math.max(0, micRms * micRms - pred * pred));
       const ok = resid > Math.max(thr || 3e-3, pred * (o.jump > this.JUMP ? 0.55 : 0.35));
-      if (ok) this.stats.passed++;
-      else this.stats.echoRej++;
+      if (ok)
+        this.stats.passed++;
+      else
+        this.stats.echoRej++;
       return ok;
     }
   };
   root.EchoGate = G;
-  if (typeof module !== "undefined") module.exports = G;
+  if (typeof module !== "undefined")
+    module.exports = G;
 })(typeof window !== "undefined" ? window : globalThis);

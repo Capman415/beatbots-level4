@@ -52,7 +52,8 @@
   const SOFT_MAX = window.GroupGate ? GroupGate.SOFT_MAX : 0.72, LOUD_MIN = window.GroupGate ? GroupGate.LOUD_MIN : 0.7;
   let dirtPat = null;
   function dirt() {
-    if (dirtPat) return dirtPat;
+    if (dirtPat)
+      return dirtPat;
     const c = document.createElement("canvas");
     c.width = c.height = 256;
     const g = c.getContext("2d");
@@ -70,7 +71,8 @@
   }
   let ePat = null, shaftC = null, dustC = null;
   function dustSprite() {
-    if (dustC) return dustC;
+    if (dustC)
+      return dustC;
     const c = document.createElement("canvas");
     c.width = c.height = 128;
     const g = c.getContext("2d"), gr = g.createRadialGradient(64, 64 - 0.3 * 64, 0, 64, 64 - 0.3 * 64, 64);
@@ -83,9 +85,11 @@
   }
   const litCache = {};
   function litC(k, amb) {
-    if (litCache[k]) return litCache[k];
+    if (litCache[k])
+      return litCache[k];
     const im = BB.V2["tun" + k];
-    if (!im) return null;
+    if (!im)
+      return null;
     const c = document.createElement("canvas");
     c.width = 1140;
     c.height = 420;
@@ -98,9 +102,11 @@
     return litCache[k] = c;
   }
   function earthPat() {
-    if (ePat) return ePat;
+    if (ePat)
+      return ePat;
     const e = BB.V2.earth;
-    if (!e) return dirt();
+    if (!e)
+      return dirt();
     const D = rail(4) + 200 - GY + 2e3, c = document.createElement("canvas");
     c.width = e.width;
     c.height = D;
@@ -147,7 +153,8 @@
         ctx.stroke();
         ctx.restore();
       }
-      if (k) BB.text("CLAP!", 0, -60, 30, COL.yellow, { stroke: 4 });
+      if (k)
+        BB.text("CLAP!", 0, -60, 30, COL.yellow, { stroke: 4 });
       ctx.restore();
     }
   };
@@ -190,7 +197,8 @@
   const crackLine = (p, f, r) => {
     const n = Math.max(2, Math.ceil(p.length * f));
     ctx.beginPath();
-    for (let i = 0; i < n && i < p.length; i++) ctx.lineTo(p[i][0] * r, p[i][1] * r - r * 0.05);
+    for (let i = 0; i < n && i < p.length; i++)
+      ctx.lineTo(p[i][0] * r, p[i][1] * r - r * 0.05);
   };
   function drawPick(x, y, r, dt) {
     const a = dt < 0.07 ? -0.9 + 1 * (dt / 0.07) : dt < 0.35 ? 0.1 - 1 * ease.out((dt - 0.07) / 0.28) : -0.9, L = r * 1.05;
@@ -219,11 +227,13 @@
   function drawRock(x, y, r, kind, stage, shake, wob, o = {}) {
     const k = o.k, L = k != null ? LIGHT[k] : null;
     const img = kind === "crystal" ? "crystal" : "rock", h = r * 1.85 * (kind === "crystal" ? 1.12 : 1), base = r * 0.85;
-    if (o.shadow !== false) BB.contactShadow(x, y + base, r * 1.15, 0.5);
+    if (o.shadow !== false)
+      BB.contactShadow(x, y + base, r * 1.15, 0.5);
     ctx.save();
     ctx.translate(x + Math.sin(BB.t * 60) * shake, y);
     ctx.rotate(Math.sin(BB.t * 14) * wob * 0.08);
-    if (kind === "crystal") BB.glow(0, 0, r * 1.35, o.mixed ? "rgba(255,170,120,A)" : "rgba(150,220,255,A)", 0.45);
+    if (kind === "crystal")
+      BB.glow(0, 0, r * 1.35, o.mixed ? "rgba(255,170,120,A)" : "rgba(150,220,255,A)", 0.45);
     const amb = o.mixed ? "#ff7a40" : kind === "boulder" ? "#2a2030" : L ? L.amb : null;
     BB.prop(img, 0, base, h, { shadow: false, rim: L ? L.rim : "#ffe0b0", amb, ambA: kind === "boulder" ? 0.3 : 0.16 });
     const g = 0.25 + stage * 0.18;
@@ -239,7 +249,8 @@
       const f = Math.min(1, stage / 4), lq = !BB.q, list = crackPaths.filter((c) => c.d === 0 || f > 0.45 && c.at < f * 1.3 && !(lq && c.d > 1));
       for (const c of list) {
         const g2 = c.d === 0 ? f : Math.min(1, (f - 0.45) / 0.55);
-        if (g2 <= 0) continue;
+        if (g2 <= 0)
+          continue;
         const lw = (c.d === 0 ? 7 : c.d === 1 ? 4.5 : 3) * (0.7 + 0.3 * f);
         if (!lq) {
           ctx.strokeStyle = "rgba(255,236,200,.55)";
@@ -319,7 +330,8 @@
         dust: []
       });
       this.introT0 = BB.t;
-      for (let i = 0; i < 40; i++) this.dust.push({ x: Math.random() * W, y: Math.random() * H, s: 1 + Math.random() * 3, v: 5 + Math.random() * 12 });
+      for (let i = 0; i < 40; i++)
+        this.dust.push({ x: Math.random() * W, y: Math.random() * H, s: 1 + Math.random() * 3, v: 5 + Math.random() * 12 });
       if (this.o.skipIntro || this.o.startAt) {
         this.skipIntro(this.o.startAt || 0);
       }
@@ -390,7 +402,8 @@
           this.jr.mode = "gone";
         }
       }
-      if (this.jr.mode === "gone") this.hatch = Math.max(0, this.hatch - dt * 1.5);
+      if (this.jr.mode === "gone")
+        this.hatch = Math.max(0, this.hatch - dt * 1.5);
       ev("ohno@13.4", () => {
         BB.say("oh_no");
         this.sprCheer = -1;
@@ -414,13 +427,17 @@
       if (t > 21) {
         this.elevY = lerp(GY, rail(0), ease.inOut(clamp((t - 21) / 4, 0, 1)));
       }
-      for (let k = 0; k < 5; k++) ev("lit".concat(k, "@").concat(23.6 + k * 0.8), () => {
-        BB.sfx.clunk();
-        BB.shake(2);
-        this.litT = BB.t;
-      });
-      for (let k = 0; k < 5; k++) if (t > 23.6 + k * 0.8) this.lit[k] = Math.min(1, this.lit[k] + dt * 4);
-      if (t > 27.6) this.pipeGlow = Math.min(1, (t - 27.6) / 1.2);
+      for (let k = 0; k < 5; k++)
+        ev(`lit${k}@${23.6 + k * 0.8}`, () => {
+          BB.sfx.clunk();
+          BB.shake(2);
+          this.litT = BB.t;
+        });
+      for (let k = 0; k < 5; k++)
+        if (t > 23.6 + k * 0.8)
+          this.lit[k] = Math.min(1, this.lit[k] + dt * 4);
+      if (t > 27.6)
+        this.pipeGlow = Math.min(1, (t - 27.6) / 1.2);
       ev("pipe@27.6", () => BB.sfx.whoosh(BB.ac.currentTime, 1.2));
       if (t > 28.8 && t < 31.2) {
         const k = ease.inOut(clamp((t - 28.8) / 2.4, 0, 1));
@@ -453,15 +470,18 @@
       if (newFloor) {
         this.cardT = BB.t;
         this.prewarm(R.f);
-        if (ROCKS[this.rockI + 2]) this.prewarm(ROCKS[this.rockI + 2].f);
+        if (ROCKS[this.rockI + 2])
+          this.prewarm(ROCKS[this.rockI + 2].f);
         if (R.f === 4) {
           this.startCave();
         }
         this.voEnd = BB.t + 9;
         setTimeout(() => {
-          if (BB.scene === this) this.voEnd = BB.t + BB.say(FLOORS[R.f].vo);
+          if (BB.scene === this)
+            this.voEnd = BB.t + BB.say(FLOORS[R.f].vo);
         }, R.f === 4 ? 3e3 : first ? 2200 : 300);
-      } else this.voEnd = BB.t + 0.5;
+      } else
+        this.voEnd = BB.t + 0.5;
       if (R.bonus && !newFloor) {
         this.voEnd = BB.t + 0.5;
         BB.caption = { txt: "BONUS! Andante + forte: slow and LOUD!", who: "sprocket", until: BB.t + 3.5, start: BB.t };
@@ -474,7 +494,8 @@
       earthPat();
       dustSprite();
       litC(k, L.amb);
-      for (const [n, a, amb] of [["rock", 0.22, L.amb], ["rock", 0.16, L.amb], ["rock", 0.16, "#ff7a40"], ["rock", 0.3, "#2a2030"], ["crystal", 0.16, L.amb], ["crystal", 0.16, "#ff7a40"], ["rubble", 0.2, L.amb], ["funnel", 0.12, L.amb]]) BB.tinted(n, n === "rock" || n === "crystal" ? k === 4 && amb === "#ff7a40" ? L.rim : L.rim : L.rim, amb, a);
+      for (const [n, a, amb] of [["rock", 0.22, L.amb], ["rock", 0.16, L.amb], ["rock", 0.16, "#ff7a40"], ["rock", 0.3, "#2a2030"], ["crystal", 0.16, L.amb], ["crystal", 0.16, "#ff7a40"], ["rubble", 0.2, L.amb], ["funnel", 0.12, L.amb]])
+        BB.tinted(n, n === "rock" || n === "crystal" ? k === 4 && amb === "#ff7a40" ? L.rim : L.rim : L.rim, amb, a);
     }
     startCave() {
       this.caveT = BB.t;
@@ -487,15 +508,18 @@
       BB.caption = { txt: "Cave-in! Clear it with rhythm!", who: "sprocket", until: BB.t + 2.8, start: BB.t };
     }
     updCave() {
-      if (!this.caveRocks) return;
+      if (!this.caveRocks)
+        return;
       const t = BB.t - this.caveT;
       for (const r of this.caveRocks) {
         if (!r.landed && t > r.d + 0.55) {
           r.landed = 1;
           BB.shake(4);
           BB.sfx.clunk();
-          if (BB.q) this.caveDust.push({ x: r.x, y: rail(4) - 10, t: BB.t, r: r.h * 1.3 }, { x: r.x + r.h * 0.6, y: rail(4) - 30, t: BB.t + 0.08, r: r.h }, { x: r.x - r.h * 0.6, y: rail(4) - 20, t: BB.t + 0.12, r: r.h * 0.9 });
-          else this.caveDust.push({ x: r.x, y: rail(4) - 10, t: BB.t, r: r.h * 1.6 });
+          if (BB.q)
+            this.caveDust.push({ x: r.x, y: rail(4) - 10, t: BB.t, r: r.h * 1.3 }, { x: r.x + r.h * 0.6, y: rail(4) - 30, t: BB.t + 0.08, r: r.h }, { x: r.x - r.h * 0.6, y: rail(4) - 20, t: BB.t + 0.12, r: r.h * 0.9 });
+          else
+            this.caveDust.push({ x: r.x, y: rail(4) - 10, t: BB.t, r: r.h * 1.6 });
         }
       }
       this.caveDust = this.caveDust.filter((d) => BB.t - d.t < 1.6);
@@ -504,9 +528,11 @@
       return this.caveRocks && BB.t - this.caveT > 2.2 && (!this.caveClearT || BB.t - this.caveClearT > 0.85);
     }
     drawCave(k, bakeOnly) {
-      if (k !== 4 || !this.caveRocks) return;
+      if (k !== 4 || !this.caveRocks)
+        return;
       const settled = this.pileSettled();
-      if (bakeOnly && !settled) return;
+      if (bakeOnly && !settled)
+        return;
       if (!bakeOnly && settled && this._stat) {
         this.drawDust();
         return;
@@ -533,13 +559,17 @@
       }
       const cl = this.caveClearT ? clamp((BB.t - this.caveClearT) / 0.8, 0, 1) : 0;
       this.caveRocks.forEach((r, i) => {
-        if (i >= Math.ceil(this.caveRocks.length * keep) && !(cl < 1 && i < Math.ceil(this.caveRocks.length * (keep + 0.5)))) return;
+        if (i >= Math.ceil(this.caveRocks.length * keep) && !(cl < 1 && i < Math.ceil(this.caveRocks.length * (keep + 0.5))))
+          return;
         const ft = clamp((t - r.d) / 0.55, 0, 1), yy = lerp(r.y0 + r.h, rail(4) + 8, ft * ft);
-        if (t < r.d) return;
+        if (t < r.d)
+          return;
         const leaving = i >= Math.ceil(this.caveRocks.length * keep);
         const a = leaving ? 1 - cl : 1;
-        if (a <= 0) return;
-        if (ft >= 1) BB.contactShadow(r.x, rail(4) + 6, r.h * 0.6, 0.45 * a);
+        if (a <= 0)
+          return;
+        if (ft >= 1)
+          BB.contactShadow(r.x, rail(4) + 6, r.h * 0.6, 0.45 * a);
         ctx.globalAlpha = a;
         BB.prop("rock", r.x, yy - (leaving ? cl * 60 : 0), r.h, { box: B, rim: L.rim, amb: L.amb, ambA: 0.22, shadow: false, rot: r.r * (1 - ft * 0.6) });
         ctx.globalAlpha = 1;
@@ -547,10 +577,12 @@
       if (!bakeOnly) {
         ctx.restore();
         this.drawDust();
-      } else ctx.restore();
+      } else
+        ctx.restore();
     }
     drawDust() {
-      if (!this.caveDust.length) return;
+      if (!this.caveDust.length)
+        return;
       const y = top(4);
       ctx.save();
       ctx.beginPath();
@@ -559,7 +591,8 @@
       const ds = dustSprite();
       for (const d of this.caveDust) {
         const dt = BB.t - d.t;
-        if (dt < 0) continue;
+        if (dt < 0)
+          continue;
         const k2 = dt / 1.6, rr = d.r * (0.5 + k2 * 1.2);
         ctx.globalAlpha = 1 - k2;
         ctx.drawImage(ds, d.x - rr, d.y - rr * 1.3, rr * 2, rr * 2);
@@ -601,52 +634,68 @@
     autoLat(dt) {
       const G = window.GroupGate, a = this._dts = this._dts || [];
       a.push(dt);
-      if (a.length > 16) a.shift();
-      if (a.length < 6 || a.length % 2) return;
+      if (a.length > 16)
+        a.shift();
+      if (a.length < 6 || a.length % 2)
+        return;
       const m = a.slice().sort((x, y) => x - y)[a.length >> 1], TL = window.ClapDet && ClapDet.TickLat, tb = TL && TL.heard(BB.ac.currentTime) ? Math.max(0, TL.lat - G.LAT_BASE) : null, tg = Math.min(0.25, Math.max(tb != null ? tb - 0.03 : 0, Math.min(tb != null ? tb + 0.12 : 1, m)));
-      if (Math.abs(tg - G.lat) > 0.015) G.lat += (tg - G.lat) * 0.5;
+      if (Math.abs(tg - G.lat) > 0.015)
+        G.lat += (tg - G.lat) * 0.5;
     }
     handleOnsets() {
       var _a, _b;
       const b = this.beat, ons = BB.mic.take();
-      if (!b || this.state !== "dig" && this.state !== "count") return;
-      if (window.ClapDet && ClapDet.expect) ClapDet.expect(b.spb, BB.ac.currentTime + 0.5);
-      if (BB.MLP && BB.MLP.on) BB.MLP.openWin("mine", b.t0 - 0.12, BB.ac.currentTime + 0.3);
-      if (this.R.dyn) BB.dynMode = BB.t;
+      if (!b || this.state !== "dig" && this.state !== "count")
+        return;
+      if (window.ClapDet && ClapDet.expect)
+        ClapDet.expect(b.spb, BB.ac.currentTime + 0.5);
+      if (BB.MLP && BB.MLP.on)
+        BB.MLP.openWin("mine", b.t0 - 0.12, BB.ac.currentTime + 0.3);
+      if (this.R.dyn)
+        BB.dynMode = BB.t;
       if (this.R.dyn === "p") {
         BB.softClap = BB.t;
-        if (b.spb < 0.5) BB.fastSoft = BB.t;
+        if (b.spb < 0.5)
+          BB.fastSoft = BB.t;
       }
       const G = window.GroupGate, tol = G ? G.tol(b.spb) : Math.min(0.17, b.spb * 0.4);
       for (const o of ons) {
         const pk = (_b = (_a = o.v) != null ? _a : o.lvl) != null ? _b : o.e;
-        if (BB.talking && BB.t < BB.talking.until && !BB.debug) {
+        if (BB.voBlocks && BB.voBlocks() || !BB.voBlocks && BB.talking && BB.t < BB.talking.until && !BB.debug) {
           this.log({ on: o.t, peak: pk, res: "ignored-during-playback" });
           continue;
         }
         const bi = Math.round((o.t - b.t0 - (G ? G.lat : 0)) / b.spb), dt = o.t - (b.t0 + bi * b.spb), inT = G ? G.inTol(dt, b.spb) : Math.abs(dt) <= tol, ex = b.t0 + bi * b.spb;
-        if (G && bi >= 4 && !o.up && dt > -0.1 && dt < 0.3) this.autoLat(dt);
+        if (G && bi >= 4 && !o.up && dt > -0.1 && dt < 0.3)
+          this.autoLat(dt);
         if (bi >= 4 && !inT) {
-          if (!o.up) this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: dt < 0 ? "early" : "late" });
-          if (this.gated() && !o.up && (this._dts || []).length >= 8 && G.isStray(dt, b.spb)) (b.strays = b.strays || []).push(o.t);
+          if (!o.up)
+            this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: dt < 0 ? "early" : "late" });
+          if (this.gated() && !o.up && (this._dts || []).length >= 8 && G.isStray(dt, b.spb))
+            (b.strays = b.strays || []).push(o.t);
           continue;
         }
-        if (bi < 4 && this.state !== "count" || bi < 0 || !inT) continue;
-        if (BB.kMode && b.lastOn != null && o.t - b.lastOn < 0.15) continue;
+        if (bi < 4 && this.state !== "count" || bi < 0 || !inT)
+          continue;
+        {
+          const bm = BB.bounceMs ? BB.bounceMs() : 0.1;
+          if (b.lastOn != null && o.t - b.lastOn < bm)
+            continue;
+        }
         if (b.hits[bi] || b.pend && b.pend[bi] || o.up) {
           this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "rejected-as-double" });
           continue;
         }
-        const d = this.R.dyn;
-        if (BB.kMode) {
-        } else if (d === "p" && o.lvl > Math.min(0.95, SOFT_MAX * 1.4)) {
+        const d = this.R.dyn, gb = BB.gradeBand && BB.gradeBand();
+        if (gb === "k1") {
+        } else if (d === "p" && o.lvl > Math.min(0.95, SOFT_MAX * (gb === "m" ? 1.5 : 1.4))) {
           this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "too-loud" });
           this.tooLoud = BB.t;
           BB.sfx.wobble();
           BB.burst(ROCK_X, rail(this.R.f) - 170, 14, { world: 1, cols: ["#cfefff", "#fff", "#9fe0ff"], kind: "star", size: 9, g: 200, speed: 300 });
           continue;
         }
-        if (!BB.kMode && d === "f" && !(G && o.rms ? G.isLoud(o.rms, G.sensMul || 1) : o.lvl >= LOUD_MIN)) {
+        if (gb !== "k1" && d === "f" && !(G && o.rms ? G.isLoud(o.rms, G.sensMul || 1) : o.lvl >= LOUD_MIN * (gb === "m" ? 0.92 : 1))) {
           this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "too soft" });
           this.tooSoft = BB.t;
           BB.burst(ROCK_X - 120, rail(this.R.f) - 150, 6, { world: 1, col: "#b9a58c", kind: "dust", size: 16, g: -40, speed: 120 });
@@ -659,14 +708,17 @@
         }
         b.lastOn = o.t;
         this.log({ i: bi, exp: ex, on: o.t, peak: pk, res: "hit" });
-        if (this.state === "count") this.warmClap(bi);
-        else this.hit(bi);
+        if (this.state === "count")
+          this.warmClap(bi);
+        else
+          this.hit(bi);
       }
     }
     // v14.4.8: Note Mine clap log (timing only, never audio); can never break gameplay
     log(o) {
       try {
-        if (BB.clapLog && BB.clapLog.add) BB.clapLog.add(Object.assign({ bpm: this.beat ? Math.round(60 / this.beat.spb) : this.R && this.R.bpm }, o));
+        if (BB.clapLog && BB.clapLog.add)
+          BB.clapLog.add(Object.assign({ bpm: this.beat ? Math.round(60 / this.beat.spb) : this.R && this.R.bpm }, o));
       } catch (e) {
       }
     }
@@ -682,10 +734,13 @@
       this.strikes++;
       {
         const n = strikesFor(this.R), st = Math.floor(this.strikes * NEED / n + 1e-9);
-        while (this.stage < st && this.stage < NEED) this.crack(1);
+        while (this.stage < st && this.stage < NEED)
+          this.crack(1);
       }
-      if (d === "p" && b.spb < 0.5) BB.sfx.tink(void 0, 0.3, true);
-      else BB.sfx.tink();
+      if (d === "p" && b.spb < 0.5)
+        BB.sfx.tink(void 0, 0.3, true);
+      else
+        BB.sfx.tink();
       if (d === "f") {
         BB.sfx.boom();
         BB.shake(5);
@@ -694,27 +749,36 @@
     }
     resolveGroup() {
       const b = this.beat, G = window.GroupGate;
-      if (!b || !G) return;
+      if (!b || !G)
+        return;
       const now = BB.ac.currentTime - 0.02;
-      if (b.strays) b.strays = b.strays.filter((t) => {
-        if (now < t + 0.12) return true;
-        G.stray(t);
-        return false;
-      });
-      if (b.pend) for (const k in b.pend) {
-        if (this.beat !== b) return;
-        const bi = +k, tc = b.t0 + bi * b.spb;
-        if (now < tc + G.lat + Math.max(G.W1, G.win(b.spb)[1]) + 0.02) continue;
-        delete b.pend[k];
-        const m = G.judge(tc, this.R.dyn === "p", b.spb), po = b.pon && b.pon[k] || [];
-        this.log({ i: bi, exp: tc, on: po[0], peak: po[1], res: m.ok ? "hit" : "too soft" });
-        if (m.ok && this.state === "count") this.warmClap(bi);
-        else if (m.ok && this.state === "dig") this.hit(bi);
-        else {
-          this.fewHands = BB.t;
-          if (this.state === "count") this.warm = 0;
+      if (b.strays)
+        b.strays = b.strays.filter((t) => {
+          if (now < t + 0.12)
+            return true;
+          G.stray(t);
+          return false;
+        });
+      if (b.pend)
+        for (const k in b.pend) {
+          if (this.beat !== b)
+            return;
+          const bi = +k, tc = b.t0 + bi * b.spb;
+          if (now < tc + G.lat + Math.max(G.W1, G.win(b.spb)[1]) + 0.02)
+            continue;
+          delete b.pend[k];
+          const m = G.judge(tc, this.R.dyn === "p", b.spb), po = b.pon && b.pon[k] || [];
+          this.log({ i: bi, exp: tc, on: po[0], peak: po[1], res: m.ok ? "hit" : "too soft" });
+          if (m.ok && this.state === "count")
+            this.warmClap(bi);
+          else if (m.ok && this.state === "dig")
+            this.hit(bi);
+          else {
+            this.fewHands = BB.t;
+            if (this.state === "count")
+              this.warm = 0;
+          }
         }
-      }
     }
     // v13.2 warm-up: the first FOUR claps in a row on the beat are the count-in; then every on-beat clap is a pickaxe strike
     warmClap(bi) {
@@ -723,7 +787,8 @@
       this.warm = bi === this.warmLast + 1 ? this.warm + 1 : 1;
       this.warmLast = bi;
       this.marks = [0, 0, 0, 0];
-      for (let i = 0; i < this.warm; i++) this.marks[(bi - i) % 4] = 0.01;
+      for (let i = 0; i < this.warm; i++)
+        this.marks[(bi - i) % 4] = 0.01;
       if (this.warm >= WARM) {
         this.state = "dig";
         this.marks = [0, 0, 0, 0];
@@ -735,20 +800,25 @@
     evalMeasures() {
       const b = this.beat;
       this.resolveGroup();
-      if (this.state !== "dig") return;
+      if (this.state !== "dig")
+        return;
       this.streakCheck();
       const tol = window.GroupGate ? GroupGate.tol(b.spb) : 0.17;
       while (BB.ac.currentTime > b.t0 + (b.evalM * 4 + 3) * b.spb + Math.max(tol, 0.2) + 0.03 + (window.GroupGate ? GroupGate.lat + 0.03 : 0)) {
         const m = b.evalM;
         let n = 0;
-        for (let i = 0; i < 4; i++) if (b.hits[m * 4 + i]) n++;
+        for (let i = 0; i < 4; i++)
+          if (b.hits[m * 4 + i])
+            n++;
         b.evalM++;
         this.marks = [0, 0, 0, 0];
-        if (m <= (this.warmEnd != null ? Math.floor(this.warmEnd / 4) : 0)) continue;
+        if (m <= (this.warmEnd != null ? Math.floor(this.warmEnd / 4) : 0))
+          continue;
         if (n >= 2) {
         } else {
-          const talking = BB.talking && BB.t < BB.talking.until;
-          if (talking && !BB.debug) continue;
+          const talking = BB.voBlocks ? BB.voBlocks() : BB.talking && BB.t < BB.talking.until && !BB.debug;
+          if (talking)
+            continue;
           this.wob = 1;
           BB.sfx.wobble();
           this.shrugT = BB.t;
@@ -763,12 +833,15 @@
     // v14.0 / v14.5.2: after warm-up, strikes are consecutive; a miss drops ONE strike (not a full reset)
     streakCheck() {
       const b = this.beat, G = window.GroupGate;
-      if (!b || b.chk == null) return;
+      if (!b || b.chk == null)
+        return;
       const close = (G ? G.lat + Math.max(G.W1, G.win(b.spb)[1]) : 0.2) + 0.06;
       while (this.beat === b && this.state === "dig" && BB.ac.currentTime > b.t0 + b.chk * b.spb + close) {
         const bi = b.chk++;
-        if (b.hits[bi] || b.pend && b.pend[bi]) continue;
-        if (BB.talking && BB.t < BB.talking.until && !BB.debug || this.ovPop && BB.t - this.ovPop < 1) continue;
+        if (b.hits[bi] || b.pend && b.pend[bi])
+          continue;
+        if (BB.talking && BB.t < BB.talking.until && !BB.debug || this.ovPop && BB.t - this.ovPop < 1)
+          continue;
         this.log({ i: bi, exp: b.t0 + bi * b.spb, res: "miss" });
         if (this.strikes > 0) {
           this.strikes = Math.max(0, this.strikes - 1);
@@ -796,9 +869,11 @@
       {
         const ix = ROCK_X - 30, iy = rail(R.f) - 170, lq = !BB.q;
         BB.burst(ix, iy, lq ? 8 : 18, { world: 1, cols: ["#a08c78", "#6e5a4a", "#cbb79c"], speed: 520, size: 10, kind: "dot" });
-        if (!lq) BB.burst(ix, iy, 10, { world: 1, cols: ["rgba(210,190,160,.5)"], speed: 160, size: 22, kind: "dot", g: -40 });
+        if (!lq)
+          BB.burst(ix, iy, 10, { world: 1, cols: ["rgba(210,190,160,.5)"], speed: 160, size: 22, kind: "dot", g: -40 });
       }
-      if (this.stage >= NEED) this.popNote();
+      if (this.stage >= NEED)
+        this.popNote();
     }
     popNote() {
       const R = this.R;
@@ -812,7 +887,8 @@
       BB.burst(ROCK_X, rail(R.f) - 150, 40, { world: 1, cols: ["#ffe066", "#fff", "#6ee678"], speed: 800, size: 14, kind: "star", g: 500 });
       this.halves = { t: BB.t };
       this.flying.push({ t0: BB.t, x0: ROCK_X, y0: rail(R.f) - 150, x1: PIPE_X, y1: rail(R.f) - 120, gold: !!R.bonus, f: R.f });
-      if (this.rockI === 0) setTimeout(() => BB.scene === this && BB.say("got_note"), 500);
+      if (this.rockI === 0)
+        setTimeout(() => BB.scene === this && BB.say("got_note"), 500);
       if (R.f === 4 && this.caveRocks) {
         this.caveCleared = (this.caveCleared || 0) + 1;
         this.caveClearT = BB.t;
@@ -824,7 +900,8 @@
       }
     }
     manualOverride() {
-      if (BB.t - this.lastOverride < 0.5) return;
+      if (BB.t - this.lastOverride < 0.5)
+        return;
       this.lastOverride = BB.t;
       this.ovPop = BB.t;
       try {
@@ -852,26 +929,33 @@
     }
     update(dt) {
       const t = BB.t;
-      if (BB.keys.includes(" ")) this.manualOverride();
+      if (BB.keys.includes(" "))
+        this.manualOverride();
       if (BB.keys.includes("p")) {
         this.pause();
         return;
       }
       if (this.state === "intro") {
         this.intro(t - this.introT0, dt);
-        if (BB.keys.includes("s")) this.skipIntro();
+        if (BB.keys.includes("s"))
+          this.skipIntro();
       }
-      if (this.introT0 === void 0) this.introT0 = t;
+      if (this.introT0 === void 0)
+        this.introT0 = t;
       this.wob = Math.max(0, this.wob - dt * 1.5);
       this.shk = Math.max(0, this.shk - dt * 3);
-      for (let i = 0; i < 4; i++) if (this.marks[i]) this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
-      if (this.botWalk !== void 0 && !this.botRoll) this.rollBot(1960, BOT_X, 1.4, t);
+      for (let i = 0; i < 4; i++)
+        if (this.marks[i])
+          this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
+      if (this.botWalk !== void 0 && !this.botRoll)
+        this.rollBot(1960, BOT_X, 1.4, t);
       this.botWalk = void 0;
       if (this.botRoll) {
         const r = this.botRoll, k = clamp((t - r.t) / r.dur, 0, 1);
         this.botX = lerp(r.from, r.to, ease.inOut(k));
         r.k = k;
-        if (k >= 1) this.botRoll = null;
+        if (k >= 1)
+          this.botRoll = null;
       }
       if (this.state === "drop") {
         const k = clamp((t - this.st) / 0.9, 0, 1);
@@ -883,12 +967,14 @@
         }
         if (k >= 1 && t > this.voEnd && this.lcWant && !this.lc) {
           this.lcWant = 0;
-          if (BB.mic.ok) this.lc = new BB.LoudCal(() => {
-            this.lc = null;
-            this.voEnd = BB.t + 0.3;
-          });
+          if (BB.mic.ok)
+            this.lc = new BB.LoudCal(() => {
+              this.lc = null;
+              this.voEnd = BB.t + 0.3;
+            });
         }
-        if (this.lc) this.lc.update();
+        if (this.lc)
+          this.lc.update();
         if (k >= 1 && t > this.voEnd && !this.lc && !this.lcWant) {
           this.landed = 0;
           this.state = "count";
@@ -903,7 +989,8 @@
         }
         this.handleOnsets();
         this.evalMeasures();
-      } else BB.mic.take();
+      } else
+        BB.mic.take();
       this.updCave();
       if (this.chipFly && !this.chipFly.done && BB.t - this.chipFly.t > 1.4) {
         this.chipFly.done = 1;
@@ -914,14 +1001,17 @@
       }
       if (this.state === "pop" && t - this.st > 2.4) {
         this.rockI++;
-        if (this.rockI >= ROCKS.length) this.finish();
-        else this.beginRock(false);
+        if (this.rockI >= ROCKS.length)
+          this.finish();
+        else
+          this.beginRock(false);
       }
       if (this.R && this.state !== "intro" && this.state !== "end") {
         const ty = rail(this.R.f);
         if (Math.abs(this.elevY - ty) > 1) {
           if (!this.moving) {
-            if (this.botRoll) return this.updTail(dt);
+            if (this.botRoll)
+              return this.updTail(dt);
             if (Math.abs(this.botX - 1960) > 2) {
               this.rollBot(this.botX, 1960, 1.1);
               return this.updTail(dt);
@@ -932,7 +1022,8 @@
           }
           this.elevY = Math.min(ty, this.elevY + dt * 340);
           this.cam.y = Math.min(camY(this.R.f), this.elevY - 140);
-          if (this.state === "drop") this.st = t;
+          if (this.state === "drop")
+            this.st = t;
         } else if (this.moving) {
           this.moving = 0;
           this.botOnElev = false;
@@ -949,7 +1040,8 @@
         if (t - n.t0 > 1.1) {
           this.flying.splice(i, 1);
           this.pipeNotes.push({ y: n.y1, gold: n.gold });
-          if (!n.gold) this.count++;
+          if (!n.gold)
+            this.count++;
           BB.sfx.ding();
           this.meterPop = t;
         }
@@ -962,9 +1054,12 @@
           this.binCount++;
         }
       }
-      if (this.R && this.R.prank && this.state === "dig" && !this.prank && this.beat && this.beatNow() > 8 && !(this.R.f === 4 && BB.t - (this.caveT || -99) < 9)) this.startPrank();
-      if (this.prank) this.updPrank(dt);
-      if (this.state === "end") this.updEnd(dt);
+      if (this.R && this.R.prank && this.state === "dig" && !this.prank && this.beat && this.beatNow() > 8 && !(this.R.f === 4 && BB.t - (this.caveT || -99) < 9))
+        this.startPrank();
+      if (this.prank)
+        this.updPrank(dt);
+      if (this.state === "end")
+        this.updEnd(dt);
       for (const d of this.dust) {
         d.y -= d.v * dt;
         d.x += Math.sin(t * 0.5 + d.s) * 6 * dt;
@@ -978,7 +1073,8 @@
       this.prank = { t: BB.t, x: 3400, ph: "in" };
       BB.sfx.glitch();
       setTimeout(() => {
-        if (BB.scene === this) BB.say("jr_giggle", { overlap: true });
+        if (BB.scene === this)
+          BB.say("jr_giggle", { overlap: true });
       }, 500);
     }
     updPrank(dt) {
@@ -1016,18 +1112,21 @@
       }
       if (p.ph === "out") {
         p.x += dt * 900;
-        if (p.x > 3500) p.ph = "done";
+        if (p.x > 3500)
+          p.ph = "done";
       }
-      if (this.pebbles) for (const q of this.pebbles) {
-        q.vy += 1600 * dt;
-        q.y += q.vy * dt;
-        q.x += q.vx * dt;
-        if (q.y > H - 70 && q.vy > 0) {
-          q.vy *= -0.4;
-          q.y = H - 70;
+      if (this.pebbles)
+        for (const q of this.pebbles) {
+          q.vy += 1600 * dt;
+          q.y += q.vy * dt;
+          q.x += q.vx * dt;
+          if (q.y > H - 70 && q.vy > 0) {
+            q.vy *= -0.4;
+            q.y = H - 70;
+          }
         }
-      }
-      if (this.pebbles) this.pebbles = this.pebbles.filter((q) => Math.abs(q.vy) > 40 || q.y < H - 75);
+      if (this.pebbles)
+        this.pebbles = this.pebbles.filter((q) => Math.abs(q.vy) > 40 || q.y < H - 75);
     }
     rollBot(from, to, dur, t = BB.t) {
       this.botRoll = { from, to, dur, t, k: 0 };
@@ -1067,7 +1166,8 @@
       }
       this.elevY = lerp(rail(4), GY, ease.inOut(clamp((t - E0) / 4, 0, 1)));
       c.z = lerp(1, 0.62, ease.inOut(clamp(t / 1.5, 0, 1)));
-      if (t > 4.8) c.z = lerp(0.62, 1, ease.inOut(clamp((t - 4.8) / 1.5, 0, 1)));
+      if (t > 4.8)
+        c.z = lerp(0.62, 1, ease.inOut(clamp((t - 4.8) / 1.5, 0, 1)));
       c.y = t < 5.2 ? this.elevY - 60 : lerp(GY - 60, 540, ease.inOut(clamp((t - 5.2) / 1.2, 0, 1)));
       c.x = 2400;
       if (t > 5.6 && !this.endSaid) {
@@ -1104,17 +1204,23 @@
         }
       }
       BB.drawParts();
-      if (this.state === "intro") this.drawIntroHUD();
-      else if (this.state !== "end") this.drawHUD();
-      if (this.lc) this.lc.draw(W / 2, 330);
+      if (this.state === "intro")
+        this.drawIntroHUD();
+      else if (this.state !== "end")
+        this.drawHUD();
+      if (this.lc)
+        this.lc.draw(W / 2, 330);
       BB.captionBox();
-      if (this.state !== "intro") this.drawChipFly();
+      if (this.state !== "intro")
+        this.drawChipFly();
       if (this.R && BB.t - this.cardT < 2.4 && this.state !== "end") {
         const F = FLOORS[this.R.f];
         BB.titleCard(this.rockI === 0 ? "ROOM 1: NOTE MINE" : F.name, this.rockI === 0 ? "Static Jr. ate the whole notes. Dig them back up!" : F.mean, (BB.t - this.cardT) / 2.4);
       }
-      if (this.state === "end") this.drawEnd();
-      if (BB.paused) BB.pauseOverlay(howTo, () => this.resume());
+      if (this.state === "end")
+        this.drawEnd();
+      if (BB.paused)
+        BB.pauseOverlay(howTo, () => this.resume());
     }
     drawWorld() {
       const c = this.cam, t = BB.t;
@@ -1134,18 +1240,21 @@
           this._ug = 1;
           this._stat = 0;
           const S = U.S, y0 = Math.max(GY, vy0), y1 = Math.min(U.Y1, vy1), x0 = Math.max(U.XA, vx0), x1 = Math.min(U.X1, vx1);
-          if (y1 > y0 && x1 > x0) ctx.drawImage(U.c, (x0 - U.XA) * S, (y0 - GY) * S, (x1 - x0) * S, (y1 - y0) * S, x0, y0, x1 - x0, y1 - y0);
+          if (y1 > y0 && x1 > x0)
+            ctx.drawImage(U.c, (x0 - U.XA) * S, (y0 - GY) * S, (x1 - x0) * S, (y1 - y0) * S, x0, y0, x1 - x0, y1 - y0);
           for (let k = 0; k < 5; k++) {
             const y = top(k), l = this.lit[k];
-            if (y > vy1 || y + 420 < vy0 || l >= 1) continue;
-            ctx.fillStyle = "rgba(10,6,4,".concat(0.78 * (1 - l), ")");
+            if (y > vy1 || y + 420 < vy0 || l >= 1)
+              continue;
+            ctx.fillStyle = `rgba(10,6,4,${0.78 * (1 - l)})`;
             ctx.beginPath();
             ctx.roundRect(1460, y, 1880, 420, 70);
             ctx.fill();
           }
           for (let k = 0; k < 5; k++) {
             const y = top(k);
-            if (y > vy1 || y + 420 < vy0) continue;
+            if (y > vy1 || y + 420 < vy0)
+              continue;
             this.drawTunnel(k);
           }
           this.drawPipe();
@@ -1168,21 +1277,26 @@
           ctx.restore();
         }
         this._stat = 1;
-      } else this._stat = 0;
+      } else
+        this._stat = 0;
       this._sk = key;
-      if (!this._stat) this.drawStatic(vx0, vx1, vy0, vy1);
+      if (!this._stat)
+        this.drawStatic(vx0, vx1, vy0, vy1);
       for (let k = 0; k < 5; k++) {
         const y = top(k);
-        if (y > vy1 || y + 420 < vy0) continue;
+        if (y > vy1 || y + 420 < vy0)
+          continue;
         this.drawTunnel(k);
       }
       this.drawPipe();
       const sh = BB.V2.shaft, sx0 = SHAFT[0], sw = SHAFT[1] - SHAFT[0], sb = rail(4) + 60;
-      if (sh && !this._stat) this.drawShaftWall(vx0, vx1, vy0, vy1);
+      if (sh && !this._stat)
+        this.drawShaftWall(vx0, vx1, vy0, vy1);
       this.drawRest(vx0, vx1, vy0, vy1);
     }
     ugBake() {
-      if (this._U) return this._U;
+      if (this._U)
+        return this._U;
       const S = 0.42, XA = -2400, X1 = 6400, Y1 = rail(4) + 300, c = document.createElement("canvas");
       c.width = Math.ceil((X1 - XA) * S);
       c.height = Math.ceil((Y1 - GY) * S);
@@ -1200,7 +1314,8 @@
       return this._U;
     }
     buildStatic(vx0, vx1, vy0, vy1) {
-      if (!this._sc) this._sc = document.createElement("canvas");
+      if (!this._sc)
+        this._sc = document.createElement("canvas");
       const c = this._sc, cv = ctx.canvas;
       c.width = cv.width;
       c.height = cv.height;
@@ -1208,9 +1323,11 @@
       this._sxy = BB.shakeXY.slice();
       this.drawStatic(vx0, vx1, vy0, vy1);
       this.drawShaftWall(vx0, vx1, vy0, vy1);
-      if (top(4) < vy1 && top(4) + 420 > vy0) this.drawCave(4, true);
+      if (top(4) < vy1 && top(4) + 420 > vy0)
+        this.drawCave(4, true);
       const yd = Math.max(0, Math.floor(m.d * GY + m.f));
-      if (yd < cv.height) c.getContext("2d").drawImage(cv, 0, yd, cv.width, cv.height - yd, 0, yd, cv.width, cv.height - yd);
+      if (yd < cv.height)
+        c.getContext("2d").drawImage(cv, 0, yd, cv.width, cv.height - yd, 0, yd, cv.width, cv.height - yd);
       this._built = 1;
     }
     drawStatic(vx0, vx1, vy0, vy1) {
@@ -1225,7 +1342,8 @@
       }
       for (let k = 0; k < 5; k++) {
         const y = top(k);
-        if (y > vy1 || y + 420 < vy0) continue;
+        if (y > vy1 || y + 420 < vy0)
+          continue;
         this.tunnelBg(k);
       }
     }
@@ -1237,7 +1355,8 @@
           shaftC.width = sw;
           shaftC.height = sb - GY;
           const g = shaftC.getContext("2d"), th = sh.height * sw / sh.width;
-          for (let y = 0; y < sb - GY; y += th) g.drawImage(sh, 0, y, sw, th);
+          for (let y = 0; y < sb - GY; y += th)
+            g.drawImage(sh, 0, y, sw, th);
           g.fillStyle = "rgba(12,7,4,.35)";
           g.fillRect(0, 0, sw, sb - GY);
           for (let k = 0; k < 5; k++) {
@@ -1247,7 +1366,8 @@
           }
         }
         const v0 = Math.max(GY, vy0), v1 = Math.min(sb, vy1);
-        if (v1 > v0) ctx.drawImage(shaftC, 0, v0 - GY, sw, v1 - v0, sx0, v0, sw, v1 - v0);
+        if (v1 > v0)
+          ctx.drawImage(shaftC, 0, v0 - GY, sw, v1 - v0, sx0, v0, sw, v1 - v0);
       }
     }
     drawRest(vx0, vx1, vy0, vy1) {
@@ -1262,7 +1382,8 @@
           ctx.fillStyle = "rgba(18,10,6,.55)";
           ctx.fillRect(sx0, y0, sw, rail(k) - y0 + 6);
         }
-        if (!!BB.q) BB.glow((SHAFT[0] + SHAFT[1]) / 2, rail(k) - 120, 320, "rgba(" + (k === 2 ? "150,200,255" : "255,190,110") + ",A)", 0.18 * this.lit[k]);
+        if (!!BB.q)
+          BB.glow((SHAFT[0] + SHAFT[1]) / 2, rail(k) - 120, 320, "rgba(" + (k === 2 ? "150,200,255" : "255,190,110") + ",A)", 0.18 * this.lit[k]);
         ctx.restore();
         ctx.fillStyle = "#6b4428";
         ctx.fillRect(sx0 - 6, y0 - 22, sw + 12, 22);
@@ -1340,7 +1461,8 @@
         }
         ctx.restore();
       }
-      if (this.jr.vis && this.jr.mode === "dive") BB.staticJr(this.jr.x, this.jr.y, 110, { noShadow: 1, rot: this.jr.rot, glitch: 0.6 });
+      if (this.jr.vis && this.jr.mode === "dive")
+        BB.staticJr(this.jr.x, this.jr.y, 110, { noShadow: 1, rot: this.jr.rot, glitch: 0.6 });
       if (vy0 < GY + 60) {
         ctx.fillStyle = BB.lg(GY, GY + 50, ["#a89a86", "#7e7262", "#4a3f35"]);
         ctx.fillRect(vx0, GY, SHAFT[0] - vx0, 46);
@@ -1353,7 +1475,8 @@
         ctx.strokeStyle = "rgba(30,22,16,.45)";
         ctx.lineWidth = 2;
         for (let x = Math.floor(vx0 / 160) * 160; x < vx1; x += 160) {
-          if (x > SHAFT[0] - 4 && x < SHAFT[1] + 4) continue;
+          if (x > SHAFT[0] - 4 && x < SHAFT[1] + 4)
+            continue;
           ctx.beginPath();
           ctx.moveTo(x, GY + 4);
           ctx.lineTo(x, GY + 44);
@@ -1412,7 +1535,8 @@
           ctx.moveTo(x0 + 3, 3);
           ctx.lineTo(x0 + fw - 3, 3);
           ctx.stroke();
-          for (const rx of [x0 + 10, x0 + fw / 2, x0 + fw - 28]) BB.rivet(rx, 12, 3);
+          for (const rx of [x0 + 10, x0 + fw / 2, x0 + fw - 28])
+            BB.rivet(rx, 12, 3);
           ctx.fillStyle = BB.lg(-8, 8, ["#ffffff", "#6c7775"]);
           ctx.strokeStyle = COL.ink;
           ctx.lineWidth = 2.5;
@@ -1425,7 +1549,8 @@
           ctx.restore();
         }
       }
-      if (this.jr.vis && this.jr.mode !== "dive") this.drawJrWarehouse();
+      if (this.jr.vis && this.jr.mode !== "dive")
+        this.drawJrWarehouse();
     }
     // v12.8: phones (low quality) draw the static warehouse (wall tiles, conveyor render, signs, Smash-O-Matic prop) from one baked,
     // reduced-resolution layer; only the belt cleats, bulbs, bin notes, button and Sprocket are drawn per frame. Desktop unchanged.
@@ -1437,7 +1562,8 @@
         for (let i = Math.floor(vx0 / tw); i * tw < vx1; i++) {
           ctx.save();
           ctx.translate(i * tw + (i % 2 ? tw : 0), 0);
-          if (i % 2) ctx.scale(-1, 1);
+          if (i % 2)
+            ctx.scale(-1, 1);
           ctx.drawImage(wh, 0, 0, tw, th);
           ctx.restore();
         }
@@ -1470,8 +1596,10 @@
     }
     whBake() {
       const V = BB.V2;
-      if (!V.wh || !V.conveyor) return null;
-      if (this._wh) return this._wh;
+      if (!V.wh || !V.conveyor)
+        return null;
+      if (this._wh)
+        return this._wh;
       const S = 0.42, XA = -2400, X1 = 6400, Y1 = GY + 40, c = document.createElement("canvas");
       c.width = Math.ceil((X1 - XA) * S);
       c.height = Math.ceil(Y1 * S);
@@ -1485,8 +1613,10 @@
     drawWarehouse(vx0, vx1) {
       const t = BB.t;
       const lq = !BB.q, bk = lq ? this.whBake() : null, baked = !!bk;
-      if (baked) ctx.drawImage(bk.c, bk.XA, 0, bk.X1 - bk.XA, bk.Y1);
-      else this.whStatic(vx0, vx1);
+      if (baked)
+        ctx.drawImage(bk.c, bk.XA, 0, bk.X1 - bk.XA, bk.Y1);
+      else
+        this.whStatic(vx0, vx1);
       {
         const im = BB.V2.conveyor;
         if (im) {
@@ -1510,27 +1640,29 @@
             ctx.fillRect(xx, by0, 6, by1 - by0);
           }
           ctx.restore();
-          if (!baked) for (const px of [42, 1157]) {
-            const [rx, ry] = P(px, 75);
-            ctx.save();
-            ctx.translate(rx, ry);
-            ctx.scale(1, 0.8);
-            ctx.rotate(t * 2.4);
-            ctx.strokeStyle = "rgba(40,45,45,.7)";
-            ctx.lineWidth = 3;
-            for (let k = 0; k < 3; k++) {
-              ctx.rotate(Math.PI / 3);
-              ctx.beginPath();
-              ctx.moveTo(-14, 0);
-              ctx.lineTo(14, 0);
-              ctx.stroke();
+          if (!baked)
+            for (const px of [42, 1157]) {
+              const [rx, ry] = P(px, 75);
+              ctx.save();
+              ctx.translate(rx, ry);
+              ctx.scale(1, 0.8);
+              ctx.rotate(t * 2.4);
+              ctx.strokeStyle = "rgba(40,45,45,.7)";
+              ctx.lineWidth = 3;
+              for (let k = 0; k < 3; k++) {
+                ctx.rotate(Math.PI / 3);
+                ctx.beginPath();
+                ctx.moveTo(-14, 0);
+                ctx.lineTo(14, 0);
+                ctx.stroke();
+              }
+              ctx.restore();
             }
-            ctx.restore();
-          }
           for (let k = 0; k < 11; k++) {
             const [lx, ly] = P(137 + 92 * k, 70), on = (k + Math.floor(t * 5)) % 3 === 0;
             if (on) {
-              if (BB.q) BB.glow(lx, ly, 26, "rgba(255,214,90,A)", 0.7);
+              if (BB.q)
+                BB.glow(lx, ly, 26, "rgba(255,214,90,A)", 0.7);
               ctx.fillStyle = "rgba(255,250,215,.9)";
               ctx.beginPath();
               ctx.arc(lx, ly, 8, 0, 7);
@@ -1545,7 +1677,8 @@
         }
       }
       const bx = BIN_X;
-      for (let i = 0; i < Math.min(this.binCount, 10); i++) BB.solidWhole(bx - 60 + i % 4 * 40, GY - 160 - Math.floor(i / 4) * 24 + i % 2 * 6, 24, { rot: (i % 3 - 1) * 0.3 });
+      for (let i = 0; i < Math.min(this.binCount, 10); i++)
+        BB.solidWhole(bx - 60 + i % 4 * 40, GY - 160 - Math.floor(i / 4) * 24 + i % 2 * 6, 24, { rot: (i % 3 - 1) * 0.3 });
       BB.prop("bin", bx, GY + 4, 170, { shadowA: 0.4 });
       BB.rrect(bx - 85, GY - 108, 170, 42, 10, BB.lg(GY - 108, GY - 66, ["#fbf6e6", "#ddd5bd"]), "#8a806b", 3);
       BB.text("WHOLE NOTES", bx, GY - 86, 20, "#28403c");
@@ -1564,7 +1697,8 @@
           const h = 215, s2 = h / im.height, w = im.width * s2, x0 = BTN_X - w / 2, y0 = GY - h, capH = im.height * 0.17, pz = pressed ? 6 : 0;
           ctx.drawImage(im, 0, capH, im.width, im.height - capH, x0, y0 + capH * s2, w, (im.height - capH) * s2);
           ctx.drawImage(im, 0, 0, im.width, capH, x0, y0 + pz, w, capH * s2);
-          if (pressed || this.btnGlow && BB.t < this.btnGlow) BB.glow(BTN_X, y0 + capH * s2 * 0.5 + pz, 60, "rgba(255,80,60,A)", 0.5);
+          if (pressed || this.btnGlow && BB.t < this.btnGlow)
+            BB.glow(BTN_X, y0 + capH * s2 * 0.5 + pz, 60, "rgba(255,80,60,A)", 0.5);
         }
       }
       const talk = BB.isTalking("sprocket"), ch = this.sprCheer;
@@ -1575,7 +1709,8 @@
       const glitch = m === "giggle" ? Math.sin(t * 30) > 0.3 ? 1 : 0 : 0;
       const sq = m === "munch" ? Math.abs(Math.sin(t * 12)) * 0.06 : m === "burp" ? 0.08 * Math.exp(-(t - this.burpT) * 4) : 0;
       BB.staticJr(j.x, j.y, 110, { spd: 520, stuffed: m === "munch", squash: sq, glitch, run: m === "run" ? 1 : 0, rot: m === "giggle" ? Math.sin(t * 25) * 0.08 : 0 });
-      if (m === "munch" && Math.random() < 0.2) BB.burst(j.x + 30, j.y - 110, 1, { world: 1, cols: ["#f6eed6", "#e8dcb8", "#3a3226"], kind: "dot", size: 6, g: 900, speed: 150, a0: -2.2, spread: 1.2 });
+      if (m === "munch" && Math.random() < 0.2)
+        BB.burst(j.x + 30, j.y - 110, 1, { world: 1, cols: ["#f6eed6", "#e8dcb8", "#3a3226"], kind: "dot", size: 6, g: 900, speed: 150, a0: -2.2, spread: 1.2 });
       if (m === "burp" && t - this.burpT < 1.6) {
         const k = (t - this.burpT) / 1.6;
         ctx.save();
@@ -1599,10 +1734,12 @@
       ctx.roundRect(1460, y, 1880, 420, 70);
       ctx.clip();
       const im = BB.V2["tun" + k];
-      if (im) ctx.drawImage(im, 1460, y, 1880, 420);
-      else BB.rrect(1460, y, 1880, 420, 70, F.col);
+      if (im)
+        ctx.drawImage(im, 1460, y, 1880, 420);
+      else
+        BB.rrect(1460, y, 1880, 420, 70, F.col);
       if (l < 1) {
-        ctx.fillStyle = "rgba(10,6,4,".concat(0.78 * (1 - l), ")");
+        ctx.fillStyle = `rgba(10,6,4,${0.78 * (1 - l)})`;
         ctx.fillRect(1460, y, 1880, 420);
       }
       ctx.lineWidth = 40;
@@ -1619,7 +1756,8 @@
       ctx.beginPath();
       ctx.roundRect(1460, y, 1880, 420, 70);
       ctx.clip();
-      if (!this._stat && !this._ug) this.tunnelBg(k);
+      if (!this._stat && !this._ug)
+        this.tunnelBg(k);
       if (active && BB.phone && BB.q && l > 0) {
         const lc = litC(k, L.amb);
         if (lc) {
@@ -1650,17 +1788,22 @@
       ctx.restore();
       BB.text(F.name, 2330, y + 48, 34, COL.yellow, { font: "Rammetto One", align: "left", stroke: 5 });
       const ph = active && this.beat ? (this.beatNow() % 1 + 1) % 1 : t * 1.2 % 1, b = BB.bounce(ph, active ? 0.07 : 0.02);
-      if (k === 0) BB.sprite("turtle", LEAD_X, rail(k), 190, { squash: b });
-      if (k === 1) BB.rocketBot(LEAD_X, rail(k), 240, { squash: b, rot: -0.1 });
+      if (k === 0)
+        BB.sprite("turtle", LEAD_X, rail(k), 190, { squash: b });
+      if (k === 1)
+        BB.rocketBot(LEAD_X, rail(k), 240, { squash: b, rot: -0.1 });
       if (k === 2) {
         BB.sprite("whisper", LEAD_X, rail(k), 260, { squash: b });
-        if (active && this.tooLoud && t - this.tooLoud < 1.2) this.bubble(LEAD_X - 260, rail(k) - 330, "shhh... softer!", k);
+        if (active && this.tooLoud && t - this.tooLoud < 1.2)
+          this.bubble(LEAD_X - 260, rail(k) - 330, "shhh... softer!", k);
       }
       if (k === 3) {
         BB.sprite("boom", LEAD_X, rail(k), 270, { squash: b * 1.5 });
-        if (active && this.tooSoft && t - this.tooSoft < 1.2) this.bubble(LEAD_X - 280, rail(k) - 330, "LOUDER! BOOM!", k);
+        if (active && this.tooSoft && t - this.tooSoft < 1.2)
+          this.bubble(LEAD_X - 280, rail(k) - 330, "LOUDER! BOOM!", k);
       }
-      if (active && k < 4 && this.fewHands && t - this.fewHands < 1.2 && !(this.tooSoft && t - this.tooSoft < 1.2) && !(this.tooLoud && t - this.tooLoud < 1.2)) this.bubble(LEAD_X - 280, rail(k) - 330, "Everyone together!", k);
+      if (active && k < 4 && this.fewHands && t - this.fewHands < 1.2 && !(this.tooSoft && t - this.tooSoft < 1.2) && !(this.tooLoud && t - this.tooLoud < 1.2))
+        this.bubble(LEAD_X - 280, rail(k) - 330, "Everyone together!", k);
       if (k === 4) {
         this.drawCave(4);
         BB.prop("rubble", 3170, rail(k) + 8, 150, { box: B, rim: L.rim, amb: L.amb, ambA: 0.2 });
@@ -1675,7 +1818,8 @@
           let sw = this.beat ? ph2 < 0.12 ? 1 : ph2 < 0.8 ? 1 - ease.out((ph2 - 0.12) / 0.68) : ease.inOut((ph2 - 0.8) / 0.2) : 0.3 + 0.05 * Math.sin(t * 3);
           const shrug = this.shrugT && t - this.shrugT < 0.8;
           this.drawBot(rail(k), sw, { squash: this.beat ? BB.bounce(ph2, 0.06) : 0 });
-          if (shrug) this.bubble(this.botX + 70, rail(k) - 420, "\xAF\\_(\u30C4)_/\xAF", k);
+          if (shrug)
+            this.bubble(this.botX + 70, rail(k) - 420, "\xAF\\_(\u30C4)_/\xAF", k);
         }
         if (this.state !== "pop" && this.state !== "end" && this.state !== "intro") {
           const R = this.R, r = R.kind === "boulder" ? 170 : R.kind === "crystal" ? 135 : 150;
@@ -1689,7 +1833,8 @@
             drawRock(ROCK_X, ry, r, R.kind, this.stage, beatShk + this.shk * 10, this.wob, { mixed: R.bonus, k, shadow: this.rockY > -20 });
             ctx.restore();
           }
-          if (R.bonus) BB.text("BONUS", ROCK_X, Math.max(y + 60, rail(k) - r * 1.9 + this.rockY), 36, COL.yellow, { stroke: 6, font: "Rammetto One" });
+          if (R.bonus)
+            BB.text("BONUS", ROCK_X, Math.max(y + 60, rail(k) - r * 1.9 + this.rockY), 36, COL.yellow, { stroke: 6, font: "Rammetto One" });
         }
         if (this.state === "pop") {
           const tt = BB.t - this.st, R = this.R, r = 150;
@@ -1721,7 +1866,8 @@
         }
       }
       for (const n of this.flying) {
-        if (n.f !== k) continue;
+        if (n.f !== k)
+          continue;
         const tt = clamp((BB.t - n.t0) / 1.1, 0, 1), e = ease.inOut(tt);
         const x = lerp(n.x0, n.x1, e), base = lerp(n.y0, n.y1, e), arc = Math.max(0, Math.min(320, base - (y + 90))), yy = base - Math.sin(tt * Math.PI) * arc;
         BB.wholeNote(x, yy, 46 * (1 + 0.3 * Math.sin(tt * Math.PI)), { glow: 0.8, fill: n.gold ? "#ffe066" : "#fff", rot: tt * 6 });
@@ -1750,8 +1896,10 @@
         }
         const bonk = p.ph === "bonk";
         BB.staticJr(p.x, bonk ? yb + Math.min(1, (BB.t - p.t3) * 3) * (rail(k) - yb) : yb, 95, { run: p.ph === "in" || p.ph === "out" ? 1 : 0, glitch: p.ph === "throw" && Math.sin(BB.t * 20) > 0.6 ? 1 : 0, dizzy: bonk, rot: bonk ? 0.6 : 0, spd: p.ph === "out" ? 900 : 500, flip: p.ph === "in" });
-        if (p.ph === "throw") this.bubble(p.x - 330, yb - 190, "hee hee! pebbles!", k);
-        if (bonk) this.bubble(p.x - 170, yb - 150, "oof!", k);
+        if (p.ph === "throw")
+          this.bubble(p.x - 330, yb - 190, "hee hee! pebbles!", k);
+        if (bonk)
+          this.bubble(p.x - 170, yb - 150, "oof!", k);
       }
       if (active && BB.q && !BB.phone) {
         ctx.save();
@@ -1764,7 +1912,8 @@
         ctx.fillRect(2200, y, 1140, 420);
         ctx.restore();
       }
-      for (const b2 of this._bub) this.bubble(b2[0], b2[1], b2[2], b2[3], true);
+      for (const b2 of this._bub)
+        this.bubble(b2[0], b2[1], b2[2], b2[3], true);
       this._bub = null;
     }
     bubble(x, y, txt, k, now) {
@@ -1813,12 +1962,14 @@
     // -------- HUD --------
     drawChipFly() {
       const f = this.chipFly;
-      if (!f || f.done) return;
+      if (!f || f.done)
+        return;
       const tt = clamp((BB.t - f.t) / 1.1, 0, 1);
       if (BB.t < f.t) {
       }
       const e = ease.inOut(tt), im = BB.V2.chip;
-      if (!im) return;
+      if (!im)
+        return;
       const x = lerp(f.x0, 762, e), y = lerp(f.y0, 83, e) - Math.sin(tt * Math.PI) * 160, h = lerp(150, 78, e) * (BB.t < f.t ? ease.back(clamp(1 - (f.t - BB.t) / 0.3, 0, 1)) : 1), w = im.width * h / im.height;
       BB.glow(x, y, h * 1.1, "rgba(255,225,130,A)", 0.55);
       ctx.save();
@@ -1826,7 +1977,8 @@
       ctx.rotate(Math.sin(tt * Math.PI) * 0.5);
       ctx.drawImage(im, -w / 2, -h / 2, w, h);
       ctx.restore();
-      if (Math.random() < 0.5) BB.burst(x, y, 1, { cols: ["#ffe066", "#fff"], kind: "star", size: 8, g: 200, speed: 120, life: 0.5 });
+      if (Math.random() < 0.5)
+        BB.burst(x, y, 1, { cols: ["#ffe066", "#fff"], kind: "star", size: 8, g: 200, speed: 120, life: 0.5 });
     }
     drawHUD() {
       const R = this.R || ROCKS[0], F = FLOORS[R.f];
@@ -1856,7 +2008,7 @@
       ctx.scale(mp, mp);
       BB.panel(0, 0, 480, 110, 28);
       BB.text("WHOLE NOTES", 24, 30, 30, COL.yellow, { align: "left", stroke: 4 });
-      BB.text("".concat(this.count, " of 8"), 24, 76, 26, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
+      BB.text(`${this.count} of 8`, 24, 76, 26, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
       for (let i = 0; i < 8; i++) {
         const on = i < this.count;
         BB.wholeNote(206 + i * 32, 76, 12, { fill: on ? "#6ee678" : "#2d4744", ring: on ? COL.ink : "#22383a" });
@@ -1869,7 +2021,7 @@
         /* inside border */
       );
       BB.text(sg[0], W - 500 + icons.length * 70, 60, sg[0].length > 10 ? 32 : 40, "#fff", { align: "left", font: "Rammetto One", stroke: 5, maxW: 440 - icons.length * 70 });
-      BB.text(sg[1] + (R.dyn === "p" ? "  (p)" : R.dyn === "f" ? "  (f)" : "") + "  \xB7  ".concat(R.bpm, " bpm"), W - 500 + icons.length * 70, 104, 24, COL.yellow, { align: "left", stroke: 4, maxW: 440 - icons.length * 70 });
+      BB.text(sg[1] + (R.dyn === "p" ? "  (p)" : R.dyn === "f" ? "  (f)" : "") + `  \xB7  ${R.bpm} bpm`, W - 500 + icons.length * 70, 104, 24, COL.yellow, { align: "left", stroke: 4, maxW: 440 - icons.length * 70 });
       BB.pauseBtn(() => this.pause(), 984);
       const lit = [0, 0, 0, 0];
       let count = false;
@@ -1914,14 +2066,16 @@
     }
     drawEnd() {
       const t = BB.t - this.st;
-      if (t < 7.4) return;
+      if (t < 7.4)
+        return;
       const k = ease.back(clamp((t - 7.4) / 0.6, 0, 1));
       ctx.save();
       ctx.translate(W / 2, 330);
       ctx.scale(k, k);
       BB.panel(-560, -250, 1120, 500, 44);
       BB.text("ROOM 1 COMPLETE!", 0, -160, 72, "#fff", { font: "Rammetto One", stroke: 9 });
-      for (let i = 0; i < 8; i++) BB.wholeNote(-280 + i * 80, -60, 30, { fill: "#6ee678", glow: 0.4, rot: Math.sin(BB.t * 3 + i) * 0.2 });
+      for (let i = 0; i < 8; i++)
+        BB.wholeNote(-280 + i * 80, -60, 30, { fill: "#6ee678", glow: 0.4, rot: Math.sin(BB.t * 3 + i) * 0.2 });
       BB.text("8 whole notes are back in the bin!", 0, 20, 40, COL.yellow, { stroke: 5 });
       if (this.chip && BB.V2.chip) {
         const im = BB.V2.chip, h = 110, w = im.width * h / im.height;

@@ -11,7 +11,8 @@
   const g0 = R.glyph, ns0 = R.noteSize;
   R.noteSize = (k, w, h) => k === "a" || k === "b" ? Math.min(h * 0.2, w / 7.4) : ns0(k, w, h);
   R.glyph = (k, x, y, s, col = "#19191f", g = ctx) => {
-    if (k !== "a" && k !== "b") return g0(k, x, y, s, col, g);
+    if (k !== "a" && k !== "b")
+      return g0(k, x, y, s, col, g);
     g.save();
     g.fillStyle = col;
     g.strokeStyle = col;
@@ -33,8 +34,10 @@
     }
     const bx = (i) => x0 + i * gap + hs * 0.86, bh = s * 0.62;
     g.fillRect(bx(0) - lw / 2, y - st, bx(2) - bx(0) + lw, bh);
-    if (k === "a") g.fillRect(bx(1) - lw / 2, y - st + bh * 1.7, bx(2) - bx(1) + lw, bh);
-    else g.fillRect(bx(0) - lw / 2, y - st + bh * 1.7, bx(1) - bx(0) + lw, bh);
+    if (k === "a")
+      g.fillRect(bx(1) - lw / 2, y - st + bh * 1.7, bx(2) - bx(1) + lw, bh);
+    else
+      g.fillRect(bx(0) - lw / 2, y - st + bh * 1.7, bx(1) - bx(0) + lw, bh);
     g.restore();
   };
   const SYL = { q: "ta", e: "tee-tee", s: "tika-tika", a: "tee-tika", b: "tika-tee", h: "ta-ah", r: "(rest)" };
@@ -62,7 +65,8 @@
   ]);
   const STAGES = [[4, 6], [6, 4]], BOXES = STAGES.reduce((a, x) => a + x[1], 0), beatsFor = (n) => {
     for (const [L, c] of STAGES) {
-      if (n < c) return L;
+      if (n < c)
+        return L;
       n -= c;
     }
     return 6;
@@ -72,7 +76,8 @@
   const loadAllowed = () => {
     try {
       const a = JSON.parse(localStorage.getItem("bb_lbl_notes") || "null");
-      if (Array.isArray(a) && a.length) return a;
+      if (Array.isArray(a) && a.length)
+        return a;
     } catch (e) {
     }
     return ALL.slice();
@@ -86,17 +91,22 @@
         const ok = pool.filter((k2) => R.BEATS[k2] <= L - b && !(k2 === "r" && rests >= L / 4) && !(k2 === "h" && s.filter((x) => x === "h").length >= L / 4));
         const k = ok[Math.random() * ok.length | 0];
         s.push(k);
-        if (k === "r") rests++;
+        if (k === "r")
+          rests++;
         b += R.BEATS[k];
       }
       const kinds = new Set(s);
-      if (kinds.size < 2 && pool.length > 1) continue;
-      if (s.every((k) => k === "r")) continue;
-      if (last && key(s) === last) continue;
+      if (kinds.size < 2 && pool.length > 1)
+        continue;
+      if (s.every((k) => k === "r"))
+        continue;
+      if (last && key(s) === last)
+        continue;
       return s;
     }
     const f = ["q", "e", "q", "q"];
-    while (f.length < L) f.push(f.length % 2 ? "e" : "q");
+    while (f.length < L)
+      f.push(f.length % 2 ? "e" : "q");
     return f;
   }
   function nearMiss(ans, pool, n) {
@@ -104,7 +114,8 @@
     const ops = [
       (s) => {
         const i = s.findIndex((k) => k === "e" || k === "q");
-        if (i < 0) return null;
+        if (i < 0)
+          return null;
         const c = s.slice();
         c[i] = c[i] === "e" ? "q" : "e";
         return c;
@@ -112,9 +123,11 @@
       // ti-ti/ta swap
       (s) => {
         const i = Math.random() * s.length | 0;
-        if (R.BEATS[s[i]] !== 1) return null;
+        if (R.BEATS[s[i]] !== 1)
+          return null;
         const alt = one.filter((k) => k !== s[i]);
-        if (!alt.length) return null;
+        if (!alt.length)
+          return null;
         const c = s.slice();
         c[i] = alt[Math.random() * alt.length | 0];
         return c;
@@ -122,8 +135,11 @@
       // one beat changed
       (s) => {
         const idx = [];
-        for (let i2 = 0; i2 < s.length - 1; i2++) if (s[i2] !== s[i2 + 1]) idx.push(i2);
-        if (!idx.length) return null;
+        for (let i2 = 0; i2 < s.length - 1; i2++)
+          if (s[i2] !== s[i2 + 1])
+            idx.push(i2);
+        if (!idx.length)
+          return null;
         const i = idx[Math.random() * idx.length | 0], c = s.slice();
         [c[i], c[i + 1]] = [c[i + 1], c[i]];
         return c;
@@ -131,7 +147,8 @@
       // beats swapped
       (s) => {
         const i = s.indexOf("h");
-        if (i < 0) return null;
+        if (i < 0)
+          return null;
         const c = s.slice();
         c.splice(i, 1, "q", "q");
         return c;
@@ -139,7 +156,8 @@
       // half -> ta ta
       (s) => {
         const i = s.findIndex((k) => k === "s" || k === "a" || k === "b");
-        if (i < 0) return null;
+        if (i < 0)
+          return null;
         const alt = ["s", "a", "b", "e"].filter((k) => k !== s[i]);
         const c = s.slice();
         c[i] = alt[Math.random() * alt.length | 0];
@@ -148,9 +166,11 @@
     ];
     for (let t = 0; t < 200 && out.length < n; t++) {
       const c = ops[Math.random() * ops.length | 0](ans);
-      if (!c || R.len(c) !== R.len(ans) || c.every((k) => k === "r")) continue;
+      if (!c || R.len(c) !== R.len(ans) || c.every((k) => k === "r"))
+        continue;
       const kk = key(c);
-      if (seen.has(kk)) continue;
+      if (seen.has(kk))
+        continue;
       seen.add(kk);
       out.push(c);
     }
@@ -190,7 +210,8 @@
     ctx.fillStyle = "rgba(60,30,10,.18)";
     ctx.fillRect(x + w * 0.78, y + 8, w * 0.18, h - 16);
     const lx = x + w * 0.12, ly = y + h * 0.42, lw = w * 0.76, lh = h * 0.48;
-    if (lbl) drawCard(lx, ly, lw, lh, lbl, { mini: 1 });
+    if (lbl)
+      drawCard(lx, ly, lw, lh, lbl, { mini: 1 });
     else {
       ctx.setLineDash([10, 8]);
       BB.rrect(lx, ly, lw, lh, 10, "rgba(60,30,10,.18)", "rgba(255,240,210,.7)", 3);
@@ -198,20 +219,23 @@
       if (o.first) {
         const cw = lw / 4;
         R.tile(o.first, lx + 4, ly + 4, cw * R.BEATS[o.first] - 8, lh - 8, { shadow: false });
-        for (let i = R.BEATS[o.first]; i < 4; i++) BB.text("?", lx + cw * i + cw / 2, ly + lh / 2, lh * 0.5, "rgba(255,240,210,.8)", { font: "Rammetto One" });
-      } else BB.text("?", lx + lw / 2, ly + lh / 2, lh * 0.6, "rgba(255,240,210,.85)", { font: "Rammetto One" });
+        for (let i = R.BEATS[o.first]; i < 4; i++)
+          BB.text("?", lx + cw * i + cw / 2, ly + lh / 2, lh * 0.5, "rgba(255,240,210,.8)", { font: "Rammetto One" });
+      } else
+        BB.text("?", lx + lw / 2, ly + lh / 2, lh * 0.6, "rgba(255,240,210,.85)", { font: "Rammetto One" });
     }
-    if (o.lamps) for (let i = 0; i < 4; i++) {
-      const cx = x + w * 0.2 + i * w * 0.2, cy = y + h * 0.22, l = o.lamps[i] || 0;
-      ctx.fillStyle = "#2a1a0a";
-      ctx.beginPath();
-      ctx.arc(cx, cy, 15, 0, 7);
-      ctx.fill();
-      ctx.fillStyle = l > 0 ? "rgba(255,".concat(200 + 55 * l | 0, ",90,").concat(0.4 + 0.6 * l, ")") : "#5a4a2a";
-      ctx.beginPath();
-      ctx.arc(cx, cy, 11, 0, 7);
-      ctx.fill();
-    }
+    if (o.lamps)
+      for (let i = 0; i < 4; i++) {
+        const cx = x + w * 0.2 + i * w * 0.2, cy = y + h * 0.22, l = o.lamps[i] || 0;
+        ctx.fillStyle = "#2a1a0a";
+        ctx.beginPath();
+        ctx.arc(cx, cy, 15, 0, 7);
+        ctx.fill();
+        ctx.fillStyle = l > 0 ? `rgba(255,${200 + 55 * l | 0},90,${0.4 + 0.6 * l})` : "#5a4a2a";
+        ctx.beginPath();
+        ctx.arc(cx, cy, 11, 0, 7);
+        ctx.fill();
+      }
   }
   const CARDC = /* @__PURE__ */ new Map(), PANC = /* @__PURE__ */ new Map();
   function PANEL(x, y, w, h, r = 30) {
@@ -230,11 +254,13 @@
     ctx.drawImage(c, x - M, y - M);
   }
   function drawCard(x, y, w, h, seq, o = {}) {
-    if (o.lit && o.lit.some((v) => v > 0)) return drawCardRaw(x, y, w, h, seq, o);
+    if (o.lit && o.lit.some((v) => v > 0))
+      return drawCardRaw(x, y, w, h, seq, o);
     const k = seq.join("") + "|" + w + "|" + h + "|" + (o.badge || "") + "|" + (o.hl ? 1 : 0) + (o.mini ? 1 : 0) + (o.syl ? 1 : 0) + (o.x ? 1 : 0) + "|" + BB.tier;
     let c = CARDC.get(k);
     if (!c) {
-      if (CARDC.size > 160) CARDC.clear();
+      if (CARDC.size > 160)
+        CARDC.clear();
       const P = 12, sc = BB.q ? 1 : 0.5;
       c = document.createElement("canvas");
       c.width = Math.ceil((w + P * 2) * sc);
@@ -252,7 +278,8 @@
     ctx.save();
     BB.rrect(X - 120, TOP - 40, 240, 50, 10, BB.lg(TOP - 40, TOP + 10, ["#6e7a86", "#2e363e"]), "#22282e", 4);
     ctx.fillStyle = "#f2c230";
-    for (let i = 0; i < 6; i++) ctx.fillRect(X - 110 + i * 38, TOP - 30, 18, 30);
+    for (let i = 0; i < 6; i++)
+      ctx.fillRect(X - 110 + i * 38, TOP - 30, 18, 30);
     BB.rrect(X - 34, TOP, 68, 90, 12, BB.lg(TOP, TOP + 90, ["#a4b2bc", "#4e5a64"]), "#22282e", 4);
     ctx.fillStyle = "#ff5a4a";
     ctx.beginPath();
@@ -265,7 +292,8 @@
     pg.addColorStop(1, "#5d6a72");
     BB.rrect(X - 16, y0, 32, ext, 6, pg, "#22282e", 3);
     ctx.fillStyle = "rgba(0,0,0,.18)";
-    for (let y = y0 + 14; y < y0 + ext - 8; y += 22) ctx.fillRect(X - 16, y, 32, 4);
+    for (let y = y0 + 14; y < y0 + ext - 8; y += 22)
+      ctx.fillRect(X - 16, y, 32, 4);
     const hy = y0 + ext;
     BB.rrect(X - 50, hy, 100, 46, 10, BB.lg(hy, hy + 46, ["#a8704a", "#5e3620"]), "#22282e", 4);
     BB.rrect(X - 70, hy + 46, 140, 26, 6, BB.lg(hy + 46, hy + 72, ["#e8685a", "#9c2e24"]), "#22282e", 4);
@@ -286,7 +314,8 @@
   }
   function drawCardRaw(x, y, w, h, seq, o = {}) {
     ctx.save();
-    if (!o.mini) BB.rrect(x + 5, y + 8, w, h, 12, "rgba(0,0,0,.35)");
+    if (!o.mini)
+      BB.rrect(x + 5, y + 8, w, h, 12, "rgba(0,0,0,.35)");
     BB.rrect(x, y, w, h, 12, BB.lg(y, y + h, ["#fffaf0", "#f1e8d2", "#ddd0b2"]));
     R.paper(x, y, w, h);
     BB.rrect(x, y, w, h, 12, null, o.hl ? COL.yellow : "rgba(110,95,70,.7)", o.hl ? 6 : 2);
@@ -315,9 +344,11 @@
         ctx.fillRect(cx - 1, by + 6, 2, bh - 12);
       }
       const lit = o.lit && o.lit[b] > 0;
-      if (lit) BB.rrect(cx + 2, by, n * bw - 4, bh, 8, "rgba(255,224,102,".concat(0.25 + 0.4 * o.lit[b], ")"));
+      if (lit)
+        BB.rrect(cx + 2, by, n * bw - 4, bh, 8, `rgba(255,224,102,${0.25 + 0.4 * o.lit[b]})`);
       R.tile(k, cx + 3, by, n * bw - 6, bh, { ns: R.cardNs(k, bw, bh, n), shadow: !o.mini && BB.tier > 0 });
-      if (o.syl) BB.text(SYL[k], cx + n * bw / 2, by + bh + 16, 20, "#5a5040", { maxW: n * bw - 6 });
+      if (o.syl)
+        BB.text(SYL[k], cx + n * bw / 2, by + bh + 16, 20, "#5a5040", { maxW: n * bw - 6 });
       b += n;
     }
     if (o.x) {
@@ -355,15 +386,18 @@
       this.lastOverride = -9;
       R.loadImgs([["mail_bg", "jpg"], ["pack_blur", "jpg"], ["crate", "png"]]).then(() => {
         this.static = this.bake();
-        if (this.o.skipIntro || this.o.startAt) this.newBox(true);
-        else this.startIntro();
+        if (this.o.skipIntro || this.o.startAt)
+          this.newBox(true);
+        else
+          this.startIntro();
       });
       BB.mic.take();
       window.__lbl = this;
     }
     exit() {
       BB.paused = false;
-      if (window.__lbl === this) window.__lbl = null;
+      if (window.__lbl === this)
+        window.__lbl = null;
     }
     bake() {
       const s = !BB.q ? 0.5 : 1, c = document.createElement("canvas");
@@ -372,7 +406,8 @@
       const g = c.getContext("2d");
       g.scale(s, s);
       const V = BB.V2;
-      if (V.mail_bg || V.pack_blur) g.drawImage(V.mail_bg || V.pack_blur, 0, 0, W, H);
+      if (V.mail_bg || V.pack_blur)
+        g.drawImage(V.mail_bg || V.pack_blur, 0, 0, W, H);
       g.fillStyle = "rgba(8,18,17,.28)";
       g.fillRect(0, 0, W, H);
       R.paint(g, () => {
@@ -430,7 +465,8 @@
     }
     nextBeat() {
       const gr = BB.groove;
-      if (!gr || !gr.on) return { t: ac.currentTime + 0.3, spb: 0.6 };
+      if (!gr || !gr.on)
+        return { t: ac.currentTime + 0.3, spb: 0.6 };
       const k = Math.ceil((ac.currentTime + 0.2 - gr.t0) / gr.spb);
       return { t: gr.t0 + k * gr.spb, spb: gr.spb };
     }
@@ -443,7 +479,8 @@
     }
     introJr(dt) {
       const t = BB.t - this.st, j = this.ijr;
-      if (!j) return;
+      if (!j)
+        return;
       if (j.ph === "in") {
         j.x = lerp(-160, PR.x + PR.w + 90, ease.out(clamp(t / 1.2, 0, 1)));
         if (t > 1.2) {
@@ -454,21 +491,25 @@
           BB.say("jr_lbl", { overlap: true });
         }
       } else if (j.ph === "zap") {
-        if (Math.random() < 0.5) BB.burst(PR.x + PR.w - 20, PR.y + 60, 3, { cols: ["#9ff", "#fff", "#ffe066"], kind: "spark", size: 10, speed: 600, g: 200, life: 0.4 });
+        if (Math.random() < 0.5)
+          BB.burst(PR.x + PR.w - 20, PR.y + 60, 3, { cols: ["#9ff", "#fff", "#ffe066"], kind: "spark", size: 10, speed: 600, g: 200, life: 0.4 });
         if (t > 2.4) {
           j.ph = "out";
           this.zapEnd = BB.t;
           setTimeout(() => {
-            if (BB.scene !== this || this.state !== "intro") return;
+            if (BB.scene !== this || this.state !== "intro")
+              return;
             const d = BB.say("lb_intro");
             setTimeout(() => {
-              if (BB.scene === this && this.state === "intro") this.voEnd = BB.t + BB.say("lb_intro2");
+              if (BB.scene === this && this.state === "intro")
+                this.voEnd = BB.t + BB.say("lb_intro2");
             }, (d + 0.25) * 1e3);
           }, 300);
         }
       } else if (j.ph === "out") {
         j.x += dt * 900;
-        if (j.x > W + 200) this.ijr = null;
+        if (j.x > W + 200)
+          this.ijr = null;
       }
       if (t > 1.5 && this.flurry.length < 10 && BB.t - (this.lastFlake || 0) > 0.28) {
         this.lastFlake = BB.t;
@@ -491,9 +532,12 @@
     }
     pool() {
       let p = LV[this.level()].filter((k) => this.allowed.includes(k));
-      if (p.length < 2) p = this.allowed.slice();
-      if (!p.length) p = ["q", "e"];
-      if (p.length === 1 && p[0] === "r") p = ["q", "r"];
+      if (p.length < 2)
+        p = this.allowed.slice();
+      if (!p.length)
+        p = ["q", "e"];
+      if (p.length === 1 && p[0] === "r")
+        p = ["q", "r"];
       return p;
     }
     newBox(first) {
@@ -531,7 +575,8 @@
     }
     // play the hidden rhythm (robot sounds) on the beat grid; slow = half speed (still on grid beats)
     play(slow, syl) {
-      if (this.state !== "pick" && this.state !== "enter") return;
+      if (this.state !== "pick" && this.state !== "enter")
+        return;
       const nb = this.nextBeat(), spb = nb.spb * (slow ? 2 : 1), t0 = nb.t, S = BB.sfx;
       let b = 0;
       const notes = [];
@@ -539,12 +584,14 @@
       for (const k of this.ans) {
         const t = t0 + b * spb;
         notes.push({ k, b, t, n: R.BEATS[k] });
-        if (k === "q") S.pkTa(t);
+        if (k === "q")
+          S.pkTa(t);
         else if (k === "e") {
           S.pkBlip(t, 1100);
           S.pkBlip(t + spb / 2, 1100);
         } else if (k === "s") {
-          for (let i = 0; i < 4; i++) S.pkBlip(t + i * spb / 4, 1500);
+          for (let i = 0; i < 4; i++)
+            S.pkBlip(t + i * spb / 4, 1500);
         } else if (k === "a") {
           S.pkBlip(t, 1100);
           S.pkBlip(t + spb / 2, 1500);
@@ -553,9 +600,12 @@
           S.pkBlip(t, 1500);
           S.pkBlip(t + spb / 4, 1500);
           S.pkBlip(t + spb / 2, 1100);
-        } else if (k === "r") S.pkHiss(t, spb * 0.5);
-        else S.pkHum(t, R.BEATS[k] * spb * 0.9);
-        if (syl && k !== "r") setTimeout(() => BB.scene === this && BB.say("syl_" + k, { overlap: true, nocap: true }), Math.max(0, (t - ac.currentTime) * 1e3 - 20));
+        } else if (k === "r")
+          S.pkHiss(t, spb * 0.5);
+        else
+          S.pkHum(t, R.BEATS[k] * spb * 0.9);
+        if (syl && k !== "r")
+          setTimeout(() => BB.scene === this && BB.say("syl_" + k, { overlap: true, nocap: true }), Math.max(0, (t - ac.currentTime) * 1e3 - 20));
         b += R.BEATS[k];
       }
       BB.boxVol = 1;
@@ -564,17 +614,21 @@
     }
     tapBox() {
       if (this.state === "pick") {
-        if (this.pb && ac.currentTime < this.pb.end) return;
+        if (this.pb && ac.currentTime < this.pb.end)
+          return;
         this.play(false);
       }
     }
     doHint() {
-      if (this.state !== "pick" || this.hint >= 5) return;
+      if (this.state !== "pick" || this.hint >= 5)
+        return;
       this.hint++;
       BB.sfx.pop();
       const h = this.hint;
-      if (h === 1) this.play(true);
-      else if (h === 2) this.play(false);
+      if (h === 1)
+        this.play(true);
+      else if (h === 2)
+        this.play(false);
       else if (h === 3) {
         BB.say("lb_hint", { overlap: true });
       } else if (h === 4) {
@@ -590,7 +644,8 @@
       }
     }
     pick(c) {
-      if (this.state !== "pick" || c.out) return;
+      if (this.state !== "pick" || c.out)
+        return;
       if (c.s === this.ans) {
         this.correct(c);
         return;
@@ -606,7 +661,8 @@
         this.pop = { t: BB.t, txt: "wrong label! hee hee" };
         BB.say("jr_lwrong", { overlap: true });
         setTimeout(() => BB.scene === this && BB.say("lb_wrong"), 1100);
-      } else BB.say("lb_wrong");
+      } else
+        BB.say("lb_wrong");
       setTimeout(() => BB.scene === this && this.state === "pick" && this.play(false), 1400);
     }
     points() {
@@ -624,12 +680,15 @@
       this.best = Math.max(this.best, this.streak);
       BB.sfx.ding();
       BB.say(this.streak % 2 ? "lb_right" : "lb_right2");
-      if (this.streak === 3 || this.streak === 6) setTimeout(() => {
-        if (BB.scene !== this) return;
-        this.pop = { t: BB.t, txt: "no fair!" };
-        BB.say("jr_lstreak", { overlap: true });
-      }, 1500);
-      if (this.streak === 4) setTimeout(() => BB.scene === this && BB.say("lb_faster", { overlap: false }), 1800);
+      if (this.streak === 3 || this.streak === 6)
+        setTimeout(() => {
+          if (BB.scene !== this)
+            return;
+          this.pop = { t: BB.t, txt: "no fair!" };
+          BB.say("jr_lstreak", { overlap: true });
+        }, 1500);
+      if (this.streak === 4)
+        setTimeout(() => BB.scene === this && BB.say("lb_faster", { overlap: false }), 1800);
     }
     slapped() {
       BB.sfx.thunk();
@@ -644,7 +703,8 @@
           this.score = Math.max(0, this.score - 1);
         }, onDone: () => setTimeout(() => BB.scene === this && this.ship(), 500) });
         BB.say("lb_clap", { overlap: true });
-      } else setTimeout(() => BB.scene === this && this.ship(), 500);
+      } else
+        setTimeout(() => BB.scene === this && this.ship(), 500);
     }
     ship() {
       this.cb = null;
@@ -653,11 +713,14 @@
       BB.sfx.whoosh(void 0, 1);
     }
     manualOverride() {
-      if (BB.t - this.lastOverride < 0.5) return;
+      if (BB.t - this.lastOverride < 0.5)
+        return;
       this.lastOverride = BB.t;
       this.ovPop = BB.t;
-      if (this.cb) this.cb.override();
-      else if (this.state === "pick") this.tapBox();
+      if (this.cb)
+        this.cb.override();
+      else if (this.state === "pick")
+        this.tapBox();
     }
     pause() {
       BB.paused = true;
@@ -677,10 +740,13 @@
         this.pause();
         return;
       }
-      if (BB.keys.includes(" ")) this.manualOverride();
+      if (BB.keys.includes(" "))
+        this.manualOverride();
       for (const k of BB.keys) {
-        if (k >= "1" && k <= "4" && this.cards && this.cards[+k - 1]) this.pick(this.cards[+k - 1]);
-        if (k === "b") this.tapBox();
+        if (k >= "1" && k <= "4" && this.cards && this.cards[+k - 1])
+          this.pick(this.cards[+k - 1]);
+        if (k === "b")
+          this.tapBox();
       }
       if (this.state === "intro") {
         const t = BB.t - this.st;
@@ -694,11 +760,15 @@
           if (f.y > BELT_Y - 60) {
             Object.assign(f, this.flake(-90));
           }
-          if (f.x > 1450) f.x = 1450;
+          if (f.x > 1450)
+            f.x = 1450;
         }
-        if (BB.keys.includes("s")) this.skipIntro();
-        if (t > 2 && this.voEnd && BB.t > this.voEnd + 0.4) this.skipIntro();
-        if (t > 14) this.skipIntro();
+        if (BB.keys.includes("s"))
+          this.skipIntro();
+        if (t > 2 && this.voEnd && BB.t > this.voEnd + 0.4)
+          this.skipIntro();
+        if (t > 14)
+          this.skipIntro();
       }
       const bv = this.beatV();
       this.belt = bv;
@@ -731,7 +801,8 @@
               BB.save.done.push("label");
               localStorage.setItem("bb4", JSON.stringify(BB.save));
             }
-          } else this.newBox();
+          } else
+            this.newBox();
         }
       }
       const lam = [0, 0, 0, 0];
@@ -739,21 +810,26 @@
         const tv = ac.currentTime - BB.visLat();
         for (const n of this.pb.notes) {
           const d = tv - n.t;
-          if (d >= 0 && d < n.n * this.pb.spb) for (let j = 0; j < n.n; j++) {
-            const dj = tv - (n.t + j * this.pb.spb);
-            if (dj >= 0 && dj < this.pb.spb) lam[n.b + j] = 1 - dj / this.pb.spb * 0.6;
-          }
+          if (d >= 0 && d < n.n * this.pb.spb)
+            for (let j = 0; j < n.n; j++) {
+              const dj = tv - (n.t + j * this.pb.spb);
+              if (dj >= 0 && dj < this.pb.spb)
+                lam[n.b + j] = 1 - dj / this.pb.spb * 0.6;
+            }
         }
       }
       this.lit = lam;
-      if (this.cb) this.cb.update && this.cb.update(dt);
-      else BB.mic.take();
+      if (this.cb)
+        this.cb.update && this.cb.update(dt);
+      else
+        BB.mic.take();
     }
     draw() {
       const t = BB.t, [sx, sy] = BB.shakeXY;
       ctx.save();
       ctx.translate(sx, sy);
-      if (this.static) ctx.drawImage(this.static, 0, 0, W, H);
+      if (this.static)
+        ctx.drawImage(this.static, 0, 0, W, H);
       else {
         ctx.fillStyle = "#2a3a38";
         ctx.fillRect(0, 0, W, H);
@@ -773,15 +849,18 @@
         }
         drawBox(bx, by, BOX_W, BOX_H, lbl, t, { lamps: this.hint >= 2 && this.state === "pick" ? this.lit : null, first: this.hint >= 3 && !lbl ? this.ans[0] : null });
         ctx.restore();
-        if (this.state === "pick") BB.button(bx, by, BOX_W, BOX_H, "", { style: "none", id: "box", onClick: () => this.tapBox() });
+        if (this.state === "pick")
+          BB.button(bx, by, BOX_W, BOX_H, "", { style: "none", id: "box", onClick: () => this.tapBox() });
         if (this.state === "pick" && (!this.pb || ac.currentTime > this.pb.end)) {
           const pu = 0.5 + 0.5 * Math.sin(t * 5);
           BB.plaque(this.boxX, by - 40, 224, 44, "TAP TO SHAKE!", 22, "#28403c", { cols: pu > 0.5 ? ["#fff8d0", "#ffe680", "#e8b830"] : void 0 });
-        } else if (this.state === "pick" && this.pb && ac.currentTime < this.pb.end) BB.plaque(this.boxX, by - 46, 270, 50, this.pb.spb > 0.9 ? "\u266A SLOW..." : "\u266A LISTEN...", 24, "#28403c");
+        } else if (this.state === "pick" && this.pb && ac.currentTime < this.pb.end)
+          BB.plaque(this.boxX, by - 46, 270, 50, this.pb.spb > 0.9 ? "\u266A SLOW..." : "\u266A LISTEN...", 24, "#28403c");
       }
       R.paint(ctx, () => this.drawPrinter(t));
       this.drawSprocket(t);
-      if (this.ijr) BB.staticJr(this.ijr.x, BELT_Y - 4, 120, { run: this.ijr.ph !== "zap" ? 1 : 0, glitch: this.ijr.ph === "zap" ? 0.6 : 0, spd: this.ijr.ph === "out" ? 900 : 600, flip: this.ijr.ph === "zap" });
+      if (this.ijr)
+        BB.staticJr(this.ijr.x, BELT_Y - 4, 120, { run: this.ijr.ph !== "zap" ? 1 : 0, glitch: this.ijr.ph === "zap" ? 0.6 : 0, spd: this.ijr.ph === "out" ? 900 : 600, flip: this.ijr.ph === "zap" });
       if (this.ijr && this.ijr.ph === "zap") {
         ctx.save();
         ctx.strokeStyle = Math.sin(t * 40) > 0 ? "#bff" : "#fff";
@@ -802,8 +881,10 @@
         if (a < 1.8) {
           const k = a < 0.3 ? ease.out(a / 0.3) : a > 1.5 ? 1 - (a - 1.5) / 0.3 : 1;
           BB.staticJr(520, BELT_Y - 4, 110 * Math.max(0.01, k), { glitch: 0.3 });
-          if (a > 0.2 && a < 1.5) R.bubble(520, BELT_Y - 250, pp.txt);
-        } else this.pop = null;
+          if (a > 0.2 && a < 1.5)
+            R.bubble(520, BELT_Y - 250, pp.txt);
+        } else
+          this.pop = null;
       }
       if (this.flurry) {
         ctx.save();
@@ -812,25 +893,32 @@
         ctx.rect(PR.x - 30, 170, PR.w + 60, BELT_Y - 170);
         ctx.clip("evenodd");
       }
-      if (this.flurry) for (const f of this.flurry) {
-        ctx.save();
-        ctx.globalAlpha = clamp((BELT_Y - 60 - f.y) / 120, 0, 1);
-        ctx.translate(f.x, f.y);
-        ctx.rotate(f.r);
-        drawCard(-120, -70, 240, 140, f.s, {});
+      if (this.flurry)
+        for (const f of this.flurry) {
+          ctx.save();
+          ctx.globalAlpha = clamp((BELT_Y - 60 - f.y) / 120, 0, 1);
+          ctx.translate(f.x, f.y);
+          ctx.rotate(f.r);
+          drawCard(-120, -70, 240, 140, f.s, {});
+          ctx.restore();
+        }
+      if (this.flurry)
         ctx.restore();
-      }
-      if (this.flurry) ctx.restore();
       ctx.restore();
       R.drawMotes(this.motes, BB.paused ? 0 : Math.min(0.05, BB.dt || 0.016), t);
       BB.drawParts();
-      if (this.cards && ["pick", "fly", "slap", "clap", "ship", "enter"].includes(this.state)) this.drawCards(t);
+      if (this.cards && ["pick", "fly", "slap", "clap", "ship", "enter"].includes(this.state))
+        this.drawCards(t);
       this.drawHUD(t);
       BB.captionBox();
-      if (this.state === "enter" && this.cardT && t - this.cardT < 2.6) BB.titleCard("ROOM 4: LABEL ROOM", "Static Jr. scrambled the labels. Match them!", (t - this.cardT) / 2.6);
-      if (this.state === "end") this.drawEnd();
-      if (this.teacher) this.drawTeacher();
-      if (BB.paused) BB.pauseOverlay(howTo, () => this.resume());
+      if (this.state === "enter" && this.cardT && t - this.cardT < 2.6)
+        BB.titleCard("ROOM 4: LABEL ROOM", "Static Jr. scrambled the labels. Match them!", (t - this.cardT) / 2.6);
+      if (this.state === "end")
+        this.drawEnd();
+      if (this.teacher)
+        this.drawTeacher();
+      if (BB.paused)
+        BB.pauseOverlay(howTo, () => this.resume());
     }
     drawBelt(t) {
       const y = BELT_Y, x0 = 40, x1 = 1480;
@@ -841,7 +929,8 @@
       ctx.clip();
       const off = (this.belt * 60 % 60 + 60) % 60;
       ctx.fillStyle = "rgba(160,210,200,.22)";
-      for (let x = x0 - 60 + off; x < x1; x += 60) ctx.fillRect(x, y + 3, 6, 20);
+      for (let x = x0 - 60 + off; x < x1; x += 60)
+        ctx.fillRect(x, y + 3, 6, 20);
       ctx.restore();
       const bv = this.belt, bi = (Math.floor(bv) % 4 + 4) % 4, ph = bv - Math.floor(bv), fl = Math.max(0, 1 - ph * 2.2);
       for (let i = 0; i < 16; i++) {
@@ -850,11 +939,12 @@
         ctx.beginPath();
         ctx.arc(lx, ly, 13, 0, 7);
         ctx.fill();
-        ctx.fillStyle = on && fl > 0 ? "rgba(255,".concat(210 + 40 * fl | 0, ",90,").concat(0.35 + 0.65 * fl, ")") : "#4a5250";
+        ctx.fillStyle = on && fl > 0 ? `rgba(255,${210 + 40 * fl | 0},90,${0.35 + 0.65 * fl})` : "#4a5250";
         ctx.beginPath();
         ctx.arc(lx, ly, 9, 0, 7);
         ctx.fill();
-        if (on && fl > 0.2 && BB.tier > 0) BB.glow(lx, ly, 34, "rgba(255,220,120,A)", fl * 0.5);
+        if (on && fl > 0.2 && BB.tier > 0)
+          BB.glow(lx, ly, 34, "rgba(255,220,120,A)", fl * 0.5);
       }
     }
     drawPrinter(t) {
@@ -888,16 +978,19 @@
       const fl = this.fly;
       this.cards.forEach((c, i) => {
         const r = this.cardRect(i);
-        if (fl && fl.i === i && this.state !== "fly") return;
+        if (fl && fl.i === i && this.state !== "fly")
+          return;
         let x = r.x, y = r.y, w = r.w, h = r.h, a = 1;
         if (fl && fl.i !== i) {
           const k = clamp((t - this.st) / 0.3, 0, 1);
           a = 1 - k;
-          if (a <= 0) return;
+          if (a <= 0)
+            return;
         } else if (c.out) {
           const k = clamp((t - (c.outT || 0)) / 0.4, 0, 1);
           a = c.x ? 1 - 0.55 * k : 1 - k;
-          if (a <= 0) return;
+          if (a <= 0)
+            return;
         }
         if (fl && fl.i === i) {
           const k = ease.inOut(clamp((t - this.st) / 0.55, 0, 1));
@@ -912,15 +1005,18 @@
         ctx.globalAlpha = a;
         drawCard(x + sh, y, w, h, c.s, { badge: fl && fl.i === i ? null : "ABCD"[i], x: c.x, syl: this.revealed && c.s === this.ans, hl: this.revealed && c.s === this.ans && Math.sin(t * 6) > 0 });
         ctx.restore();
-        if (this.state === "pick" && !c.out) BB.button(r.x, r.y, r.w, r.h, "", { style: "none", id: "card" + i, onClick: () => this.pick(c) });
+        if (this.state === "pick" && !c.out)
+          BB.button(r.x, r.y, r.w, r.h, "", { style: "none", id: "card" + i, onClick: () => this.pick(c) });
       });
     }
     drawHUD(t) {
-      if (this.state === "end") return;
+      if (this.state === "end")
+        return;
       PANEL(40, 24, 470, 110, 28);
       BB.text("BOXES SHIPPED", 64, 52, 30, COL.yellow, { align: "left", stroke: 4 });
-      BB.text("".concat(this.shipped, " of ").concat(BOXES), 64, 98, 28, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
-      for (let i = 0; i < BOXES; i++) BB.rrect(196 + i * 28, 82, 22, 32, 6, i < this.shipped ? BB.lg(82, 114, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
+      BB.text(`${this.shipped} of ${BOXES}`, 64, 98, 28, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
+      for (let i = 0; i < BOXES; i++)
+        BB.rrect(196 + i * 28, 82, 22, 32, 6, i < this.shipped ? BB.lg(82, 114, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
       PANEL(1196, 24, 260, 110, 28);
       BB.text("POINTS " + this.score, 1326, 56, 30, "#fff", { stroke: 4, maxW: 224 });
       BB.text("STREAK " + this.streak + (this.streak >= 3 ? " \u2605" : ""), 1326, 100, 26, COL.yellow, { stroke: 4, maxW: 290 });
@@ -935,7 +1031,8 @@
         this.teacher = true;
       } });
       BB.pauseBtn(() => this.pause(), 738);
-      if (this.state === "end") return;
+      if (this.state === "end")
+        return;
       if (this.state === "intro") {
         BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
         return;
@@ -961,8 +1058,10 @@
         BB.button(cx, cy, 210, 190, "", { style: "none", id: "tn" + k, onClick: () => {
           const a = this.allowed;
           if (a.includes(k)) {
-            if (a.filter((z) => z !== "r").length > 1 || k === "r") a.splice(a.indexOf(k), 1);
-          } else a.push(k);
+            if (a.filter((z) => z !== "r").length > 1 || k === "r")
+              a.splice(a.indexOf(k), 1);
+          } else
+            a.push(k);
           try {
             localStorage.setItem("bb_lbl_notes", JSON.stringify(a));
           } catch (e) {
@@ -986,9 +1085,10 @@
     }
     drawEnd() {
       const t = BB.t - this.st;
-      if (t < 0.4) return;
+      if (t < 0.4)
+        return;
       const k = ease.back(clamp((t - 0.4) / 0.6, 0, 1));
-      ctx.fillStyle = "rgba(8,18,17,".concat(0.6 * clamp(t, 0, 1), ")");
+      ctx.fillStyle = `rgba(8,18,17,${0.6 * clamp(t, 0, 1)})`;
       ctx.fillRect(0, 0, W, H);
       ctx.save();
       ctx.translate(W / 2, 370);

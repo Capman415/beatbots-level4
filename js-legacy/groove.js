@@ -134,7 +134,8 @@
     let shV = null;
     if (!lite) {
       const n = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), d = n.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < d.length; i++)
+        d[i] = Math.random() * 2 - 1;
       const src = ac.createBufferSource();
       src.buffer = n;
       src.loop = true;
@@ -159,7 +160,8 @@
       const v = ac.createOscillator(), g = ac.createGain();
       v.type = type;
       v.frequency.setValueAtTime(f, t);
-      if (glide) v.frequency.exponentialRampToValueAtTime(glide, t + 0.12);
+      if (glide)
+        v.frequency.exponentialRampToValueAtTime(glide, t + 0.12);
       env(g, t, pk, a, d);
       v.connect(g).connect(dest);
       v.start(t);
@@ -179,31 +181,39 @@
         const C = (B ? S.chB : S.ch)[(bar % 4 + 4) % 4], root = C[0];
         for (let s = b * 4; s < b * 4 + 4; s++) {
           const st = t + (s - b * 4) * q + (s % 2 ? S.swing * q : 0);
-          if ((B ? S.kickB : S.kick).includes(s)) osc("sine", 120, st, 0.22, 0.55, 6e-3, low, 48);
-          for (const [ss, iv] of fillBar ? S.fill : S.bass) if (ss === s) {
-            osc("triangle", mtof(root + iv), st, q * (fillBar ? 1.6 : 2.4), 0.42, 0.012, low);
-            if (!lite) osc("sine", mtof(root + iv) / 2, st, q * 2, 0.25, 0.012, low);
-          }
+          if ((B ? S.kickB : S.kick).includes(s))
+            osc("sine", 120, st, 0.22, 0.55, 6e-3, low, 48);
+          for (const [ss, iv] of fillBar ? S.fill : S.bass)
+            if (ss === s) {
+              osc("triangle", mtof(root + iv), st, q * (fillBar ? 1.6 : 2.4), 0.42, 0.012, low);
+              if (!lite)
+                osc("sine", mtof(root + iv) / 2, st, q * 2, 0.25, 0.012, low);
+            }
           if (!(B && form === 8) && (B ? S.keysB : S.keys).includes(s)) {
             const tones = lite ? C[1].slice(0, 2) : C[1];
-            for (const m of tones) osc(S.keyWave, mtof(m), st, spb * S.keyLen, S.keyWave === "square" ? 0.028 : 0.05, 0.012, keys);
+            for (const m of tones)
+              osc(S.keyWave, mtof(m), st, spb * S.keyLen, S.keyWave === "square" ? 0.028 : 0.05, 0.012, keys);
           }
           if (!fillBar && bar % 2 === 0 && phr !== 1) {
-            for (const [ss, m] of B ? S.hookB : S.hook) if (ss === s) {
-              const f = mtof(m);
-              if (S.lead === "marimba") {
-                osc("sine", f, st, 0.28, S.hookAmp, 0.01, lead);
-                if (!lite) osc("sine", f * 4, st, 0.06, S.hookAmp * 0.2, 8e-3, lead);
-              } else if (S.lead === "bloop") osc(S.hookWave, f, st, 0.22, S.hookAmp, 0.015, lead, f * 1.02);
-              else {
-                osc("sine", f, st, 0.34, S.hookAmp, 0.025, lead);
+            for (const [ss, m] of B ? S.hookB : S.hook)
+              if (ss === s) {
+                const f = mtof(m);
+                if (S.lead === "marimba") {
+                  osc("sine", f, st, 0.28, S.hookAmp, 0.01, lead);
+                  if (!lite)
+                    osc("sine", f * 4, st, 0.06, S.hookAmp * 0.2, 8e-3, lead);
+                } else if (S.lead === "bloop")
+                  osc(S.hookWave, f, st, 0.22, S.hookAmp, 0.015, lead, f * 1.02);
+                else {
+                  osc("sine", f, st, 0.34, S.hookAmp, 0.025, lead);
+                }
               }
-            }
           }
           if (!fillBar && bar % 2 === 1 && phr !== 1) {
-            for (const [ss, m] of S.hook) if (ss === s && ss < 8) {
-              osc(S.hookWave, mtof(m + (B ? 5 : 7)), st, 0.24, S.hookAmp * 0.8, 0.015, lead);
-            }
+            for (const [ss, m] of S.hook)
+              if (ss === s && ss < 8) {
+                osc(S.hookWave, mtof(m + (B ? 5 : 7)), st, 0.24, S.hookAmp * 0.8, 0.015, lead);
+              }
           }
           if (shV && (S.sh.includes(s) || B && s % 2 === 1)) {
             const pk = S.sh.includes(s) ? 0.05 : 0.02;
@@ -214,10 +224,12 @@
         }
       },
       tick() {
-        if (!this.on) return;
+        if (!this.on)
+          return;
         const ahead = ac.currentTime + 0.2;
         let k = Math.ceil((ac.currentTime - this.t0) / this.spb - 1e-3);
-        if (this.next > k) k = this.next;
+        if (this.next > k)
+          k = this.next;
         while (this.t0 + k * this.spb < ahead) {
           this.beat(k, this.t0 + k * this.spb);
           k++;
@@ -235,10 +247,12 @@
           this.sty = STY[style];
           this.name = style;
         }
-        if (!this.timer) this.timer = setInterval(() => this.tick(), 50);
+        if (!this.timer)
+          this.timer = setInterval(() => this.tick(), 50);
       },
       sync(t0, spb) {
-        if (!this.on) return;
+        if (!this.on)
+          return;
         const k = Math.ceil((ac.currentTime + 0.2 - t0) / spb);
         this.t0 = t0;
         this.spb = spb;

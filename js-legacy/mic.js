@@ -24,21 +24,25 @@ window.MicCore = {
     return this.stream;
   },
   stop() {
-    if (this.stream) this.stream.getTracks().forEach((t) => t.stop());
-    if (this.ctx) this.ctx.close().catch(() => {
-    });
+    if (this.stream)
+      this.stream.getTracks().forEach((t) => t.stop());
+    if (this.ctx)
+      this.ctx.close().catch(() => {
+      });
     this.stream = this.ctx = this.an = null;
   },
   // full-buffer RMS + max, exactly like the test page
   read() {
-    if (!this.an) return { rms: 0, max: 0 };
+    if (!this.an)
+      return { rms: 0, max: 0 };
     const b = this.buf;
     this.an.getFloatTimeDomainData(b);
     let s = 0, mx = 0;
     for (const v of b) {
       s += v * v;
       const a = v < 0 ? -v : v;
-      if (a > mx) mx = a;
+      if (a > mx)
+        mx = a;
     }
     return { rms: Math.sqrt(s / b.length), max: mx };
   },
