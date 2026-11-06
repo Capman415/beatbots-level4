@@ -58,7 +58,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.5.5";
+BB.VERSION = "v14.5.6";
 BB.GRADES = ["K", "1", "2", "3", "4", "5", "6"];
 (() => {
   let g = "2";
@@ -104,6 +104,26 @@ BB.setK = (v) => BB.setGrade(v ? "K" : BB.grade === "K" || BB.grade === "1" ? "2
 BB.gradeBadge = () => {
 };
 BB.kBadge = () => {
+};
+BB.drawGradeHint = () => {
+  try {
+    const sc = BB.scene && BB.scene.constructor && BB.scene.constructor.name;
+    if (!sc || sc === "TitleScene" || sc === "MicScene" || sc === "GradePickScene")
+      return;
+    const g = BB.grade;
+    if (g == null || g === "")
+      return;
+    const dpr = BB.dpr || 1, x = 6, y = cv.height / dpr - 4;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = "13px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.fillText("Grade " + g, x, y);
+    ctx.restore();
+  } catch (e) {
+  }
 };
 try {
   BB.echoOff = new URLSearchParams(location.search).get("echo") === "0";
@@ -1374,6 +1394,7 @@ function frame(ts) {
   BB.drawCelebrate && BB.drawCelebrate();
   BB.drawParts && 0;
   ctx.restore();
+  BB.drawGradeHint && BB.drawGradeHint();
   ctx.save();
   ctx.setTransform(BB.dpr, 0, 0, BB.dpr, 0, 0);
   ctx.font = "13px sans-serif";
