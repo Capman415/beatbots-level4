@@ -4,6 +4,11 @@
   BB._sw.push((g) => ctx = g);
   const COL = BB.COL, W = BB.W, H = BB.H, { clamp, lerp, ease } = BB, R = BB.R;
   BB.VO_LINES = (BB.VO_LINES || []).concat([
+    ["dl_left", "Lean left!", "sprocket"],
+    ["dl_right", "Lean right!", "sprocket"],
+    ["dl_duck", "Duck!", "sprocket"],
+    ["dl_jump", "Jump!", "sprocket"],
+    ["dl_freeze", "Freeze!", "sprocket"],
     ["dl_intro", "It's Static Jr.! Clap each box's rhythm to throw it at him, and fill the delivery truck!", "sprocket"],
     ["dl_shield", "He put up a static shield! Only a perfect clap can break it!", "sprocket"],
     ["dl_phase2", "He's getting faster! Keep reading carefully!", "sprocket"],
@@ -135,6 +140,10 @@
     m /= ds.length;
     return clamp(3 * (0.12 + 0.88 * m) * Math.min(1, ds.length / 4), 0, 3);
   }, dynLevel = (f) => f >= 2.4 ? 2 : f >= 1.2 ? 1 : 0, BLAST_R = [150, 240, 380], HIT_DMG = 6;
+  const BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.16, y: H * 0.46 }, right: { x: W * 0.84, y: H * 0.46 }, high: { x: W / 2, y: H * 0.18 }, floor: { x: W / 2, y: H + 140 }, botL: { x: W * 0.28, y: H * 0.8 }, botR: { x: W * 0.72, y: H * 0.8 }, mid: { x: W / 2, y: H * 0.55 } }, throwLane = (kind, n) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? "floor" : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
+  BB.throwLane = throwLane;
+  BB.LANE_TG = LANE_TG;
+  BB.DODGE_VO = DODGE_VO;
   BB.clapDyn = clapDyn;
   BB.dynFill = dynFill;
   BB.dynLevel = dynLevel;
@@ -153,6 +162,10 @@
     for (let i = j - 1; i >= 0 && KO_BARS[i].pwr; i--)
       KO_BARS[i].beam = 1;
   }
+  KO_BARS.forEach((b) => {
+    if (b.mode && !b.vo && DODGE_VO[b.ic])
+      b.vo = DODGE_VO[b.ic];
+  });
   BB.KO_BARS = KO_BARS;
   KO_BARS.forEach((b) => {
     b.turn = b.mode ? "jr" : b.cw || b.rush || b.atk || b.pwr ? "us" : "";
@@ -638,7 +651,7 @@
               BB.burst(JR.x, JR.y - 170, 60, { cols: ["#d24a3c", "#ffe066", "#fff", "#7ef0ff"], kind: "star", size: 16, speed: 1100, g: 400, life: 1.4 });
               BB.groove.stop();
             } else if (kind === "bomb") {
-              const p = this.bombAt(i);
+              const p = LANE_TG[throwLane("bomb", KO_HITS.slice(0, i).filter((h) => h[1] === "bomb").length)];
               BB.shake(5);
               BB.burst(p.x, p.y, 26, { cols: ["#7ef0ff", "#ff8adf", "#ffe066", "#fff"], kind: "star", size: 13, speed: 700, g: 250 });
             } else if (KO_ATK(kind)) {
@@ -1380,7 +1393,7 @@
         rot += Math.sin(t * 14) * 0.05;
       if (kd === "chunk" && since < 1.4) {
         const tri = (x) => 1 - Math.abs(x % 2 - 1);
-        jx = lerp(JR.x, W - 140, tri(since * 2.2));
+        jx = lerp(JR.x, W - 250, tri(since * 2.2));
         jy = JR.y - Math.abs(Math.sin(since * 7)) * 120 * (1.4 - since);
         rot = since * 14;
         sq = 0;
@@ -1817,14 +1830,23 @@
           if (v < 0 || v > 1.8)
             continue;
           const i = KO_HITS.findIndex((h) => h[0] === hk && h[1] === kind), bp = kind === "bomb" ? this.bombAt(i) : null;
-          const tg = kind === "junkL" ? { x: W / 2 - 150, y: H / 2 } : kind === "junkR" ? { x: W / 2 + 150, y: H / 2 } : kind === "junkT" ? { x: W / 2, y: H / 2 - 130 } : kind === "junkF" ? { x: W / 2, y: H / 2 + 140 } : { x: W / 2, y: H / 2 };
-          const junk = kind === "bomb" ? "bomb" : kind === "junkF" || kind === "junkR" && i % 2 ? "tire" : kind === "junkT" ? "sock" : "chicken";
+          const tg = LANE_TG[throwLane(kind, KO_HITS.slice(0, i).filter((h) => h[1] === "bomb").length)], tire = kind === "junkF";
+          const junk = kind === "bomb" ? "bomb" : tire ? "tire" : i % 2 ? "sock" : "chicken";
+          if (tire && v < 1) {
+            const z = v * v, sc = 0.3 + z * 3.4, x = lerp(jx, tg.x, z), y = lerp(JR.y + 170, tg.y, z);
+            ctx.save();
+            ctx.translate(x, y - 62 * sc);
+            ctx.scale(sc, sc);
+            this.drawTireRoll(v * 14);
+            ctx.restore();
+            continue;
+          }
           if (v < 1) {
-            const z = v * v, sc = 0.35 + z * 3.6, x = lerp(jx - 40, tg.x, z), y = lerp(jy - 120, tg.y, z) - Math.sin(v * Math.PI) * 80 * (1 - z);
+            const z = v * v, sc = 0.35 + z * 3, x = lerp(jx - 40, tg.x, z), y = lerp(jy - 120, tg.y, z) - Math.sin(v * Math.PI) * 80 * (1 - z);
             ctx.save();
             ctx.translate(x, y);
             ctx.scale(sc, sc);
-            ctx.rotate(v * 7);
+            ctx.rotate(Math.sin(v * 5) * 0.5);
             this.drawJunk(junk, t);
             ctx.restore();
             if (v > 0.55) {
@@ -1866,7 +1888,7 @@
                 ctx.lineTo(Math.cos(an + 0.3) * 140, Math.sin(an + 0.3) * 140);
                 ctx.stroke();
               }
-              const sx = clamp(tg.x, 330, W - 330) - tg.x, sy = clamp(tg.y, 140, H - 160) - tg.y;
+              const sx = clamp(tg.x, 330, W - 330) - tg.x, sy = clamp(tg.y, 140, H - 200) - tg.y;
               BB.text(kind === "junkF" ? "BOING! JUMPED IT!" : "MISSED!", sx, sy, 80, COL.yellow, { font: "Rammetto One", stroke: 10, strokeCol: "#3a1040" });
             }
             ctx.restore();
@@ -3969,34 +3991,56 @@
         ctx.lineTo(16, 20);
         ctx.stroke();
       } else if (j === "sock") {
-        ctx.beginPath();
-        ctx.moveTo(-24, -62);
-        ctx.lineTo(24, -62);
-        ctx.lineTo(24, 14);
-        ctx.quadraticCurveTo(70, 10, 70, 36);
-        ctx.quadraticCurveTo(70, 58, 40, 58);
-        ctx.lineTo(-6, 58);
-        ctx.quadraticCurveTo(-24, 58, -24, 36);
-        ctx.closePath();
-        o("#f4f0e6");
+        const sp = () => {
+          ctx.beginPath();
+          ctx.moveTo(-30, -58);
+          ctx.lineTo(16, -58);
+          ctx.lineTo(16, 6);
+          ctx.quadraticCurveTo(18, 18, 34, 20);
+          ctx.lineTo(70, 20);
+          ctx.quadraticCurveTo(96, 22, 96, 44);
+          ctx.quadraticCurveTo(96, 66, 70, 66);
+          ctx.lineTo(-2, 66);
+          ctx.quadraticCurveTo(-32, 66, -32, 34);
+          ctx.closePath();
+        };
+        sp();
+        ctx.fillStyle = "#f4f0e6";
+        ctx.fill();
+        ctx.save();
+        sp();
+        ctx.clip();
         ctx.fillStyle = "#d24a3c";
-        ctx.fillRect(-21, -54, 42, 10);
-        ctx.fillStyle = "#50aaa0";
-        ctx.fillRect(-21, -38, 42, 8);
-        ctx.strokeStyle = I;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(-24, -62, 48, 40);
         ctx.beginPath();
-        ctx.arc(48, 38, 12, 0, 7);
-        o("#e2b272");
-        hl(-8, -6, 5, 14, 0);
+        ctx.arc(-30, 66, 34, 0, 7);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(100, 44, 30, 0, 7);
+        ctx.fill();
+        ctx.fillStyle = "#50aaa0";
+        ctx.fillRect(-40, -30, 70, 10);
+        ctx.fillRect(-40, -10, 70, 10);
+        ctx.restore();
+        sp();
+        ctx.strokeStyle = I;
+        ctx.lineWidth = 6;
+        ctx.stroke();
+        BB.rrect(-36, -80, 58, 26, 6, "#e8e2cd", I, 6);
+        ctx.strokeStyle = I;
+        ctx.lineWidth = 3;
+        for (let q = 0; q < 5; q++) {
+          ctx.beginPath();
+          ctx.moveTo(-26 + q * 10, -76);
+          ctx.lineTo(-26 + q * 10, -58);
+          ctx.stroke();
+        }
         ctx.strokeStyle = "rgba(120,160,60,.9)";
         ctx.lineWidth = 4;
         for (let q = 0; q < 3; q++) {
           const a = t * 6 + q * 2;
           ctx.beginPath();
-          ctx.moveTo(30 + q * 14, -72);
-          ctx.quadraticCurveTo(38 + q * 14 + Math.sin(a) * 6, -88, 30 + q * 14, -104);
+          ctx.moveTo(-20 + q * 16, -90);
+          ctx.quadraticCurveTo(-12 + q * 16 + Math.sin(a) * 6, -106, -20 + q * 16, -122);
           ctx.stroke();
         }
       } else if (j === "chicken") {
@@ -4062,6 +4106,38 @@
         }
         hl(-14, -14, 8, 4);
       }
+    }
+    drawTireRoll(ph) {
+      const I = COL.ink;
+      ctx.fillStyle = "rgba(0,0,0,.25)";
+      ctx.beginPath();
+      ctx.ellipse(0, 64, 52, 10, 0, 0, 7);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(-14, 0, 30, 62, 0, 0, 7);
+      ctx.fillStyle = "#3a3f48";
+      ctx.strokeStyle = I;
+      ctx.lineWidth = 6;
+      ctx.fill();
+      ctx.stroke();
+      BB.rrect(-14, -62, 56, 124, 26, "#2a2e36", I, 6);
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(-14, -62, 56, 124, 26);
+      ctx.clip();
+      ctx.strokeStyle = "#5b6470";
+      ctx.lineWidth = 6;
+      for (let q = -3; q < 5; q++) {
+        const y = -62 + ((q * 26 + ph * 26) % (26 * 8) + 26 * 8) % (26 * 8) - 26;
+        ctx.beginPath();
+        ctx.moveTo(-10, y);
+        ctx.lineTo(14, y + 10);
+        ctx.lineTo(38, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.fillStyle = "rgba(255,255,255,.35)";
+      ctx.fillRect(-6, -48, 6, 96);
     }
     drawBlastRing(x, y, R2, u) {
       if (u < 0 || u > 1)
