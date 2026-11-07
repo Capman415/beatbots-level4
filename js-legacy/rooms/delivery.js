@@ -1097,7 +1097,7 @@
         ctx.stroke();
       }
       ctx.restore();
-      BB.text("BEAT BOTS EXPRESS", 250, 24, 30, "#fff", { font: "Rammetto One", stroke: 4, maxW: 400 });
+      BB.text("STEADY BOTS EXPRESS", 258, 24, 28, "#fff", { font: "Rammetto One", stroke: 4, maxW: 396 });
       const cab = () => {
         B();
         ctx.moveTo(480, 240);

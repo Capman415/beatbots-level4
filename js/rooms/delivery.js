@@ -233,7 +233,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     for(let i=0;i<fill;i++){const c=i%4,r=1-(i/4|0),bx=24+c*110,by=62+r*82;ctx.save();ctx.translate(bx+50,by+38);ctx.scale(100/140,76/120);this.paintBox(0);ctx.restore()}
     // red roof header (gear + name unchanged)
     V(()=>{B();ctx.roundRect(0,0,480,46,14)},0,0,480,46,['#ff7a6a','#d8322a','#8e1a16'],{wear:13,wc:'70,10,5'});SP(120,10,70,4,0,.45);
-    ctx.save();ctx.translate(30,23);ctx.strokeStyle='#ffd84a';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,11,0,7);ctx.stroke();for(let q=0;q<8;q++){const a=q*Math.PI/4;ctx.beginPath();ctx.moveTo(Math.cos(a)*11,Math.sin(a)*11);ctx.lineTo(Math.cos(a)*17,Math.sin(a)*17);ctx.stroke()}ctx.restore();BB.text('BEAT BOTS EXPRESS',250,24,30,'#fff',{font:'Rammetto One',stroke:4,maxW:400});
+    ctx.save();ctx.translate(30,23);ctx.strokeStyle='#ffd84a';ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,11,0,7);ctx.stroke();for(let q=0;q<8;q++){const a=q*Math.PI/4;ctx.beginPath();ctx.moveTo(Math.cos(a)*11,Math.sin(a)*11);ctx.lineTo(Math.cos(a)*17,Math.sin(a)*17);ctx.stroke()}ctx.restore();BB.text('STEADY BOTS EXPRESS',258,24,28,'#fff',{font:'Rammetto One',stroke:4,maxW:396});
     // cab
     const cab=()=>{B();ctx.moveTo(480,240);ctx.lineTo(480,96);ctx.quadraticCurveTo(482,74,520,72);ctx.lineTo(600,72);ctx.quadraticCurveTo(640,74,652,130);ctx.lineTo(660,240);ctx.closePath()};
     V(cab,480,72,180,168,['#a8eedc','#4fa896','#245e55'],{wear:17,wc:'20,50,45'});SP(530,86,40,6,-.1,.5);
