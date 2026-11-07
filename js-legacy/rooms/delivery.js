@@ -140,10 +140,31 @@
     m /= ds.length;
     return clamp(3 * (0.12 + 0.88 * m) * Math.min(1, ds.length / 4), 0, 3);
   }, dynLevel = (f) => f >= 2.4 ? 2 : f >= 1.2 ? 1 : 0, BLAST_R = [150, 240, 380], HIT_DMG = 6;
-  const BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.16, y: H * 0.46 }, right: { x: W * 0.84, y: H * 0.46 }, high: { x: W / 2, y: H * 0.18 }, floor: { x: W / 2, y: H + 140 }, botL: { x: W * 0.28, y: H * 0.8 }, botR: { x: W * 0.72, y: H * 0.8 }, mid: { x: W / 2, y: H * 0.55 } }, throwLane = (kind, n) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? "floor" : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
+  const BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.1, y: H * 0.55 }, right: { x: W * 0.94, y: H * 0.76 }, high: { x: W * 0.4, y: 600 }, floor: { x: W * 0.5, y: H * 0.86 }, botL: { x: W * 0.26, y: H * 0.82 }, botR: { x: W * 0.84, y: H * 0.84 }, mid: { x: W * 0.5, y: H * 0.62 } }, throwLane = (kind, n) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? "floor" : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
+  const SAFE_Y = 430, throwPath = (lane, v, sx, sy) => {
+    if (v < 0 || v > 1.5)
+      return null;
+    const T = LANE_TG[lane] || LANE_TG.mid, po = Math.max(0, v - 1), a = v <= 1 ? 1 : clamp(1 - po / 0.5, 0, 1);
+    if (lane === "floor") {
+      const p2 = Math.pow(Math.min(v, 1), 1.15);
+      return { x: lerp(sx, T.x, p2), y: lerp(sy, T.y, p2) + po * 2e3, sc: 0.55 + 3 * Math.pow(Math.min(v, 1), 1.3) + po * 2, a: 1 };
+    }
+    const p = 1 - Math.pow(1 - Math.min(v, 1), 1.7), dx = T.x - sx, dy = T.y - sy;
+    const dl = Math.hypot(dx, dy) || 1;
+    let x = sx + dx * p + dx / dl * po * 1500, y = sy + dy * p + dy / dl * po * 1500 - Math.sin(Math.min(v, 1) * Math.PI) * 40;
+    if (lane === "high") {
+      y = sy + dy * p - Math.sin(Math.min(v, 1) * Math.PI) * 20;
+      return { x, y: Math.max(SAFE_Y + 140, y), sc: 0.6 + 1.3 * Math.pow(Math.min(v, 1), 1.4) + po * 0.6, a };
+    }
+    return { x, y: Math.max(SAFE_Y, y), sc: 0.6 + 2.1 * Math.pow(Math.min(v, 1), 1.4) + po * 1.5, a };
+  };
+  BB.throwPath = throwPath;
+  BB.SAFE_Y = SAFE_Y;
   BB.throwLane = throwLane;
   BB.LANE_TG = LANE_TG;
   BB.DODGE_VO = DODGE_VO;
+  const PUNCH_GAP = 0.25;
+  BB.PUNCH_GAP = PUNCH_GAP;
   BB.clapDyn = clapDyn;
   BB.dynFill = dynFill;
   BB.dynLevel = dynLevel;
@@ -628,7 +649,9 @@
             } else if (kind[0] === "j") {
               S.whoosh && S.whoosh(a - 0.5);
               S.pop && S.pop(a);
-            } else {
+            } else if ((KO_BARS[barAt(k)] || {}).rush && S.punchT)
+              S.punchT(a, 0.8);
+            else {
               S.pkTa && S.pkTa(a);
               if (kind === "stomp")
                 S.clunk && S.clunk(a);
@@ -736,14 +759,14 @@
                 this.lastCl = BB.t;
                 if (b.rush) {
                   this.rushN = (this.rushN || 0) + 1;
-                  this.impact(1, this.rushN % 2 ? -1 : 1);
+                  this.impact(1, this.rushN % 2 ? -1 : 1, 1);
                   BB.shake(Math.min(26, 5 + this.rushN * 0.7));
-                  BB.sfx.bonk && BB.sfx.bonk();
                 } else if (!b.cw)
                   this.blasts.push({ t: BB.t, x: W * (0.3 + Math.random() * 0.4), s: 1 + dy * 0.7 });
                 if (b.cw)
                   BB.sfx.chime && BB.sfx.chime();
-                BB.sfx.pkTa && BB.sfx.pkTa();
+                if (!b.rush)
+                  BB.sfx.pkTa && BB.sfx.pkTa();
                 if (!b.cw) {
                   if (tr >= 2)
                     BB.sfx.bonk && BB.sfx.bonk();
@@ -857,6 +880,12 @@
             BB.groove.vol = b.chant || b.chantIntro ? 0.3 : b.sty ? 0.9 : 0.5 + 0.05 * (this.curPh || 1);
             if (b.vo)
               BB.say(b.vo, { overlap: true });
+            if (b.rush && !(KO_BARS[bi - 1] || {}).rush && window.ClapDet && ClapDet.expect) {
+              let j = bi;
+              while ((KO_BARS[j + 1] || {}).rush)
+                j++;
+              ClapDet.expect(PUNCH_GAP, this.a0 + BS[j + 1] - KO_T0 + 0.3);
+            }
             if (b.chantIntro) {
               try {
                 const au = this.tAu = new Audio("assets/voice/teacher_chant.mp3");
@@ -1431,11 +1460,14 @@
           ctx.restore();
         }
       }
-      if (bar && bar.turn && !gone) {
-        const us = bar.turn === "us", BY = 318;
-        BB.rrect(W / 2 - 330, BY, 660, 66, 22, us ? "#ffe066" : "#ff8adf", COL.ink, 4);
-        BB.text(us ? bar.rush ? "EVERY CLAP = ONE PUNCH!" : "PIANO TO FORTE: LOUDER = BIGGER BLAST!" : "STATIC JR. ATTACKS: DODGE!", W / 2, BY + 34, 38, us ? "#3a2a00" : "#3a1040", { stroke: 0, maxW: 620 });
-      }
+      const post = [];
+      post.push(() => {
+        if (bar && bar.turn && !gone) {
+          const us = bar.turn === "us", BY = 318;
+          BB.rrect(W / 2 - 330, BY, 660, 66, 22, us ? "#ffe066" : "#ff8adf", COL.ink, 4);
+          BB.text(us ? bar.rush ? "EVERY CLAP = ONE PUNCH!" : "PIANO TO FORTE: LOUDER = BIGGER BLAST!" : "STATIC JR. ATTACKS: DODGE!", W / 2, BY + 34, 38, us ? "#3a2a00" : "#3a1040", { stroke: 0, maxW: 620 });
+        }
+      });
       {
         const lc = KO_PHASE_END.filter((x) => x <= k).pop(), hs = this.hitShow;
         if (hs && k - hs.k >= 0 && k - hs.k < 1.6) {
@@ -1739,12 +1771,14 @@
             BB.text("\u2605", jx + Math.cos(a) * 110, jy - 160 + Math.sin(a) * 26, 40, "#ffe066", { stroke: 4 });
           }
       }
-      if (md && !gone && !(this.gag && BB.t - this.gag.t < 2)) {
-        const lines = { sneak: "tip... toe... hee hee", throw: "catch THIS!", freeze: "statues?! no fair!" };
-        lines[md] && R.bubble(jx, jy - 200, lines[md]);
-      }
-      if (bar && bar.line && !gone)
-        R.bubble(jx, jy - 200, bar.line);
+      post.push(() => {
+        if (md && !gone && !(this.gag && BB.t - this.gag.t < 2)) {
+          const lines = { sneak: "tip... toe... hee hee", throw: "catch THIS!", freeze: "statues?! no fair!" };
+          lines[md] && R.bubble(jx, jy - 200, lines[md]);
+        }
+        if (bar && bar.line && !gone)
+          R.bubble(jx, jy - 200, bar.line);
+      });
       const box = (x, y, s, r, lab) => {
         ctx.save();
         ctx.translate(x, y);
@@ -1827,70 +1861,53 @@
         }
         if (KO_ATK(kind) && kind !== "zap") {
           const fl = 1.2, v = (k - (hk - fl)) / fl;
-          if (v < 0 || v > 1.8)
+          if (v < 0 || v > 1.5)
             continue;
-          const i = KO_HITS.findIndex((h) => h[0] === hk && h[1] === kind), bp = kind === "bomb" ? this.bombAt(i) : null;
-          const tg = LANE_TG[throwLane(kind, KO_HITS.slice(0, i).filter((h) => h[1] === "bomb").length)], tire = kind === "junkF";
-          const junk = kind === "bomb" ? "bomb" : tire ? "tire" : i % 2 ? "sock" : "chicken";
-          if (tire && v < 1) {
-            const z = v * v, sc = 0.3 + z * 3.4, x = lerp(jx, tg.x, z), y = lerp(JR.y + 170, tg.y, z);
-            ctx.save();
-            ctx.translate(x, y - 62 * sc);
-            ctx.scale(sc, sc);
-            this.drawTireRoll(v * 14);
-            ctx.restore();
+          const i = KO_HITS.findIndex((h) => h[0] === hk && h[1] === kind), lane = throwLane(kind, KO_HITS.slice(0, i).filter((h) => h[1] === "bomb").length), tire = kind === "junkF";
+          const junk = kind === "bomb" ? "bomb" : tire ? "tire" : lane === "left" ? "sock" : lane === "right" ? "chicken" : i % 2 ? "sock" : "chicken";
+          const P = tire ? throwPath(lane, v, JR.x - 40, JR.y + 170) : throwPath(lane, v, lane === "right" || lane === "botR" ? JR.x + 60 : JR.x - 90, JR.y - 40);
+          if (!P)
             continue;
-          }
-          if (v < 1) {
-            const z = v * v, sc = 0.35 + z * 3, x = lerp(jx - 40, tg.x, z), y = lerp(jy - 120, tg.y, z) - Math.sin(v * Math.PI) * 80 * (1 - z);
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.scale(sc, sc);
-            ctx.rotate(Math.sin(v * 5) * 0.5);
+          ctx.save();
+          ctx.globalAlpha = P.a;
+          ctx.translate(P.x, P.y - (tire ? 62 * P.sc : 0));
+          ctx.scale(P.sc, P.sc);
+          if (tire)
+            this.drawTireRoll(v * 16);
+          else {
+            ctx.rotate(Math.sin(v * 5) * 0.4);
             this.drawJunk(junk, t);
-            ctx.restore();
-            if (v > 0.55) {
-              ctx.save();
-              ctx.globalAlpha = (v - 0.55) * 1.6;
-              ctx.strokeStyle = "rgba(255,255,255,.7)";
-              ctx.lineWidth = 6;
-              for (let q = 0; q < 5; q++) {
-                const a = q * 1.26 + t;
-                ctx.beginPath();
-                ctx.moveTo(x + Math.cos(a) * sc * 70, y + Math.sin(a) * sc * 70);
-                ctx.lineTo(x + Math.cos(a) * sc * 110, y + Math.sin(a) * sc * 110);
-                ctx.stroke();
-              }
-              ctx.restore();
-            }
-          } else {
-            const w = v - 1, a = clamp(1 - w / 0.8, 0, 1);
+          }
+          ctx.restore();
+          if (v < 1 && v > 0.15 && !tire) {
             ctx.save();
-            ctx.globalAlpha = a;
-            ctx.translate(tg.x, tg.y);
+            ctx.globalAlpha = 0.6 * (1 - v);
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 5;
+            const bk = throwPath(lane, Math.max(0, v - 0.15), lane === "right" || lane === "botR" ? JR.x + 60 : JR.x - 90, JR.y - 40);
+            if (bk) {
+              ctx.beginPath();
+              ctx.moveTo(bk.x, bk.y);
+              ctx.lineTo(P.x, P.y);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+          if (v >= 1 && v < 1.5) {
+            const w = v - 1, al = clamp(1 - w / 0.5, 0, 1), T = LANE_TG[lane], tx = clamp(T.x, 330, W - 330), ty2 = clamp(T.y - (tire ? 60 : 120), SAFE_Y + 40, H - 120);
+            ctx.save();
+            ctx.globalAlpha = al;
             if (kind === "bomb") {
-              ctx.fillStyle = "rgba(255,138,223,.55)";
+              ctx.fillStyle = "rgba(255,138,223,.5)";
               for (let q = 0; q < 9; q++) {
                 const r = 60 + q % 3 * 40;
                 ctx.beginPath();
-                ctx.arc(Math.cos(q * 0.7) * r * 1.4, Math.sin(q * 0.7) * r, 44 + q % 4 * 16, 0, 7);
+                ctx.arc(T.x + Math.cos(q * 0.7) * r * 1.4, T.y + Math.sin(q * 0.7) * r, 44 + q % 4 * 16, 0, 7);
                 ctx.fill();
               }
-              BB.text("POOF! MISSED!", 0, 0, 72, "#fff", { font: "Rammetto One", stroke: 9, strokeCol: "#3a1040" });
-            } else {
-              ctx.strokeStyle = "rgba(255,255,255,.85)";
-              ctx.lineWidth = 5;
-              for (let q = 0; q < 7; q++) {
-                const an = q * 0.9;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(Math.cos(an) * 60, Math.sin(an) * 60);
-                ctx.lineTo(Math.cos(an + 0.3) * 140, Math.sin(an + 0.3) * 140);
-                ctx.stroke();
-              }
-              const sx = clamp(tg.x, 330, W - 330) - tg.x, sy = clamp(tg.y, 140, H - 200) - tg.y;
-              BB.text(kind === "junkF" ? "BOING! JUMPED IT!" : "MISSED!", sx, sy, 80, COL.yellow, { font: "Rammetto One", stroke: 10, strokeCol: "#3a1040" });
-            }
+              BB.text("POOF! MISSED!", tx, ty2, 72, "#fff", { font: "Rammetto One", stroke: 9, strokeCol: "#3a1040" });
+            } else
+              BB.text(tire ? "BOING! JUMPED IT!" : "MISSED!", tx, ty2, 80, COL.yellow, { font: "Rammetto One", stroke: 10, strokeCol: "#3a1040" });
             ctx.restore();
           }
           continue;
@@ -2005,6 +2022,7 @@
         ctx.fillRect(0, 0, W, H);
         ctx.restore();
       }
+      post.forEach((f) => f());
       if (bar && bi >= 0 && !(gone && k > KO_BIG + 1)) {
         const bb = bt - bi * 4, pop = 1 + 0.06 * Math.exp(-(bb % 1) * 10), cx = W / 2, cy = 150;
         ctx.save();
@@ -2659,9 +2677,13 @@
     }
     /* v14.3.4 CAMERA: gentle action-movie moves (zoom always >= tilt cover, max 1.14x, max 2 deg tilt, eased; no shake added here) */
     /* v14.3.5 SPECTACLE: one call per landed hit. lvl 1 slap, 2 big, 3 hero/finisher. Layered SFX, cardboard shards + shock rings, rim flash, hit-stop (lvl>=2) */
-    impact(lvl, dir) {
+    impact(lvl, dir, tonal) {
       const S = BB.sfx;
-      S.pop && S.pop();
+      if (tonal && S.punchT) {
+        S.punchT();
+        lvl = Math.min(lvl, 1);
+      } else
+        S.pop && S.pop();
       if (lvl >= 2) {
         S.clunk && S.clunk();
         S.pebble && S.pebble();

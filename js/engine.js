@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.5.9';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
+BB.VERSION='v14.5.10';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
 BB.GRADES=['K','1','2','3','4','5','6'];
 (()=>{let g='2';try{const s=localStorage.getItem('bb_grade');if(BB.GRADES.includes(s))g=s;else if(localStorage.getItem('bb_kmode')==='1')g='K';else{const c=JSON.parse(localStorage.getItem('bb_sessclass')||'null');if(BB.GRADES.includes(c))g=c}}catch(e){}BB.grade=g})();
 BB.gradeBand=()=>{const g=BB.grade;return(g==='K'||g==='1')?'k1':(g==='2'||g==='3')?'m':'u'};
@@ -214,6 +214,7 @@ BB.sfx={
   tink:(t=now(),v=1,quiet)=>{osc('triangle',2200,t,.18,.22*v);osc('sine',3300,t,.12,.1*v);if(!quiet)noise(t,.04,.15*v,'bandpass',4000,3)},// quiet: no noise burst (cave-in whisper claps)
   crack:(t=now())=>{if(drum('snare',t,.9))return;noise(t,.25,.5,'lowpass',2500,1,300);osc('square',140,t,.12,.15,60)},
   rumble:(t=now(),d=1.2)=>{noise(t,d,.35,'lowpass',180,1,60)},
+  punchT:(t=now(),v=1)=>{osc('triangle',196,t,.09,.24*v);osc('sine',392,t,.07,.12*v)},// v14.5.10 PUNCH RUSH feedback: pure tones only, so the clap detector never hard-blocks the next clap behind it
   chime:(t=now())=>{[523,659,784,1046].forEach((f,i)=>osc('sine',f,t+i*.07,1.2,.14));},
   ding:(t=now())=>{osc('sine',1568,t,.6,.2);osc('sine',2093,t+.06,.6,.15)},
   boom:(t=now())=>{if(drum('kick',t,1)){drum('tomlo',t,.6);return}osc('sine',120,t,.5,.6,40);noise(t,.4,.4,'lowpass',800,1,80)},

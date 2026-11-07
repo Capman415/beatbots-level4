@@ -58,7 +58,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.5.9";
+BB.VERSION = "v14.5.10";
 BB.GRADES = ["K", "1", "2", "3", "4", "5", "6"];
 (() => {
   let g = "2";
@@ -813,6 +813,11 @@ BB.sfx = {
   rumble: (t = now(), d = 1.2) => {
     noise(t, d, 0.35, "lowpass", 180, 1, 60);
   },
+  punchT: (t = now(), v = 1) => {
+    osc("triangle", 196, t, 0.09, 0.24 * v);
+    osc("sine", 392, t, 0.07, 0.12 * v);
+  },
+  // v14.5.10 PUNCH RUSH feedback: pure tones only, so the clap detector never hard-blocks the next clap behind it
   chime: (t = now()) => {
     [523, 659, 784, 1046].forEach((f, i) => osc("sine", f, t + i * 0.07, 1.2, 0.14));
   },
