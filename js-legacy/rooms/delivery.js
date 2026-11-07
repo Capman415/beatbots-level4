@@ -158,6 +158,16 @@
     }
     return { x, y: Math.max(SAFE_Y, y), sc: 0.6 + 2.1 * Math.pow(Math.min(v, 1), 1.4) + po * 1.5, a };
   };
+  const LANE_DIR = { left: -1, right: 1, high: -1, floor: -1, botL: -1, botR: 1, mid: -1 }, throwTurn = (lane, v, kind) => {
+    const d = LANE_DIR[lane] || 1, u = clamp(v, 0, 1.5), e = 1 - Math.pow(1 - Math.min(u, 1), 2), po = Math.max(0, u - 1);
+    if (kind === "tire")
+      return { rot: d * 0.1 * e, sx: 1 };
+    const amp = kind === "bomb" ? 0.24 : kind === "sock" ? 0.38 : 0.44, tilt = lane === "high" ? -0.12 : lane === "botL" || lane === "botR" || lane === "mid" ? 0.12 : 0;
+    const rot = clamp(d * (0.12 + amp * e + 0.25 * po) + tilt * e + 0.06 * Math.sin(u * 7), -0.6, 0.6);
+    return { rot, sx: kind === "bomb" ? 1 : 1 - 0.16 * Math.sin(Math.PI * Math.min(u, 1)) };
+  };
+  BB.throwTurn = throwTurn;
+  BB.LANE_DIR = LANE_DIR;
   BB.throwPath = throwPath;
   BB.SAFE_Y = SAFE_Y;
   BB.throwLane = throwLane;
@@ -1872,12 +1882,15 @@
           ctx.globalAlpha = P.a;
           ctx.translate(P.x, P.y - (tire ? 62 * P.sc : 0));
           ctx.scale(P.sc, P.sc);
+          {
+            const TT = throwTurn(lane, v, tire ? "tire" : junk);
+            ctx.rotate(TT.rot);
+            ctx.scale(TT.sx, 1);
+          }
           if (tire)
             this.drawTireRoll(v * 16);
-          else {
-            ctx.rotate(Math.sin(v * 5) * 0.4);
+          else
             this.drawJunk(junk, t);
-          }
           ctx.restore();
           if (v < 1 && v > 0.15 && !tire) {
             ctx.save();

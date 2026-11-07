@@ -96,6 +96,14 @@ const SAFE_Y=430,throwPath=(lane,v,sx,sy)=>{if(v<0||v>1.5)return null;const T=LA
   const p=1-Math.pow(1-Math.min(v,1),1.7),dx=T.x-sx,dy=T.y-sy;const dl=Math.hypot(dx,dy)||1;let x=sx+dx*p+dx/dl*po*1500,y=sy+dy*p+dy/dl*po*1500-Math.sin(Math.min(v,1)*Math.PI)*40;
   if(lane==='high'){y=sy+dy*p-Math.sin(Math.min(v,1)*Math.PI)*20;return{x,y:Math.max(SAFE_Y+140,y),sc:.6+1.3*Math.pow(Math.min(v,1),1.4)+po*.6,a}}
   return{x,y:Math.max(SAFE_Y,y),sc:.6+2.1*Math.pow(Math.min(v,1),1.4)+po*1.5,a}};
+/* v14.5.12 THROW TURN (pure): understated, lane-dependent turn while flying. Leans INTO its travel direction and turns a little more as it
+   comes at you, plus a soft 3D 'turn' (horizontal squash). Never a full spin: |rot| <= .6 rad (~34°). Tire: only a slight perspective lean, no spin. */
+const LANE_DIR={left:-1,right:1,high:-1,floor:-1,botL:-1,botR:1,mid:-1},
+  throwTurn=(lane,v,kind)=>{const d=LANE_DIR[lane]||1,u=clamp(v,0,1.5),e=1-Math.pow(1-Math.min(u,1),2),po=Math.max(0,u-1);
+    if(kind==='tire')return{rot:d*.1*e,sx:1};
+    const amp=kind==='bomb'?.24:kind==='sock'?.38:.44,tilt=lane==='high'?-.12:lane==='botL'||lane==='botR'||lane==='mid'?.12:0;
+    const rot=clamp(d*(.12+amp*e+.25*po)+tilt*e+.06*Math.sin(u*7),-.6,.6);return{rot,sx:kind==='bomb'?1:1-.16*Math.sin(Math.PI*Math.min(u,1))}};
+BB.throwTurn=throwTurn;BB.LANE_DIR=LANE_DIR;
 BB.throwPath=throwPath;BB.SAFE_Y=SAFE_Y;
 BB.throwLane=throwLane;BB.LANE_TG=LANE_TG;BB.DODGE_VO=DODGE_VO;
 /* v14.5.10 PUNCH RUSH sensitivity (rush bars only): expected shortest clap gap -> ClapDet refractory .6x = .15 s (group flams up to ~150 ms stay one punch) (grade bounce floor still applies), re-arm only after the level decays, so held noise / one flam = one punch */
@@ -322,7 +330,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
         const fl=1.2,v=(k-(hk-fl))/fl;if(v<0||v>1.5)continue;const i=KO_HITS.findIndex(h=>h[0]===hk&&h[1]===kind),lane=throwLane(kind,KO_HITS.slice(0,i).filter(h=>h[1]==='bomb').length),tire=kind==='junkF';
         const junk=kind==='bomb'?'bomb':tire?'tire':lane==='left'?'sock':lane==='right'?'chicken':i%2?'sock':'chicken';
         const P=tire?throwPath(lane,v,JR.x-40,JR.y+170):throwPath(lane,v,lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(!P)continue;
-        ctx.save();ctx.globalAlpha=P.a;ctx.translate(P.x,P.y-(tire?62*P.sc:0));ctx.scale(P.sc,P.sc);if(tire)this.drawTireRoll(v*16);else{ctx.rotate(Math.sin(v*5)*.4);this.drawJunk(junk,t)}ctx.restore();
+        ctx.save();ctx.globalAlpha=P.a;ctx.translate(P.x,P.y-(tire?62*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=throwTurn(lane,v,tire?'tire':junk);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}if(tire)this.drawTireRoll(v*16);else this.drawJunk(junk,t);ctx.restore();
         if(v<1&&v>.15&&!tire){ctx.save();ctx.globalAlpha=.6*(1-v);ctx.strokeStyle='#fff';ctx.lineWidth=5;const bk=throwPath(lane,Math.max(0,v-.15),lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(bk){ctx.beginPath();ctx.moveTo(bk.x,bk.y);ctx.lineTo(P.x,P.y);ctx.stroke()}ctx.restore()}
         if(v>=1&&v<1.5){const w=v-1,al=clamp(1-w/.5,0,1),T=LANE_TG[lane],tx=clamp(T.x,330,W-330),ty=clamp(T.y-(tire?60:120),SAFE_Y+40,H-120);ctx.save();ctx.globalAlpha=al;
           if(kind==='bomb'){ctx.fillStyle='rgba(255,138,223,.5)';for(let q=0;q<9;q++){const r=60+(q%3)*40;ctx.beginPath();ctx.arc(T.x+Math.cos(q*.7)*r*1.4,T.y+Math.sin(q*.7)*r,44+(q%4)*16,0,7);ctx.fill()}BB.text('POOF! MISSED!',tx,ty,72,'#fff',{font:'Rammetto One',stroke:9,strokeCol:'#3a1040'})}
