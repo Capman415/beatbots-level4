@@ -115,6 +115,31 @@
     return i;
   };
   BB.KO_BS = BS;
+  const clapDyn = (o) => {
+    if (!o)
+      return 0;
+    if (o.sim && o.dyn != null)
+      return clamp(o.dyn, 0, 1);
+    const G = window.GroupGate;
+    if (G && G.calOk && G.calOk() && o.rms) {
+      const L = G.loud;
+      return clamp((G.dB(o.rms) - L.calLo) / (L.calHi - L.calLo), 0, 1);
+    }
+    return clamp(((o.lvl == null ? 0.6 : o.lvl) - 0.4) / 0.5, 0, 1);
+  }, dynFill = (ds) => {
+    if (!ds || !ds.length)
+      return 0;
+    let m = 0;
+    for (const d of ds)
+      m += d;
+    m /= ds.length;
+    return clamp(3 * (0.12 + 0.88 * m) * Math.min(1, ds.length / 4), 0, 3);
+  }, dynLevel = (f) => f >= 2.4 ? 2 : f >= 1.2 ? 1 : 0, BLAST_R = [150, 240, 380], HIT_DMG = 6;
+  BB.clapDyn = clapDyn;
+  BB.dynFill = dynFill;
+  BB.dynLevel = dynLevel;
+  BB.BLAST_R = BLAST_R;
+  BB.HIT_DMG = HIT_DMG;
   const TIERS = [["ANDANTE", 0, "#7ec8ff"], ["MODERATO", 90, "#6ee678"], ["ALLEGRO", 120, "#ffe066"], ["PRESTO", 170, "#ffb020"], ["PRESTISSIMO", 200, "#ff5a5a"]], tierOf = (c) => {
     let i = 0;
     TIERS.forEach((x, j) => {
@@ -621,23 +646,11 @@
               const lv = this.hitLv || 0, bl = BL[barAt(hk)] / 4, A = (x) => this.a0 + x - KO_T0, S = BB.sfx;
               this.cFire = BB.t;
               S.boom ? S.boom() : S.clunk && S.clunk();
-              this.hitShow = { k: hk, lv };
-              BB.shake([10, 18, 40][lv]);
-              this.impact(lv + 1, 0);
+              this.hitShow = { k: hk, lv, r: BLAST_R[lv] };
+              BB.shake([10, 18, 30][lv]);
+              this.impact(2, 0);
               BB.burst(JR.x, JR.y - 80, [14, 24, 60][lv], { cols: ["#ffe066", "#fff", "#ff8adf", "#7ef0ff"], kind: "star", size: 14, speed: [600, 900, 1400][lv], g: 400 });
               BB.say(["bb_g1", "bb_g2", "bb_g3"][lv], { overlap: true });
-              if (lv === 1)
-                [1, 2].forEach((q) => {
-                  S.pkTa && S.pkTa(A(hk + q * bl));
-                  S.bonk && S.bonk(A(hk + q * bl));
-                  setTimeout(() => {
-                    if (BB.scene !== this)
-                      return;
-                    BB.shake(16);
-                    this.impact(2, q % 2 ? 1 : -1);
-                    BB.burst(JR.x + (q % 2 ? 60 : -60), JR.y - 80, 18, { cols: ["#ffe066", "#fff"], kind: "star", size: 13, speed: 800, g: 300 });
-                  }, q * bl * 1e3);
-                });
               if (lv === 2) {
                 S.wobble && S.wobble(A(hk + bl));
                 S.pop && S.pop(A(hk + bl));
@@ -701,7 +714,11 @@
               if (BB.t - (this.lastBl || 0) > 0.1) {
                 this.lastBl = BB.t;
                 this.cts.push(BB.t);
-                this.cf = Math.min(3, (this.cf || 0) + 0.05 + 0.035 * (tr || 0));
+                const dy = clapDyn(o);
+                if (b.cw) {
+                  (this.dyn = this.dyn || []).push(dy);
+                  this.cfDyn = dynFill(this.dyn);
+                }
                 this.combo = (BB.t - (this.lastCl || 0) < 0.8 ? this.combo || 0 : 0) + 1;
                 this.lastCl = BB.t;
                 if (b.rush) {
@@ -710,7 +727,7 @@
                   BB.shake(Math.min(26, 5 + this.rushN * 0.7));
                   BB.sfx.bonk && BB.sfx.bonk();
                 } else if (!b.cw)
-                  this.blasts.push({ t: BB.t, x: W * (0.3 + Math.random() * 0.4), s: 1 + tr * 0.35 });
+                  this.blasts.push({ t: BB.t, x: W * (0.3 + Math.random() * 0.4), s: 1 + dy * 0.7 });
                 if (b.cw)
                   BB.sfx.chime && BB.sfx.chime();
                 BB.sfx.pkTa && BB.sfx.pkTa();
@@ -724,7 +741,10 @@
           }
           if (this.manualPc && us) {
             this.cts.push(BB.t);
-            this.cf = Math.min(3, (this.cf || 0) + 0.05 + 0.035 * (tr || 0));
+            if (b.cw) {
+              (this.dyn = this.dyn || []).push(0.6);
+              this.cfDyn = dynFill(this.dyn);
+            }
             this.blasts.push({ t: BB.t, x: W / 2, s: 1 });
           }
           this.cts = (this.cts || []).filter((x) => BB.t - x < 1.5);
@@ -1199,8 +1219,9 @@
       }
       {
         const fv = BB.t - (this.cFire || -9), rr = rc + (fv < 0.35 ? Math.sin(Math.min(1, fv / 0.35) * Math.PI) * 34 : 0), ang = -0.5, mx = x - rr + Math.cos(ang) * 200, my = y + Math.sin(ang) * 200;
-        BB.rrect(x - 86, y - 14, 172, 118, 16, BB.lg(y - 14, y + 104, ["#8796a2", "#4a5560", "#2e353c"]), COL.ink, 5);
-        ctx.fillStyle = "#1d2328";
+        BB.rrect(x - 86, y - 14, 172, 118, 16, "#50aaa0", COL.ink, 6);
+        BB.rrect(x - 86, y + 70, 172, 34, 12, "#3c7f78", COL.ink, 6);
+        ctx.fillStyle = COL.ink;
         for (const rx of [-70, -30, 30, 70])
           for (const ry of [0, 84]) {
             ctx.beginPath();
@@ -1232,21 +1253,30 @@
         ctx.save();
         ctx.translate(x - rr, y);
         ctx.rotate(ang);
-        BB.rrect(-40, -44, 240, 88, 24, BB.lg(-44, 44, ["#dfe7ec", "#8e9ca6", "#4d5962"]), COL.ink, 6);
+        BB.rrect(-40, -44, 240, 88, 24, "#e8e2cd", COL.ink, 6);
         for (let i = 0; i < 2; i++) {
-          ctx.fillStyle = "#ffd84a";
-          ctx.fillRect(40 + i * 70, -44, 22, 88);
-          ctx.fillStyle = "#1a1a1a";
-          for (let q = 0; q < 3; q++)
-            ctx.fillRect(40 + i * 70, -44 + q * 30 + 6, 22, 10);
+          BB.rrect(40 + i * 70, -44, 22, 88, 4, "#ffd84a", COL.ink, 4);
         }
-        BB.rrect(190, -54, 36, 108, 10, BB.lg(-54, 54, ["#c9d3da", "#5d6870"]), COL.ink, 5);
-        ctx.fillStyle = "#14181c";
+        ctx.fillStyle = "#7ef0ff";
+        ctx.strokeStyle = COL.ink;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(150, -18);
+        ctx.lineTo(132, 2);
+        ctx.lineTo(146, 2);
+        ctx.lineTo(134, 22);
+        ctx.lineTo(162, -4);
+        ctx.lineTo(148, -4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        BB.rrect(190, -54, 36, 108, 10, "#d24a3c", COL.ink, 6);
+        ctx.fillStyle = COL.ink;
         ctx.beginPath();
         ctx.ellipse(226, 0, 10, 36, 0, 0, 7);
         ctx.fill();
-        ctx.fillStyle = "rgba(255,255,255,.4)";
-        ctx.fillRect(-20, -34, 200, 8);
+        ctx.fillStyle = "rgba(255,255,255,.55)";
+        BB.rrect(-20, -32, 180, 10, 5, "rgba(255,255,255,.55)", null, 0);
         ctx.restore();
         if (fv < 1.4) {
           ctx.save();
@@ -1391,12 +1421,15 @@
       if (bar && bar.turn && !gone) {
         const us = bar.turn === "us", BY = 318;
         BB.rrect(W / 2 - 330, BY, 660, 66, 22, us ? "#ffe066" : "#ff8adf", COL.ink, 4);
-        BB.text(us ? bar.rush ? "EVERY CLAP = ONE PUNCH!" : "MORE + FASTER CLAPS = BIGGER HIT!" : "STATIC JR. ATTACKS: DODGE!", W / 2, BY + 34, 38, us ? "#3a2a00" : "#3a1040", { stroke: 0, maxW: 620 });
+        BB.text(us ? bar.rush ? "EVERY CLAP = ONE PUNCH!" : "PIANO TO FORTE: LOUDER = BIGGER BLAST!" : "STATIC JR. ATTACKS: DODGE!", W / 2, BY + 34, 38, us ? "#3a2a00" : "#3a1040", { stroke: 0, maxW: 620 });
       }
       {
         const lc = KO_PHASE_END.filter((x) => x <= k).pop(), hs = this.hitShow;
+        if (hs && k - hs.k >= 0 && k - hs.k < 1.6) {
+          this.drawBlastRing(JR.x, JR.y - 90, hs.r || BLAST_R[hs.lv], (k - hs.k) / 0.7);
+        }
         if (hs && k - hs.k >= 0 && k - hs.k < 1.6)
-          BB.text(["SLAP!", "PUNCH COMBO!", "MEGA BLAST!"][hs.lv], W / 2, 640 - (k - hs.k) * 30, [90, 104, 124][hs.lv], ["#ffe066", "#ff8adf", "#7ef0ff"][hs.lv], { font: "Rammetto One", stroke: 10, strokeCol: "#1a1a1a" });
+          BB.text(["BLAST!", "BIG BLAST!", "MEGA BLAST!"][hs.lv], W / 2, 640 - (k - hs.k) * 30, [90, 104, 124][hs.lv], ["#ffe066", "#ff8adf", "#7ef0ff"][hs.lv], { font: "Rammetto One", stroke: 10, strokeCol: "#1a1a1a" });
         if (0) {
           ctx.save();
           ctx.globalAlpha = 1 - (k - lc - 0.6) / 0.5;
@@ -1447,15 +1480,24 @@
           const u = (BB.t - b.t) / 0.35;
           if (u < 1) {
             const x = lerp(b.x, jx, u), y = lerp(H, jy - 60, u);
-            ctx.save();
-            ctx.strokeStyle = "#ffe066";
-            ctx.shadowColor = "#ffe066";
-            ctx.shadowBlur = 30;
-            ctx.lineWidth = 10;
-            ctx.beginPath();
-            ctx.arc(x, y, (30 + u * 30) * (b.s || 1), 0, 7);
-            ctx.stroke();
-            ctx.restore();
+            {
+              const r = (26 + u * 20) * (b.s || 1);
+              ctx.save();
+              ctx.translate(x, y);
+              ctx.rotate(u * 6);
+              ctx.beginPath();
+              for (let q = 0; q < 10; q++) {
+                const a = q / 10 * Math.PI * 2, rr = q % 2 ? r * 0.5 : r;
+                ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+              }
+              ctx.closePath();
+              ctx.fillStyle = "#ffe066";
+              ctx.strokeStyle = COL.ink;
+              ctx.lineWidth = 6;
+              ctx.fill();
+              ctx.stroke();
+              ctx.restore();
+            }
           } else
             BB.text("POW!", jx - 200, jy - 160, 60 * (b.s || 1), "#ffe066", { font: "Rammetto One", stroke: 7 });
         }
@@ -3354,14 +3396,25 @@
         BB.mic.take();
       if (b.voice)
         this.cf = Math.max(this.cf || 0, this.vf || 0);
-      else if (win && !b.rush && !b.beam)
+      else if (win && b.cw) {
+        this.cfT = Math.min(0.6, (this.cfT || 0) + dt * 0.04);
+        this.cf = Math.max(this.cfT, this.cfDyn || 0);
+      } else if (win && !b.rush && !b.beam)
         this.cf = Math.min(3, (this.cf || 0) + dt * 0.04);
+      if (!b.cw && this.dyn && this.dyn.length && !b.clear) {
+        this.dyn = [];
+        this.cfDyn = 0;
+        this.cfT = 0;
+      }
       const big = b.clear || b.beam && !(KO_BARS[bi - 1] || {}).beam || k >= KO_BIG;
       if (big && this.cbBar !== (k >= KO_BIG ? -1 : bi)) {
         this.cbBar = k >= KO_BIG ? -1 : bi;
-        if (b.clear && k < KO_BIG)
-          this.hitLv = (this.cf || 0) >= 2.4 ? 2 : (this.cf || 0) >= 1 ? 1 : 0;
-        else
+        if (b.clear && k < KO_BIG) {
+          this.hitLv = dynLevel(this.cf || 0);
+          this.dyn = [];
+          this.cfDyn = 0;
+          this.cfT = 0;
+        } else
           this.cf = 3;
         this.cBurst = k;
       }
@@ -3396,12 +3449,12 @@
         return;
       const bi = barAt(k), b = KO_BARS[bi] || {};
       if (b.cw) {
-        const f = this.cf || 0, X0 = W / 2 - 140, Y0 = 420, lv = f >= 2.4 ? 2 : f >= 1 ? 1 : 0;
+        const f = this.cf || 0, X0 = W / 2 - 140, Y0 = 420, lv = dynLevel(f);
         this.drawCans(X0, Y0, f, k, t, 0);
         const s0 = BS[bi - (b.cw - 1)], left = Math.max(0, 8 - Math.floor((k - s0) / (BL[bi] / 4)));
         for (let q = 0; q < 8; q++)
           BB.rrect(W / 2 - 236 + q * 60, Y0 + 300, 44, 22, 10, q < 8 - left ? "#2d4744" : "#6ee678", "#fff", 3);
-        ["SLAP", "PUNCH COMBO", "MEGA BLAST"].forEach((w, q) => {
+        ["p  BLAST", "mf  BIG BLAST", "f  MEGA BLAST"].forEach((w, q) => {
           const x = W / 2 + (q - 1) * 300;
           BB.rrect(x - 135, Y0 + 340, 270, 56, 18, q === lv ? ["#ffe066", "#ff8adf", "#7ef0ff"][q] : "rgba(20,30,40,.75)", "#fff", 3);
           BB.text(w, x, Y0 + 369, 34, q === lv ? "#1a1a1a" : "#9fb0b8", { stroke: 0, maxW: 250 });
@@ -3855,56 +3908,185 @@
       ctx.restore();
     }
     drawJunk(j, t) {
-      if (j === "bomb") {
-        ctx.fillStyle = "#4b3f8f";
-        ctx.beginPath();
-        ctx.arc(0, 0, 40, 0, 7);
+      const I = COL.ink, o = (f) => {
+        ctx.fillStyle = f;
+        ctx.strokeStyle = I;
+        ctx.lineWidth = 6;
         ctx.fill();
-        ctx.strokeStyle = "#bff8ff";
-        ctx.lineWidth = 4;
         ctx.stroke();
-        ctx.fillStyle = "#fff";
+      }, hl = (x, y, w, h, r) => {
+        ctx.fillStyle = "rgba(255,255,255,.55)";
         ctx.beginPath();
-        ctx.arc(-12, -8, 8, 0, 7);
-        ctx.arc(12, -8, 8, 0, 7);
+        ctx.ellipse(x, y, w, h, r || -0.5, 0, 7);
         ctx.fill();
-        ctx.strokeStyle = "#5a3a1e";
+      };
+      if (j === "bomb") {
+        ctx.beginPath();
+        ctx.arc(0, 4, 42, 0, 7);
+        o("#5b4bb0");
+        hl(-14, -12, 12, 7);
+        ctx.beginPath();
+        ctx.roundRect(-14, -46, 28, 14, 4);
+        o("#8d9aa3");
+        ctx.strokeStyle = I;
         ctx.lineWidth = 6;
         ctx.beginPath();
-        ctx.moveTo(0, -40);
-        ctx.quadraticCurveTo(12, -58, 4, -70);
+        ctx.moveTo(0, -46);
+        ctx.quadraticCurveTo(14, -62, 6, -74);
         ctx.stroke();
-        ctx.fillStyle = Math.sin(t * 40) > 0 ? "#ffe066" : "#fff";
-        ctx.beginPath();
-        ctx.arc(4, -72, 9, 0, 7);
-        ctx.fill();
-      } else if (j === "sock") {
-        BB.rrect(-25, -60, 50, 90, 20, "#e8e0d0", "#5a3a1e", 4);
-        BB.rrect(-25, 10, 90, 40, 18, "#e8e0d0", "#5a3a1e", 4);
-        ctx.fillStyle = "#d24a3c";
-        ctx.fillRect(-25, -50, 50, 10);
-      } else if (j === "chicken") {
-        BB.rrect(-80, -20, 160, 40, 20, "#ffe066", "#5a3a1e", 4);
-        ctx.fillStyle = "#d24a3c";
-        ctx.beginPath();
-        ctx.arc(-80, 0, 18, 0, 7);
-        ctx.fill();
-        ctx.fillStyle = "#ff9c3a";
-        ctx.beginPath();
-        ctx.moveTo(-96, -4);
-        ctx.lineTo(-120, 2);
-        ctx.lineTo(-96, 8);
-        ctx.fill();
-      } else {
-        ctx.lineWidth = 26;
-        ctx.strokeStyle = "#2a2e36";
-        ctx.beginPath();
-        ctx.arc(0, 0, 55, 0, 7);
+        ctx.strokeStyle = "#e2b272";
+        ctx.lineWidth = 3;
         ctx.stroke();
+        const sp = Math.sin(t * 40) > 0;
+        ctx.beginPath();
+        for (let q = 0; q < 10; q++) {
+          const a = q / 10 * Math.PI * 2, r = q % 2 ? 6 : sp ? 15 : 11;
+          ctx.lineTo(6 + Math.cos(a) * r, -78 + Math.sin(a) * r);
+        }
+        ctx.closePath();
+        o(sp ? "#ffe066" : "#fff");
+        ctx.fillStyle = "#fff";
+        ctx.strokeStyle = I;
         ctx.lineWidth = 4;
-        ctx.strokeStyle = "#5a3a1e";
+        for (const d of [-13, 13]) {
+          ctx.beginPath();
+          ctx.arc(d, 0, 9, 0, 7);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = I;
+          ctx.beginPath();
+          ctx.arc(d + 2, 1, 4, 0, 7);
+          ctx.fill();
+          ctx.fillStyle = "#fff";
+        }
+        ctx.strokeStyle = "#7ef0ff";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-14, 20);
+        ctx.lineTo(-6, 26);
+        ctx.lineTo(2, 18);
+        ctx.lineTo(10, 26);
+        ctx.lineTo(16, 20);
         ctx.stroke();
+      } else if (j === "sock") {
+        ctx.beginPath();
+        ctx.moveTo(-24, -62);
+        ctx.lineTo(24, -62);
+        ctx.lineTo(24, 14);
+        ctx.quadraticCurveTo(70, 10, 70, 36);
+        ctx.quadraticCurveTo(70, 58, 40, 58);
+        ctx.lineTo(-6, 58);
+        ctx.quadraticCurveTo(-24, 58, -24, 36);
+        ctx.closePath();
+        o("#f4f0e6");
+        ctx.fillStyle = "#d24a3c";
+        ctx.fillRect(-21, -54, 42, 10);
+        ctx.fillStyle = "#50aaa0";
+        ctx.fillRect(-21, -38, 42, 8);
+        ctx.strokeStyle = I;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(-24, -62, 48, 40);
+        ctx.beginPath();
+        ctx.arc(48, 38, 12, 0, 7);
+        o("#e2b272");
+        hl(-8, -6, 5, 14, 0);
+        ctx.strokeStyle = "rgba(120,160,60,.9)";
+        ctx.lineWidth = 4;
+        for (let q = 0; q < 3; q++) {
+          const a = t * 6 + q * 2;
+          ctx.beginPath();
+          ctx.moveTo(30 + q * 14, -72);
+          ctx.quadraticCurveTo(38 + q * 14 + Math.sin(a) * 6, -88, 30 + q * 14, -104);
+          ctx.stroke();
+        }
+      } else if (j === "chicken") {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 74, 24, 0, 0, 7);
+        o("#ffe066");
+        ctx.beginPath();
+        ctx.arc(-74, -6, 20, 0, 7);
+        o("#ffe066");
+        ctx.beginPath();
+        ctx.moveTo(-80, -24);
+        ctx.lineTo(-74, -38);
+        ctx.lineTo(-66, -26);
+        ctx.lineTo(-58, -36);
+        ctx.lineTo(-58, -20);
+        ctx.closePath();
+        o("#d24a3c");
+        ctx.beginPath();
+        ctx.moveTo(-92, -4);
+        ctx.lineTo(-118, 2);
+        ctx.lineTo(-92, 8);
+        ctx.closePath();
+        o("#ff9c3a");
+        ctx.fillStyle = I;
+        ctx.beginPath();
+        ctx.arc(-78, -10, 4, 0, 7);
+        ctx.fill();
+        ctx.strokeStyle = I;
+        ctx.lineWidth = 4;
+        for (const d of [-10, 10]) {
+          ctx.beginPath();
+          ctx.moveTo(-74 + d + 6, -14);
+          ctx.lineTo(-74 + d - 2, -6);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(74, -10);
+        ctx.lineTo(92, -18);
+        ctx.lineTo(88, 0);
+        ctx.lineTo(92, 18);
+        ctx.lineTo(74, 10);
+        ctx.closePath();
+        o("#ffe066");
+        hl(10, -10, 30, 6, 0);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, 62, 0, 7);
+        o("#2a2e36");
+        ctx.beginPath();
+        ctx.arc(0, 0, 30, 0, 7);
+        o("#8d9aa3");
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, 7);
+        o("#4d575e");
+        ctx.strokeStyle = "#4d575e";
+        ctx.lineWidth = 5;
+        for (let q = 0; q < 12; q++) {
+          const a = q / 12 * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * 42, Math.sin(a) * 42);
+          ctx.lineTo(Math.cos(a + 0.18) * 56, Math.sin(a + 0.18) * 56);
+          ctx.stroke();
+        }
+        hl(-14, -14, 8, 4);
       }
+    }
+    drawBlastRing(x, y, R2, u) {
+      if (u < 0 || u > 1)
+        return;
+      const e = 1 - Math.pow(1 - u, 3), r = R2 * (0.35 + 0.65 * e);
+      ctx.save();
+      ctx.globalAlpha = 1 - u;
+      ctx.translate(x, y);
+      ctx.beginPath();
+      for (let q = 0; q < 16; q++) {
+        const a = q / 16 * Math.PI * 2, rr = q % 2 ? r * 0.62 : r;
+        ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "#ffe066";
+      ctx.strokeStyle = COL.ink;
+      ctx.lineWidth = 8;
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.4, 0, 7);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
     }
     koIcon(ic, x, y, t) {
       ctx.save();

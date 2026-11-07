@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.5.7';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
+BB.VERSION='v14.5.8';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
 BB.GRADES=['K','1','2','3','4','5','6'];
 (()=>{let g='2';try{const s=localStorage.getItem('bb_grade');if(BB.GRADES.includes(s))g=s;else if(localStorage.getItem('bb_kmode')==='1')g='K';else{const c=JSON.parse(localStorage.getItem('bb_sessclass')||'null');if(BB.GRADES.includes(c))g=c}}catch(e){}BB.grade=g})();
 BB.gradeBand=()=>{const g=BB.grade;return(g==='K'||g==='1')?'k1':(g==='2'||g==='3')?'m':'u'};
