@@ -413,17 +413,46 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       ctx.fillStyle='#ffe066';ctx.beginPath();for(let i=0;i<24;i++){const a=i/24*Math.PI*2,r=i%2?150:260;ctx.lineTo(Math.cos(a)*r*1.6,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.strokeStyle='#782814';ctx.lineWidth=8;ctx.stroke();
       BB.text(word,0,0,110,'#ff5a5a',{font:'Rammetto One',stroke:12,strokeCol:'#fff'});ctx.restore();
       if(v<.3){const fs=[[tx-10,ty+60-v*200,-Math.PI/2.4]],hay=[[tx-150+v*100,ty-20,0]],dbl=[[tx-160,ty,0],[tx+160,ty,Math.PI]];for(const [x,y,r] of [fs,hay,dbl,[...fs,...dbl]][st])this.drawFist(x,y,1.5,r)}}}
-  drawMini(x,y,s,t,o={}){/* 'Static Mini': ORIGINAL chunky retro handheld villain (crimson + charcoal, cyan static screen). No real brand, logo or likeness. */
-    ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.rotate(o.rot||0);
-    ctx.strokeStyle='#2a2d33';ctx.lineWidth=10;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-40,140);ctx.lineTo(-48,190);ctx.moveTo(40,140);ctx.lineTo(48,190);ctx.stroke();BB.rrect(-72,182,52,20,8,'#2e1a0e',null,0);BB.rrect(22,182,52,20,8,'#2e1a0e',null,0);
-    ctx.strokeStyle='#2a2d33';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(60,-150);ctx.lineTo(85,-215);ctx.stroke();ctx.fillStyle='#7ef0ff';ctx.beginPath();ctx.arc(85,-215,10+3*Math.sin(t*30),0,7);ctx.fill();
-    BB.rrect(-110,-160,220,310,30,BB.lg(-160,150,['#f0525a','#a8202a']),'#4a0e14',7);BB.rrect(-110,-160,220,40,30,'rgba(255,255,255,.12)',null,0);
-    BB.rrect(-88,-130,176,140,14,'#1e2228',null,0);BB.rrect(-72,-116,144,112,6,'#7ef0ff',null,0);
-    ctx.save();ctx.beginPath();ctx.rect(-72,-116,144,112);ctx.clip();for(let i=0;i<40;i++){ctx.fillStyle=`rgba(255,255,255,${Math.random()*.5})`;ctx.fillRect(-72+Math.random()*144,-116+Math.random()*112,6+Math.random()*12,3)}
-      const P=(cx,cy,c)=>{ctx.fillStyle=c||'#14243a';ctx.fillRect(cx*8-60,cy*8-110,8,8)};const fl=Math.sin(t*16)>0;
-      [[2,3],[3,4],[4,5],[10,5],[11,4],[12,3]].forEach(([a,b])=>P(a,b));[[4,6],[10,6]].forEach(([a,b])=>{P(a,b,'#d8203a');P(a,b+1,'#d8203a')});for(let i=4;i<=10;i++)P(i,fl?10:11);P(3,fl?11:10);P(11,fl?11:10);ctx.restore();
-    ctx.fillStyle='#2a2d33';ctx.fillRect(-80,45,22,62);ctx.fillRect(-100,65,62,22);ctx.fillStyle='#ffd63c';ctx.beginPath();ctx.arc(52,82,16,0,7);ctx.arc(85,58,16,0,7);ctx.fill();ctx.strokeStyle='#4a0e14';ctx.lineWidth=4;ctx.stroke();
-    ctx.strokeStyle='rgba(60,8,12,.6)';ctx.lineWidth=5;for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(30+i*14,140);ctx.lineTo(55+i*14,112);ctx.stroke()}
+  drawMini(x,y,s,t,o={}){/* v14.5.15 COMMANDER BIT (was 'Static Mini'): ORIGINAL chunky retro handheld villain, crimson + charcoal, cyan static screen. No real brand/logo/likeness.
+     Tiny body, enormous ego: officer cap, fists on hips, chest out, oversized platform boots, one raised pixel brow. Rendered with the robots' junkVol recipe. */
+    ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.rotate(o.rot||0);const V=(p,x0,y0,w,h,c,op)=>this.junkVol(p,x0,y0,w,h,c,op),B=()=>ctx.beginPath(),SP=(...q)=>this.junkSpec(...q),INK='rgba(45,18,6,.9)';
+    const rivet=(rx,ry,r)=>{const G=ctx.createRadialGradient(rx-r*.4,ry-r*.4,0,rx,ry,r);G.addColorStop(0,'#f2f5f7');G.addColorStop(.5,'#8d9aa3');G.addColorStop(1,'#3a4248');ctx.fillStyle=G;B();ctx.arc(rx,ry,r,0,7);ctx.fill()};
+    // legs (ribbed charcoal) + OVERSIZED platform boots
+    for(const sd of[-1,1]){for(let q=0;q<4;q++)V(()=>{B();ctx.roundRect(sd*44-11,138+q*11,22,12,5)},sd*44-11,138+q*11,22,12,['#6b737c','#3a4048','#1c2025'])}
+    for(const sd of[-1,1]){const bx=sd*48;V(()=>{B();ctx.roundRect(bx-50,206,100,22,8)},bx-50,206,100,22,['#4a3424','#2a1a0e','#140a04']);
+      V(()=>{B();ctx.moveTo(bx-38,206);ctx.lineTo(bx-34,174);ctx.quadraticCurveTo(bx,160,bx+30,176);ctx.quadraticCurveTo(bx+sd*0+52,186,bx+50,206);ctx.closePath()},bx-38,160,90,46,['#7a5236','#4a2e18','#24140a'],{wear:31,wc:'20,10,0'});
+      SP(bx-8,178,16,5,-.2,.55);ctx.fillStyle='#ffd63c';B();ctx.roundRect(bx-30,190,22,6,3);ctx.fill()}
+    // arms: shoulders out, FISTS ON HIPS (imperious)
+    for(const sd of[-1,1]){ctx.save();ctx.lineCap='round';ctx.strokeStyle=INK;ctx.lineWidth=22;B();ctx.moveTo(sd*104,-10);ctx.lineTo(sd*158,40);ctx.lineTo(sd*118,92);ctx.stroke();
+      const G=ctx.createLinearGradient(0,-10,0,92);G.addColorStop(0,'#6b737c');G.addColorStop(1,'#2a2f35');ctx.strokeStyle=G;ctx.lineWidth=15;ctx.stroke();ctx.strokeStyle='rgba(255,236,200,.35)';ctx.lineWidth=3;B();ctx.moveTo(sd*104,-14);ctx.lineTo(sd*156,34);ctx.stroke();ctx.restore();
+      rivet(sd*158,40,8);V(()=>{B();ctx.arc(sd*114,94,20,0,7)},sd*114-20,74,40,40,['#8d9aa3','#4d575e','#23282d'],{wear:41});ctx.strokeStyle='rgba(20,10,5,.7)';ctx.lineWidth=2.5;for(let q=0;q<3;q++){B();ctx.moveTo(sd*114-sd*14,84+q*8);ctx.lineTo(sd*114+sd*2,84+q*8);ctx.stroke()}SP(sd*114-6,86,6,4,-.5,.6)}
+    // antenna (kept) with cyan tip
+    ctx.strokeStyle=INK;ctx.lineWidth=8;ctx.lineCap='round';B();ctx.moveTo(60,-150);ctx.lineTo(85,-215);ctx.stroke();ctx.strokeStyle='#9aa6ae';ctx.lineWidth=4;ctx.stroke();
+    {const G=ctx.createRadialGradient(85,-215,0,85,-215,18);G.addColorStop(0,'#fff');G.addColorStop(.4,'#7ef0ff');G.addColorStop(1,'rgba(126,240,255,0)');ctx.fillStyle=G;B();ctx.arc(85,-215,14+3*Math.sin(t*30),0,7);ctx.fill()}
+    // crimson plastic casing (chest puffed: slight outward bulge)
+    const body=()=>{B();ctx.moveTo(-80,-160);ctx.lineTo(80,-160);ctx.quadraticCurveTo(110,-160,110,-130);ctx.quadraticCurveTo(120,0,110,120);ctx.quadraticCurveTo(110,150,80,150);ctx.lineTo(-80,150);ctx.quadraticCurveTo(-110,150,-110,120);ctx.quadraticCurveTo(-120,0,-110,-130);ctx.quadraticCurveTo(-110,-160,-80,-160);ctx.closePath()};
+    V(body,-115,-160,230,310,['#ff6a70','#d23a44','#7a1420'],{wear:53,wc:'70,10,15'});SP(-60,-136,40,9,-.15,.55);SP(-92,0,6,60,0,.3);
+    for(const [rx,ry] of[[-96,-146],[96,-146],[-96,136],[96,136]])rivet(rx,ry,4.5);
+    // screen bezel + scratched static screen with a pixel face (raised brow, narrowed red eyes, shouting/smirking mouth)
+    V(()=>{B();ctx.roundRect(-88,-130,176,140,14)},-88,-130,176,140,['#3a404a','#22262e','#111317']);
+    {B();ctx.roundRect(-72,-116,144,112,6);const G=ctx.createRadialGradient(-10,-70,10,0,-60,110);G.addColorStop(0,'#c8fbff');G.addColorStop(.5,'#7ef0ff');G.addColorStop(1,'#2aa6b8');ctx.fillStyle=G;ctx.fill();
+      ctx.save();ctx.clip();for(let i=0;i<34;i++){ctx.fillStyle=`rgba(255,255,255,${Math.random()*.35})`;ctx.fillRect(-72+Math.random()*144,-116+Math.random()*112,6+Math.random()*12,3)}
+      for(let yy=-116;yy<-4;yy+=4){ctx.fillStyle='rgba(0,40,60,.12)';ctx.fillRect(-72,yy,144,2)}
+      const P=(cx,cy,c)=>{ctx.fillStyle=c||'#14243a';ctx.fillRect(cx*8-60,cy*8-110,8,8)},shout=Math.sin(t*5)>0;
+      [[1,3],[2,3],[3,4],[4,4],[5,5]].forEach(([a,b])=>P(a,b));[[9,5],[10,4],[11,3],[12,2],[13,2]].forEach(([a,b])=>P(a,b));// left brow angry-down, right brow RAISED (smug)
+      [[3,6],[4,6],[10,6],[11,6]].forEach(([a,b])=>P(a,b,'#d8203a'));[[3,7],[4,7],[10,5+2],[11,7]].forEach(([a,b])=>P(a,b,'#14243a'));
+      if(shout){for(let i=5;i<=9;i++){P(i,10);P(i,12)}P(4,11);P(10,11);for(let i=5;i<=9;i++)P(i,11,'#d8203a')}else{for(let i=5;i<=10;i++)P(i,11);P(10,10);P(11,9)}
+      ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1.5;B();ctx.moveTo(30,-116);ctx.lineTo(16,-80);ctx.lineTo(24,-62);ctx.moveTo(16,-80);ctx.lineTo(-4,-70);ctx.moveTo(-60,-20);ctx.lineTo(-40,-6);ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,.28)';B();ctx.moveTo(-72,-116);ctx.lineTo(-30,-116);ctx.lineTo(-72,-60);ctx.fill();ctx.restore();ctx.lineWidth=3;ctx.strokeStyle=INK;B();ctx.roundRect(-72,-116,144,112,6);ctx.stroke()}
+    // controls: D-pad ('command center'), glossy A/B buttons, speaker grill
+    V(()=>{B();ctx.moveTo(-80,45);ctx.lineTo(-58,45);ctx.lineTo(-58,65);ctx.lineTo(-38,65);ctx.lineTo(-38,87);ctx.lineTo(-58,87);ctx.lineTo(-58,107);ctx.lineTo(-80,107);ctx.lineTo(-80,87);ctx.lineTo(-100,87);ctx.lineTo(-100,65);ctx.lineTo(-80,65);ctx.closePath()},-100,45,62,62,['#4d535c','#2a2f35','#14171b']);
+    for(const [bx,by] of[[52,82],[85,58]]){const G=ctx.createRadialGradient(bx-5,by-6,1,bx,by,17);G.addColorStop(0,'#fff6b8');G.addColorStop(.5,'#ffd63c');G.addColorStop(1,'#b8860b');ctx.fillStyle=G;B();ctx.arc(bx,by,16,0,7);ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=INK;ctx.stroke();SP(bx-5,by-6,5,3,-.5,.9)}
+    ctx.strokeStyle='rgba(60,8,12,.65)';ctx.lineWidth=5;ctx.lineCap='round';for(let i=0;i<4;i++){B();ctx.moveTo(30+i*14,140);ctx.lineTo(55+i*14,112);ctx.stroke()}
+    // COMMANDER cap: crimson crown, dark band, glossy visor, gold star
+    V(()=>{B();ctx.moveTo(-74,-170);ctx.quadraticCurveTo(-84,-226,0,-232);ctx.quadraticCurveTo(84,-226,74,-170);ctx.closePath()},-84,-232,168,62,['#c23a44','#8a1a24','#4a0a12'],{wear:61,wc:'30,0,5'});
+    V(()=>{B();ctx.roundRect(-76,-180,152,20,6)},-76,-180,152,20,['#3a404a','#1e2228','#0e1013']);
+    V(()=>{B();ctx.moveTo(-82,-162);ctx.quadraticCurveTo(-70,-150,0,-148);ctx.quadraticCurveTo(70,-150,96,-166);ctx.lineTo(82,-162);ctx.quadraticCurveTo(0,-170,-82,-162);ctx.closePath()},-82,-170,178,22,['#2a2f35','#14171b','#050607']);SP(40,-158,26,3,-.05,.6);
+    {B();for(let q=0;q<10;q++){const a=-Math.PI/2+q*Math.PI/5,r=q%2?7:16;ctx.lineTo(Math.cos(a)*r,-204+Math.sin(a)*r)}ctx.closePath();const G=ctx.createRadialGradient(-4,-208,1,0,-204,16);G.addColorStop(0,'#fff6b8');G.addColorStop(1,'#d9a020');ctx.fillStyle=G;ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle=INK;ctx.stroke()}
     ctx.restore()}
   drawTransform(v,t){/* v14.4.2 ending: explosion -> Jr gone -> Mini flies into box (Nooo!) -> RETURN TO SENDER stamp -> box onto truck -> truck drives off -> Sprocket congrats */
     const BX=JR.x-120,BY=JR.y+110,BS2=2.2,S=BB.sfx,ev=(n,f)=>{if(!this['ev'+n]){this['ev'+n]=1;f()}},lab=this.deluxe?'DELUXE ULTRA RETURN':'RETURN TO SENDER',top=BY-60*BS2,jx=JR.x,jy=JR.y-100;
