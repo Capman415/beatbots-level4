@@ -32,6 +32,8 @@
     { n: 8, mode: "match", code: ["h", "s", "e", "q", "r", "e", "q"], sp: 1.4, prank: 1, ov: 3, txt: "8-BEAT CODE (watch out!)" }
   ];
   const OVL = [{ at: 1.01, dly: 99, max: 1 }, { at: 0.68, dly: 7, max: 2 }, { at: 0.55, dly: 5.5, max: 2 }, { at: 0.4, dly: 3.6, max: 3 }, { at: 0.3, dly: 3, max: 3 }];
+  const SPECIALS = ["fragile", "mystery", "express"], specialAt = (ri, part, n) => ri >= 1 && n === 3 ? SPECIALS[(ri + part) % 3] : null, streakMilestone = (n) => n > 0 && n % 3 === 0, BAND_VOL = 0.35, MISS_RETRY = 450;
+  BB.PK = { specialAt, streakMilestone, SPECIALS, BAND_VOL, MISS_RETRY };
   const splitParts = (Rd) => {
     if (Rd.mode !== "match") {
       const a2 = [];
@@ -97,7 +99,59 @@
       BB.text(R.NAME[k], tx + tw / 2, y + 3, fs, COL.ink, { maxW: tw - 8 });
     }
     BB.text(String(R.BEATS[k]), x + w - 22, y + h - 20, 24, "#fff", { stroke: 4 });
+    if (o.sp)
+      R.specialDraw(o.sp, x, y, w, h, o.age == null ? 9 : o.age);
     ctx.restore();
+  };
+  R.specialDraw = (sp, x, y, w, h, age) => {
+    const t = BB.t;
+    if (sp === "mystery" && age < 0.8) {
+      const u = age / 0.8;
+      ctx.save();
+      ctx.globalAlpha = 1 - Math.max(0, u - 0.6) / 0.4;
+      BB.rrect(x, y, w, h, 10, BB.lg(y, y + h, ["#c38bff", "#7a3fd0", "#4a1f8f"]), "rgba(45,18,6,.9)", 3);
+      ctx.fillStyle = "rgba(255,255,255,.18)";
+      for (let i = 0; i < w; i += 26)
+        ctx.fillRect(x + i, y, 10, h);
+      BB.rrect(x + w / 2 - 8, y, 16, h, 4, "#ffd63c", null, 0);
+      BB.text("?", x + w / 2, y + h / 2, Math.min(70, h * 0.7), "#fff", { font: "Rammetto One", stroke: 6 });
+      ctx.restore();
+      return;
+    }
+    const tag = sp === "fragile" ? ["FRAGILE", "#e65046", "#fff3ee"] : sp === "express" ? ["EXPRESS", "#d9a020", "#fff8d8"] : ["SURPRISE!", "#7a3fd0", "#f4ecff"], tw = Math.min(w - 52, 140), tx = x + 8, ty = y + h - 36;
+    ctx.save();
+    ctx.translate(tx + tw / 2, ty + 13);
+    ctx.rotate(-0.05);
+    BB.rrect(-tw / 2, -13, tw, 26, 8, BB.lg(-13, 13, [tag[2], "#e8dcc8"]), tag[1], 3);
+    BB.text(tag[0], 0, 1, 15, tag[1], { maxW: tw - 10 });
+    ctx.restore();
+    if (sp === "express") {
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      BB.rrect(x + 4, y + 4, w - 8, 7, 4, BB.lg(y + h - 14, y + h - 6, ["#fff2a8", "#d9a020"]), null, 0);
+      ctx.restore();
+    }
+    if (sp === "fragile") {
+      ctx.save();
+      ctx.strokeStyle = "rgba(230,80,70,.75)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + 12, y + 10);
+      ctx.lineTo(x + 22, y + 24);
+      ctx.lineTo(x + 16, y + 30);
+      ctx.lineTo(x + 26, y + 44);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (sp === "mystery" && age < 1.4) {
+      ctx.save();
+      ctx.globalAlpha = 1 - (age - 0.8) / 0.6;
+      for (let i = 0; i < 6; i++) {
+        const a = i * 1.05 + t;
+        BB.rrect(x + w / 2 + Math.cos(a) * w * 0.45 - 6, y + h / 2 + Math.sin(a) * h * 0.5 - 6, 12, 12, 6, "#ffd63c", "rgba(45,18,6,.9)", 2);
+      }
+      ctx.restore();
+    }
   };
   class PackingRoom {
     constructor(o = {}) {
@@ -291,6 +345,8 @@
       this.lastSpawn = BB.t;
       this.cb = null;
       this.tries = 0;
+      this.spawnN = 0;
+      this.bandN = null;
       this.prank = null;
       this.decoyUsed = 0;
       this.face = null;
@@ -365,6 +421,8 @@
       const w = R.BEATS[k];
       let col = this.firstFree(w);
       const c = { k, col, y: CTOP - CH - 10, fast: 0, t: BB.t, x: CX0 + col * CW, decoy, id: ++this.cid || (this.cid = 1) };
+      this.spawnN = (this.spawnN || 0) + 1;
+      c.sp = specialAt(this.ri, this.part, this.spawnN);
       if (this.air.length) {
         const used = this.air.map((a) => a.col);
         for (let cc = 0; cc <= NB - w; cc++) {
@@ -513,7 +571,8 @@
       if (fit) {
         for (let i = 0; i < w; i++)
           this.cells[cu.col + i] = cu.k;
-        this.placed.push({ k: cu.k, col: cu.col, t: BB.t });
+        this.placed.push({ k: cu.k, col: cu.col, t: BB.t, sp: cu.sp });
+        this.goodDrop(cu);
         BB.sfx.thunk();
         BB.shake(3);
         BB.burst(CX0 + cu.col * CW + w * CW / 2, ROWY + CH, 10, { col: "#d8c8a8", kind: "dust", size: 16, g: -40, speed: 200 });
@@ -535,7 +594,8 @@
           this.q.unshift(k);
         else
           this.prankHit(true);
-        this.respawn(600);
+        this.missFx();
+        this.respawn(MISS_RETRY);
       } else if (why === "no room there!" || why.startsWith("too") || cu.decoy) {
         BB.sfx.crunch();
         BB.sfx.thunk();
@@ -556,7 +616,8 @@
           this.q.splice(sel ? this.q.length : 0, 0, k);
         else if (this.prank && k === "w")
           this.prankHit(true);
-        this.respawn(800);
+        this.missFx();
+        this.respawn(MISS_RETRY);
       } else {
         BB.sfx.boing();
         this.bounce.push({ k: cu.k, x: CX0 + cu.col * CW, y: ROWY - 20, vx: -500 - Math.random() * 200, vy: -900, r: 0, t: BB.t, why });
@@ -574,8 +635,66 @@
           this.q.splice(sel ? this.q.length : 0, 0, k);
         else
           this.prankHit(true);
-        this.respawn(700);
+        this.missFx();
+        this.respawn(MISS_RETRY);
       }
+    }
+    goodDrop(cu) {
+      this.streak = (this.streak || 0) + 1;
+      this.best = Math.max(this.best || 0, this.streak);
+      if (cu.sp === "express") {
+        this.stars = (this.stars || 0) + 1;
+        this.starT = BB.t;
+        BB.burst(310, 250, 14, { col: COL.yellow, kind: "star", size: 14, speed: 450, g: 400 });
+      }
+      if (cu.sp) {
+        this.spT = { t: BB.t, sp: cu.sp, x: CX0 + cu.col * CW + R.BEATS[cu.k] * CW / 2 };
+        BB.sfx.ding && BB.sfx.ding();
+        BB.burst(this.spT.x, ROWY, 18, { cols: cu.sp === "fragile" ? ["#fff", "#e65046"] : cu.sp === "express" ? ["#ffe066", "#fff"] : ["#c38bff", "#ffd63c", "#fff"], kind: "star", size: 13, speed: 520, g: 500 });
+      }
+      if (streakMilestone(this.streak)) {
+        this.hype = { t: BB.t, n: this.streak };
+        BB.sfx.chime && BB.sfx.chime();
+      }
+    }
+    missFx() {
+      this.streak = 0;
+      this.wobT = BB.t;
+      this.scr = BB.t;
+      this.oopsN = (this.oopsN || 0) + 1;
+      this.oopsTxt = ["Whoops! Try again!", "Wobble wobble! Again!", "Almost! One more try!"][this.oopsN % 3];
+    }
+    /* conveyor band: quiet loop of the packed crates on the groove beat while you build (scheduled one beat ahead) */
+    band() {
+      const g = BB.groove, ac = BB.ac;
+      if (this.state !== "play" || !g || !g.on || !this.placed.length || BB.paused)
+        return;
+      const n = Math.ceil((ac.currentTime + 0.12 - g.t0) / g.spb);
+      if (this.bandN != null && n <= this.bandN)
+        return;
+      this.bandN = n;
+      const b = (n % NB + NB) % NB, p = this.placed.find((q) => q.col === b);
+      if (!p)
+        return;
+      const t = g.t0 + n * g.spb, S = BB.sfx, sp = g.spb, v0 = BB.boxVol;
+      BB.boxVol = BAND_VOL * (v0 || 1);
+      try {
+        const k = p.k;
+        if (k === "q")
+          S.pkTa(t);
+        else if (k === "e") {
+          S.pkBlip(t, 1100);
+          S.pkBlip(t + sp / 2, 1100);
+        } else if (k === "s") {
+          for (let i = 0; i < 4; i++)
+            S.pkBlip(t + i * sp / 4, 1500);
+        } else if (k === "r") {
+        } else
+          S.pkHum(t, R.BEATS[k] * sp * 0.5);
+      } finally {
+        BB.boxVol = v0;
+      }
+      this.bandHit = { col: p.col, w: R.BEATS[p.k], at: t };
     }
     respawn(ms) {
       setTimeout(() => BB.scene === this && this.state === "play" && !this.air.length && this.spawn(), ms);
@@ -977,6 +1096,7 @@
       this.updFace(dt);
       if (this.prank)
         this.updPrank(dt);
+      this.band();
       BB.mic.take();
       if (this.state === "play2" && this.pb && BB.ac.currentTime > this.pb.end + 0.15)
         this.clapDone();
@@ -1024,7 +1144,23 @@
       this.drawPB();
       this.drawRush();
       BB.contactShadow(1790, 905, 110, 0.5);
-      BB.sprite("sprocket", 1790, 905, 280, { squash: BB.isTalking("sprocket") ? Math.sin(t * 18) * 0.015 : Math.sin(t * 2) * 6e-3 });
+      {
+        const hp = this.hype && t - this.hype.t < 1.6 ? t - this.hype.t : -1, sc = this.scr && t - this.scr < 0.8 ? t - this.scr : -1, hy = hp >= 0 ? -Math.abs(Math.sin(hp * Math.PI * 2.5)) * 60 * (1 - hp / 1.6) : 0, sx2 = sc >= 0 ? Math.sin(sc * 40) * 14 * (1 - sc / 0.8) : 0;
+        ctx.save();
+        ctx.translate(1790 + sx2, 905 + hy);
+        ctx.rotate(sc >= 0 ? Math.sin(sc * 30) * 0.08 * (1 - sc / 0.8) : 0);
+        BB.sprite("sprocket", 0, 0, 280, { squash: BB.isTalking("sprocket") ? Math.sin(t * 18) * 0.015 : Math.sin(t * 2) * 6e-3 });
+        ctx.restore();
+        if (hp >= 0) {
+          R.bubble(1700, 640, this.hype.n + " PERFECT DROPS!", "#2f8a4a");
+          for (let i = 0; i < 4; i++)
+            if (BB.q)
+              BB.glow(CX0 - 40 + i * ((NB * CW + 80) / 3), CTOP - 60, 70, ["rgba(110,230,120,A)", "rgba(255,224,102,A)", "rgba(126,240,255,A)", "rgba(255,138,223,A)"][(i + Math.floor(hp * 8)) % 4], 0.6 * (1 - hp / 1.6));
+        } else if (sc >= 0 || this.scr && t - this.scr < 1.6)
+          R.bubble(1700, 640, this.oopsTxt || "Whoops!", "#5a5040");
+        else if (this.spT && t - this.spT.t < 1.6)
+          R.bubble(1700, 640, this.spT.sp === "fragile" ? "Fragile... handled with care!" : this.spT.sp === "express" ? "Express delivery! +1 star" : "Mystery crate packed!", "#7a3fd0");
+      }
       if (this.jr)
         BB.staticJr(this.jr.x, FLOOR, 120, { run: 1, spd: 712 });
       if (this.wreck)
@@ -1164,12 +1300,16 @@
           BB.rrect(CX0 + c * CW + 8, ROWY + 6, CW - 16, CH - 12, 12, blink ? "rgba(255,224,102,.35)" : "rgba(255,255,255,.05)", blink ? COL.yellow : "rgba(255,255,255,.18)", 3);
           BB.ctext(String(c + 1), CX0 + c * CW + CW / 2, ROWY + CH / 2, 52, blink ? COL.yellow : "rgba(255,255,255,.18)");
         }
+      const wb = this.wobT && t - this.wobT < 0.7 ? 1 - (t - this.wobT) / 0.7 : 0, bh = this.bandHit, ac = BB.ac.currentTime;
       for (const p of this.placed) {
-        const w = R.BEATS[p.k], sq = Math.max(0, 1 - (t - p.t) / 0.25) * 0.12;
+        const w = R.BEATS[p.k], sq = Math.max(0, 1 - (t - p.t) / 0.25) * 0.12, on = bh && bh.col === p.col && ac >= bh.at && ac - bh.at < 0.25;
+        if (on && BB.q)
+          BB.glow(CX0 + p.col * CW + w * CW / 2, ROWY + CH / 2, 90 + w * 30, "rgba(255,224,102,A)", 0.45 * (1 - (ac - bh.at) / 0.25));
         ctx.save();
         ctx.translate(CX0 + p.col * CW + w * CW / 2, ROWY + CH);
-        ctx.scale(1 + sq, 1 - sq);
-        R.crateDraw(p.k, -w * CW / 2 + 6, -CH, w * CW - 12, CH);
+        ctx.rotate(wb * 0.06 * Math.sin(t * 28 + p.col));
+        ctx.scale(1 + sq + (on ? 0.04 : 0), 1 - sq + (on ? 0.04 : 0));
+        R.crateDraw(p.k, -w * CW / 2 + 6, -CH, w * CW - 12, CH, { sp: p.sp });
         ctx.restore();
       }
       if (this.state === "lock" || this.state === "play2" || this.state === "ship") {
@@ -1207,7 +1347,7 @@
         const aw = R.BEATS[a.k] * CW - 12;
         ctx.save();
         ctx.globalAlpha = 0.82;
-        R.crateDraw(a.k, a.x + 6, a.y, aw, CH);
+        R.crateDraw(a.k, a.x + 6, a.y, aw, CH, { sp: a.sp, age: t - a.t });
         ctx.restore();
         BB.rrect(a.x + 6 + aw / 2 - 58, a.y - 38, 116, 30, 10, "rgba(12,28,26,.85)", COL.teal2, 2);
         BB.text("TAP ME", a.x + 6 + aw / 2, a.y - 23, 18, "#fff");
@@ -1230,7 +1370,7 @@
       ctx.save();
       ctx.translate(cu.x + 6 + cw / 2, cu.y + CH / 2);
       ctx.rotate(wob);
-      R.crateDraw(cu.k, -cw / 2, -CH / 2, cw, CH);
+      R.crateDraw(cu.k, -cw / 2, -CH / 2, cw, CH, { sp: cu.sp, age: t - cu.t });
       if (this.air.length > 1) {
         ctx.save();
         ctx.strokeStyle = COL.yellow;
