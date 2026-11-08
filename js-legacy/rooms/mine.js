@@ -48,7 +48,8 @@
   const TBOX = (k) => ({ x0: 1480, x1: 3320, y0: top(k) + 34, y1: rail(k) });
   const LIGHT = [{ rim: "#ffd08a", amb: "#ff9a40", haze: "60,34,18" }, { rim: "#ffc070", amb: "#ff8030", haze: "64,32,16" }, { rim: "#bfe6ff", amb: "#6a8cff", haze: "24,26,60" }, { rim: "#ffb060", amb: "#ff6a30", haze: "66,28,14" }, { rim: "#ffa070", amb: "#d05030", haze: "58,24,16" }];
   const NEED = 4, WARM = 4;
-  const strikesFor = (R) => R ? R.bonus ? 4 : R.st || 4 : 4;
+  const CEL_T0 = 0.35, CEL_STEP = 0.42, POP_DUR = 2.4, SNATCH = [1, 3, 7], snatchAt = (i) => SNATCH.includes(i), celBeat = (dt) => dt < CEL_T0 ? -1 : Math.min(3, Math.floor((dt - CEL_T0) / CEL_STEP)), strikesFor = (R) => R ? R.bonus ? 4 : R.st || 4 : 4;
+  BB.MINE = { CEL_T0, CEL_STEP, POP_DUR, SNATCH, snatchAt, celBeat };
   const SOFT_MAX = window.GroupGate ? GroupGate.SOFT_MAX : 0.72, LOUD_MIN = window.GroupGate ? GroupGate.LOUD_MIN : 0.7;
   let dirtPat = null;
   function dirt() {
@@ -236,9 +237,19 @@
       BB.glow(0, 0, r * 1.35, o.mixed ? "rgba(255,170,120,A)" : "rgba(150,220,255,A)", 0.45);
     const amb = o.mixed ? "#ff7a40" : kind === "boulder" ? "#2a2030" : L ? L.amb : null;
     BB.prop(img, 0, base, h, { shadow: false, rim: L ? L.rim : "#ffe0b0", amb, ambA: kind === "boulder" ? 0.3 : 0.16 });
-    const g = 0.25 + stage * 0.18;
-    BB.glow(0, -r * 0.05, r * 0.62, "rgba(255,245,190,A)", g);
-    BB.wholeNote(0, -r * 0.05, r * 0.3, { fill: "#fff8d0" });
+    const g = 0.25 + stage * 0.2;
+    if (stage > 0) {
+      const f = Math.min(1, stage / 4);
+      ctx.save();
+      ctx.globalAlpha = 0.35 + 0.5 * f;
+      ctx.fillStyle = BB.lg(-r * 0.4, r * 0.3, ["#ffe9a8", "#d98a2c"]);
+      ctx.beginPath();
+      ctx.ellipse(0, -r * 0.05, r * (0.26 + 0.2 * f), r * (0.2 + 0.15 * f), 0, 0, 7);
+      ctx.fill();
+      ctx.restore();
+    }
+    BB.glow(0, -r * 0.05, r * (0.62 + 0.1 * stage), "rgba(255,245,190,A)", g);
+    BB.wholeNote(0, -r * 0.05, r * (0.3 + 0.03 * Math.min(4, stage)), { fill: "#fff8d0" });
     ctx.save();
     ctx.beginPath();
     ctx.ellipse(0, -r * 0.05, r * 0.78, r * 0.7, 0, 0, 7);
@@ -886,6 +897,7 @@
       BB.shake(6);
       BB.burst(ROCK_X, rail(R.f) - 150, 40, { world: 1, cols: ["#ffe066", "#fff", "#6ee678"], speed: 800, size: 14, kind: "star", g: 500 });
       this.halves = { t: BB.t };
+      this.startCel();
       this.flying.push({ t0: BB.t, x0: ROCK_X, y0: rail(R.f) - 150, x1: PIPE_X, y1: rail(R.f) - 120, gold: !!R.bonus, f: R.f });
       if (this.rockI === 0)
         setTimeout(() => BB.scene === this && BB.say("got_note"), 500);
@@ -899,6 +911,14 @@
         }
       }
     }
+    startCel() {
+      const a = BB.ac.currentTime;
+      this.cel = { t: BB.t, snatch: snatchAt(this.rockI) && !this.R.prank };
+      this.sprCheer = 1;
+      for (let i = 0; i < 4; i++)
+        BB.sfx.tink(a + CEL_T0 + i * CEL_STEP, 0.35, true);
+    }
+    // quiet = pure tone, no noise burst; mic is not listening during 'pop'
     manualOverride() {
       if (BB.t - this.lastOverride < 0.5)
         return;
@@ -999,7 +1019,11 @@
         BB.sfx.ding();
         BB.sfx.chime();
       }
-      if (this.state === "pop" && t - this.st > 2.4) {
+      if (this.cel && t - this.cel.t > POP_DUR - 0.05) {
+        this.cel = null;
+        this.sprCheer = 0;
+      }
+      if (this.state === "pop" && t - this.st > POP_DUR) {
         this.rockI++;
         if (this.rockI >= ROCKS.length)
           this.finish();
@@ -1872,6 +1896,16 @@
         const x = lerp(n.x0, n.x1, e), base = lerp(n.y0, n.y1, e), arc = Math.max(0, Math.min(320, base - (y + 90))), yy = base - Math.sin(tt * Math.PI) * arc;
         BB.wholeNote(x, yy, 46 * (1 + 0.3 * Math.sin(tt * Math.PI)), { glow: 0.8, fill: n.gold ? "#ffe066" : "#fff", rot: tt * 6 });
       }
+      if (this.cel && this.cel.snatch && active) {
+        const d = BB.t - this.cel.t;
+        if (d < 2.2) {
+          const jx = d < 0.45 ? lerp(3300, 2330, ease.out(d / 0.45)) : 2330 + (d > 1.3 ? (d - 1.3) * 900 : 0), jump = d > 0.45 && d < 0.95 ? Math.sin((d - 0.45) / 0.5 * Math.PI) : 0, fall = d > 0.95 && d < 1.3;
+          BB.contactShadow(jx, rail(k), 60, 0.45);
+          BB.staticJr(jx, rail(k) - jump * 170, 95, { run: d < 0.45 || d > 1.3 ? 1 : 0, dizzy: fall, rot: fall ? 0.5 : 0, spd: 900, flip: d < 0.45 });
+          if (d > 0.95 && d < 1.9)
+            this.bubble(jx - 150, rail(k) - 260, d < 1.3 ? "missed it!" : "aww...", k);
+        }
+      }
       if (this.prank && active && this.prank.ph !== "done") {
         const p = this.prank, yb = y + 150;
         BB.rrect(2960, yb + 18, 260, 16, 8, "rgba(20,8,2,.35)");
@@ -2039,6 +2073,31 @@
         BB.text(this.warm > 0 ? this.warm + " ..." : "WARM UP: clap 4 in a row!", W / 2, H - 200, this.warm > 0 ? 70 : 44, COL.yellow, { font: "Rammetto One", stroke: 8 });
       } else if (this.state === "dig") {
         BB.text(R.dyn === "p" ? "soft claps!" : R.dyn === "f" ? "LOUD claps!" : strikesFor(R) + " strikes break the rock!", W / 2, H - 185, 34, "#fff", { stroke: 6 });
+      }
+      if (this.cel) {
+        const d = BB.t - this.cel.t, cb = celBeat(d), a = clamp(d / 0.25, 0, 1) * clamp((POP_DUR - d) / 0.3, 0, 1), cx = W / 2, cy = H - 250;
+        ctx.save();
+        ctx.globalAlpha = a;
+        BB.rrect(cx - 330, cy - 70, 660, 150, 30, "rgba(20,12,6,.72)", "rgba(255,224,130,.8)", 3);
+        const fill = cb < 0 ? 0 : clamp((d - CEL_T0) / (CEL_STEP * 4), 0, 1);
+        BB.rrect(cx - 250, cy + 40, 500, 16, 8, "rgba(255,255,255,.15)");
+        if (fill > 0)
+          BB.rrect(cx - 250, cy + 40, 500 * fill, 16, 8, BB.lg(cy + 40, cy + 56, ["#fff6c0", "#ffc640"]));
+        for (let i = 0; i < 4; i++) {
+          const x = cx - 188 + i * 125, on = i <= cb, k2 = on ? clamp((d - CEL_T0 - i * CEL_STEP) / 0.15, 0, 1) : 0;
+          if (on)
+            BB.glow(x, cy, 56, "rgba(255,225,120,A)", 0.45 * k2);
+          BB.rrect(x - 38, cy - 30, 76, 60, 18, on ? "#ffd84a" : "rgba(255,255,255,.12)", on ? "#fff" : "rgba(255,255,255,.35)", 3);
+          BB.text(String(i + 1), x, cy, 36, on ? "#3a2408" : "#fff", { font: "Rammetto One" });
+        }
+        BB.wholeNote(cx - 188 + Math.max(0, cb) * 125, cy - 62, 30, { glow: 0.6 });
+        BB.text("WHOLE NOTE = 4 BEATS", cx, cy - 114, 30, "#fff", { font: "Rammetto One", stroke: 6 });
+        {
+          const hop = Math.abs(Math.sin(d * Math.PI * 1.2)) * 26 * clamp(1 - d / POP_DUR, 0, 1);
+          BB.contactShadow(cx + 430, cy + 82, 60, 0.4);
+          BB.sprite("sprocket", cx + 430, cy + 82 - hop, 190, { squash: Math.sin(d * 12) * 0.03 });
+        }
+        ctx.restore();
       }
       if (this.pebbles) {
         ctx.fillStyle = "#8a7060";

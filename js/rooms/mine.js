@@ -42,7 +42,14 @@ const ROCKS=[
 const TBOX=k=>({x0:1480,x1:3320,y0:top(k)+34,y1:rail(k)});
 const LIGHT=[{rim:'#ffd08a',amb:'#ff9a40',haze:'60,34,18'},{rim:'#ffc070',amb:'#ff8030',haze:'64,32,16'},{rim:'#bfe6ff',amb:'#6a8cff',haze:'24,26,60'},{rim:'#ffb060',amb:'#ff6a30',haze:'66,28,14'},{rim:'#ffa070',amb:'#d05030',haze:'58,24,16'}];
 const NEED=4,WARM=4;// v13.2 4+4 loop: 4-beat warm-up, then strikes break a rock. Scaling: rock.st = strikes needed (floors 1-2: 4, soft crystals: 6, loud boulders: 8, bonus: 4). v14.5.2: a miss drops one strike (not a full reset).
-const strikesFor=R=>R?(R.bonus?4:(R.st||4)):4;// steady measures per whole note (bonus rocks need 2)
+const /* v14.5.17 NOTE MINE polish: REWARD EFFECTS ONLY. Same rocks, same strikes, same thresholds, same miss rule (-1 strike), same mic/grade path.
+   - each crack opens the rock wider so more of the glowing whole note shows
+   - the existing 2.4 s 'pop' phase (beat=null, mic discarded) now holds a 4-beat celebration: the whole note lights beats 1-2-3-4
+     (soft tonal tinks, all finished by 2.05 s, before the next rock even drops), Sprocket hops
+   - on 3 of the 10 rocks Static Jr. lunges for the flying note and misses (the note is never taken, count unchanged) */
+CEL_T0=.35,CEL_STEP=.42,POP_DUR=2.4,SNATCH=[1,3,7],snatchAt=i=>SNATCH.includes(i),celBeat=dt=>dt<CEL_T0?-1:Math.min(3,Math.floor((dt-CEL_T0)/CEL_STEP)),
+strikesFor=R=>R?(R.bonus?4:(R.st||4)):4;// steady measures per whole note (bonus rocks need 2)
+BB.MINE={CEL_T0,CEL_STEP,POP_DUR,SNATCH,snatchAt,celBeat};
 const SOFT_MAX=window.GroupGate?GroupGate.SOFT_MAX:.72,LOUD_MIN=window.GroupGate?GroupGate.LOUD_MIN:.7;
 // dirt pattern
 let dirtPat=null;function dirt(){if(dirtPat)return dirtPat;const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
@@ -88,8 +95,9 @@ function drawRock(x,y,r,kind,stage,shake,wob,o={}){const k=o.k,L=k!=null?LIGHT[k
   const amb=o.mixed?'#ff7a40':kind==='boulder'?'#2a2030':L?L.amb:null;
   BB.prop(img,0,base,h,{shadow:false,rim:L?L.rim:'#ffe0b0',amb,ambA:kind==='boulder'?.3:.16});
   // the whole note glowing inside
-  const g=.25+stage*.18;BB.glow(0,-r*.05,r*.62,'rgba(255,245,190,A)',g);
-  BB.wholeNote(0,-r*.05,r*.3,{fill:'#fff8d0'});
+  const g=.25+stage*.2;if(stage>0){const f=Math.min(1,stage/4);ctx.save();ctx.globalAlpha=.35+.5*f;ctx.fillStyle=BB.lg(-r*.4,r*.3,['#ffe9a8','#d98a2c']);ctx.beginPath();ctx.ellipse(0,-r*.05,r*(.26+.2*f),r*(.2+.15*f),0,0,7);ctx.fill();ctx.restore()}// v14.5.17: the rock opens up around the note
+  BB.glow(0,-r*.05,r*(.62+.1*stage),'rgba(255,245,190,A)',g);
+  BB.wholeNote(0,-r*.05,r*(.3+.03*Math.min(4,stage)),{fill:'#fff8d0'});
   ctx.save();ctx.beginPath();ctx.ellipse(0,-r*.05,r*.78,r*.7,0,0,7);ctx.clip();ctx.lineCap='round';ctx.lineJoin='miter';
   if(stage>0){const f=Math.min(1,stage/4),lq=!BB.q,list=crackPaths.filter(c=>c.d===0||(f>.45&&c.at<f*1.3&&!(lq&&c.d>1)));
     for(const c of list){const g=c.d===0?f:Math.min(1,(f-.45)/.55);if(g<=0)continue;const lw=(c.d===0?7:c.d===1?4.5:3)*(.7+.3*f);
@@ -227,11 +235,13 @@ class MineRoom{
   popNote(){const R=this.R;BB.burst(ROCK_X,rail(R.f)-140,BB.q?14:6,{world:1,cols:['#8c7764','#5e4c3e','#a8957f'],speed:700,size:30,kind:'dot',g:900});// v12.6 chunks split off on the final break
     this.state='pop';this.st=BB.t;this.beat=null;BB.sfx.chime();BB.sfx.pop();BB.shake(6);
     BB.burst(ROCK_X,rail(R.f)-150,40,{world:1,cols:['#ffe066','#fff','#6ee678'],speed:800,size:14,kind:'star',g:500});
-    this.halves={t:BB.t};this.flying.push({t0:BB.t,x0:ROCK_X,y0:rail(R.f)-150,x1:PIPE_X,y1:rail(R.f)-120,gold:!!R.bonus,f:R.f});
+    this.halves={t:BB.t};this.startCel();this.flying.push({t0:BB.t,x0:ROCK_X,y0:rail(R.f)-150,x1:PIPE_X,y1:rail(R.f)-120,gold:!!R.bonus,f:R.f});
     if(this.rockI===0)setTimeout(()=>BB.scene===this&&BB.say('got_note'),500);
     if(R.f===4&&this.caveRocks){this.caveCleared=(this.caveCleared||0)+1;this.caveClearT=BB.t;
       if(this.caveCleared>=2&&!this.chipFly){const c=this.cam;this.chipFly={t:BB.t+.3,x0:(ROCK_X-c.x)*c.z+W/2,y0:(rail(4)-160-c.y)*c.z+H/2};
         BB.caption={txt:'Cave-in cleared! You earned a Level 4 Beat Chip piece!',who:'sprocket',until:BB.t+3,start:BB.t}}}}
+  startCel(){const a=BB.ac.currentTime;this.cel={t:BB.t,snatch:snatchAt(this.rockI)&&!this.R.prank};this.sprCheer=1;
+    for(let i=0;i<4;i++)BB.sfx.tink(a+CEL_T0+i*CEL_STEP,.35,true)}// quiet = pure tone, no noise burst; mic is not listening during 'pop'
   manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;try{this.log({i:this.beat?Math.round(this.beatNow()):'',res:'manual-override'})}catch(e){}
     if(this.state==='dig'||this.state==='count'){this.marks=[1,1,1,1];if(this.state==='count'){this.state='dig';this.beat.evalM=Math.max(1,Math.ceil(this.beatNow()/4))}
       this.beat.evalM=Math.max(this.beat.evalM,Math.ceil(this.beatNow()/4));this.strikes=Math.max(this.strikes||0,Math.ceil((this.stage+(this.R.bonus?2:1))*strikesFor(this.R)/NEED));this.crack()}}
@@ -251,7 +261,8 @@ class MineRoom{
     if(this.beat){this.scheduleTicks();if(this.state==='count'&&this.beatNow()>=3.6&&!(BB.mic.ok&&window.GroupGate)){this.state='dig';this.warmEnd=3}this.handleOnsets();this.evalMeasures()}
     else BB.mic.take();
     this.updCave();if(this.chipFly&&!this.chipFly.done&&BB.t-this.chipFly.t>1.4){this.chipFly.done=1;this.chip=1;this.chipPop=BB.t;BB.sfx.ding();BB.sfx.chime()}
-    if(this.state==='pop'&&t-this.st>2.4){this.rockI++;if(this.rockI>=ROCKS.length)this.finish();else this.beginRock(false)}
+    if(this.cel&&t-this.cel.t>POP_DUR-.05){this.cel=null;this.sprCheer=0}
+    if(this.state==='pop'&&t-this.st>POP_DUR){this.rockI++;if(this.rockI>=ROCKS.length)this.finish();else this.beginRock(false)}
     // elevator travel between floors
     if(this.R&&this.state!=='intro'&&this.state!=='end'){const ty=rail(this.R.f);if(Math.abs(this.elevY-ty)>1){
         if(!this.moving){if(this.botRoll)return this.updTail(dt);if(Math.abs(this.botX-1960)>2){this.rollBot(this.botX,1960,1.1);return this.updTail(dt)}this.moving=1;BB.sfx.motor(BB.ac.currentTime,1.8);this.botOnElev=true}
@@ -468,6 +479,9 @@ class MineRoom{
     // flying notes for this floor (arc from rock to pipe hopper)
     for(const n of this.flying){if(n.f!==k)continue;const tt=clamp((BB.t-n.t0)/1.1,0,1),e=ease.inOut(tt);const x=lerp(n.x0,n.x1,e),base=lerp(n.y0,n.y1,e),arc=Math.max(0,Math.min(320,base-(y+90))),yy=base-Math.sin(tt*Math.PI)*arc;
       BB.wholeNote(x,yy,46*(1+.3*Math.sin(tt*Math.PI)),{glow:.8,fill:n.gold?'#ffe066':'#fff',rot:tt*6})}
+    if(this.cel&&this.cel.snatch&&active){const d=BB.t-this.cel.t;if(d<2.2){const jx=d<.45?lerp(3300,2330,ease.out(d/.45)):2330+(d>1.3?(d-1.3)*900:0),jump=d>.45&&d<.95?Math.sin((d-.45)/.5*Math.PI):0,fall=d>.95&&d<1.3;
+      BB.contactShadow(jx,rail(k),60,.45);BB.staticJr(jx,rail(k)-jump*170,95,{run:d<.45||d>1.3?1:0,dizzy:fall,rot:fall?.5:0,spd:900,flip:d<.45});
+      if(d>.95&&d<1.9)this.bubble(jx-150,rail(k)-260,d<1.3?'missed it!':'aww...',k)}}
     // Static Jr. prank on this floor
     if(this.prank&&active&&this.prank.ph!=='done'){const p=this.prank,yb=y+150;BB.rrect(2960,yb+18,260,16,8,'rgba(20,8,2,.35)');BB.rrect(2960,yb,260,24,10,BB.lg(yb,yb+24,['#b07a48','#7a4e2c','#4e2f18']),'#2e1a0c',3);ctx.fillStyle='rgba(255,230,190,.3)';ctx.fillRect(2970,yb+3,240,3);ctx.fillStyle='#3a2414';for(const bx of[2980,3200]){ctx.beginPath();ctx.arc(bx,yb+12,4,0,7);ctx.fill()}
       {const jy=p.ph==='bonk'?rail(k):yb;BB.contactShadow(p.x,jy,60,.45);if(p.ph==='throw'&&Math.sin(BB.t*20)>.6){ctx.save();ctx.globalCompositeOperation='lighter';BB.glow(p.x,jy-60,110,'rgba(120,200,255,A)',.35);ctx.restore()}}
@@ -512,6 +526,12 @@ class MineRoom{
     BB.beatPills(gx+196,H-95,lit,{marks:this.marks,wobble:this.wob*(this.prank&&this.prank.ph==='throw'?1:.4)});
     if(count){BB.text(this.warm>0?this.warm+' ...':'WARM UP: clap 4 in a row!',W/2,H-200,this.warm>0?70:44,COL.yellow,{font:'Rammetto One',stroke:8})}
     else if(this.state==='dig'){BB.text(R.dyn==='p'?'soft claps!':R.dyn==='f'?'LOUD claps!':(strikesFor(R)+' strikes break the rock!'),W/2,H-185,34,'#fff',{stroke:6})}
+    if(this.cel){const d=BB.t-this.cel.t,cb=celBeat(d),a=clamp(d/.25,0,1)*clamp((POP_DUR-d)/.3,0,1),cx=W/2,cy=H-250;ctx.save();ctx.globalAlpha=a;
+      BB.rrect(cx-330,cy-70,660,150,30,'rgba(20,12,6,.72)','rgba(255,224,130,.8)',3);
+      const fill=cb<0?0:clamp((d-CEL_T0)/(CEL_STEP*4),0,1);BB.rrect(cx-250,cy+40,500,16,8,'rgba(255,255,255,.15)');if(fill>0)BB.rrect(cx-250,cy+40,500*fill,16,8,BB.lg(cy+40,cy+56,['#fff6c0','#ffc640']));
+      for(let i=0;i<4;i++){const x=cx-188+i*125,on=i<=cb,k2=on?clamp((d-CEL_T0-i*CEL_STEP)/.15,0,1):0;if(on)BB.glow(x,cy,56,'rgba(255,225,120,A)',.45*k2);BB.rrect(x-38,cy-30,76,60,18,on?'#ffd84a':'rgba(255,255,255,.12)',on?'#fff':'rgba(255,255,255,.35)',3);BB.text(String(i+1),x,cy,36,on?'#3a2408':'#fff',{font:'Rammetto One'})}
+      BB.wholeNote(cx-188+Math.max(0,cb)*125,cy-62,30,{glow:.6});BB.text('WHOLE NOTE = 4 BEATS',cx,cy-114,30,'#fff',{font:'Rammetto One',stroke:6});
+      {const hop=Math.abs(Math.sin(d*Math.PI*1.2))*26*clamp(1-d/POP_DUR,0,1);BB.contactShadow(cx+430,cy+82,60,.4);BB.sprite('sprocket',cx+430,cy+82-hop,190,{squash:Math.sin(d*12)*.03})}ctx.restore()}
     if(this.pebbles){ctx.fillStyle='#8a7060';ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const q of this.pebbles){ctx.beginPath();ctx.ellipse(q.x,q.y,14,10,q.x,0,7);ctx.fill();ctx.stroke()}}
     // crack progress chips next to the lights
     BB.panel(gx+412,H-150,sw,110,26);for(let i=0;i<need;i++){const on=this.state==='pop'||i<(this.strikes||0);BB.rrect(gx+432+i*pw,H-90,pw-8,36,8,on?COL.yellow:'#3a4a48','#fff',2)}
