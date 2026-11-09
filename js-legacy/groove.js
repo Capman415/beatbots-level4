@@ -231,7 +231,8 @@
         if (this.next > k)
           k = this.next;
         while (this.t0 + k * this.spb < ahead) {
-          this.beat(k, this.t0 + k * this.spb);
+          if (this.vol >= 0.01)
+            this.beat(k, this.t0 + k * this.spb);
           k++;
         }
         this.next = k;

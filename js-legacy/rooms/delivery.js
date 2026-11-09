@@ -759,6 +759,8 @@
         {
           const bi = barAt(t), b = KO_BARS[bi], on = BB.mic.take();
           this.blasts = this.blasts || [];
+          if (b && b.mode && BB.groove)
+            BB.groove.vol = 0;
           const us = b && b.turn === "us" && t < KO_BIG, tr = tierOf(this.cpm || 0);
           if (us) {
             for (const o of on)
@@ -892,7 +894,12 @@
             }
             if (b.phase)
               this.curPh = b.phase;
-            BB.groove.vol = b.chant || b.chantIntro ? 0.3 : b.sty ? 0.9 : 0.5 + 0.05 * (this.curPh || 1);
+            if (b.mode) {
+              BB.groove.vol = 0;
+              if (BB.groove._bus && BB.ac)
+                BB.groove._bus.gain.setTargetAtTime(0, BB.ac.currentTime, 0.04);
+            } else
+              BB.groove.vol = b.chant || b.chantIntro ? 0.3 : b.sty ? 0.9 : 0.5 + 0.05 * (this.curPh || 1);
             if (b.vo)
               BB.say(b.vo, { overlap: true });
             if (b.rush && !(KO_BARS[bi - 1] || {}).rush && window.ClapDet && ClapDet.expect) {

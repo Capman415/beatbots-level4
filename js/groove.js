@@ -71,7 +71,7 @@ BB.makeGroove=(ac,out,o={})=>{const lite=!!o.lite;
         // soft filtered shaker on the off-8ths (+ light ghost 16ths in B), never on fill downbeats
         if(shV&&(S.sh.includes(s)||(B&&s%2===1))){const pk=S.sh.includes(s)?.05:.02;shV.gain.setValueAtTime(0.0001,st);shV.gain.linearRampToValueAtTime(pk,st+.012);shV.gain.exponentialRampToValueAtTime(0.0001,st+.07)}}},
     tick(){if(!this.on)return;const ahead=ac.currentTime+.2;let k=Math.ceil((ac.currentTime-this.t0)/this.spb-.001);if(this.next>k)k=this.next;
-      while(this.t0+k*this.spb<ahead){this.beat(k,this.t0+k*this.spb);k++}this.next=k;
+      while(this.t0+k*this.spb<ahead){if(this.vol>=.01)this.beat(k,this.t0+k*this.spb);k++}this.next=k;// v14.5.20: skip synthesizing kicks/shaker while vol muted (dodge stretch)
       const talk=BB.talking&&BB.t<BB.talking.until+.2,v=BB.paused?0:talk?this.vol*.25:this.vol;bus.gain.setTargetAtTime(v,ac.currentTime,.12)},
     start(bpm=100,style){this.on=true;this.spb=60/bpm;this.t0=ac.currentTime+.1;this.next=0;if(style&&STY[style]){this.sty=STY[style];this.name=style}if(!this.timer)this.timer=setInterval(()=>this.tick(),50)},
     sync(t0,spb){if(!this.on)return;const k=Math.ceil((ac.currentTime+.2-t0)/spb);this.t0=t0;this.spb=spb;this.next=k},// re-phase onto a room's beat clock (tempo changes follow)
