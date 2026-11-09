@@ -89,16 +89,20 @@ class FollowPulse{constructor(o={}){this.bpm=o.bpm||92;this.spb=60/this.bpm;this
   phase(){const b=this.beatNow();if(b<0)return 'wait';if(b<this.countIn)return 'count';if(b<this.scoreStart())return 'practice';if(b<this.totalBeats())return 'score';return 'end'}
   expT(i){return this.t0+(this.scoreStart()+i)*this.spb}
   update(dt){const ac=BB.ac,ahead=ac.currentTime+.12,spb=this.spb,N=this.totalBeats();
+    /* v14.5.18: SCORE ticks must stay pure-tone. countPulse uses noise (nz) → hard selfSound window that rejects the on-beat clap (same class of bug as punch-rush). Practice/count keep soft ticks only. */
     while(this.t0+this.next*spb<ahead&&this.next<N){const t=this.t0+this.next*spb,i=this.next,sc=i>=this.scoreStart();
-      /* ticks are selfSounds — mic ignores them as game audio */BB.sfx.tick(t,i%4===0||sc,sc?1:.7);if(sc)BB.sfx.countPulse&&BB.sfx.countPulse(t,i%4===0,.9);this.next++}
-    const ph=this.phase();BB.listening=ph==='score'?2:ph==='practice'?1:0;
+      BB.sfx.tick(t,i%4===0||sc,sc?1.15:.7);this.next++}
+    const ph=this.phase();BB.listening=ph==='score'?2:(ph==='practice'||ph==='count')?1:0;
+    if(window.ClapDet&&ClapDet.expect&&(ph==='score'||ph==='practice'))ClapDet.expect(spb,ac.currentTime+.55);
     {const tv=ac.currentTime-(BB.visLat?BB.visLat():0);for(let i=0;i<this.n;i++){const d=tv-this.expT(i);this.lit[i]=d>=0&&d<.35?1-d/.35:0}}
     for(let i=0;i<this.n;i++)if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5);
-    if(ph==='score'||ph==='end'){const ons=BB.mic.take?BB.mic.take():[],lat=(window.GroupGate&&GroupGate.lat)||0;
-      for(const o of ons){if(o.up)continue;if(BB.voBlocks&&BB.voBlocks())continue;
+    /* drain mic in every live phase so practice claps cannot flood the score window; only SCORE matches count */
+    if(ph==='count'||ph==='practice'||ph==='score'||ph==='end'){const ons=BB.mic.take?BB.mic.take():[],lat=(window.GroupGate&&GroupGate.lat)||0;
+      if(ph==='score'||ph==='end'){for(const o of ons){if(o.up)continue;if(BB.voBlocks&&BB.voBlocks())continue;
         const bm=BB.bounceMs?BB.bounceMs():.1;if(this._lastOn!=null&&o.t-this._lastOn<bm)continue;this._lastOn=o.t;
         let best=-1,bd=1;for(let i=0;i<this.n;i++){if(this.got[i])continue;const m=BB.assessMatchBeat(o.t,this.expT(i),spb,lat);if(m.ok&&Math.abs(m.off)<bd){bd=Math.abs(m.off);best=i}}
-        if(best>=0){const m=BB.assessMatchBeat(o.t,this.expT(best),spb,lat);this.got[best]=1;this.offs[best]=m.off;this.marks[best]=.01;BB.sfx.tink&&BB.sfx.tink(undefined,.55)}}}
+        if(best>=0){const m=BB.assessMatchBeat(o.t,this.expT(best),spb,lat);this.got[best]=1;this.offs[best]=m.off;this.marks[best]=.01;BB.sfx.tink&&BB.sfx.tink(undefined,.55,true)/* quiet: no noise burst */}}}
+      /* count/practice: ons discarded above via take() */}
     if(!this.done&&ac.currentTime>this.expT(this.n-1)+this.tol.late+.35){this.finish(false)}}
   finish(manual){if(this.done)return;this.done=true;this.manual=!!manual;const matched=this.got.filter(x=>x===1).length;
     const sc=manual?1:matched/this.n;const ok=manual?true:sc>=this.need;this.score=sc;this.matched=matched;
@@ -111,7 +115,7 @@ class FollowPulse{constructor(o={}){this.bpm=o.bpm||92;this.spb=60/this.bpm;this
     const nd=this.n,tot=nd*90+(nd-1)*10,x0=cx-tot/2;for(let i=0;i<nd;i++){const on=ph==='score'&&Math.floor(bn-this.scoreStart())===i;ctx.fillStyle=on?COL.green:(this.got[i]?COL.yellow:'rgba(255,255,255,.28)');ctx.beginPath();ctx.arc(x0+i*100+40,y+70,on?14:8,0,7);ctx.fill()}
     let msg='';if(ph==='count'){const n=this.countIn-Math.floor(Math.max(0,bn));msg=n>0?'Get ready… '+n:'GO!'}
     else if(ph==='practice')msg='PRACTICE — clap with the lights (not scored)';
-    else if(ph==='score')msg='SCORE — clap WITH the beat!';
+    else if(ph==='score')msg='SCORE — clap WITH the green lights!';
     else if(ph==='end')msg='';
     if(msg)BB.text(msg,cx,y-130,40,ph==='score'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
     BB.text('8 steady ta   ·   grade window '+Math.round(this.tol.early*1000)+'ms early / '+Math.round(this.tol.late*1000)+'ms late',cx,y+130,24,'#cfe8e2',{stroke:4})}}
@@ -161,15 +165,19 @@ class AssessRoom{constructor(o={}){this.o=o}
   drawChoice(){const Q=this.Q,n=Q.choices.length,bw=Math.min(420,Math.floor(1500/n)-24),gap=24,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
     Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap),on=this.picked===c.k;
       BB.button(x,420,bw,220,'',{style:on?'green':'cream',id:'asc'+i,onClick:()=>this.pick(c.k)});
-      BB.text(c.lab,x+bw/2,500,c.lab.length>12?32:44,'#19191f',{font:'Rammetto One',maxW:bw-24});
-      if(c.sub)BB.text(c.sub,x+bw/2,580,26,'#3a4038',{maxW:bw-24})})}
+      /* v14.5.18: cream/gold lettering on the dark teal cream-button face (was near-black #19191f — unreadable) */
+      BB.text(c.lab,x+bw/2,500,c.lab.length>12?32:44,'#ffe9a0',{font:'Rammetto One',stroke:6,strokeCol:'#1a1a1a',maxW:bw-24});
+      if(c.sub)BB.text(c.sub,x+bw/2,580,26,'#d7efe8',{stroke:4,strokeCol:'#142826',maxW:bw-24})})}
   drawHearPick(){const Q=this.Q;
-    if(this.state==='hear'){BB.text('Listen...',W/2,360,64,COL.yellow,{font:'Rammetto One',stroke:8});R.pills(W/2,520,Q.seq,{words:true});return}
-    const n=Q.choices.length,bw=480,gap=30,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
-    BB.text('Tap the matching label',W/2,290,34,COL.yellow,{stroke:4});
-    BB.button(W/2-160,320,320,64,'REPLAY RHYTHM',{size:26,id:'asreplay',onClick:()=>{this.state='hear';this.st=BB.t;this.playHear()}});
+    /* v14.5.18 audio-first: while the drum plays (and while waiting), show ALL answer options — never the target Q.seq, and never highlight the correct choice. Target only after a correct grade (drawGraded). */
+    const listening=this.state==='hear',n=Q.choices.length,bw=480,gap=30,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
+    BB.text(listening?'Listen... then tap the match':'Tap the matching label',W/2,290,34,COL.yellow,{font:'Rammetto One',stroke:6});
+    if(!listening)BB.button(W/2-160,330,320,64,'REPLAY RHYTHM',{size:26,id:'asreplay',onClick:()=>{this.state='hear';this.st=BB.t;this.playHear()}});
+    else BB.text('Answers stay up while you listen — no peeking at the answer first',W/2,340,26,'#cfe8e2',{stroke:4,maxW:1500});
     Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.button(x,410,bw,300,'',{style:'cream',id:'ash'+i,onClick:()=>this.pick(c.k)});
       R.pills(x+bw/2,560,c.lab,{bw:70,gap:10,words:true})})}
+  drawGradedHear(){const Q=this.Q;if(!(Q&&Q.kind==='hearPick'&&this.lastOk))return;
+    BB.text('Heard rhythm:',W/2,560,28,'#cfe8e2',{stroke:4});R.pills(W/2,640,Q.seq,{words:true,bw:70,gap:10})}
   draw(){ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);if(BB.V2&&BB.V2.hub_bg){ctx.globalAlpha=.35;ctx.drawImage(BB.V2.hub_bg,0,0,W,H);ctx.globalAlpha=1}
     BB.contactShadow(220,980,110,.45);BB.sprite&&BB.sprite('sprocket',220,980,360,{squash:BB.isTalking&&BB.isTalking('sprocket')?Math.sin(BB.t*16)*.015:0});
     if(this.state==='intro'){BB.panel(260,200,1400,560,40);BB.text('CHECKPOINT',W/2,300,72,'#fff',{font:'Rammetto One',stroke:10});
@@ -187,7 +195,7 @@ class AssessRoom{constructor(o={}){this.o=o}
       BB.button(580,780,360,80,'Download summary',{size:26,id:'asdls',onClick:()=>BB.assessLog.downloadSummary()});
       BB.button(960,780,360,80,'ROOM MAP',{size:26,id:'asmap',onClick:()=>BB.go(new BB.MapScene())});
       return}
-    if(this.state==='graded'){BB.text(this.lastOk?'GOT IT!':"Not yet — that's ok!",W/2,480,72,this.lastOk?COL.green:COL.yellow,{font:'Rammetto One',stroke:10});BB.captionBox();return}
+    if(this.state==='graded'){BB.text(this.lastOk?'GOT IT!':"Not yet — that's ok!",W/2,400,72,this.lastOk?COL.green:COL.yellow,{font:'Rammetto One',stroke:10});if(this.lastOk)this.drawGradedHear();BB.captionBox();return}
     this.drawPrompt(this.Q.prompt);
     if(this.Q.kind==='follow'||this.state==='follow')this.drawFollow();
     else if(this.Q.kind==='choice')this.drawChoice();

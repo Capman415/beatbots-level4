@@ -142,21 +142,26 @@
   }, dynLevel = (f) => f >= 2.4 ? 2 : f >= 1.2 ? 1 : 0, BLAST_R = [150, 240, 380], HIT_DMG = 6;
   const BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.1, y: H * 0.55 }, right: { x: W * 0.94, y: H * 0.76 }, high: { x: W * 0.4, y: 600 }, floor: { x: W * 0.5, y: H * 0.86 }, botL: { x: W * 0.26, y: H * 0.82 }, botR: { x: W * 0.84, y: H * 0.84 }, mid: { x: W * 0.5, y: H * 0.62 } }, throwLane = (kind, n) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? "floor" : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
   const SAFE_Y = 430, throwPath = (lane, v, sx, sy) => {
-    if (v < 0 || v > 1.5)
+    if (v < 0 || v > 1.6)
       return null;
-    const T = LANE_TG[lane] || LANE_TG.mid, po = Math.max(0, v - 1), a = v <= 1 ? 1 : clamp(1 - po / 0.5, 0, 1);
+    const T = LANE_TG[lane] || LANE_TG.mid, u = Math.min(v, 1), po = Math.max(0, v - 1), cam = Math.pow(u, 1.5);
     if (lane === "floor") {
-      const p2 = Math.pow(Math.min(v, 1), 1.15);
-      return { x: lerp(sx, T.x, p2), y: lerp(sy, T.y, p2) + po * 2e3, sc: 0.55 + 3 * Math.pow(Math.min(v, 1), 1.3) + po * 2, a: 1 };
+      const p2 = Math.pow(u, 1.15);
+      let x2 = lerp(sx, T.x, p2), y2 = lerp(sy, T.y, p2) + po * 2400;
+      const sc2 = 0.5 + 3.6 * Math.pow(u, 1.25) + po * 4;
+      return { x: x2, y: y2, sc: sc2, a: y2 > H + 160 ? clamp(1 - (y2 - (H + 160)) / 280, 0, 1) : 1, fg: sc2 >= 1.7 || u >= 0.4 };
     }
-    const p = 1 - Math.pow(1 - Math.min(v, 1), 1.7), dx = T.x - sx, dy = T.y - sy;
-    const dl = Math.hypot(dx, dy) || 1;
-    let x = sx + dx * p + dx / dl * po * 1500, y = sy + dy * p + dy / dl * po * 1500 - Math.sin(Math.min(v, 1) * Math.PI) * 40;
+    const p = 1 - Math.pow(1 - u, 1.7), dx = T.x - sx;
+    let x = sx + dx * p + dx * po * 1.15, y;
     if (lane === "high") {
-      y = sy + dy * p - Math.sin(Math.min(v, 1) * Math.PI) * 20;
-      return { x, y: Math.max(SAFE_Y + 140, y), sc: 0.6 + 1.3 * Math.pow(Math.min(v, 1), 1.4) + po * 0.6, a };
+      y = lerp(sy, Math.max(SAFE_Y + 120, T.y), p) - Math.sin(u * Math.PI) * 28;
+      y = lerp(y, H + 240, cam * 0.78 + po * 1.15);
+    } else {
+      y = Math.max(SAFE_Y, lerp(sy, T.y, p) - Math.sin(u * Math.PI) * 40);
+      y = lerp(y, H + 260, cam * 0.7 + po * 1.15);
     }
-    return { x, y: Math.max(SAFE_Y, y), sc: 0.6 + 2.1 * Math.pow(Math.min(v, 1), 1.4) + po * 1.5, a };
+    const sc = 0.48 + 1.05 * p + (lane === "high" ? 3.6 : 4.4) * Math.pow(cam, 1.35) + po * 3.8, a = y > H + 140 ? clamp(1 - (y - (H + 140)) / 280, 0, 1) : x < -220 || x > W + 220 ? 0 : 1;
+    return { x, y, sc, a, fg: sc >= 1.7 || u >= 0.4 };
   };
   const LANE_DIR = { left: -1, right: 1, high: -1, floor: -1, botL: -1, botR: 1, mid: -1 }, throwTurn = (lane, v, kind) => {
     const d = LANE_DIR[lane] || 1, u = clamp(v, 0, 1.5), e = 1 - Math.pow(1 - Math.min(u, 1), 2), po = Math.max(0, u - 1);
@@ -1544,6 +1549,7 @@
       BB.text("BOX LAUNCHER", x, y + 122, 20, "#fff", { stroke: 4 });
     }
     drawKO(k, t) {
+      this._throwFG = [];
       const bi = barAt(k), bt = bi * 4 + (k - BS[Math.max(0, Math.min(bi, KO_BARS.length))]) / KO_B, bar = KO_BARS[bi], gone = k >= KO_BIG;
       let last = null;
       for (const h of KO_HITS)
@@ -2049,51 +2055,57 @@
           const P = tire ? throwPath(lane, v, JR.x - 40, JR.y + 170) : throwPath(lane, v, lane === "right" || lane === "botR" ? JR.x + 60 : JR.x - 90, JR.y - 40);
           if (!P)
             continue;
-          ctx.save();
-          ctx.globalAlpha = P.a;
-          ctx.translate(P.x, P.y - (tire ? 62 * P.sc : 0));
-          ctx.scale(P.sc, P.sc);
-          {
-            const TT = throwTurn(lane, v, tire ? "tire" : junk);
-            ctx.rotate(TT.rot);
-            ctx.scale(TT.sx, 1);
-          }
-          if (tire)
-            this.drawTireRoll(v * 16);
-          else
-            this.drawJunk(junk, t);
-          ctx.restore();
-          if (v < 1 && v > 0.15 && !tire) {
+          const paint = () => {
             ctx.save();
-            ctx.globalAlpha = 0.6 * (1 - v);
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 5;
-            const bk = throwPath(lane, Math.max(0, v - 0.15), lane === "right" || lane === "botR" ? JR.x + 60 : JR.x - 90, JR.y - 40);
-            if (bk) {
-              ctx.beginPath();
-              ctx.moveTo(bk.x, bk.y);
-              ctx.lineTo(P.x, P.y);
-              ctx.stroke();
+            ctx.globalAlpha = P.a;
+            ctx.translate(P.x, P.y - (tire ? 62 * P.sc : 0));
+            ctx.scale(P.sc, P.sc);
+            {
+              const TT = throwTurn(lane, v, tire ? "tire" : junk);
+              ctx.rotate(TT.rot);
+              ctx.scale(TT.sx, 1);
             }
+            if (tire)
+              this.drawTireRoll(v * 16);
+            else
+              this.drawJunk(junk, t);
             ctx.restore();
-          }
-          if (v >= 1 && v < 1.5) {
-            const w = v - 1, al = clamp(1 - w / 0.5, 0, 1), T = LANE_TG[lane], tx = clamp(T.x, 330, W - 330), ty2 = clamp(T.y - (tire ? 60 : 120), SAFE_Y + 40, H - 120);
-            ctx.save();
-            ctx.globalAlpha = al;
-            if (kind === "bomb") {
-              ctx.fillStyle = "rgba(255,138,223,.5)";
-              for (let q = 0; q < 9; q++) {
-                const r = 60 + q % 3 * 40;
+            if (v < 1 && v > 0.15 && !tire) {
+              ctx.save();
+              ctx.globalAlpha = 0.55 * (1 - v);
+              ctx.strokeStyle = "#fff";
+              ctx.lineWidth = 5;
+              const bk = throwPath(lane, Math.max(0, v - 0.12), lane === "right" || lane === "botR" ? JR.x + 60 : JR.x - 90, JR.y - 40);
+              if (bk) {
                 ctx.beginPath();
-                ctx.arc(T.x + Math.cos(q * 0.7) * r * 1.4, T.y + Math.sin(q * 0.7) * r, 44 + q % 4 * 16, 0, 7);
-                ctx.fill();
+                ctx.moveTo(bk.x, bk.y);
+                ctx.lineTo(P.x, P.y);
+                ctx.stroke();
               }
-              BB.text("POOF! MISSED!", tx, ty2, 72, "#fff", { font: "Rammetto One", stroke: 9, strokeCol: "#3a1040" });
-            } else
-              BB.text(tire ? "BOING! JUMPED IT!" : "MISSED!", tx, ty2, 80, COL.yellow, { font: "Rammetto One", stroke: 10, strokeCol: "#3a1040" });
-            ctx.restore();
-          }
+              ctx.restore();
+            }
+            if (v >= 1 && v < 1.55) {
+              const w = v - 1, al = clamp(1 - w / 0.55, 0, 1), T = LANE_TG[lane], tx = clamp(T.x, 330, W - 330), ty2 = clamp(Math.min(T.y, H - 160) - (tire ? 40 : 80), SAFE_Y + 40, H - 120);
+              ctx.save();
+              ctx.globalAlpha = al;
+              if (kind === "bomb") {
+                ctx.fillStyle = "rgba(255,138,223,.5)";
+                for (let q = 0; q < 9; q++) {
+                  const r = 60 + q % 3 * 40;
+                  ctx.beginPath();
+                  ctx.arc(T.x + Math.cos(q * 0.7) * r * 1.4, T.y + Math.sin(q * 0.7) * r, 44 + q % 4 * 16, 0, 7);
+                  ctx.fill();
+                }
+                BB.text("POOF! MISSED!", tx, ty2, 72, "#fff", { font: "Rammetto One", stroke: 9, strokeCol: "#3a1040" });
+              } else
+                BB.text(tire ? "BOING! JUMPED IT!" : "MISSED!", tx, ty2, 80, COL.yellow, { font: "Rammetto One", stroke: 10, strokeCol: "#3a1040" });
+              ctx.restore();
+            }
+          };
+          if (P.fg)
+            this._throwFG.push(paint);
+          else
+            paint();
           continue;
         }
         if (kind === "pick") {
@@ -4826,6 +4838,10 @@
         this.drawChant(k, t);
       }
       R.paint(ctx, () => this.drawLauncher());
+      if (this._throwFG && this._throwFG.length) {
+        this._throwFG.forEach((f) => f());
+        this._throwFG.length = 0;
+      }
       if (this.seq && !end && this.state !== "intro") {
         let bx = 760, by = 470, s = 1, rot = 0, show = this.seq;
         if (this.state === "show") {

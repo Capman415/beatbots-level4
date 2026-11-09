@@ -91,11 +91,14 @@ const BOMB_LANES=['botL','botR','mid'],LANE_TG={left:{x:W*.1,y:H*.55},right:{x:W
 /* v14.5.10 THROW PATHS (pure; visual review fix): objects leave Static Jr.'s hand fast (ease-out) so the trip across the screen is visible,
    stay BELOW the cue card / DODGE banner / speech bubble (y>=430), keep flying OFF the matching screen edge after the dodge beat (v 1..1.5) instead of vanishing.
    v = 0 at release, 1 on the dodge beat. sx,sy = release point. Returns {x,y,sc,a} or null when gone. */
-const SAFE_Y=430,throwPath=(lane,v,sx,sy)=>{if(v<0||v>1.5)return null;const T=LANE_TG[lane]||LANE_TG.mid,po=Math.max(0,v-1),a=v<=1?1:clamp(1-po/.5,0,1);
-  if(lane==='floor'){const p=Math.pow(Math.min(v,1),1.15);return{x:lerp(sx,T.x,p),y:lerp(sy,T.y,p)+po*2000,sc:.55+3.0*Math.pow(Math.min(v,1),1.3)+po*2,a:1}}
-  const p=1-Math.pow(1-Math.min(v,1),1.7),dx=T.x-sx,dy=T.y-sy;const dl=Math.hypot(dx,dy)||1;let x=sx+dx*p+dx/dl*po*1500,y=sy+dy*p+dy/dl*po*1500-Math.sin(Math.min(v,1)*Math.PI)*40;
-  if(lane==='high'){y=sy+dy*p-Math.sin(Math.min(v,1)*Math.PI)*20;return{x,y:Math.max(SAFE_Y+140,y),sc:.6+1.3*Math.pow(Math.min(v,1),1.4)+po*.6,a}}
-  return{x,y:Math.max(SAFE_Y,y),sc:.6+2.1*Math.pow(Math.min(v,1),1.4)+po*1.5,a}};
+/* v14.5.18 TOWARD-CAMERA throws (Level-3 feel): grow hard toward the viewer, dive toward the bottom of the screen, stay opaque until past the bottom edge (no mid-air fade behind Sprocket). Lateral lane targets kept. fg=1 when the object should paint AFTER Sprocket. */
+const SAFE_Y=430,throwPath=(lane,v,sx,sy)=>{if(v<0||v>1.6)return null;const T=LANE_TG[lane]||LANE_TG.mid,u=Math.min(v,1),po=Math.max(0,v-1),cam=Math.pow(u,1.5);
+  if(lane==='floor'){const p=Math.pow(u,1.15);let x=lerp(sx,T.x,p),y=lerp(sy,T.y,p)+po*2400;const sc=.5+3.6*Math.pow(u,1.25)+po*4;return{x,y,sc,a:y>H+160?clamp(1-(y-(H+160))/280,0,1):1,fg:sc>=1.7||u>=.4}}
+  const p=1-Math.pow(1-u,1.7),dx=T.x-sx;let x=sx+dx*p+dx*po*1.15,y;
+  if(lane==='high'){y=lerp(sy,Math.max(SAFE_Y+120,T.y),p)-Math.sin(u*Math.PI)*28;y=lerp(y,H+240,cam*.78+po*1.15)}
+  else{y=Math.max(SAFE_Y,lerp(sy,T.y,p)-Math.sin(u*Math.PI)*40);y=lerp(y,H+260,cam*.7+po*1.15)}
+  const sc=.48+1.05*p+(lane==='high'?3.6:4.4)*Math.pow(cam,1.35)+po*3.8,a=y>H+140?clamp(1-(y-(H+140))/280,0,1):(x<-220||x>W+220)?0:1;
+  return{x,y,sc,a,fg:sc>=1.7||u>=.4}};
 /* v14.5.12 THROW TURN (pure): understated, lane-dependent turn while flying. Leans INTO its travel direction and turns a little more as it
    comes at you, plus a soft 3D 'turn' (horizontal squash). Never a full spin: |rot| <= .6 rad (~34°). Tire: only a slight perspective lean, no spin. */
 const LANE_DIR={left:-1,right:1,high:-1,floor:-1,botL:-1,botR:1,mid:-1},
@@ -293,7 +296,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       ctx.save();const u=fv/1.4;ctx.globalAlpha=(1-u)*.9;ctx.strokeStyle='#fff6c8';ctx.lineWidth=14*(1-u)+2;ctx.beginPath();ctx.ellipse(mx,my,40+u*420,20+u*200,ang,0,7);ctx.stroke();
       for(let q=0;q<7;q++){const a=ang+(q-3)*.35,d=60+u*(180+q*30);ctx.globalAlpha=(1-u)*.75;ctx.fillStyle=q%2?'#c9c3b8':'#e8e2d6';ctx.beginPath();ctx.arc(mx+Math.cos(a)*d,my+Math.sin(a)*d-u*80,30+u*70,0,7);ctx.fill()}ctx.restore()}}
     BB.text('BOX LAUNCHER',x,y+122,20,'#fff',{stroke:4})}
-  drawKO(k,t){// v14.3.1 brain break: move cards on the beat, cardboard slapstick on Static, EVERYBODY JUMP -> RETURN TO SENDER
+  drawKO(k,t){this._throwFG=[];// v14.3.1 brain break: move cards on the beat, cardboard slapstick on Static, EVERYBODY JUMP -> RETURN TO SENDER
     const bi=barAt(k),bt=bi*4+(k-BS[Math.max(0,Math.min(bi,KO_BARS.length))])/KO_B,bar=KO_BARS[bi],gone=k>=KO_BIG;
     let last=null;for(const h of KO_HITS)if(k>=h[0])last=h;const since=last?k-last[0]:9,kd=last&&last[1];
     const sd=kd==='L'?1:kd==='R'||kd==='push'?-1:kd==='chunk'?(Math.sin(since*40)>0?1:-1)*Math.exp(-since*3):0;let jx=JR.x+sd*110*Math.exp(-since*6)*Math.cos(since*30),jy=JR.y,rot=sd*.28*Math.exp(-since*6),sq=0;
@@ -358,11 +361,12 @@ class DeliveryRoom{constructor(o={}){this.o=o}
         const fl=1.2,v=(k-(hk-fl))/fl;if(v<0||v>1.5)continue;const i=KO_HITS.findIndex(h=>h[0]===hk&&h[1]===kind),lane=throwLane(kind,KO_HITS.slice(0,i).filter(h=>h[1]==='bomb').length),tire=kind==='junkF';
         const junk=kind==='bomb'?'bomb':tire?'tire':lane==='left'?'sock':lane==='right'?'chicken':i%2?'sock':'chicken';
         const P=tire?throwPath(lane,v,JR.x-40,JR.y+170):throwPath(lane,v,lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(!P)continue;
-        ctx.save();ctx.globalAlpha=P.a;ctx.translate(P.x,P.y-(tire?62*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=throwTurn(lane,v,tire?'tire':junk);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}if(tire)this.drawTireRoll(v*16);else this.drawJunk(junk,t);ctx.restore();
-        if(v<1&&v>.15&&!tire){ctx.save();ctx.globalAlpha=.6*(1-v);ctx.strokeStyle='#fff';ctx.lineWidth=5;const bk=throwPath(lane,Math.max(0,v-.15),lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(bk){ctx.beginPath();ctx.moveTo(bk.x,bk.y);ctx.lineTo(P.x,P.y);ctx.stroke()}ctx.restore()}
-        if(v>=1&&v<1.5){const w=v-1,al=clamp(1-w/.5,0,1),T=LANE_TG[lane],tx=clamp(T.x,330,W-330),ty=clamp(T.y-(tire?60:120),SAFE_Y+40,H-120);ctx.save();ctx.globalAlpha=al;
-          if(kind==='bomb'){ctx.fillStyle='rgba(255,138,223,.5)';for(let q=0;q<9;q++){const r=60+(q%3)*40;ctx.beginPath();ctx.arc(T.x+Math.cos(q*.7)*r*1.4,T.y+Math.sin(q*.7)*r,44+(q%4)*16,0,7);ctx.fill()}BB.text('POOF! MISSED!',tx,ty,72,'#fff',{font:'Rammetto One',stroke:9,strokeCol:'#3a1040'})}
-          else BB.text(tire?'BOING! JUMPED IT!':'MISSED!',tx,ty,80,COL.yellow,{font:'Rammetto One',stroke:10,strokeCol:'#3a1040'});ctx.restore()}
+        const paint=()=>{ctx.save();ctx.globalAlpha=P.a;ctx.translate(P.x,P.y-(tire?62*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=throwTurn(lane,v,tire?'tire':junk);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}if(tire)this.drawTireRoll(v*16);else this.drawJunk(junk,t);ctx.restore();
+          if(v<1&&v>.15&&!tire){ctx.save();ctx.globalAlpha=.55*(1-v);ctx.strokeStyle='#fff';ctx.lineWidth=5;const bk=throwPath(lane,Math.max(0,v-.12),lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(bk){ctx.beginPath();ctx.moveTo(bk.x,bk.y);ctx.lineTo(P.x,P.y);ctx.stroke()}ctx.restore()}
+          if(v>=1&&v<1.55){const w=v-1,al=clamp(1-w/.55,0,1),T=LANE_TG[lane],tx=clamp(T.x,330,W-330),ty=clamp(Math.min(T.y,H-160)-(tire?40:80),SAFE_Y+40,H-120);ctx.save();ctx.globalAlpha=al;
+            if(kind==='bomb'){ctx.fillStyle='rgba(255,138,223,.5)';for(let q=0;q<9;q++){const r=60+(q%3)*40;ctx.beginPath();ctx.arc(T.x+Math.cos(q*.7)*r*1.4,T.y+Math.sin(q*.7)*r,44+(q%4)*16,0,7);ctx.fill()}BB.text('POOF! MISSED!',tx,ty,72,'#fff',{font:'Rammetto One',stroke:9,strokeCol:'#3a1040'})}
+            else BB.text(tire?'BOING! JUMPED IT!':'MISSED!',tx,ty,80,COL.yellow,{font:'Rammetto One',stroke:10,strokeCol:'#3a1040'});ctx.restore()}};
+        if(P.fg)this._throwFG.push(paint);else paint();
         continue}
       if(kind==='pick'){const a=u<=1?lerp(-1.9,.2,u*u):lerp(.2,-1.9,Math.min(1,(u-1)*1.5));ctx.save();ctx.translate(jx-260,jy-260);ctx.rotate(a+1.57);ctx.fillStyle='#8a5a2e';ctx.fillRect(-10,-260,20,260);ctx.translate(0,-260);ctx.beginPath();ctx.moveTo(-90,10);ctx.quadraticCurveTo(0,-40,90,10);ctx.lineTo(0,-10);ctx.closePath();ctx.fillStyle='#c9d6de';ctx.fill();ctx.strokeStyle=COL.ink;ctx.lineWidth=4;ctx.stroke();ctx.restore()}
       if(kind==='pat'){const y=u<=1?lerp(-150,jy-210,u*u):jy-210-Math.sin(Math.min(1,u-1)*Math.PI)*60;box(jx,y,.9,0,'PAT!')}
@@ -757,6 +761,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     if(!end&&!(this.move&&this.state==='intro')){this.drawJr();this.drawHP()}
     else if(!(this.move&&this.state==='intro')){const hv=this.heroV(k);let z=1;if(hv!=null)z=hv<0?1+(this.heroS===3?.35:.22)*clamp(1+hv/this.heroW,0,1):1+.22*Math.max(0,1-hv/.15);ctx.save();if(z>1){ctx.translate(JR.x,JR.y-90);ctx.scale(z,z);ctx.translate(-JR.x,-(JR.y-90))}this.drawKO(k,t);ctx.restore();this.drawChant(k,t)}
     R.paint(ctx,()=>this.drawLauncher());
+    if(this._throwFG&&this._throwFG.length){this._throwFG.forEach(f=>f());this._throwFG.length=0}// v14.5.18: toward-camera throws paint IN FRONT of Sprocket
     // current box: sits on the launcher pad, then flies at Jr.
     if(this.seq&&!end&&this.state!=='intro'){let bx=760,by=470,s=1,rot=0,show=this.seq;
       if(this.state==='show'){const e=ease.out(clamp(k/.6,0,1));by=lerp(-200,470,e)}

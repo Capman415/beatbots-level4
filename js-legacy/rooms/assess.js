@@ -283,13 +283,13 @@
       const ac = BB.ac, ahead = ac.currentTime + 0.12, spb = this.spb, N = this.totalBeats();
       while (this.t0 + this.next * spb < ahead && this.next < N) {
         const t = this.t0 + this.next * spb, i = this.next, sc = i >= this.scoreStart();
-        BB.sfx.tick(t, i % 4 === 0 || sc, sc ? 1 : 0.7);
-        if (sc)
-          BB.sfx.countPulse && BB.sfx.countPulse(t, i % 4 === 0, 0.9);
+        BB.sfx.tick(t, i % 4 === 0 || sc, sc ? 1.15 : 0.7);
         this.next++;
       }
       const ph = this.phase();
-      BB.listening = ph === "score" ? 2 : ph === "practice" ? 1 : 0;
+      BB.listening = ph === "score" ? 2 : ph === "practice" || ph === "count" ? 1 : 0;
+      if (window.ClapDet && ClapDet.expect && (ph === "score" || ph === "practice"))
+        ClapDet.expect(spb, ac.currentTime + 0.55);
       {
         const tv = ac.currentTime - (BB.visLat ? BB.visLat() : 0);
         for (let i = 0; i < this.n; i++) {
@@ -300,33 +300,35 @@
       for (let i = 0; i < this.n; i++)
         if (this.marks[i])
           this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
-      if (ph === "score" || ph === "end") {
+      if (ph === "count" || ph === "practice" || ph === "score" || ph === "end") {
         const ons = BB.mic.take ? BB.mic.take() : [], lat = window.GroupGate && GroupGate.lat || 0;
-        for (const o of ons) {
-          if (o.up)
-            continue;
-          if (BB.voBlocks && BB.voBlocks())
-            continue;
-          const bm = BB.bounceMs ? BB.bounceMs() : 0.1;
-          if (this._lastOn != null && o.t - this._lastOn < bm)
-            continue;
-          this._lastOn = o.t;
-          let best = -1, bd = 1;
-          for (let i = 0; i < this.n; i++) {
-            if (this.got[i])
+        if (ph === "score" || ph === "end") {
+          for (const o of ons) {
+            if (o.up)
               continue;
-            const m = BB.assessMatchBeat(o.t, this.expT(i), spb, lat);
-            if (m.ok && Math.abs(m.off) < bd) {
-              bd = Math.abs(m.off);
-              best = i;
+            if (BB.voBlocks && BB.voBlocks())
+              continue;
+            const bm = BB.bounceMs ? BB.bounceMs() : 0.1;
+            if (this._lastOn != null && o.t - this._lastOn < bm)
+              continue;
+            this._lastOn = o.t;
+            let best = -1, bd = 1;
+            for (let i = 0; i < this.n; i++) {
+              if (this.got[i])
+                continue;
+              const m = BB.assessMatchBeat(o.t, this.expT(i), spb, lat);
+              if (m.ok && Math.abs(m.off) < bd) {
+                bd = Math.abs(m.off);
+                best = i;
+              }
             }
-          }
-          if (best >= 0) {
-            const m = BB.assessMatchBeat(o.t, this.expT(best), spb, lat);
-            this.got[best] = 1;
-            this.offs[best] = m.off;
-            this.marks[best] = 0.01;
-            BB.sfx.tink && BB.sfx.tink(void 0, 0.55);
+            if (best >= 0) {
+              const m = BB.assessMatchBeat(o.t, this.expT(best), spb, lat);
+              this.got[best] = 1;
+              this.offs[best] = m.off;
+              this.marks[best] = 0.01;
+              BB.sfx.tink && BB.sfx.tink(void 0, 0.55, true);
+            }
           }
         }
       }
@@ -385,7 +387,7 @@
       } else if (ph === "practice")
         msg = "PRACTICE \u2014 clap with the lights (not scored)";
       else if (ph === "score")
-        msg = "SCORE \u2014 clap WITH the beat!";
+        msg = "SCORE \u2014 clap WITH the green lights!";
       else if (ph === "end")
         msg = "";
       if (msg)
@@ -589,30 +591,35 @@
       Q.choices.forEach((c, i) => {
         const x = x0 + i * (bw + gap), on = this.picked === c.k;
         BB.button(x, 420, bw, 220, "", { style: on ? "green" : "cream", id: "asc" + i, onClick: () => this.pick(c.k) });
-        BB.text(c.lab, x + bw / 2, 500, c.lab.length > 12 ? 32 : 44, "#19191f", { font: "Rammetto One", maxW: bw - 24 });
+        BB.text(c.lab, x + bw / 2, 500, c.lab.length > 12 ? 32 : 44, "#ffe9a0", { font: "Rammetto One", stroke: 6, strokeCol: "#1a1a1a", maxW: bw - 24 });
         if (c.sub)
-          BB.text(c.sub, x + bw / 2, 580, 26, "#3a4038", { maxW: bw - 24 });
+          BB.text(c.sub, x + bw / 2, 580, 26, "#d7efe8", { stroke: 4, strokeCol: "#142826", maxW: bw - 24 });
       });
     }
     drawHearPick() {
       const Q = this.Q;
-      if (this.state === "hear") {
-        BB.text("Listen...", W / 2, 360, 64, COL.yellow, { font: "Rammetto One", stroke: 8 });
-        R.pills(W / 2, 520, Q.seq, { words: true });
-        return;
-      }
-      const n = Q.choices.length, bw = 480, gap = 30, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2;
-      BB.text("Tap the matching label", W / 2, 290, 34, COL.yellow, { stroke: 4 });
-      BB.button(W / 2 - 160, 320, 320, 64, "REPLAY RHYTHM", { size: 26, id: "asreplay", onClick: () => {
-        this.state = "hear";
-        this.st = BB.t;
-        this.playHear();
-      } });
+      const listening = this.state === "hear", n = Q.choices.length, bw = 480, gap = 30, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2;
+      BB.text(listening ? "Listen... then tap the match" : "Tap the matching label", W / 2, 290, 34, COL.yellow, { font: "Rammetto One", stroke: 6 });
+      if (!listening)
+        BB.button(W / 2 - 160, 330, 320, 64, "REPLAY RHYTHM", { size: 26, id: "asreplay", onClick: () => {
+          this.state = "hear";
+          this.st = BB.t;
+          this.playHear();
+        } });
+      else
+        BB.text("Answers stay up while you listen \u2014 no peeking at the answer first", W / 2, 340, 26, "#cfe8e2", { stroke: 4, maxW: 1500 });
       Q.choices.forEach((c, i) => {
         const x = x0 + i * (bw + gap);
         BB.button(x, 410, bw, 300, "", { style: "cream", id: "ash" + i, onClick: () => this.pick(c.k) });
         R.pills(x + bw / 2, 560, c.lab, { bw: 70, gap: 10, words: true });
       });
+    }
+    drawGradedHear() {
+      const Q = this.Q;
+      if (!(Q && Q.kind === "hearPick" && this.lastOk))
+        return;
+      BB.text("Heard rhythm:", W / 2, 560, 28, "#cfe8e2", { stroke: 4 });
+      R.pills(W / 2, 640, Q.seq, { words: true, bw: 70, gap: 10 });
     }
     draw() {
       ctx.fillStyle = "#0d1d1b";
@@ -649,7 +656,9 @@
         return;
       }
       if (this.state === "graded") {
-        BB.text(this.lastOk ? "GOT IT!" : "Not yet \u2014 that's ok!", W / 2, 480, 72, this.lastOk ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 10 });
+        BB.text(this.lastOk ? "GOT IT!" : "Not yet \u2014 that's ok!", W / 2, 400, 72, this.lastOk ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 10 });
+        if (this.lastOk)
+          this.drawGradedHear();
         BB.captionBox();
         return;
       }
