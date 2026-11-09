@@ -134,12 +134,11 @@
   }, dynFill = (ds) => {
     if (!ds || !ds.length)
       return 0;
-    let m = 0;
+    let sum = 0;
     for (const d of ds)
-      m += d;
-    m /= ds.length;
-    return clamp(3 * (0.12 + 0.88 * m) * Math.min(1, ds.length / 4), 0, 3);
-  }, dynLevel = (f) => f >= 2.4 ? 2 : f >= 1.2 ? 1 : 0, BLAST_R = [150, 240, 380], HIT_DMG = 6;
+      sum += 0.12 + 0.88 * clamp(d, 0, 1);
+    return clamp(sum * 0.38, 0, 3);
+  }, dynLevel = (f) => f >= 2.4 ? 2 : f >= 1.2 ? 1 : 0, BLAST_R = [170, 280, 460], HIT_DMG = 6;
   const BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.1, y: H * 0.55 }, right: { x: W * 0.94, y: H * 0.76 }, high: { x: W * 0.4, y: 600 }, floor: { x: W * 0.5, y: H * 0.86 }, botL: { x: W * 0.26, y: H * 0.82 }, botR: { x: W * 0.84, y: H * 0.84 }, mid: { x: W * 0.5, y: H * 0.62 } }, throwLane = (kind, n) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? "floor" : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
   const SAFE_Y = 430, throwPath = (lane, v, sx, sy) => {
     if (v < 0 || v > 1.6)
@@ -700,7 +699,8 @@
               this.hitShow = { k: hk, lv, r: BLAST_R[lv] };
               BB.shake([10, 18, 30][lv]);
               this.impact(2, 0);
-              BB.burst(JR.x, JR.y - 80, [14, 24, 60][lv], { cols: ["#ffe066", "#fff", "#ff8adf", "#7ef0ff"], kind: "star", size: 14, speed: [600, 900, 1400][lv], g: 400 });
+              BB.burst(JR.x, JR.y - 80, [18, 36, 72][lv], { cols: ["#ffe066", "#fff", "#ff8adf", "#7ef0ff"], kind: "star", size: [14, 16, 20][lv], speed: [700, 1e3, 1600][lv], g: 400, life: [1, 1.2, 1.5][lv] });
+              BB.burst(JR.x, JR.y - 100, [8, 16, 28][lv], { cols: ["#fff", "#ffe066", "#ffb020"], kind: "spark", size: [10, 12, 16][lv], speed: [500, 800, 1200][lv], g: 200, life: [0.8, 1, 1.2][lv] });
               BB.say(["bb_g1", "bb_g2", "bb_g3"][lv], { overlap: true });
               if (lv === 2) {
                 S.wobble && S.wobble(A(hk + bl));
@@ -1657,11 +1657,11 @@
       });
       {
         const lc = KO_PHASE_END.filter((x) => x <= k).pop(), hs = this.hitShow;
-        if (hs && k - hs.k >= 0 && k - hs.k < 1.6) {
-          this.drawBlastRing(JR.x, JR.y - 90, hs.r || BLAST_R[hs.lv], (k - hs.k) / 0.7);
+        if (hs && k - hs.k >= 0 && k - hs.k < 2.1) {
+          this.drawBlastRing(JR.x, JR.y - 90, hs.r || BLAST_R[hs.lv], (k - hs.k) / [1.05, 1.2, 1.45][hs.lv || 0]);
         }
-        if (hs && k - hs.k >= 0 && k - hs.k < 1.6)
-          BB.text(["BLAST!", "BIG BLAST!", "MEGA BLAST!"][hs.lv], W / 2, 640 - (k - hs.k) * 30, [90, 104, 124][hs.lv], ["#ffe066", "#ff8adf", "#7ef0ff"][hs.lv], { font: "Rammetto One", stroke: 10, strokeCol: "#1a1a1a" });
+        if (hs && k - hs.k >= 0 && k - hs.k < 2.1)
+          BB.text(["BLAST!", "BIG BLAST!", "MEGA BLAST!"][hs.lv], W / 2, 640 - (k - hs.k) * 26, [96, 112, 136][hs.lv], ["#ffe066", "#ff8adf", "#7ef0ff"][hs.lv], { font: "Rammetto One", stroke: 12, strokeCol: "#1a1a1a" });
         if (0) {
           ctx.save();
           ctx.globalAlpha = 1 - (k - lc - 0.6) / 0.5;
@@ -3156,14 +3156,6 @@
       let v = -1, jf = { x: JR.x, y: JR.y - 100 };
       if (this.state === "intro" && this.move)
         v = k - 14;
-      else if (this.state === "end" && k < KO_BIG) {
-        const bi = barAt(k), b = KO_BARS[bi];
-        if (b && b.clear && this.hitLv === 2) {
-          v = 1.6 + (k - BS[bi] - 0.25) * 1.1;
-          const p = this.jp || JR;
-          jf = { x: clamp(p.x, 300, W - 200), y: clamp(p.y - 100, 250, H - 250) };
-        }
-      }
       if (v < 1.6 || v > 3.6)
         return;
       const E = (x) => {
@@ -3807,7 +3799,7 @@
         ctx.restore();
       }
     }
-    /* shared POWER system: claps (only inside prompted CLAP ATTACK windows) surge the canisters, faster = bigger surge; the AHHH scene fills them too; full canisters unleash KNOCKBACK blasts, the beam and the final blow */
+    /* shared POWER system: claps (only inside prompted CLAP ATTACK windows) fill canisters by cumulative amount + dynamics (never speed); the AHHH scene fills them too; full canisters unleash KNOCKBACK blasts, the beam and the final blow */
     powerTick(dt, k) {
       if (this.state !== "end" || k < KO_T0 || k > KO_BIG + 1) {
         return;
@@ -3831,7 +3823,11 @@
         this.cf = Math.max(this.cf || 0, this.vf || 0);
       else if (win && b.cw) {
         this.cfT = Math.min(0.6, (this.cfT || 0) + dt * 0.04);
-        this.cf = Math.max(this.cfT, this.cfDyn || 0);
+        const tgt = Math.max(this.cfT, this.cfDyn || 0);
+        const cur = this.cf || 0;
+        this.cf = cur + (tgt - cur) * Math.min(1, dt * 14);
+        if (tgt - this.cf < 0.01)
+          this.cf = tgt;
       } else if (win && !b.rush && !b.beam)
         this.cf = Math.min(3, (this.cf || 0) + dt * 0.04);
       if (!b.cw && this.dyn && this.dyn.length && !b.clear) {
@@ -3843,7 +3839,7 @@
       if (big && this.cbBar !== (k >= KO_BIG ? -1 : bi)) {
         this.cbBar = k >= KO_BIG ? -1 : bi;
         if (b.clear && k < KO_BIG) {
-          this.hitLv = dynLevel(this.cf || 0);
+          this.hitLv = dynLevel(Math.max(this.cf || 0, this.cfDyn || 0));
           this.dyn = [];
           this.cfDyn = 0;
           this.cfT = 0;
@@ -4652,15 +4648,42 @@
       this.junkSpec(0, -30, 5, 26, 0, 0.35);
     }
     drawBlastRing(x, y, R2, u) {
-      if (u < 0 || u > 1)
+      if (u < 0 || u > 1.35)
         return;
-      const e = 1 - Math.pow(1 - u, 3), r = R2 * (0.35 + 0.65 * e);
+      const uu = Math.min(u, 1), e = 1 - Math.pow(1 - uu, 3), r = R2 * (0.28 + 0.72 * e), fade = 1 - Math.max(0, (u - 0.85) / 0.5);
       ctx.save();
-      ctx.globalAlpha = 1 - u;
       ctx.translate(x, y);
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < 3; i++) {
+        const t0 = i * 0.12, uu2 = clamp((uu - t0) / (1 - t0), 0, 1);
+        if (uu2 <= 0)
+          continue;
+        const rr = R2 * (0.4 + i * 0.22) * (0.2 + 0.8 * (1 - Math.pow(1 - uu2, 2))), a = (1 - uu2) * 0.55 * fade;
+        ctx.globalAlpha = a;
+        ctx.strokeStyle = ["#ffe066", "#ff8adf", "#7ef0ff"][i];
+        ctx.lineWidth = 16 - i * 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, rr, 0, 7);
+        ctx.stroke();
+      }
+      {
+        const g = ctx.createRadialGradient(0, 0, r * 0.1, 0, 0, r * 1.35);
+        g.addColorStop(0, "rgba(255,248,200," + 0.55 * fade + ")");
+        g.addColorStop(0.45, "rgba(255,180,80," + 0.28 * fade + ")");
+        g.addColorStop(1, "rgba(255,140,60,0)");
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.35, 0, 7);
+        ctx.fill();
+      }
+      ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.95 * fade;
       ctx.beginPath();
-      for (let q = 0; q < 16; q++) {
-        const a = q / 16 * Math.PI * 2, rr = q % 2 ? r * 0.62 : r;
+      for (let q = 0; q < 20; q++) {
+        const a = q / 20 * Math.PI * 2, rr = q % 2 ? r * 0.55 : r;
         ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
       }
       ctx.closePath();
@@ -4670,10 +4693,37 @@
       ctx.fill();
       ctx.stroke();
       ctx.beginPath();
-      ctx.arc(0, 0, r * 0.4, 0, 7);
+      for (let q = 0; q < 12; q++) {
+        const a = q / 12 * Math.PI * 2 + 0.15, rr = q % 2 ? r * 0.28 : r * 0.48;
+        ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "#fff6c8";
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.22, 0, 7);
       ctx.fillStyle = "#fff";
       ctx.fill();
       ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.9 * fade;
+      for (let q = 0; q < 14; q++) {
+        const a = q / 14 * Math.PI * 2 + uu * 1.2, d = r * (0.85 + q * 37 % 5 * 0.04) + uu * R2 * 0.25, px = Math.cos(a) * d, py = Math.sin(a) * d, sz = 6 + q * 13 % 7;
+        ctx.fillStyle = q % 3 === 0 ? "#7ef0ff" : q % 3 === 1 ? "#ff8adf" : "#ffe066";
+        ctx.strokeStyle = COL.ink;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let k = 0; k < 5; k++) {
+          const aa = k / 5 * Math.PI * 2 - Math.PI / 2, rr = k % 2 ? sz * 0.4 : sz;
+          ctx.lineTo(px + Math.cos(aa) * rr, py + Math.sin(aa) * rr);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
       ctx.restore();
     }
     koIcon(ic, x, y, t) {
