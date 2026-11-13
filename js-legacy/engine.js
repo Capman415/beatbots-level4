@@ -55,7 +55,7 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.5.25";
+BB.VERSION = "v14.5.26";
 BB.GRADES = ["K", "1", "2", "3", "4", "5", "6"];
 (() => {
   let g = "2";
@@ -373,6 +373,7 @@ function clickAt(c) {
   const pad = 22 / SC;
   let best = null, bd = pad;
   for (const b of lastHits) {
+    if (b.id === "menubtn" || b.id === "menucatch") continue;
     const dx = Math.max(b.x - c.x, 0, c.x - b.x - b.w), dy = Math.max(b.y - c.y, 0, c.y - b.y - b.h), d = Math.hypot(dx, dy);
     if (d < bd) {
       bd = d;
@@ -1043,12 +1044,159 @@ BB.startMic = async () => {
   })();
 };
 BB.ensureMic = () => {
+  if (BB.paused) return;
   if (ac.state !== "running") ac.resume().catch(() => {
   });
   if (MicCore.ctx && MicCore.ctx.state !== "running") MicCore.ctx.resume().catch(() => {
   });
   mic.onsets = [];
   mic.prev = 0;
+};
+BB.MENU_MS = 250;
+BB.menuOpen = false;
+BB.menuPage = "main";
+BB.menuDetails = false;
+BB.menuClosing = false;
+BB.menuAnimT = 0;
+BB.menuPageFrom = null;
+BB.menuPageT = 0;
+BB.menuPageDir = 1;
+BB.sceneName = () => BB.scene && BB.scene.constructor && BB.scene.constructor.name || "";
+BB.isGameplay = () => {
+  const n = BB.sceneName();
+  return !!n && !/^(TitleScene|MicScene|GradePickScene|MapScene)$/.test(n);
+};
+BB.showHamburger = () => {
+  const n = BB.sceneName();
+  return !!n && n !== "TitleScene";
+};
+BB.pauseGame = () => {
+  if (BB.paused) return;
+  BB.paused = true;
+  BB._pauseAc = ac.currentTime;
+  BB._pauseT = BB.t;
+  if (mic) {
+    mic.onsets = [];
+    mic.prev = 0;
+  }
+  ac.suspend && ac.suspend().catch(() => {
+  });
+  if (BB.groove && BB.groove.timer) {
+    clearInterval(BB.groove.timer);
+    BB.groove.timer = null;
+    BB._grooveTimerPaused = 1;
+  }
+  const s = BB.scene;
+  if (s && s.tAu && !s.tAu.paused) {
+    s._tAuPaused = 1;
+    try {
+      s.tAu.pause();
+    } catch (err) {
+    }
+  }
+};
+BB.resyncBeat = () => {
+  if (BB._pauseAc == null) return;
+  const jump = ac.currentTime - BB._pauseAc;
+  if (Math.abs(jump) > 2e-3) {
+    if (BB.groove && BB.groove.on) {
+      BB.groove.t0 += jump;
+      if (BB.groove.spb) BB.groove.next = Math.ceil((ac.currentTime - BB.groove.t0) / BB.groove.spb - 1e-3);
+    }
+    if (BB.scene && BB.scene.a0 != null) BB.scene.a0 += jump;
+  }
+};
+BB.resumeGame = () => {
+  if (!BB.paused) return;
+  BB.paused = false;
+  if (ac.state !== "running") ac.resume().catch(() => {
+  });
+  if (MicCore.ctx && MicCore.ctx.state !== "running") MicCore.ctx.resume().catch(() => {
+  });
+  BB.resyncBeat();
+  if (BB._grooveTimerPaused && BB.groove && BB.groove.on && !BB.groove.timer) {
+    BB.groove.timer = setInterval(() => BB.groove.tick(), 50);
+  }
+  BB._grooveTimerPaused = 0;
+  const s = BB.scene;
+  if (s && s._tAuPaused && s.tAu) {
+    s.tAu.play && s.tAu.play().catch(() => {
+    });
+    s._tAuPaused = 0;
+  }
+  if (mic) {
+    mic.onsets = [];
+    mic.prev = 0;
+  }
+};
+BB.menuEase = (t) => {
+  t = Math.max(0, Math.min(1, t));
+  return 1 - Math.pow(1 - t, 3);
+};
+BB.menuK = () => {
+  const t = (typeof performance !== "undefined" ? performance.now() : 0) - (BB.menuAnimT || 0);
+  const e = BB.menuEase(t / (BB.MENU_MS || 250));
+  return BB.menuClosing ? 1 - e : e;
+};
+BB.tickMenuAnim = () => {
+  if (BB.menuClosing && (typeof performance !== "undefined" ? performance.now() : 0) - (BB.menuAnimT || 0) >= (BB.MENU_MS || 250)) BB.finishCloseMenu();
+};
+BB.openMenu = () => {
+  if (BB.menuClosing) {
+    const ms = BB.MENU_MS || 250, elapsed = Math.min(ms, (typeof performance !== "undefined" ? performance.now() : 0) - (BB.menuAnimT || 0));
+    BB.menuClosing = false;
+    BB.menuAnimT = (typeof performance !== "undefined" ? performance.now() : 0) - (ms - elapsed);
+    BB.menuOpen = true;
+    if (!BB.paused) BB.pauseGame();
+    return;
+  }
+  if (BB.menuOpen) return;
+  BB.menuOpen = true;
+  BB.menuPage = "main";
+  BB.menuClosing = false;
+  BB.menuAnimT = typeof performance !== "undefined" ? performance.now() : 0;
+  BB.pauseGame();
+};
+BB.finishCloseMenu = () => {
+  BB.menuOpen = false;
+  BB.menuClosing = false;
+  BB.menuPage = "main";
+  BB.menuDetails = false;
+  if (BB.scene && BB.scene.teacher) BB.scene.teacher = false;
+  BB.resumeGame();
+};
+BB.closeMenu = () => {
+  if (!BB.menuOpen || BB.menuClosing) return;
+  BB.menuClosing = true;
+  BB.menuAnimT = typeof performance !== "undefined" ? performance.now() : 0;
+};
+BB.closeMenuNow = () => {
+  BB.menuOpen = false;
+  BB.menuClosing = false;
+  BB.menuPage = "main";
+  BB.menuDetails = false;
+  if (BB.scene && BB.scene.teacher) BB.scene.teacher = false;
+  BB.resumeGame();
+};
+BB.toggleMenu = () => {
+  if (BB.menuClosing) {
+    BB.openMenu();
+    return;
+  }
+  if (BB.menuOpen) BB.closeMenu();
+  else BB.openMenu();
+};
+BB.menuGoPage = (p) => {
+  BB.menuPageFrom = BB.menuPage;
+  BB.menuPage = p;
+  BB.menuPageT = typeof performance !== "undefined" ? performance.now() : 0;
+  BB.menuPageDir = 1;
+};
+BB.menuGoBack = () => {
+  BB.menuPageFrom = BB.menuPage;
+  BB.menuPage = "main";
+  BB.menuPageT = typeof performance !== "undefined" ? performance.now() : 0;
+  BB.menuPageDir = -1;
 };
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden && !BB.paused) BB.ensureMic();
@@ -1112,7 +1260,8 @@ function selfCheck(T) {
 }
 BB.selfWins = selfWins;
 mic.update = (dt) => {
-  if (!mic.ok || BB.paused) return;
+  if (!mic.ok) return;
+  const meterOnly = !!BB.paused;
   {
     const TL = window.ClapDet && ClapDet.TickLat;
     if (TL && TL.active() && MicCore.an) {
@@ -1151,6 +1300,11 @@ mic.update = (dt) => {
   }
   const CD = window.ClapDet, x = CD && EG && EG.on ? EG.resid(tNow, rms, micLat()) : rms;
   mic.meter = Math.max(0, (mic.meter || 0) - dt * 1.8);
+  if (meterOnly) {
+    mic.hold -= dt;
+    if (mic.hold < 0) mic.peak = Math.max(0, (mic.peak || 0) - dt);
+    return;
+  }
   const bleed = clamp(oR / 0.08, 0, 1), ntFrac = nonTonalEnergy.frac || 0, thrE = thr * (1 + 1.5 * bleed);
   mic.bleed = bleed;
   const gap = CD ? CD.gapOk(mic, tNow, x) : tNow - mic.lastOn > 0.12 ? 1 : 0;
@@ -1224,6 +1378,13 @@ BB.simClap = (t, lvl) => {
 };
 BB.scene = null;
 BB.go = (s) => {
+  if (BB.menuOpen || BB.menuClosing || BB.paused) {
+    BB.menuOpen = false;
+    BB.menuClosing = false;
+    BB.menuPage = "main";
+    if (BB.scene && BB.scene.teacher) BB.scene.teacher = false;
+    BB.resumeGame && BB.resumeGame();
+  }
   BB.scene && BB.scene.exit && BB.scene.exit();
   BB.groove && BB.groove.stop();
   BB.scene = s;
@@ -1274,11 +1435,12 @@ function frame(ts) {
     }
   }
   last0 = ts;
+  if (BB.keys.some((k) => k === "p" || k === "P" || k === "Escape")) BB.toggleMenu();
   if (!BB.paused) {
     BB.t += dt;
     BB.updParts(dt);
-    mic.update(dt);
   }
+  mic.update(dt);
   hits = [];
   ctx.setTransform(BB.dpr, 0, 0, BB.dpr, 0, 0);
   ctx.fillStyle = "#0d1d1b";
@@ -1298,6 +1460,8 @@ function frame(ts) {
       if (BB.MLP && BB.MLP.on && mic.ok) BB.MLP.frame();
     }
     BB.scene.draw(ctx);
+    if (BB.drawHudMic) BB.drawHudMic();
+    if (BB.drawMenuUI) BB.drawMenuUI();
     if (BB.R && BB.R.drawSneak && !BB.paused) BB.R.drawSneak();
     if (BB.MLP && BB.MLP.dbg) BB.MLP.draw(ctx);
   }

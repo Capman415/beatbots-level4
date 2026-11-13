@@ -134,7 +134,7 @@ class GradePickScene{enter(){this.t0=BB.t;this.picked=BB.grade||'2'}
       BB.text(b==='k1'?'extra help':b==='m'?'some help':'on beat',x0+i*(bw+gap)+bw/2,y+185,22,on?'#6ee678':'#cfe8e2',{stroke:3})});
     BB.panel(260,580,1400,220,28);
     BB.text('K–1: wider late window + bounce debounce  ·  2–3: medium help  ·  4–6: default timing',W/2,640,30,'#fff',{stroke:4,maxW:1280});
-    BB.text('You can change GRADE anytime on the room map (next to DAY).',W/2,700,28,COL.yellow,{stroke:4,maxW:1280});
+    BB.text('You can change GRADE anytime in the menu.',W/2,700,28,COL.yellow,{stroke:4,maxW:1280});
     BB.button(W/2-280,820,560,110,"LET'S GO!",{style:'green',size:52,font:'Rammetto One',id:'gradego',onClick:()=>this.go()});
     BB.captionBox()}}
 BB.GradePickScene=GradePickScene;
@@ -161,12 +161,7 @@ class MapScene{constructor(justDone){this.justDone=justDone}
       if(un)BB.button(cx-120,930,240,80,done?'PLAY AGAIN':ready?'PLAY':'PEEK',{style:ready?'green':'cream',size:34,id:'room'+i,onClick:()=>this.open(i)});
       else BB.button(cx-120,930,240,80,'LOCKED',{size:34,id:'room'+i,onClick:()=>this.open(i)});
     });
-    /* v14.2.1 session tag for the clap log: set at the start of class */
-    if(BB.session){const L=BB.clapLog,gb=BB.gradeBand&&BB.gradeBand(),gs=gb==='k1'?'green':gb==='m'?'cream':'cream';BB.panel(24,24,302,76,20);BB.button(34,32,138,60,'DAY '+BB.session.day,{size:22,id:'hday',onClick:()=>BB.session.cycleDay()});BB.button(178,32,138,60,'GRADE '+BB.grade,{size:22,style:gs,id:'hgrade',onClick:()=>BB.session.cycleGrade()});
-     {const n=L?L.count():0,f=L&&L.nearCap();BB.text(f?'Clap log nearly full ('+n+'): download + clear in Pause':'Clap log: '+n+' events',30,124,20,f?'#ffd35c':'#cfe8e2',{stroke:4,align:'left'})}}
-    /* v14.5.5: compact secondary Assessment control (not a room bay) */
-    BB.button(W-470,36,200,52,'ASSESSMENT',{size:22,id:'assess',onClick:()=>BB.go(new BB.AssessRoom())});
-    BB.button(W-250,24,226,76,'MIC SETUP',{size:30,id:'mic',onClick:()=>BB.go(new MicScene())});
+    /* v14.5.26: DAY/GRADE, clap log, Assessment and Mic Setup live in the hamburger Teacher / menu */
     if(this.toast&&BB.t-this.toast.t<2.5){const k=Math.min(1,(BB.t-this.toast.t)*5);ctx.save();ctx.globalAlpha=k;BB.rrect(W/2-450,940,900,100,50,BB.lg(940,1040,['#ffffff','#e8e2cd']),COL.ink,5);BB.text(this.toast.txt,W/2,992,40,COL.ink);ctx.restore()}}}
 BB.MapScene=MapScene;BB.MicScene=MicScene;
 // ---- boot ----

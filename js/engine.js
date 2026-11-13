@@ -11,7 +11,7 @@ const cv=document.getElementById('c');let ctx=cv.getContext('2d');BB.ctx=ctx;
   if(dF)Object.defineProperty(ctx,'filter',{get(){return dF.get.call(this)},set(v){dF.set.call(this,BB.tier===0?'none':v)}});}
 // v12.8: draw any BB.* helpers into an offscreen context (static-layer baking on phones)
 BB._sw=[g=>ctx=g];BB.withCtx=(g,fn)=>{const o=ctx;BB._sw.forEach(f=>f(g));BB.ctx=g;try{fn()}finally{BB._sw.forEach(f=>f(o));BB.ctx=o}};
-BB.VERSION='v14.5.25';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
+BB.VERSION='v14.5.26';/* v14.5.3 grade picker K–6 (saved per device): drives group forgiveness; replaces K MODE toggle */
 BB.GRADES=['K','1','2','3','4','5','6'];
 (()=>{let g='2';try{const s=localStorage.getItem('bb_grade');if(BB.GRADES.includes(s))g=s;else if(localStorage.getItem('bb_kmode')==='1')g='K';else{const c=JSON.parse(localStorage.getItem('bb_sessclass')||'null');if(BB.GRADES.includes(c))g=c}}catch(e){}BB.grade=g})();
 BB.gradeBand=()=>{const g=BB.grade;return(g==='K'||g==='1')?'k1':(g==='2'||g==='3')?'m':'u'};
@@ -120,7 +120,7 @@ const LT={};BB.logoText=(t,cx,cy,s,o={})=>{o={matte:1,...o};const key=t+s+(o.fac
 let lastHits=[];
 function clickAt(c){for(let i=lastHits.length-1;i>=0;i--){const b=lastHits[i];if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h){BB.sfx.click();b.cb&&b.cb();return true}}
   // v13.1: every button is at least a 44 css-px touch target - a near miss snaps to the closest button
-  const pad=22/SC;let best=null,bd=pad;for(const b of lastHits){const dx=Math.max(b.x-c.x,0,c.x-b.x-b.w),dy=Math.max(b.y-c.y,0,c.y-b.y-b.h),d=Math.hypot(dx,dy);if(d<bd){bd=d;best=b}}
+  const pad=22/SC;let best=null,bd=pad;for(const b of lastHits){if(b.id==='menubtn'||b.id==='menucatch')continue;const dx=Math.max(b.x-c.x,0,c.x-b.x-b.w),dy=Math.max(b.y-c.y,0,c.y-b.y-b.h),d=Math.hypot(dx,dy);if(d<bd){bd=d;best=b}}
   if(best){BB.sfx.click();best.cb&&best.cb();return true}return false}
 function dispatchClicks(){lastHits=hits}
 // ---------- drawing helpers ----------
@@ -285,7 +285,25 @@ BB.startMic=async()=>{if(mic.starting)return mic.starting;mic.state='asking';mic
       n==='NoSupport'?'This browser cannot use the mic here (some tablets, like Fire/Silk, block it). Use the MANUAL tap button to play along!':'The mic could not start ('+(n||'unknown')+'). Close other apps using the mic and try again.';
     return false}finally{mic.starting=null}})()};
 // mic health: after resume / tab return, make sure the audio clock runs again
-BB.ensureMic=()=>{if(ac.state!=='running')ac.resume().catch(()=>{});if(MicCore.ctx&&MicCore.ctx.state!=='running')MicCore.ctx.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
+BB.ensureMic=()=>{if(BB.paused)return;if(ac.state!=='running')ac.resume().catch(()=>{});if(MicCore.ctx&&MicCore.ctx.state!=='running')MicCore.ctx.resume().catch(()=>{});mic.onsets=[];mic.prev=0};
+/* v14.5.26: hamburger pause. Game clock, groove and onsets freeze; MicCore stays up so the Teacher meter can still move. */
+BB.MENU_MS=250;BB.menuOpen=false;BB.menuPage='main';BB.menuDetails=false;BB.menuClosing=false;BB.menuAnimT=0;BB.menuPageFrom=null;BB.menuPageT=0;BB.menuPageDir=1;
+BB.sceneName=()=>BB.scene&&BB.scene.constructor&&BB.scene.constructor.name||'';
+BB.isGameplay=()=>{const n=BB.sceneName();return!!n&&!/^(TitleScene|MicScene|GradePickScene|MapScene)$/.test(n)};
+BB.showHamburger=()=>{const n=BB.sceneName();return!!n&&n!=='TitleScene'};
+BB.pauseGame=()=>{if(BB.paused)return;BB.paused=true;BB._pauseAc=ac.currentTime;BB._pauseT=BB.t;if(mic){mic.onsets=[];mic.prev=0}ac.suspend&&ac.suspend().catch(()=>{});if(BB.groove&&BB.groove.timer){clearInterval(BB.groove.timer);BB.groove.timer=null;BB._grooveTimerPaused=1}const s=BB.scene;if(s&&s.tAu&&!s.tAu.paused){s._tAuPaused=1;try{s.tAu.pause()}catch(err){}}};
+BB.resyncBeat=()=>{if(BB._pauseAc==null)return;const jump=ac.currentTime-BB._pauseAc;if(Math.abs(jump)>0.002){if(BB.groove&&BB.groove.on){BB.groove.t0+=jump;if(BB.groove.spb)BB.groove.next=Math.ceil((ac.currentTime-BB.groove.t0)/BB.groove.spb-.001)}if(BB.scene&&BB.scene.a0!=null)BB.scene.a0+=jump}};
+BB.resumeGame=()=>{if(!BB.paused)return;BB.paused=false;if(ac.state!=='running')ac.resume().catch(()=>{});if(MicCore.ctx&&MicCore.ctx.state!=='running')MicCore.ctx.resume().catch(()=>{});BB.resyncBeat();if(BB._grooveTimerPaused&&BB.groove&&BB.groove.on&&!BB.groove.timer){BB.groove.timer=setInterval(()=>BB.groove.tick(),50)}BB._grooveTimerPaused=0;const s=BB.scene;if(s&&s._tAuPaused&&s.tAu){s.tAu.play&&s.tAu.play().catch(()=>{});s._tAuPaused=0}if(mic){mic.onsets=[];mic.prev=0}};
+BB.menuEase=t=>{t=Math.max(0,Math.min(1,t));return 1-Math.pow(1-t,3)};/* cubic ease-out, no bounce */
+BB.menuK=()=>{const t=(typeof performance!=='undefined'?performance.now():0)-(BB.menuAnimT||0);const e=BB.menuEase(t/(BB.MENU_MS||250));return BB.menuClosing?1-e:e};
+BB.tickMenuAnim=()=>{if(BB.menuClosing&&(typeof performance!=='undefined'?performance.now():0)-(BB.menuAnimT||0)>=(BB.MENU_MS||250))BB.finishCloseMenu()};
+BB.openMenu=()=>{if(BB.menuClosing){const ms=BB.MENU_MS||250,elapsed=Math.min(ms,(typeof performance!=='undefined'?performance.now():0)-(BB.menuAnimT||0));BB.menuClosing=false;BB.menuAnimT=(typeof performance!=='undefined'?performance.now():0)-(ms-elapsed);BB.menuOpen=true;if(!BB.paused)BB.pauseGame();return}if(BB.menuOpen)return;BB.menuOpen=true;BB.menuPage='main';BB.menuClosing=false;BB.menuAnimT=typeof performance!=='undefined'?performance.now():0;BB.pauseGame()};
+BB.finishCloseMenu=()=>{BB.menuOpen=false;BB.menuClosing=false;BB.menuPage='main';BB.menuDetails=false;if(BB.scene&&BB.scene.teacher)BB.scene.teacher=false;BB.resumeGame()};
+BB.closeMenu=()=>{if(!BB.menuOpen||BB.menuClosing)return;BB.menuClosing=true;BB.menuAnimT=typeof performance!=='undefined'?performance.now():0};
+BB.closeMenuNow=()=>{BB.menuOpen=false;BB.menuClosing=false;BB.menuPage='main';BB.menuDetails=false;if(BB.scene&&BB.scene.teacher)BB.scene.teacher=false;BB.resumeGame()};
+BB.toggleMenu=()=>{if(BB.menuClosing){BB.openMenu();return}if(BB.menuOpen)BB.closeMenu();else BB.openMenu()};
+BB.menuGoPage=p=>{BB.menuPageFrom=BB.menuPage;BB.menuPage=p;BB.menuPageT=typeof performance!=='undefined'?performance.now():0;BB.menuPageDir=1};
+BB.menuGoBack=()=>{BB.menuPageFrom=BB.menuPage;BB.menuPage='main';BB.menuPageT=typeof performance!=='undefined'?performance.now():0;BB.menuPageDir=-1};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!BB.paused)BB.ensureMic()});
 // Called every frame. Onset = sharp energy jump above an adaptive noise floor (on the echo residual), 200 ms minimum gap
 // (120 ms in tika-tika clap-backs; a much louder burst inside the gap is passed once, flagged up:1 = same group clap).
@@ -312,7 +330,7 @@ function selfCheck(T){const L=micLat();let tonal=null;
     if(T<=w.e+L+.06)(tonal=tonal||[]).push(...w.freqs)}
   return tonal}
 BB.selfWins=selfWins;
-mic.update=dt=>{if(!mic.ok||BB.paused)return;
+mic.update=dt=>{if(!mic.ok)return;const meterOnly=!!BB.paused;
   {const TL=window.ClapDet&&ClapDet.TickLat;if(TL&&TL.active()&&MicCore.an){const an=MicCore.an,fb=mic._tfb=mic._tfb||new Float32Array(an.frequencyBinCount),hz=MicCore.ctx.sampleRate/an.fftSize;an.getFloatFrequencyData(fb);
     const was=TL.lat;TL.frame(ac.currentTime-.02,f=>{const k=Math.round(f/hz);return Math.max(fb[k-1],fb[k],fb[k+1])});// v13.2 metronome ticks -> live latency
     if(TL.lat!=null&&TL.lat!==was&&window.GroupGate)GroupGate.setLat(TL.lat)}}
@@ -329,6 +347,7 @@ mic.update=dt=>{if(!mic.ok||BB.paused)return;
   /* v14.3 mic meter follows the detector: residual after echo removal, and silent inside our own sound attacks */
   /* v14.3.1 mic meter = detector OUTPUT only: it jumps on an accepted clap and decays; music/voice bleed never moves it (Chromebook fix) */
   mic.meter=Math.max(0,(mic.meter||0)-dt*1.8);
+  if(meterOnly){mic.hold-=dt;if(mic.hold<0)mic.peak=Math.max(0,(mic.peak||0)-dt);return}
   /* v14.3.1 speaker-bleed hardening: while our own output is loud, raise the onset bar and demand a sharp broadband (non-tonal) transient */
   const bleed=clamp(oR/.08,0,1),ntFrac=nonTonalEnergy.frac||0,thrE=thr*(1+1.5*bleed);mic.bleed=bleed;
   const gap=CD?CD.gapOk(mic,tNow,x):(tNow-mic.lastOn>.12?1:0);
@@ -352,7 +371,7 @@ mic.take=()=>{const o=mic.onsets;mic.onsets=[];return o};
 // Simulated class (debug ?sim=1): claps on the beat with the requested loudness.
 BB.simClap=(t,lvl)=>{mic.onsets.push({t,lvl,sim:1});mic.level=lvl;mic.meter=lvl;mic.peak=lvl;mic.hold=.4};
 // ---------- main loop ----------
-BB.scene=null;BB.go=s=>{BB.scene&&BB.scene.exit&&BB.scene.exit();BB.groove&&BB.groove.stop();BB.scene=s;parts.length=0;s.enter&&s.enter()};
+BB.scene=null;BB.go=s=>{if(BB.menuOpen||BB.menuClosing||BB.paused){BB.menuOpen=false;BB.menuClosing=false;BB.menuPage='main';if(BB.scene&&BB.scene.teacher)BB.scene.teacher=false;BB.resumeGame&&BB.resumeGame()}BB.scene&&BB.scene.exit&&BB.scene.exit();BB.groove&&BB.groove.stop();BB.scene=s;parts.length=0;s.enter&&s.enter()};
 let last=performance.now(),last0=last,perfN=0,perfS=0,perfBad=0,perfGood=0,bootT=last;
 BB.setTier=t=>{BB.tier=Math.max(0,Math.min(2,t));BB.q=BB.tier>=2?1:0;BB.tierT=performance.now();resize();BB.onTier&&BB.onTier()};
 // v13.1 tab hidden -> stop drawing and suspend audio; back -> resume (rAF already stops, this also silences the groove)
@@ -363,13 +382,16 @@ function frame(ts){let dt=Math.min(.05,(ts-last)/1000);last=ts;
   if(!BB.tierLock&&ts-bootT>1500&&!document.hidden){perfN++;perfS+=ts-last0;if(perfS>=600){const av=perfS/perfN;
     if(av>22&&BB.tier>0){if(++perfBad>=2){BB.setTier(BB.tier-1);perfBad=0}}else{perfBad=0;if(av<14&&!BB.qUp&&BB.tier<(BB.phone||BB.lowDev?1:2)){if(++perfGood>=4){BB.qUp=1;BB.setTier(BB.tier+1)}}else perfGood=0}
     perfN=perfS=0}}last0=ts;
-  if(!BB.paused){BB.t+=dt;BB.updParts(dt);mic.update(dt)}
+  // v14.5.26: P / Escape toggle the hamburger even while paused (update() is skipped). Space is never a pause key.
+  if(BB.keys.some(k=>k==='p'||k==='P'||k==='Escape'))BB.toggleMenu();
+  if(!BB.paused){BB.t+=dt;BB.updParts(dt)}
+  mic.update(dt);
   hits=[];
   ctx.setTransform(BB.dpr,0,0,BB.dpr,0,0);ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,cv.width,cv.height);
   ctx.setTransform(SC*BB.dpr,0,0,SC*BB.dpr,OX*BB.dpr,OY*BB.dpr);ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
   shakeAmt*=Math.pow(.02,dt);const sx=(Math.random()-.5)*2*shakeAmt,sy=(Math.random()-.5)*2*shakeAmt;
   BB.shakeXY=[sx,sy];
-  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);if(BB.R&&BB.R.drawSneak&&!BB.paused)BB.R.drawSneak();if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
+  if(BB.scene){if(!BB.paused){BB.listening=0;BB.scene.update(dt);if(BB.MLP&&BB.MLP.on&&mic.ok)BB.MLP.frame()}BB.scene.draw(ctx);if(BB.drawHudMic)BB.drawHudMic();if(BB.drawMenuUI)BB.drawMenuUI();if(BB.R&&BB.R.drawSneak&&!BB.paused)BB.R.drawSneak();if(BB.MLP&&BB.MLP.dbg)BB.MLP.draw(ctx)}
   BB.drawCelebrate&&BB.drawCelebrate();BB.drawParts&&0;
   ctx.restore();
   BB.drawGradeHint&&BB.drawGradeHint();

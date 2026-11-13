@@ -53,7 +53,7 @@ function dealOrders(){let last=null;try{last=JSON.parse(localStorage.getItem('bb
   return POOL.map((p,i)=>{const o={...p,seq:p.seqs[pick[i]]};delete o.seqs;return o})}
 const SMASH={w:['h','h'],h:['q','q'],q:['e'],e:['s']};
 const howTo={title:'NOTE SMASHER: smash notes to fill the orders!',
-  steps:['Tap a basket (or the cart), then TO PRESS.','Clap together (or tap SMASH!) to smash it.','Tap a basket, then TO TRAY to fill the 4 beats.','Ring the bell. Listen, then clap the order back.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  steps:['Tap a basket, then TO PRESS.','Clap together (or tap SMASH!) to smash it.','Move notes TO TRAY to fill 4 beats, then ring the bell.','No mic? Use Manual Override.'],
   words:'whole = 2 halves = 4 ta.   ta = ti-ti.   ti-ti = TIKA-TIKA (4 sounds in 1 beat)',
   example:(x,y,w,h,t)=>{const st=Math.floor(t/1.4)%5,ks=['w','h','q','e','s'],k=ks[st],f=(t%1.4)/1.4;
     const n=k==='w'?1:k==='h'?2:k==='q'?4:k==='e'?4:4;ctx.save();ctx.translate(x+w/2,y+h/2);
@@ -61,7 +61,7 @@ const howTo={title:'NOTE SMASHER: smash notes to fill the orders!',
     if(f<.3){R.tile(k,-60,-20,120,80,{label:false})}else{const kk=ks[Math.min(4,st+1)];const m=st===0?2:st===1?2:1;for(let i=0;i<m;i++)R.tile(kk,-60+(i-(m-1)/2)*140*Math.min(1,(f-.3)*4),-20,120,80)}
     BB.text(R.NAME[k]+'  \u2192  '+(SMASH[k]?SMASH[k].map(z=>R.NAME[z]).join(' + '):''),0,140,30,'#fff',{stroke:4});ctx.restore()}};
 class SmasherRoom{constructor(o={}){this.o=o}
-  enter(){BB.groove.start(100,'smash');this.orders=dealOrders();this.inv={h:0,q:0,e:0,s:0,r:9};this.anvil=null;this.tray=[];this.fly=[];this.crumbs=[];this.sel=null;this.oi=this.o.startAt||0;this.prankAt=1+Math.floor(Math.random()*(this.orders.length-1));this.done=0;this.said={};
+  enter(){this.howTo=howTo;BB.groove.start(100,'smash');this.orders=dealOrders();this.inv={h:0,q:0,e:0,s:0,r:9};this.anvil=null;this.tray=[];this.fly=[];this.crumbs=[];this.sel=null;this.oi=this.o.startAt||0;this.prankAt=1+Math.floor(Math.random()*(this.orders.length-1));this.done=0;this.said={};
     this.ham=0;this.hamV=null;this.motes=R.motes(26);this.cust={x:2200,k:0};this.lastOverride=-9;this.firstTika=!this.o.startAt||this.o.startAt<3;
     this.state='load';R.loadImgs([['smash_bg','jpg'],['press','png'],['hammer','png'],['customer','png'],['basket','png']]).then(()=>{this.static=this.bake();
       if(this.o.skipIntro||this.o.startAt)this.beginOrder();else this.startIntro()});BB.mic.take()}
@@ -206,8 +206,8 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
   fixOrder(){const pool=this.tray.slice(),out=[];for(const k of this.O.seq){const i=pool.findIndex(x=>x.k===k);out.push(pool.splice(i,1)[0])}this.tray=out;this.swapSel=null;this.checkFixed()}
   tossStatic(i){const p=this.prank;this.tray.splice(i,1);BB.sfx.boing();const x0=this.slotX(R.len(this.tray))+60;
     this.fly.push({k:'x',x0,y0:TRAY.y+110,x1:p?p.x:1800,y1:FLOOR-150,t0:BB.t,d:.5,arc:300,end:()=>{BB.sfx.bonk();if(p){p.ph='hit';p.t3=BB.t;BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(p.x,FLOOR-200,12,{col:COL.yellow,kind:'star',size:14,g:300})}}})}
-  pause(){BB.paused=true;BB.ac.suspend()}
-  resume(){BB.paused=false;BB.ensureMic()}
+  pause(){BB.openMenu()}
+  resume(){BB.closeMenu()}
   next(){if(BB.groove.on)BB.groove.sync(BB.ac.currentTime+.05,.6);this.done++;this.oi++;this.tray=[];this.cb=null;if(this.oi>=this.orders.length){this.state='end';this.st=BB.t;BB.say('sm_done');BB.celebrate({next:'PACKING STATION'});
       if(!BB.save.done.includes('smasher')){BB.save.done.push('smasher');localStorage.setItem('bb4',JSON.stringify(BB.save))}}else this.beginOrder()}
   // pointer: drag a basket straight onto the press or the tray (taps are handled by buttons)
@@ -215,7 +215,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
   pup(p){const d=this.drag;this.drag=null;if(!d)return;if(Math.hypot(p.x-d.x0,p.y-d.y0)<30){BB.sfx.click();this.pick(d.k);return}if(d.k!=='w'&&!this.inv[d.k])return;
     if(Math.abs(p.x-PX)<PW/2&&p.y>PT&&p.y<FLOOR)this.toPress(d.k);else if(p.x>TRAY.x&&p.y>TRAY.y-60&&p.y<TRAY.y+TRAY.h)this.toTray(d.k)}
   hitBasket(p){if(Math.abs(p.x-CART.x)<190&&p.y>CART.base-322&&p.y<CART.base)return 'w';for(let i=0;i<5;i++){if(i===4&&!this.O?.rest)continue;if(Math.abs(p.x-BX[i])<62&&p.y>BASE-150&&p.y<BASE+50)return KINDS[i]}return null}
-  update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
+  update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();
     if(this.state==='intro'){this.intro();if(BB.keys.includes('s'))this.skipIntro()}
     // hammer
     if(this.hamV){const h=this.hamV,t=(BB.t-h.t)/h.d;if(t<1)this.ham=ease.inOut(t)*.4+t*t*.6;else if(!h.hit){h.hit=1;this.ham=1;this.impact();h.up=BB.t}
@@ -268,7 +268,7 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     this.drawHUD();BB.captionBox();
     if(this.state==='order'&&this.oi===0&&BB.t-this.cardT<2.6)BB.titleCard('ROOM 2: NOTE SMASHER','Static Jr. broke the notes. Smash them into orders!',(BB.t-this.cardT)/2.6);
     if(this.state==='end')this.drawEnd();
-    if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
+    }
   drawCartNotes(){const t=BB.t,V=BB.V2||{};/* v12.6: heaped mound of whole-note tiles, cart front rim redrawn on top */
     const P=[[-120,-196,-.25],[-60,-200,.12],[0,-198,-.1],[60,-200,.3],[120,-195,-.2],[-90,-226,-.08],[-30,-230,.18],[30,-229,-.22],[90,-225,.15],[-58,-258,.2],[0,-262,-.15],[58,-257,.1],[-28,-290,.05],[28,-292,-.1]];
     P.forEach(([dx,dy,r],i)=>{ctx.save();ctx.translate(CART.x+dx,CART.base+dy-(i>6?Math.abs(Math.sin(t*1.2+i))*2:0));ctx.rotate(r);BB.solidWhole(0,0,27,{});ctx.restore()});
@@ -387,11 +387,10 @@ if(t>1.1){this.scramble();BB.say('sm_trick');p.ph='wait';p.t2=BB.t}}
     if(join>0){ctx.globalAlpha=a*join;R.glyph('s',8,0,14,COL.yellow);
       const cur=t>1.7?Math.floor((t-1.7)/.3)%4:-1;['ti','ka','ti','ka'].forEach((sy,i)=>{const hx=H0+i*G+14*.86*.43;BB.text(sy,hx,30,i===cur?20:17,i===cur?'#fff':'#ffe9a8',{stroke:4})})}ctx.restore();
     BB.text('TIKA-TIKA!',PX,ANVIL-370,96*k,COL.yellow,{font:'Rammetto One',stroke:10});BB.text('4 sounds in 1 beat',PX,ANVIL-290,44,'#fff',{stroke:6});ctx.restore()}
-  drawHUD(){const t=BB.t;spr('hud'+this.done,30,14,580,150,()=>{BB.panel(40,24,400,110,28);BB.text('ORDERS DONE',64,52,30,COL.yellow,{align:'left',stroke:4});BB.text(`${this.done} of 5`,64,98,28,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+  drawHUD(){const t=BB.t;spr('hud'+this.done,30,14,580,150,()=>{BB.panel(40,24,420,114,28);BB.text('ORDERS DONE',72,58,26,COL.yellow,{align:'left',stroke:4,maxW:340});BB.text(`${this.done} of 5`,72,90,24,'#fff',{align:'left',font:'Rammetto One',stroke:4,maxW:340});
     for(let i=0;i<5;i++)BB.rrect(196+i*42,80,32,36,8,i<this.done?BB.lg(80,116,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);});
-    BB.pauseBtn(()=>this.pause());
     if(this.state==='intro')BB.button(W-370,H-150,330,110,'SKIP INTRO',{size:34,id:'skip',onClick:()=>this.skipIntro()});
-    else{BB.micMeter(40,H-150);BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1})}
+    else{BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1})}
     if(this.cb&&(this.state==='clap'))this.cb.draw(W/2,H-95);
     else if(this.state==='order'){const used=R.len(this.tray);const msg=this.anvil?(this.hamV?'':'CLAP together to SMASH!'):this.scrambled()?'Scrambled! Tap two notes to swap them':used>=4?'Ring the bell!':'Fill the tray: '+(4-used)+' beat'+(4-used===1?'':'s')+' left';
       if(msg&&!this.capOn()){BB.rrect(W/2-330,H-120,660,76,38,'rgba(12,28,26,.78)','rgba(200,240,230,.5)',3);BB.text(msg,W/2,H-82,38,'#fff',{stroke:5})}}

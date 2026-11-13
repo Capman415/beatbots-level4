@@ -257,11 +257,22 @@ BB.micMeter=(x,y,o={})=>{if(BB.listening&&!o._in){const sc=BB.listening===2?1.35
     if(o.band==='loud'&&i<6)c=on?'#8aa':'#2a3a3a';
     const by=y+22+(9-i)*3,bh=64-(9-i)*3;BB.rrect(bx,by,14,bh,4,c);if(on){ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(bx+2,by+2,4,bh-4)}}
   if(o.band){const bx0=x+95+(o.band==='soft'?0:6*20),bw=(o.band==='soft'?4:4)*20-6;BB.rrect(bx0-3,y+14,bw+6,80,6,null,o.band==='soft'?'#b6f0ff':'#ffd23c',3)}};
+BB.micMeterBars=(x,y)=>{const m=BB.mic||{},n=10,lvl=(m.meter??m.level)||0;for(let i=0;i<n;i++){const on=i<lvl*n,bx=x+i*20;let c=on?(i<4?'#6ee678':i<7?'#ffe066':'#ff7b5c'):'#3c5050';
+  const by=y+(9-i)*3,bh=64-(9-i)*3;BB.rrect(bx,by,14,bh,4,c);if(on){ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(bx+2,by+2,4,bh-4)}}};
+/* v14.5.26: tiny gameplay mic status (full meter moves to the Teacher menu). Detection and logging are unchanged. */
+BB.micIcon=(x,y,s=72)=>{const m=BB.mic||{},bad=!m.ok||(m.state&&m.state!=='on'&&m.state!=='asking')||(m.track&&(m.track.muted||m.track.readyState==='ended')),pulse=Math.max(0,m.hold||0),cx=x+s/2,cy=y+s/2;
+  if(!bad&&pulse>0)BB.glow(cx,cy,s*(.75+.4*Math.min(1,pulse/.6)),'rgba(110,230,120,A)',.25+.5*Math.min(1,pulse/.6));
+  BB.bevel(x,y,s,s,20);BB.well(x+8,y+8,s-16,s-16,14);
+  const col=bad?'#ff9c8a':(pulse>0?COL.yellow:'#d8efe9');ctx.save();ctx.translate(cx,cy-2);ctx.fillStyle=col;ctx.strokeStyle=bad?'#e65046':COL.ink;ctx.lineWidth=3;ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.beginPath();ctx.roundRect(-9,-16,18,24,9);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-13,2);ctx.quadraticCurveTo(-13,16,0,16);ctx.quadraticCurveTo(13,16,13,2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,16);ctx.lineTo(0,22);ctx.moveTo(-8,22);ctx.lineTo(8,22);ctx.stroke();
+  if(bad){ctx.strokeStyle='#e65046';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-18,-20);ctx.lineTo(18,22);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(-18,-20);ctx.lineTo(18,22);ctx.stroke()}
+  ctx.restore()};
+BB.drawHudMic=()=>{const n=BB.scene&&BB.scene.constructor&&BB.scene.constructor.name;if(!n||n==='TitleScene'||n==='MicScene'||n==='GradePickScene')return;BB.micIcon(36,H-120,72)};
 BB.sensButtons=(x,y)=>{const m=BB.mic;
   BB.button(x,y,90,90,'−',{size:50,id:'sens-',onClick:()=>BB.setSens(m.sensIdx-1)});
   BB.button(x+110,y,90,90,'+',{size:50,id:'sens+',onClick:()=>BB.setSens(m.sensIdx+1)})};
-BB.pauseBtn=(onClick,x=W/2-120,y=24)=>{/* v14.1: plain HUD button, same size/border as TEACHER (no bevel/well double outline) */BB.button(x,y,240,110,'PAUSE',{size:34,id:'pause',onClick,labelDx:22,
-  icon:(ix,iy)=>{ix=x+48;ctx.fillStyle=COL.ink;for(const bx of[ix-13,ix+4])ctx.fillRect(bx,iy-16,10,32)}})};
 BB.overrideBtn=(onClick,o={})=>{const x=W-370,y=H-150;BB.button(x,y,330,110,'MANUAL',{style:'red',size:40,sub:'OVERRIDE',id:'override',onClick,pop:o.pop})};
 BB.captionBox=()=>{const c=BB.caption;if(!c||BB.t>c.until)return;const k=Math.min(1,(BB.t-c.start)*6);
   const cp=(BB.scene&&BB.scene.capPos&&BB.scene.capPos())||{};const fs=38,w=Math.min(cp.maxW||1150,BB.measure(c.txt,fs)+200),x=(cp.cx||W/2)-w/2,y=cp.y!=null?cp.y:H-300;
@@ -273,38 +284,105 @@ BB.captionBox=()=>{const c=BB.caption;if(!c||BB.t>c.until)return;const k=Math.mi
     else{const s=150;ctx.drawImage(im,pcx-s*im.width/im.height/2,pcy-s*.28,s*im.width/im.height,s)}ctx.restore();
     ctx.lineWidth=4;ctx.strokeStyle=COL.ink;ctx.beginPath();ctx.arc(pcx,pcy,pr,0,7);ctx.stroke()}
   BB.text(c.txt,x+w/2+40,y+50,fs,c.who==='jr'?'#c0392b':COL.ink,{maxW:w-170});ctx.restore()};
-// ---------- pause + How to Play ----------
-BB.pauseOverlay=(howTo,onResume)=>{ctx.fillStyle='rgba(8,18,17,.72)';ctx.fillRect(0,0,W,H);
-  const x=210,y=36,w=1500,h=1008;BB.panel(x,y,w,h,40);// v13.8: taller panel, nothing crosses its border
-  BB.text('HOW TO PLAY',W/2,y+85,62,'#fff',{font:'Rammetto One',stroke:8});
-  BB.text(howTo.title,W/2,y+150,40,COL.yellow,{stroke:5});
-  howTo.steps.forEach((s,i)=>{const yy=y+225+i*80;ctx.fillStyle=COL.green;ctx.beginPath();ctx.arc(x+100,yy,30,0,7);ctx.fill();
-    BB.text(String(i+1),x+100,yy+2,36,COL.ink);BB.text(s,x+150,yy+2,36,'#fff',{align:'left',maxW:760})});
-  // small animated example
-  BB.rrect(x+950,y+195,490,420,26,'#0b1917',COL.teal2,4);howTo.example(x+950,y+195,490,420,BB.realT());
-  BB.text('Say it:',x+100,y+h-300,34,COL.yellow,{align:'left'});
-  BB.text(howTo.words,x+220,y+h-300,34,'#fff',{align:'left',maxW:1180});
-  // clap sensitivity (also in MIC SETUP): softer claps count when turned up
-  // v13.8: contained in its own well (bottom-right), clear of RESUME and the panel border
-  {/* v14.3 bottom row rebalanced: ROOM SELECT | RESUME | sensitivity well, equal 80px gaps */const m=BB.mic,wx=x+960,wy=y+h-230,sx=wx+20,sy=wy+56;BB.well(wx,wy,480,180,26);BB.text('Clap sensitivity',wx+240,wy+32,30,COL.yellow,{stroke:4});
-   BB.button(sx,sy+8,80,80,'−',{size:46,id:'psens-',onClick:()=>BB.setSens(m.sensIdx-1)});
-   for(let i=0;i<6;i++){const on=i<=m.sensIdx;BB.rrect(sx+104+i*40,sy+70-i*8,30,18+i*8,6,on?(i<2?'#6ee678':i<4?'#ffe066':'#ff9c5c'):'#2f4242','rgba(0,0,0,.35)',2)}
-   BB.button(sx+360,sy+8,80,80,'+',{size:46,id:'psens+',onClick:()=>BB.setSens(m.sensIdx+1)})}
-  // v13.8: back to the room picker, only from inside the pause menu (hard to hit by accident)
-  BB.button(x+60,y+h-200,340,120,'ROOM SELECT',{size:38,id:'roomsel',onClick:()=>{BB.paused=false;BB.ac.resume().catch(()=>{});BB.caption=null;BB.talking=null;BB.go(new BB.MapScene())}});
-  {const S=BB.clapStats;if(S){const m=BB.mic;BB.text('CLAP READOUT  counted '+S.hit+'/'+S.exp+'  \u2022  heard '+S.heard+'  \u2022  off-beat '+S.stray+'  \u2022  blocked by voice '+S.talk+'  \u2022  mic peak '+Math.round(S.peak*100)+'%  \u2022  slow frames '+S.slow+'  \u2022  mic '+(m.ok?'on':m.state)+(window.C96&&C96.active&&C96.active()?' (clap96)':''),W/2,y+h-38,22,'#cfe8e2',{maxW:w-80})}}
-  /* v14.3 teacher toggle: listening rule (ON = Static Jr. sneaks on 2+ claps, GENTLE = meter only, for K) */
-  if(BB.listenMode)BB.button(x+40,y+24,290,42,'LISTEN RULE: '+BB.listenMode.label(),{size:19,id:'lrule',onClick:()=>BB.listenMode.cycle()});
-  /* v14.2.1: clap log + session tag, compact column kept above the example picture (ends y+188) */
-  if(BB.clapLog){const L=BB.clapLog,bx=x+w-330,bw=290,warn=L.nearCap(),tw=(bw-12)/3;
-   BB.button(bx,y+24,bw,42,(warn?'NEARLY FULL! ':'CLAP LOG ')+L.count()+'/'+L.CAP,{style:warn?'cream':undefined,size:19,id:'clog',onClick:()=>{}});
-   BB.button(bx,y+72,bw,36,'Download clap log (CSV)',{size:17,id:'clogdl',onClick:()=>L.download()});
-   BB.button(bx,y+114,bw,36,'Download summary (CSV)',{size:17,id:'clogsum',onClick:()=>L.downloadSummary()});
-   if(BB.assessLog){BB.button(bx,y+192,bw,32,'Download assess (CSV)',{size:16,id:'asdl',onClick:()=>BB.assessLog.download()});BB.button(bx,y+228,bw,32,'Assess summary (CSV)',{size:16,id:'asdls',onClick:()=>BB.assessLog.downloadSummary()})}
-   BB.button(bx,y+156,tw,36,'DAY '+BB.session.day,{size:16,id:'psday',onClick:()=>BB.session.cycleDay()});
-   BB.button(bx+tw+6,y+156,tw,36,'GRADE '+BB.grade,{size:16,id:'psgrade',onClick:()=>BB.session.cycleGrade()});
-   BB.button(bx+2*tw+12,y+156,tw,36,'Clear',{size:16,id:'clogclr',onClick:()=>{if(window.confirm('Clear the clap log? Download it first.'))L.clear()}})}
-  BB.button(x+480,y+h-200,400,120,'RESUME',{style:'green',size:54,id:'resume',onClick:onResume})};
+// ---------- v14.5.26 left-half nav drawer (Dribbble-like, replaces pauseOverlay) ----------
+BB.MENU_BTN={x:W-100,y:26,s:72};
+BB.MENU_INK='#0d0c22';BB.MENU_MUTED='#6b6a80';BB.MENU_BG='#f6f5f2';BB.MENU_ACCENT='#0e9a6e';
+BB.drawMenuBtn=()=>{if(!BB.showHamburger||!BB.showHamburger())return;const{x,y,s}=BB.MENU_BTN,open=!!(BB.menuOpen||BB.menuClosing);
+  BB.button(x,y,s,s,'',{id:'menubtn',style:'none',onClick:()=>BB.toggleMenu()});
+  const cx=x+s/2,cy=y+s/2;ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+  const shadow=(fn)=>{ctx.save();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=ctx.lineWidth;ctx.translate(0,2);fn();ctx.restore();ctx.strokeStyle='#f6f3ea';fn()};
+  if(open){/* instantly a thin X in the same corner — not a morph, not a box */
+    ctx.lineWidth=3.5;const r=15;shadow(()=>{ctx.beginPath();ctx.moveTo(cx-r,cy-r);ctx.lineTo(cx+r,cy+r);ctx.moveTo(cx+r,cy-r);ctx.lineTo(cx-r,cy+r);ctx.stroke()})}
+  else{/* classic thick equal-length pills, rounded caps, even gaps, icon only */
+    const thick=11,barW=68,gap=16,step=thick+gap,x0=cx-barW/2,x1=cx+barW/2;ctx.lineWidth=thick;
+    shadow(()=>{for(const dy of[-step,0,step]){ctx.beginPath();ctx.moveTo(x0,cy+dy);ctx.lineTo(x1,cy+dy);ctx.stroke()}})}
+  ctx.restore()};
+BB.menuRow=(x,y,w,h,label,id,onClick,o={})=>{if(o.hit!==false)BB.button(x,y,w,h,'',{id,style:'none',onClick});
+  const ink=o.accent?BB.MENU_ACCENT:BB.MENU_INK;
+  BB.text(label,x+(o.pad||0),y+h/2,o.size||52,ink,{align:'left',font:'Lilita One',maxW:w-(o.pad||0)-(o.chevron?56:16)});
+  if(o.chevron){const cx=x+w-36,cy=y+h/2;ctx.strokeStyle=o.accent?BB.MENU_ACCENT:BB.MENU_MUTED;ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(cx-7,cy-11);ctx.lineTo(cx+6,cy);ctx.lineTo(cx-7,cy+11);ctx.stroke()}};
+BB.drawDrawerMain=(x,y,w,h,k)=>{
+  x=Math.max(x,0);const play=BB.isGameplay&&BB.isGameplay(),pad=64,rowH=92,items=[],live=(k==null||k>0.95);
+
+  items.push({label:play?'Resume':'Close',id:'resume',onClick:()=>BB.closeMenu(),accent:1});
+  if(BB.scene&&BB.scene.howTo)items.push({label:'How To Play',id:'mhowto',onClick:()=>BB.menuGoPage('howto'),chevron:1});
+  if(BB.sceneName&&BB.sceneName()!=='MapScene')items.push({label:'Room Select',id:'roomsel',onClick:()=>{BB.caption=null;BB.talking=null;BB.go(new BB.MapScene())}});
+  items.push({label:'Mic Setup',id:'menumic',onClick:()=>BB.menuGoPage('mic'),chevron:1});
+  items.push({label:'Assessment',id:'menuassess',onClick:()=>{BB.caption=null;BB.go(new BB.AssessRoom())}});
+  items.push({label:'Teacher',id:'mteacher',onClick:()=>BB.menuGoPage('teacher'),chevron:1});
+  BB.text(play?'Paused':'Menu',x+pad,y+72,30,BB.MENU_MUTED,{align:'left',font:'Lilita One'});
+  let yy=y+140;
+  items.forEach((it,i)=>{const delay=i*0.055,kk=BB.menuEase?BB.menuEase(Math.max(0,Math.min(1,(k-delay)/0.72))):1,ox=(1-kk)*24;
+    ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,kk*1.15));
+    BB.menuRow(x+pad+ox,yy,w-pad*2,rowH,it.label,it.id,it.onClick,{pad:0,size:52,chevron:it.chevron,accent:it.accent,hit:live});
+    ctx.restore();yy+=rowH+8})};
+BB.drawDrawerBack=(x,y,w)=>{x=Math.max(x,0);BB.button(x+36,y+28,200,64,'',{id:'mback',style:'none',onClick:()=>BB.menuGoBack()});
+  const bx=x+56,by=y+60;ctx.strokeStyle=BB.MENU_INK;ctx.lineWidth=3.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bx+12,by-12);ctx.lineTo(bx,by);ctx.lineTo(bx+12,by+12);ctx.stroke();
+  BB.text('Back',bx+28,by,28,BB.MENU_INK,{align:'left',font:'Lilita One'})};
+BB.drawDrawerHowTo=(x,y,w,h)=>{const howTo=BB.scene&&BB.scene.howTo;if(!howTo){BB.menuGoBack();return}
+  x=Math.max(x,0);BB.drawDrawerBack(x,y,w);const pad=64;
+  BB.text('How To Play',x+pad,y+130,44,BB.MENU_INK,{align:'left',font:'Lilita One',maxW:w-pad*2});
+  if(howTo.title)BB.text(howTo.title,x+pad,y+178,24,BB.MENU_MUTED,{align:'left',font:'Lilita One',maxW:w-pad*2});
+  const steps=(howTo.steps||[]).slice(0,4);let yy=y+230;
+  steps.forEach((s,i)=>{BB.text(String(i+1),x+pad,yy,32,BB.MENU_ACCENT,{align:'left',font:'Lilita One'});BB.text(s,x+pad+36,yy,28,BB.MENU_INK,{align:'left',font:'Lilita One',maxW:w-pad*2-36});yy+=70});
+  if(howTo.words)BB.text(howTo.words,x+pad,h-48,22,BB.MENU_MUTED,{align:'left',font:'Lilita One',maxW:w-pad*2});
+  if(typeof howTo.example==='function'){const exy=yy+10,exh=Math.min(280,h-exy-80);if(exh>140){ctx.save();ctx.beginPath();ctx.roundRect(x+pad,exy,w-pad*2,exh,16);ctx.clip();ctx.fillStyle='#eceae4';ctx.fill();howTo.example(x+pad,exy,w-pad*2,exh,BB.realT());ctx.restore()}}};
+BB.drawDrawerMic=(x,y,w,h)=>{x=Math.max(x,0);BB.drawDrawerBack(x,y,w);const pad=64,m=BB.mic||{};
+  BB.text('Mic Setup',x+pad,y+130,44,BB.MENU_INK,{align:'left',font:'Lilita One'});
+  BB.text(m.ok?'Microphone is on':'Microphone is off',x+pad,y+180,24,m.ok?BB.MENU_ACCENT:BB.MENU_MUTED,{align:'left',font:'Lilita One'});
+  /* ONE live meter only */
+  BB.micMeterBars(x+pad,y+220);
+  BB.text('Sensitivity',x+pad,y+330,24,BB.MENU_MUTED,{align:'left',font:'Lilita One'});
+  BB.button(x+pad,y+360,80,64,'',{id:'psens-',style:'none',onClick:()=>BB.setSens((m.sensIdx||0)-1)});BB.text('−',x+pad+40,y+392,44,BB.MENU_INK,{font:'Lilita One'});
+  BB.button(x+pad+100,y+360,80,64,'',{id:'psens+',style:'none',onClick:()=>BB.setSens((m.sensIdx||0)+1)});BB.text('+',x+pad+140,y+392,44,BB.MENU_INK,{font:'Lilita One'});
+  if(m.ok)BB.text('Mic: On',x+pad,y+470,32,BB.MENU_ACCENT,{align:'left',font:'Lilita One'});
+  else{BB.menuRow(x+pad,y+440,w-pad*2,80,'Turn on mic','micon',()=>BB.startMic&&BB.startMic(),{size:40,accent:1})}
+  BB.menuRow(x+pad,y+540,w-pad*2,80,'Open full setup','menumicfull',()=>{BB.caption=null;BB.go(new BB.MicScene())},{size:36,chevron:1})};
+BB.drawDrawerTeacher=(x,y,w,h)=>{x=Math.max(x,0);BB.drawDrawerBack(x,y,w);const pad=48,m=BB.mic||{},L=BB.clapLog;let yy=y+108;
+  const head=t=>{BB.text(t,x+pad,yy,20,BB.MENU_MUTED,{align:'left',font:'Lilita One'});yy+=30};
+  const row=(label,id,fn,o={})=>{BB.menuRow(x+pad,yy,w-pad*2,52,label,id,fn,{size:o.size||28,chevron:o.chevron,accent:o.accent});yy+=54};
+  BB.text('Teacher',x+pad,yy,38,BB.MENU_INK,{align:'left',font:'Lilita One'});yy+=48;
+  head('Mic');
+  BB.micMeterBars(x+pad,yy);yy+=90;
+  BB.text('Sensitivity',x+pad,yy,20,BB.MENU_MUTED,{align:'left',font:'Lilita One'});
+  BB.button(x+pad+200,yy-24,56,48,'',{id:'psens-',style:'none',onClick:()=>BB.setSens((m.sensIdx||0)-1)});BB.text('−',x+pad+228,yy,30,BB.MENU_INK,{font:'Lilita One'});
+  BB.button(x+pad+264,yy-24,56,48,'',{id:'psens+',style:'none',onClick:()=>BB.setSens((m.sensIdx||0)+1)});BB.text('+',x+pad+292,yy,30,BB.MENU_INK,{font:'Lilita One'});
+  yy+=34;
+  if(!m.ok)row('Turn on mic','micon',()=>BB.startMic&&BB.startMic(),{accent:1,size:28});
+  else{BB.text('Mic: On',x+pad,yy,22,BB.MENU_ACCENT,{align:'left',font:'Lilita One'});yy+=30}
+  row('Open full mic setup','menumicfull',()=>{BB.caption=null;BB.go(new BB.MicScene())},{chevron:1});
+  head('Class');
+  row('Day  '+(BB.session&&BB.session.day||1),'psday',()=>BB.session&&BB.session.cycleDay());
+  row('Grade  '+(BB.grade||''),'psgrade',()=>BB.session&&BB.session.cycleGrade());
+  head('Data');
+  if(L){BB.text('Clap log  '+L.count()+' / '+L.CAP,x+pad,yy,22,BB.MENU_INK,{align:'left',font:'Lilita One'});yy+=28}
+  if(L){row('Download clap log','clogdl',()=>L.download());row('Download summary','clogsum',()=>L.downloadSummary());row('Clear log','clogclr',()=>{if(window.confirm('Clear the clap log? Download it first.'))L.clear()})}
+  if(BB.assessLog){row('Download assess','asdl',()=>BB.assessLog.download());row('Assess summary','asdls',()=>BB.assessLog.downloadSummary())}
+  row('Open assessment','menuassess',()=>{BB.caption=null;BB.go(new BB.AssessRoom())},{chevron:1});
+  head('Options');
+  if(BB.listenMode)row('Listen rule: '+BB.listenMode.label(),'lrule',()=>BB.listenMode.cycle());
+  if(BB.sceneName&&BB.sceneName()==='LabelRoom')row('Label notes','mlabel',()=>{if(BB.scene)BB.scene.teacher=true},{chevron:1});
+  row(BB.menuDetails?'Hide details':'Details','mdetails',()=>BB.menuDetails=!BB.menuDetails);
+  if(BB.menuDetails){const S=BB.clapStats;const line=S?('Counted '+(S.hit||0)+'/'+(S.exp||0)+'  ·  heard '+(S.heard||0)+'  ·  off-beat '+(S.stray||0)+'  ·  mic '+(m.ok?'on':(m.state||'off'))+(BB.VERSION?'  ·  '+BB.VERSION:'')):(BB.VERSION||'');
+    BB.text(line,x+pad,Math.min(yy,y+h-24),18,BB.MENU_MUTED,{align:'left',font:'Lilita One',maxW:w-pad*2})}};
+BB.drawMenuUI=()=>{if(!BB.showHamburger||!BB.showHamburger())return;
+  if(BB.tickMenuAnim)BB.tickMenuAnim();
+  if((BB.menuOpen||BB.menuClosing)&&!(BB.scene&&BB.scene.teacher)){
+    const k=BB.menuK?BB.menuK():1,dw=W/2,dx=-dw*(1-k);
+    /* grey overlay ~45% on the game, no blur; fades with the drawer */
+    ctx.fillStyle='rgba(40,42,46,'+(0.45*k)+')';ctx.fillRect(0,0,W,H);
+    BB.button(dx+dw,0,W-(dx+dw),H,'',{id:'menucatch',style:'none',onClick:()=>BB.closeMenu()});
+    /* soft contact shadow, not a border */
+    ctx.save();ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=36;ctx.shadowOffsetX=10;ctx.fillStyle=BB.MENU_BG;ctx.fillRect(dx,0,dw,H);ctx.restore();
+    ctx.fillStyle=BB.MENU_BG;ctx.fillRect(dx,0,dw,H);
+    const page=BB.menuPage||'main',from=BB.menuPageFrom,ms=BB.MENU_MS||250,pt=from!=null?BB.menuEase(Math.max(0,Math.min(1,((typeof performance!=='undefined'?performance.now():0)-(BB.menuPageT||0))/ms))):1;
+    const slide=(name,ox)=>{ctx.save();ctx.beginPath();ctx.rect(dx,0,dw,H);ctx.clip();ctx.translate(ox,0);
+      if(name==='howto')BB.drawDrawerHowTo(dx,0,dw,H);else if(name==='teacher')BB.drawDrawerTeacher(dx,0,dw,H);else if(name==='mic')BB.drawDrawerMic(dx,0,dw,H);else BB.drawDrawerMain(dx,0,dw,H,k);
+      ctx.restore()};
+    if(from!=null&&pt<1){const dir=BB.menuPageDir||1;slide(from,dx-dir*dw*pt-dx);slide(page,dx+dir*dw*(1-pt)-dx)}
+    else{BB.menuPageFrom=null;slide(page,0)}
+  }
+  BB.drawMenuBtn()};
 let rt=0,rl=performance.now();BB.realT=()=>{const n=performance.now();rt+=(n-rl)/1000;rl=n;return rt};
 // room title card
 BB.titleCard=(txt,sub,k)=>{if(k<=0||k>=1)return;const a=k<.15?k/.15:k>.85?(1-k)/.15:1;ctx.save();ctx.globalAlpha=a;

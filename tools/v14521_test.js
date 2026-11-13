@@ -38,9 +38,9 @@ ok(!/BB\.text\('Answers stay up while you listen/.test(a),'no-peeking line not r
 ok(/Clap with the lights — 8 steady ta beats/.test(a),'follow cue is kid-friendly');
 
 const ver=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json'),'utf8'));
-ok(ver.version==='v14.5.25'&&ver.build==='1794301525','version.json is v14.5.25 / 1794301525');
+ok(ver.version==='v14.5.26'&&ver.build==='1794301526','version.json is v14.5.26 / 1794301526');
 const eng=fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8');
-ok(/BB\.VERSION='v14\.5\.25'/.test(eng),'engine version synced');
+ok(/BB\.VERSION='v14\.5\.26'/.test(eng),'engine version synced');
 
 if(fails){console.error(fails+' FAIL');process.exit(1)}
 console.log('v14.5.21 tests OK');

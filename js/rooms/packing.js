@@ -43,7 +43,7 @@ BB.PK={specialAt,streakMilestone,SPECIALS,BAND_VOL,MISS_RETRY};
 const splitParts=Rd=>{if(Rd.mode!=='match'){const a=[];for(let n=Rd.n;n>0;n-=8)a.push({n:Math.min(8,n)});return a}const a=[];let cur=[],b=0;for(const k of Rd.code){cur.push(k);b+=R.BEATS[k];if(b===8){a.push({n:8,code:cur});cur=[];b=0}}if(cur.length)a.push({n:b,code:cur});return a};
 
 const howTo={title:'PACKING STATION: fill every beat on the pallet!',
-  steps:['A crate falls down the chute. Its size = its beats.','Tap a column (1-4) to move it. Tap DROP to drop it.','Tap SWAP to trade it with the NEXT crate.','Later orders: more crates fall at once. Tap one to grab it (each finger can drag its own).','Full pallet? Listen, then clap the cargo code back!','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  steps:['A crate\'s size is its beats. Tap a column, then DROP.','SWAP trades it with the NEXT crate.','Full pallet? Clap the cargo code back.','No mic? Use Manual Override.'],
   words:'whole = 4 beats   half = 2   ta, ti-ti, tika-tika, rest = 1 beat each',
   example:(x,y,w,h,t)=>{const ph=(t%4)/4;ctx.save();ctx.translate(x+w/2,y+h/2);const cw=100;
     BB.rrect(-2*cw-10,-150,4*cw+20,300,14,'#132322','#50aaa0',3);R.crateDraw('h',-2*cw,90,2*cw-6,70);R.crateDraw('q',0,90,cw-6,70);
@@ -69,7 +69,7 @@ R.specialDraw=(sp,x,y,w,h,age)=>{const t=BB.t;
   if(sp==='fragile'){ctx.save();ctx.strokeStyle='rgba(230,80,70,.75)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+12,y+10);ctx.lineTo(x+22,y+24);ctx.lineTo(x+16,y+30);ctx.lineTo(x+26,y+44);ctx.stroke();ctx.restore()}
   if(sp==='mystery'&&age<1.4){ctx.save();ctx.globalAlpha=1-(age-.8)/.6;for(let i=0;i<6;i++){const a=i*1.05+t;BB.rrect(x+w/2+Math.cos(a)*w*.45-6,y+h/2+Math.sin(a)*h*.5-6,12,12,6,'#ffd63c','rgba(45,18,6,.9)',2)}ctx.restore()}};
 class PackingRoom{constructor(o={}){this.o=o}
-  enter(){BB.groove.start(100,'pack');this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.air=[];this.grab={};this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
+  enter(){this.howTo=howTo;BB.groove.start(100,'pack');this.ri=this.o.startAt||0;this.packed=this.ri;this.cells=[null,null,null,null];this.placed=[];this.q=[];this.cur=null;this.air=[];this.grab={};this.bounce=[];this.motes=R.motes(22);this.said={};this.lastOverride=-9;this.belt=0;
     this.state='load';R.loadImgs([['pack_bg','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.beginRound();else this.startIntro()});BB.mic.take()}
   exit(){BB.paused=false}
   bake(){const s=!BB.q?.5:1,c=document.createElement('canvas');c.width=W*s;c.height=H*s;const g=c.getContext('2d');g.scale(s,s);const V=BB.V2;
@@ -201,8 +201,8 @@ class PackingRoom{constructor(o={}){this.o=o}
     if(p.ph==='run'){p.x+=dt*1000;if(p.x>W+200)p.ph='done'}}
   prankHit(viaBoink){const p=this.prank;if(!p||p.ph!=='wait')return;p.ph='hit';p.t3=BB.t;this.jrCrate={t:BB.t,x0:viaBoink?CX0:NEXTP.x+60,y0:viaBoink?ROWY-100:NEXTP.y+100};
     setTimeout(()=>{if(BB.scene!==this)return;BB.sfx.bonk();BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(p.x,NEXTP.y-40,12,{col:COL.yellow,kind:'star',size:14,g:300})},500)}
-  pause(){BB.paused=true;BB.ac.suspend()}
-  resume(){BB.paused=false;BB.ensureMic()}
+  pause(){BB.openMenu()}
+  resume(){BB.closeMenu()}
   // pointer: tap a column to steer, or drag the falling crate sideways
   // v13.2: multi-touch. Touching a crate grabs + selects it (each finger drags its own crate); tapping an empty lane steers the selected crate.
   hitCrate(p){let best=null;for(const a of this.air){const w=R.BEATS[a.k];if(p.x>a.x-10&&p.x<a.x+w*CW+10&&p.y>a.y-30&&p.y<a.y+CH+30&&(!best||a.y>best.y))best=a}return best}
@@ -212,7 +212,7 @@ class PackingRoom{constructor(o={}){this.o=o}
   pmove(p){const f=this.face;if(f&&f.drag&&f.drag.id===p.id){f.x=clamp(p.x-f.drag.dx,80,W-80);f.y=clamp(p.y-f.drag.dy,40,ROWY);return}const g=this.grab[p.id];if(!g||!this.air.includes(g.c))return;this.setColOf(g.c,Math.round((p.x-g.dx-CX0)/CW))}
   pup(p){const f=this.face;if(f&&f.drag&&(!p||f.drag.id===p.id)){f.drag=null;if(Math.hypot(f.x-JRH.x,f.y-JRH.y)<170)this.faceBonk();if(p)return}if(p&&this.grab[p.id])delete this.grab[p.id];else if(!p)this.grab={}}
   setColOf(c,col){if(this.state!=='play')return;c.col=clamp(col,0,NB-R.BEATS[c.k])}
-  update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
+  update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();
     for(const key of BB.keys){if(key>='1'&&key<=String(NB))this.setCol(+key-1);if(key==='ArrowLeft'&&this.cur)this.setCol(this.cur.col-1);if(key==='ArrowRight'&&this.cur)this.setCol(this.cur.col+1);if(key==='ArrowDown'||key==='d')this.drop();if(key==='n')this.swap()}
     this.belt+=dt*40;
     if(this.state==='intro'){this.intro(dt);if(BB.keys.includes('s'))this.skipIntro()}
@@ -255,7 +255,7 @@ class PackingRoom{constructor(o={}){this.o=o}
     this.drawHUD();BB.captionBox();
     if(this.state==='play'&&this.ri===0&&t-this.cardT<2.6)BB.titleCard('ROOM 3: PACKING STATION','Static Jr. destroyed the orders. Pack new ones!',(t-this.cardT)/2.6);
     if(this.state==='end')this.drawEnd();
-    if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
+    }
   drawBelt(){// ambient: little parcels ride the painted back conveyor (only where the chute doesn't cover it)
     if(!BB.q)return;const y=388;/* v12.6: mint-bevel belt with chrome rollers + shaded cardboard parcels (matches the mine conveyor) */
     const segs=[[0,CX0-40],[CX0+NB*CW+40,W]];for(const[a0,a1]of segs){if(a1<=a0)continue;BB.rrect(a0,y,a1-a0,18,4,BB.lg(y,y+18,['#bff0e0','#6fbca5','#2f6b5c']),'rgba(20,30,28,.9)',2);ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(a0+2,y+2,a1-a0-4,2);
@@ -315,11 +315,10 @@ class PackingRoom{constructor(o={}){this.o=o}
       BB.text(Math.ceil(left)+' beats',x+w-20,y+28,24,'#fff',{align:'right',stroke:3});BB.rrect(x+20,y+50,w-40,20,10,'#2d4744');if(f>0)BB.rrect(x+20,y+50,(w-40)*f,20,10,f<.25?'#e65046':'#ffe066')}
     else if(st){BB.rrect(x,y,w,60,18,'rgba(12,28,26,.88)',COL.teal2,4);BB.text('BONUS STARS: '+'\u2605'.repeat(st),x+w/2,y+30,26,COL.yellow,{stroke:3})}}
   capPos(){return this.state==='clap'&&this.cb?{y:250,maxW:1140}:{y:H-114,maxW:1140}}
-  drawHUD(){const t=BB.t;BB.panel(40,24,420,110,28);BB.text('ORDERS PACKED',64,52,30,COL.yellow,{align:'left',stroke:4});BB.text(`${this.packed} of ${ROUNDS.length}`,64,98,28,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+  drawHUD(){const t=BB.t;BB.panel(40,24,440,114,28);BB.text('ORDERS PACKED',72,58,26,COL.yellow,{align:'left',stroke:4,maxW:360});BB.text(`${this.packed} of ${ROUNDS.length}`,72,90,24,'#fff',{align:'left',font:'Rammetto One',stroke:4,maxW:360});
     for(let i=0;i<ROUNDS.length;i++)BB.rrect(196+i*38,80,30,36,8,i<this.packed?BB.lg(80,116,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
-    BB.pauseBtn(()=>this.pause());
     if(this.state==='intro')BB.button(W-370,H-150,330,110,'SKIP INTRO',{size:34,id:'skip',onClick:()=>this.skipIntro()});
-    else{BB.micMeter(40,H-150);BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1})}
+    else{BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1})}
     if(this.cb&&this.state==='clap')this.cb.draw(W/2,H-95);
     if(this.cb&&this.cb.few&&t-this.cb.few<1.2)R.bubble(W/2,H-300,'Everyone together!',COL.ink)}
   drawEnd(){const t=BB.t-this.st;if(t<.4)return;const k=ease.back(clamp((t-.4)/.6,0,1));ctx.fillStyle=`rgba(8,18,17,${.5*clamp(t,0,1)})`;ctx.fillRect(0,0,W,H);

@@ -262,7 +262,7 @@
   const SHIELD = [2, 5, 7], FACE = [3, 6], JR = { x: 1430, y: 540 }, LCH = { x: 300, y: 760 }, TRK = { x: 1110, y: 560 };
   const howTo = {
     title: "DELIVERY SHOWDOWN: beat Static Jr.!",
-    steps: ["Each box shows a rhythm. Listen, then clap it back.", "A good clap THROWS the box at Static Jr.", "Every hit drops a box into the truck. Fill it up!", "Shield up? Only a PERFECT clap breaks it.", "Face box? Drag it onto his head to BONK him.", "No mic? Tap MANUAL OVERRIDE when they nail it."],
+    steps: ["Listen, then clap the rhythm back.", "A good clap throws the box at Static Jr.", "Shield up? Only a PERFECT clap breaks it.", "No mic? Use Manual Override."],
     words: "ta = 1   ti-ti = 2 quick   tika-tika = 4 quicker   ta-ah = 2 beats   rest = silent beat",
     example: (x, y, w, h, t) => {
     }
@@ -272,6 +272,7 @@
       this.o = o;
     }
     enter() {
+      this.howTo = howTo;
       BB.groove.start(100, "pack");
       this.n = this.o.startAt || 0;
       this.hp = TOTAL - this.n;
@@ -536,12 +537,10 @@
       if (this.cb) this.cb.override();
     }
     pause() {
-      BB.paused = true;
-      BB.ac.suspend();
+      BB.openMenu();
     }
     resume() {
-      BB.paused = false;
-      BB.ensureMic();
+      BB.closeMenu();
     }
     // static attacks (cosmetic + brief fuzz; never hides the rhythm for long)
     attack() {
@@ -565,10 +564,6 @@
     update(dt) {
       this.voiceTick(dt);
       this.powerTick(dt, BB.t - this.st);
-      if (BB.keys.includes("p")) {
-        this.pause();
-        return;
-      }
       if (BB.keys.includes(" ")) {
         if (this.state !== "end") this.manualOverride();
         else this.manualPc = 1;
@@ -2142,7 +2137,7 @@
         if (nx && bb > 2 && !(KO_BARS[bi] && (KO_BARS[bi].chant || KO_BARS[bi].chantIntro))) BB.text("NEXT: " + nx.cue, cx, cy + 150, 34, "#fff", { stroke: 5, maxW: 900 });
         if (bb % 1 < 0.5 && !bar.count && !bar.chant && !bar.chantIntro) R.bubble(LCH.x + 20, LCH.y - 300, bar.cue.toLowerCase());
       }
-      if (!this.cel) (this.q || ((f) => f())).call(this, () => BB.button(W - 300, 30, 260, 90, "SKIP", { size: 40, id: "koskip", onClick: () => this.skipKO() }));
+      if (!this.cel) (this.q || ((f) => f())).call(this, () => BB.button(W - 430, 30, 260, 90, "SKIP", { size: 40, id: "koskip", onClick: () => this.skipKO() }));
       if (k > KO_CEL) {
         const a = clamp((k - KO_CEL) / 0.4, 0, 1), s = 0.7 + 0.3 * ease.back(a);
         ctx.save();
@@ -2838,7 +2833,7 @@
         BB.text("FIGHT!", 0, 0, 220, "#ffd63c", { font: "Rammetto One", stroke: 16, strokeCol: "#782814" });
         ctx.restore();
       }
-      this.q(() => BB.button(W - 300, 30, 260, 90, "SKIP", { size: 40, id: "soskip", onClick: () => {
+      this.q(() => BB.button(W - 430, 30, 260, 90, "SKIP", { size: 40, id: "soskip", onClick: () => {
         if (this.state === "intro") this.startKO();
       } }));
     }
@@ -4106,7 +4101,7 @@
         BB.text("STAND UP, RHYTHM ENGINEERS!", W / 2, 190, 64, COL.yellow, { stroke: 8, maxW: 1060 });
         BB.text("DODGE: duck, lean, freeze, jump.  ATTACK: CLAP! Faster = stronger!  Everybody wins!", W / 2, 265, 34, "#fff", { stroke: 5, maxW: 1040 });
       }
-      this.q(() => BB.button(W - 300, 30, 260, 90, "SKIP", { size: 40, id: "rwskip", onClick: () => {
+      this.q(() => BB.button(W - 430, 30, 260, 90, "SKIP", { size: 40, id: "rwskip", onClick: () => {
         if (this.state === "intro") {
           BB.sayStop && BB.sayStop();
           this.startKO();
@@ -4836,14 +4831,10 @@
         }
       }
       if (!end && !(this.move && this.state === "intro")) {
-        BB.panel(40, 24, 400, 110, 28);
-        BB.text("TRUCK LOAD  " + fill + " of " + TOTAL, 64, 52, 28, COL.yellow, { align: "left", stroke: 4 });
-        for (let i = 0; i < TOTAL; i++) BB.rrect(64 + i * 44, 78, 36, 36, 8, i < fill ? BB.lg(78, 114, ["#e2b272", "#b07a40"]) : "#2d4744", "#fff", 3);
+        BB.panel(40, 24, 430, 114, 28);
+        BB.text("TRUCK LOAD  " + fill + " of " + TOTAL, 72, 56, 26, COL.yellow, { align: "left", stroke: 4, maxW: 380 });
+        for (let i = 0; i < TOTAL; i++) BB.rrect(72 + i * 42, 80, 32, 28, 8, i < fill ? BB.lg(80, 108, ["#e2b272", "#b07a40"]) : "#2d4744", "#fff", 3);
         if (this.phT && t - this.phT < 2.4) BB.text(this.ph === 1 ? "PHASE 2: FASTER!" : "PHASE 3: WILD STATIC!", W / 2, 200, 64, "#ff8adf", { font: "Rammetto One", stroke: 8 });
-      }
-      if (!end && !this.move) {
-        BB.pauseBtn(() => this.pause());
-        BB.micMeter(40, H - 150);
       }
       if (this.cb) {
         BB.overrideBtn(() => this.manualOverride(), { pop: this.ovPop && t - this.ovPop < 0.3 ? 1.08 : 1 });
@@ -4887,7 +4878,6 @@
       this.drawLetterbox(CAM.lb);
       for (const f of this.qq) f();
       this.drawReplay(k, t);
-      if (BB.paused) BB.pauseOverlay(howTo, () => this.resume());
     }
   }
   BB.DeliveryRoom = DeliveryRoom;

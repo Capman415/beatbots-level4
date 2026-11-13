@@ -37,8 +37,7 @@
   const splitParts = (Rd) => {
     if (Rd.mode !== "match") {
       const a2 = [];
-      for (let n = Rd.n; n > 0; n -= 8)
-        a2.push({ n: Math.min(8, n) });
+      for (let n = Rd.n; n > 0; n -= 8) a2.push({ n: Math.min(8, n) });
       return a2;
     }
     const a = [];
@@ -52,13 +51,12 @@
         b = 0;
       }
     }
-    if (cur.length)
-      a.push({ n: b, code: cur });
+    if (cur.length) a.push({ n: b, code: cur });
     return a;
   };
   const howTo = {
     title: "PACKING STATION: fill every beat on the pallet!",
-    steps: ["A crate falls down the chute. Its size = its beats.", "Tap a column (1-4) to move it. Tap DROP to drop it.", "Tap SWAP to trade it with the NEXT crate.", "Later orders: more crates fall at once. Tap one to grab it (each finger can drag its own).", "Full pallet? Listen, then clap the cargo code back!", "No mic? Tap MANUAL OVERRIDE when they nail it."],
+    steps: ["A crate's size is its beats. Tap a column, then DROP.", "SWAP trades it with the NEXT crate.", "Full pallet? Clap the cargo code back.", "No mic? Use Manual Override."],
     words: "whole = 4 beats   half = 2   ta, ti-ti, tika-tika, rest = 1 beat each",
     example: (x, y, w, h, t) => {
       const ph = t % 4 / 4;
@@ -70,8 +68,7 @@
       R.crateDraw("q", 0, 90, cw - 6, 70);
       const yy = lerp(-140, 90, ease.inOut(clamp(ph * 1.6, 0, 1)));
       R.crateDraw("e", cw, yy, cw - 6, 70);
-      if (ph > 0.66)
-        BB.text("FULL! clap it", 0, -120, 32, COL.yellow, { stroke: 4 });
+      if (ph > 0.66) BB.text("FULL! clap it", 0, -120, 32, COL.yellow, { stroke: 4 });
       ctx.restore();
     }
   };
@@ -86,8 +83,7 @@
       ctx.drawImage(im, 0, 0, cap, im.height, x, y, cap * s, h);
       ctx.drawImage(im, cap, 0, im.width - 2 * cap, im.height, x + cap * s, y, w - 2 * cap * s, h);
       ctx.drawImage(im, im.width - cap, 0, cap, im.height, x + w - cap * s, y, cap * s, h);
-    } else
-      BB.rrect(x, y, w, h, 8, "#c9a06a", COL.ink, 3);
+    } else BB.rrect(x, y, w, h, 8, "#c9a06a", COL.ink, 3);
     const lw = Math.min(w - (w < 120 ? 14 : 40), Math.max(70, h * 1.1)), lx = x + w / 2 - lw / 2, ly = y + h * 0.22, lh = h * 0.62;
     BB.rrect(lx, ly, lw, lh, 10, BB.lg(ly, ly + lh, [c[0], c[1]]), "rgba(25,25,31,.8)", 3);
     ctx.fillStyle = "rgba(255,255,255,.35)";
@@ -99,8 +95,7 @@
       BB.text(R.NAME[k], tx + tw / 2, y + 3, fs, COL.ink, { maxW: tw - 8 });
     }
     BB.text(String(R.BEATS[k]), x + w - 22, y + h - 20, 24, "#fff", { stroke: 4 });
-    if (o.sp)
-      R.specialDraw(o.sp, x, y, w, h, o.age == null ? 9 : o.age);
+    if (o.sp) R.specialDraw(o.sp, x, y, w, h, o.age == null ? 9 : o.age);
     ctx.restore();
   };
   R.specialDraw = (sp, x, y, w, h, age) => {
@@ -111,8 +106,7 @@
       ctx.globalAlpha = 1 - Math.max(0, u - 0.6) / 0.4;
       BB.rrect(x, y, w, h, 10, BB.lg(y, y + h, ["#c38bff", "#7a3fd0", "#4a1f8f"]), "rgba(45,18,6,.9)", 3);
       ctx.fillStyle = "rgba(255,255,255,.18)";
-      for (let i = 0; i < w; i += 26)
-        ctx.fillRect(x + i, y, 10, h);
+      for (let i = 0; i < w; i += 26) ctx.fillRect(x + i, y, 10, h);
       BB.rrect(x + w / 2 - 8, y, 16, h, 4, "#ffd63c", null, 0);
       BB.text("?", x + w / 2, y + h / 2, Math.min(70, h * 0.7), "#fff", { font: "Rammetto One", stroke: 6 });
       ctx.restore();
@@ -158,6 +152,7 @@
       this.o = o;
     }
     enter() {
+      this.howTo = howTo;
       BB.groove.start(100, "pack");
       this.ri = this.o.startAt || 0;
       this.packed = this.ri;
@@ -175,10 +170,8 @@
       this.state = "load";
       R.loadImgs([["pack_bg", "jpg"], ["crate", "png"]]).then(() => {
         this.static = this.bake();
-        if (this.o.skipIntro || this.o.startAt)
-          this.beginRound();
-        else
-          this.startIntro();
+        if (this.o.skipIntro || this.o.startAt) this.beginRound();
+        else this.startIntro();
       });
       BB.mic.take();
     }
@@ -192,8 +185,7 @@
       const g = c.getContext("2d");
       g.scale(s, s);
       const V = BB.V2;
-      if (V.pack_bg)
-        g.drawImage(V.pack_bg, 0, 0, W, H);
+      if (V.pack_bg) g.drawImage(V.pack_bg, 0, 0, W, H);
       R.shadow(g, W / 2, FLOOR + 8, 420, 0.6);
       g.fillStyle = "rgba(0,0,0,.3)";
       g.fillRect(CX0 - 34, CTOP - 60 + 14, NB * CW + 68, ROWY + CH + 60 - CTOP + 60);
@@ -281,8 +273,7 @@
       this.st = BB.t;
       this.jr = { x: -160 };
       this.wreck = [];
-      for (let i = 0; i < 6; i++)
-        this.wreck.push({ k: ["h", "q", "e", "s", "w", "r"][i], x: CX0 + 80 + i * 100, y: ROWY + 40, vx: 0, vy: 0, r: 0, hit: 0 });
+      for (let i = 0; i < 6; i++) this.wreck.push({ k: ["h", "q", "e", "s", "w", "r"][i], x: CX0 + 80 + i * 100, y: ROWY + 40, vx: 0, vy: 0, r: 0, hit: 0 });
     }
     intro(dt) {
       const t = BB.t - this.st, j = this.jr;
@@ -311,8 +302,7 @@
         this.said.i = 1;
         this.voEnd = BB.t + BB.say("pk_intro");
       }
-      if (t > 3.2 && BB.t > (this.voEnd || 0) + 0.1)
-        this.skipIntro();
+      if (t > 3.2 && BB.t > (this.voEnd || 0) + 0.1) this.skipIntro();
     }
     skipIntro() {
       this.jr = null;
@@ -352,16 +342,12 @@
       this.face = null;
       this.crush = [];
       this.palletIn = BB.t;
-      if (Rd.mode === "limited")
-        this.q = Rd.set.slice().sort(() => Math.random() - 0.5);
-      else if (Rd.mode === "match")
-        this.q = [...this.pcode, "h"].sort(() => Math.random() - 0.5);
-      else
-        this.q = [];
+      if (Rd.mode === "limited") this.q = Rd.set.slice().sort(() => Math.random() - 0.5);
+      else if (Rd.mode === "match") this.q = [...this.pcode, "h"].sort(() => Math.random() - 0.5);
+      else this.q = [];
       this.fillQ();
       this.rush = Rd.rush ? { t0: BB.t, spb: 0.6, lim: Rd.rush } : null;
-      if (this.rush && this.ri > 0)
-        setTimeout(() => BB.scene === this && BB.say("pk_rush"), 400);
+      if (this.rush && this.ri > 0) setTimeout(() => BB.scene === this && BB.say("pk_rush"), 400);
       if (this.ri === 0) {
         this.cardT = BB.t;
         setTimeout(() => BB.scene === this && BB.say("pk_how"), 2600);
@@ -374,10 +360,8 @@
     fillQ() {
       const Rd = this.Rd;
       while (this.q.length < 4) {
-        if (Rd.mode === "match")
-          this.q.push(...[...this.pcode].sort(() => Math.random() - 0.5));
-        else if (Rd.mode === "limited")
-          break;
+        if (Rd.mode === "match") this.q.push(...[...this.pcode].sort(() => Math.random() - 0.5));
+        else if (Rd.mode === "limited") break;
         else {
           let left = NB;
           const set = [];
@@ -402,21 +386,17 @@
     spawn() {
       if (!this.q.length) {
         this.fillQ();
-        if (!this.q.length)
-          return;
+        if (!this.q.length) return;
       }
       const g = this.gapMax();
       if (this.Rd.mode === "match") {
         let b = 0, need = [];
         for (const k2 of this.pcode) {
-          if (!this.cells[b])
-            need.push(k2);
+          if (!this.cells[b]) need.push(k2);
           b += R.BEATS[k2];
         }
-        if (!need.some((k2) => this.q.includes(k2)))
-          this.q.unshift(need[0]);
-      } else if (!this.q.some((k2) => R.BEATS[k2] <= g))
-        this.q.unshift(g >= 2 ? "h" : "q");
+        if (!need.some((k2) => this.q.includes(k2))) this.q.unshift(need[0]);
+      } else if (!this.q.some((k2) => R.BEATS[k2] <= g)) this.q.unshift(g >= 2 ? "h" : "q");
       let k = this.q.shift(), decoy = 0;
       const w = R.BEATS[k];
       let col = this.firstFree(w);
@@ -434,8 +414,7 @@
         c.x = CX0 + c.col * CW;
       }
       this.air.push(c);
-      if (!this.cur)
-        this.cur = c;
+      if (!this.cur) this.cur = c;
       this.lastSpawn = BB.t;
       if (this.air.length > 1) {
         this.newT = BB.t;
@@ -448,34 +427,26 @@
     }
     ovl() {
       const Rd = this.Rd;
-      if (!Rd)
-        return OVL[0];
+      if (!Rd) return OVL[0];
       let i = Rd.ov || 0;
-      if (this.part)
-        i++;
+      if (this.part) i++;
       return OVL[Math.min(OVL.length - 1, i)];
     }
     // crates still needed in the air? (never more than the beats that are left can hold)
     maybeSpawn() {
-      if (this.state !== "play")
-        return;
+      if (this.state !== "play") return;
       const o = this.ovl(), n = this.air.length;
       if (!n) {
         return;
       }
-      if (n >= o.max)
-        return;
+      if (n >= o.max) return;
       let need = this.left();
-      for (const a of this.air)
-        need -= R.BEATS[a.k];
-      if (need <= 0)
-        return;
+      for (const a of this.air) need -= R.BEATS[a.k];
+      if (need <= 0) return;
       const low = Math.max(...this.air.map((a) => a.y)), fr = (low - (CTOP - CH - 10)) / (ROWY - (CTOP - CH - 10));
       const top = Math.min(...this.air.map((a) => a.y));
-      if (top < CTOP + 40)
-        return;
-      if (fr >= o.at || BB.t - this.lastSpawn > o.dly)
-        this.spawn();
+      if (top < CTOP + 40) return;
+      if (fr >= o.at || BB.t - this.lastSpawn > o.dly) this.spawn();
     }
     select(c) {
       if (c && this.air.includes(c)) {
@@ -486,11 +457,8 @@
     firstFree(w) {
       for (let c = 0; c <= NB - w; c++) {
         let ok = true;
-        for (let i = 0; i < w; i++)
-          if (this.cells[c + i])
-            ok = false;
-        if (ok)
-          return c;
+        for (let i = 0; i < w; i++) if (this.cells[c + i]) ok = false;
+        if (ok) return c;
       }
       return 0;
     }
@@ -499,8 +467,7 @@
     }
     setCol(c) {
       const cu = this.cur;
-      if (!cu || this.state !== "play")
-        return;
+      if (!cu || this.state !== "play") return;
       cu.touched = 1;
       const w = R.BEATS[cu.k];
       cu.col = clamp(c, 0, NB - w);
@@ -516,8 +483,7 @@
     }
     swap() {
       const cu = this.cur;
-      if (!cu || this.state !== "play" || !this.q.length)
-        return;
+      if (!cu || this.state !== "play" || !this.q.length) return;
       if (cu.decoy) {
         cu.decoy = 0;
         this.jrToss = { t: BB.t, k: cu.k, x0: cu.x };
@@ -542,25 +508,18 @@
       const w = R.BEATS[cu.k];
       const sel = cu === this.cur;
       this.air = this.air.filter((a) => a !== cu);
-      for (const id in this.grab)
-        if (this.grab[id].c === cu)
-          delete this.grab[id];
+      for (const id in this.grab) if (this.grab[id].c === cu) delete this.grab[id];
       const after = () => {
-        if (this.cur === cu || !this.air.includes(this.cur))
-          this.cur = this.air.slice().sort((a, b) => b.y - a.y)[0] || null;
+        if (this.cur === cu || !this.air.includes(this.cur)) this.cur = this.air.slice().sort((a, b) => b.y - a.y)[0] || null;
       };
       let fit = true;
-      for (let i = 0; i < w; i++)
-        if (this.cells[cu.col + i])
-          fit = false;
+      for (let i = 0; i < w; i++) if (this.cells[cu.col + i]) fit = false;
       let why = "";
-      if (!fit)
-        why = this.left() < w ? `too big! ${w} > ${this.left()}` : "no room there!";
+      if (!fit) why = this.left() < w ? "too big! ".concat(w, " > ").concat(this.left()) : "no room there!";
       else if (this.Rd.mode === "match") {
         let b = 0, ok = false;
         for (const k of this.pcode) {
-          if (b === cu.col && k === cu.k)
-            ok = true;
+          if (b === cu.col && k === cu.k) ok = true;
           b += R.BEATS[k];
         }
         if (!ok) {
@@ -569,8 +528,7 @@
         }
       }
       if (fit) {
-        for (let i = 0; i < w; i++)
-          this.cells[cu.col + i] = cu.k;
+        for (let i = 0; i < w; i++) this.cells[cu.col + i] = cu.k;
         this.placed.push({ k: cu.k, col: cu.col, t: BB.t, sp: cu.sp });
         this.goodDrop(cu);
         BB.sfx.thunk();
@@ -590,10 +548,8 @@
         this.backT = BB.t;
         const k = cu.k;
         after();
-        if (!(this.prank && k === "w"))
-          this.q.unshift(k);
-        else
-          this.prankHit(true);
+        if (!(this.prank && k === "w")) this.q.unshift(k);
+        else this.prankHit(true);
         this.missFx();
         this.respawn(MISS_RETRY);
       } else if (why === "no room there!" || why.startsWith("too") || cu.decoy) {
@@ -604,18 +560,15 @@
         this.crush.push({ k: cu.k, x: cx, w: w * CW - 12, t: BB.t, why: cu.decoy ? "decoy crate!" : why });
         BB.burst(cx + w * CW / 2, ROWY + 20, 16, { cols: ["#c9a06a", "#7c5530", "#e8d2a8"], kind: "dot", size: 10, speed: 520, g: 1200 });
         this.boinkT = null;
-        if (this.left() <= 1 && why.startsWith("too"))
-          this.blink = BB.t;
+        if (this.left() <= 1 && why.startsWith("too")) this.blink = BB.t;
         if (!this.said.big && why.startsWith("too")) {
           this.said.big = 1;
           BB.say("pk_big");
         }
         const k = cu.k, dec = cu.decoy;
         after();
-        if (!dec && !(this.prank && k === "w"))
-          this.q.splice(sel ? this.q.length : 0, 0, k);
-        else if (this.prank && k === "w")
-          this.prankHit(true);
+        if (!dec && !(this.prank && k === "w")) this.q.splice(sel ? this.q.length : 0, 0, k);
+        else if (this.prank && k === "w") this.prankHit(true);
         this.missFx();
         this.respawn(MISS_RETRY);
       } else {
@@ -631,10 +584,8 @@
         }
         const k = cu.k;
         after();
-        if (!(this.prank && k === "w"))
-          this.q.splice(sel ? this.q.length : 0, 0, k);
-        else
-          this.prankHit(true);
+        if (!(this.prank && k === "w")) this.q.splice(sel ? this.q.length : 0, 0, k);
+        else this.prankHit(true);
         this.missFx();
         this.respawn(MISS_RETRY);
       }
@@ -667,30 +618,24 @@
     /* conveyor band: quiet loop of the packed crates on the groove beat while you build (scheduled one beat ahead) */
     band() {
       const g = BB.groove, ac = BB.ac;
-      if (this.state !== "play" || !g || !g.on || !this.placed.length || BB.paused)
-        return;
+      if (this.state !== "play" || !g || !g.on || !this.placed.length || BB.paused) return;
       const n = Math.ceil((ac.currentTime + 0.12 - g.t0) / g.spb);
-      if (this.bandN != null && n <= this.bandN)
-        return;
+      if (this.bandN != null && n <= this.bandN) return;
       this.bandN = n;
       const b = (n % NB + NB) % NB, p = this.placed.find((q) => q.col === b);
-      if (!p)
-        return;
+      if (!p) return;
       const t = g.t0 + n * g.spb, S = BB.sfx, sp = g.spb, v0 = BB.boxVol;
       BB.boxVol = BAND_VOL * (v0 || 1);
       try {
         const k = p.k;
-        if (k === "q")
-          S.pkTa(t);
+        if (k === "q") S.pkTa(t);
         else if (k === "e") {
           S.pkBlip(t, 1100);
           S.pkBlip(t + sp / 2, 1100);
         } else if (k === "s") {
-          for (let i = 0; i < 4; i++)
-            S.pkBlip(t + i * sp / 4, 1500);
+          for (let i = 0; i < 4; i++) S.pkBlip(t + i * sp / 4, 1500);
         } else if (k === "r") {
-        } else
-          S.pkHum(t, R.BEATS[k] * sp * 0.5);
+        } else S.pkHum(t, R.BEATS[k] * sp * 0.5);
       } finally {
         BB.boxVol = v0;
       }
@@ -702,10 +647,8 @@
     codeAt(col) {
       let b = 0;
       for (const k of this.pcode) {
-        if (b === col)
-          return R.NAME[k];
-        if (col > b && col < b + R.BEATS[k])
-          return R.NAME[k] + " (it starts on beat " + (b + 1) + ")";
+        if (b === col) return R.NAME[k];
+        if (col > b && col < b + R.BEATS[k]) return R.NAME[k] + " (it starts on beat " + (b + 1) + ")";
         b += R.BEATS[k];
       }
       return "?";
@@ -756,18 +699,14 @@
       for (const k of this.seq()) {
         const n = R.BEATS[k], t = t0 + b * spb;
         notes.push({ k, col: b, n, t });
-        if (k === "q")
-          S.pkTa(t);
+        if (k === "q") S.pkTa(t);
         else if (k === "e") {
           S.pkBlip(t, 1100);
           S.pkBlip(t + spb / 2, 1100);
         } else if (k === "s") {
-          for (let i = 0; i < 4; i++)
-            S.pkBlip(t + i * spb / 4, 1500);
-        } else if (k === "r")
-          S.pkHiss(t, spb * 0.6);
-        else
-          S.pkHum(t, n * spb * 0.9);
+          for (let i = 0; i < 4; i++) S.pkBlip(t + i * spb / 4, 1500);
+        } else if (k === "r") S.pkHiss(t, spb * 0.6);
+        else S.pkHum(t, n * spb * 0.9);
         b += n;
       }
       this.pb = { notes, a0: t0, spb, end: t0 + b * spb };
@@ -783,23 +722,19 @@
       BB.burst(W / 2, ROWY + 40, 40, { cols: ["#ffe066", "#6ee678", "#fff", "#5ac8fa"], kind: "star", size: 14, speed: 800, g: 500 });
     }
     manualOverride() {
-      if (BB.t - this.lastOverride < 0.5)
-        return;
+      if (BB.t - this.lastOverride < 0.5) return;
       this.lastOverride = BB.t;
       this.ovPop = BB.t;
-      if (this.state === "play")
-        this.drop();
+      if (this.state === "play") this.drop();
     }
     // Static Jr. sneaks an overflow crate into NEXT when one beat is left
     // v14.0 Static Jr.'s FACE BOX (teacher-approved): a few times per game (more likely near the end of a pallet) he drops his face box.
     // Drag it up onto his head to bonk him. If it reaches the pallet first, it pops the crates it lands on (+ the one beside it) back into the queue.
     updFace(dt) {
       const f = this.face;
-      if (this.jrB)
-        this.jrB.k = BB.t - this.jrB.t;
+      if (this.jrB) this.jrB.k = BB.t - this.jrB.t;
       if (!f) {
-        if (this.state !== "play" || (this.faces || 0) >= 3 || BB.t - (this.faceT || -9) < 14 || !this.placed.length || this.left() < 1 || BB.t - this.palletIn < 4)
-          return;
+        if (this.state !== "play" || (this.faces || 0) >= 3 || BB.t - (this.faceT || -9) < 14 || !this.placed.length || this.left() < 1 || BB.t - this.palletIn < 4) return;
         const prog = 1 - this.left() / NB;
         if (Math.random() < dt * 0.05 * (1 + 3 * prog * prog)) {
           this.faces = (this.faces || 0) + 1;
@@ -837,8 +772,7 @@
       BB.burst(f.x, ROWY, 30, { cols: ["#ffe066", "#7ef0ff", "#ff8adf", "#fff"], kind: "star", size: 14, speed: 700, g: 300 });
       const hit = this.placed.filter((p) => p.col <= c0 + 1 && p.col + R.BEATS[p.k] - 1 >= c0 - 1 && Math.abs(p.col + R.BEATS[p.k] / 2 - (f.x - CX0) / CW) < R.BEATS[p.k] / 2 + 0.9);
       for (const p of hit) {
-        for (let i = 0; i < R.BEATS[p.k]; i++)
-          this.cells[p.col + i] = null;
+        for (let i = 0; i < R.BEATS[p.k]; i++) this.cells[p.col + i] = null;
         this.q.unshift(p.k);
         this.bounce.push({ k: p.k, x: CX0 + p.col * CW, y: ROWY, vx: (Math.random() - 0.5) * 900, vy: -1300, r: 0, t: BB.t, why: "" });
       }
@@ -862,10 +796,8 @@
       if (f || k < 2.4) {
         const ph = jb && jb.ph, bonk = ph === "bonk" && k < 2.4;
         BB.staticJr(JRH.x, JRH.y + 130, 120, { dizzy: bonk, glitch: bonk ? 0.5 : 0, flip: true });
-        if (bonk)
-          R.bubble(JRH.x, JRH.y - 120, "grumble grumble...");
-        else if (ph === "laugh" && k < 1.8)
-          R.bubble(JRH.x, JRH.y - 120, "hee hee!");
+        if (bonk) R.bubble(JRH.x, JRH.y - 120, "grumble grumble...");
+        else if (ph === "laugh" && k < 1.8) R.bubble(JRH.x, JRH.y - 120, "hee hee!");
         else if (f) {
           R.bubble(JRH.x, JRH.y - 120, "bonk me? never!");
           if (!f.drag) {
@@ -882,8 +814,7 @@
           }
         }
       }
-      if (!f)
-        return;
+      if (!f) return;
       const s = FB / 2, pu = f.drag ? 1.08 : 1 + 0.05 * Math.sin(BB.t * 10);
       ctx.save();
       ctx.translate(f.x, f.y);
@@ -918,38 +849,31 @@
           setTimeout(() => BB.scene === this && BB.say("pk_swap"), 600);
         }
       }
-      if (p.ph === "wait")
-        p.x = NEXTP.x + NEXTP.w / 2 + 40 + Math.sin(BB.t * 5) * 12;
-      if (p.ph === "hit" && BB.t - p.t3 > 1.6)
-        p.ph = "run";
+      if (p.ph === "wait") p.x = NEXTP.x + NEXTP.w / 2 + 40 + Math.sin(BB.t * 5) * 12;
+      if (p.ph === "hit" && BB.t - p.t3 > 1.6) p.ph = "run";
       if (p.ph === "run") {
         p.x += dt * 1e3;
-        if (p.x > W + 200)
-          p.ph = "done";
+        if (p.x > W + 200) p.ph = "done";
       }
     }
     prankHit(viaBoink) {
       const p = this.prank;
-      if (!p || p.ph !== "wait")
-        return;
+      if (!p || p.ph !== "wait") return;
       p.ph = "hit";
       p.t3 = BB.t;
       this.jrCrate = { t: BB.t, x0: viaBoink ? CX0 : NEXTP.x + 60, y0: viaBoink ? ROWY - 100 : NEXTP.y + 100 };
       setTimeout(() => {
-        if (BB.scene !== this)
-          return;
+        if (BB.scene !== this) return;
         BB.sfx.bonk();
         BB.say("jr_oof", { overlap: true, nocap: true });
         BB.burst(p.x, NEXTP.y - 40, 12, { col: COL.yellow, kind: "star", size: 14, g: 300 });
       }, 500);
     }
     pause() {
-      BB.paused = true;
-      BB.ac.suspend();
+      BB.openMenu();
     }
     resume() {
-      BB.paused = false;
-      BB.ensureMic();
+      BB.closeMenu();
     }
     // pointer: tap a column to steer, or drag the falling crate sideways
     // v13.2: multi-touch. Touching a crate grabs + selects it (each finger drags its own crate); tapping an empty lane steers the selected crate.
@@ -957,8 +881,7 @@
       let best = null;
       for (const a of this.air) {
         const w = R.BEATS[a.k];
-        if (p.x > a.x - 10 && p.x < a.x + w * CW + 10 && p.y > a.y - 30 && p.y < a.y + CH + 30 && (!best || a.y > best.y))
-          best = a;
+        if (p.x > a.x - 10 && p.x < a.x + w * CW + 10 && p.y > a.y - 30 && p.y < a.y + CH + 30 && (!best || a.y > best.y)) best = a;
       }
       return best;
     }
@@ -969,8 +892,7 @@
         BB.sfx.pop();
         return true;
       }
-      if (this.state !== "play" || !this.air.length)
-        return false;
+      if (this.state !== "play" || !this.air.length) return false;
       if (p.x > CX0 - 20 && p.x < CX0 + NB * CW + 20 && p.y > CTOP - CH - 60 && p.y < ROWY + CH) {
         const c = this.hitCrate(p);
         if (c) {
@@ -996,54 +918,37 @@
         return;
       }
       const g = this.grab[p.id];
-      if (!g || !this.air.includes(g.c))
-        return;
+      if (!g || !this.air.includes(g.c)) return;
       this.setColOf(g.c, Math.round((p.x - g.dx - CX0) / CW));
     }
     pup(p) {
       const f = this.face;
       if (f && f.drag && (!p || f.drag.id === p.id)) {
         f.drag = null;
-        if (Math.hypot(f.x - JRH.x, f.y - JRH.y) < 170)
-          this.faceBonk();
-        if (p)
-          return;
+        if (Math.hypot(f.x - JRH.x, f.y - JRH.y) < 170) this.faceBonk();
+        if (p) return;
       }
-      if (p && this.grab[p.id])
-        delete this.grab[p.id];
-      else if (!p)
-        this.grab = {};
+      if (p && this.grab[p.id]) delete this.grab[p.id];
+      else if (!p) this.grab = {};
     }
     setColOf(c, col) {
-      if (this.state !== "play")
-        return;
+      if (this.state !== "play") return;
       c.col = clamp(col, 0, NB - R.BEATS[c.k]);
     }
     update(dt) {
       BB.dt = dt;
-      if (BB.keys.includes(" "))
-        this.manualOverride();
-      if (BB.keys.includes("p")) {
-        this.pause();
-        return;
-      }
+      if (BB.keys.includes(" ")) this.manualOverride();
       for (const key of BB.keys) {
-        if (key >= "1" && key <= String(NB))
-          this.setCol(+key - 1);
-        if (key === "ArrowLeft" && this.cur)
-          this.setCol(this.cur.col - 1);
-        if (key === "ArrowRight" && this.cur)
-          this.setCol(this.cur.col + 1);
-        if (key === "ArrowDown" || key === "d")
-          this.drop();
-        if (key === "n")
-          this.swap();
+        if (key >= "1" && key <= String(NB)) this.setCol(+key - 1);
+        if (key === "ArrowLeft" && this.cur) this.setCol(this.cur.col - 1);
+        if (key === "ArrowRight" && this.cur) this.setCol(this.cur.col + 1);
+        if (key === "ArrowDown" || key === "d") this.drop();
+        if (key === "n") this.swap();
       }
       this.belt += dt * 40;
       if (this.state === "intro") {
         this.intro(dt);
-        if (BB.keys.includes("s"))
-          this.skipIntro();
+        if (BB.keys.includes("s")) this.skipIntro();
       }
       const cu = this.cur;
       if (this.state === "play") {
@@ -1055,8 +960,7 @@
           if (a.y >= ROWY) {
             a.y = ROWY;
             this.land(a);
-            if (this.state !== "play")
-              break;
+            if (this.state !== "play") break;
           }
         }
         this.maybeSpawn();
@@ -1067,8 +971,7 @@
         b.x += b.vx * dt;
         b.y += b.vy * dt;
         b.r -= dt * 5;
-        if (b.y > H + 300)
-          this.bounce.splice(i, 1);
+        if (b.y > H + 300) this.bounce.splice(i, 1);
       }
       if (BB.debug && this.o.auto && cu && this.state === "play" && BB.t - Math.max(cu.t, this.selT || 0) > 0.8 && !cu.fast) {
         let c = -1;
@@ -1081,25 +984,21 @@
             }
             b += R.BEATS[k];
           }
-        } else
-          c = this.left() >= R.BEATS[cu.k] ? this.firstFree(R.BEATS[cu.k]) : -1;
+        } else c = this.left() >= R.BEATS[cu.k] ? this.firstFree(R.BEATS[cu.k]) : -1;
         if (c < 0 && this.q.length && !this.autoSw) {
           this.autoSw = 1;
           this.swap();
         } else {
           this.autoSw = 0;
-          if (c >= 0)
-            this.setCol(c);
+          if (c >= 0) this.setCol(c);
           this.drop();
         }
       }
       this.updFace(dt);
-      if (this.prank)
-        this.updPrank(dt);
+      if (this.prank) this.updPrank(dt);
       this.band();
       BB.mic.take();
-      if (this.state === "play2" && this.pb && BB.ac.currentTime > this.pb.end + 0.15)
-        this.clapDone();
+      if (this.state === "play2" && this.pb && BB.ac.currentTime > this.pb.end + 0.15) this.clapDone();
       if (this.state === "ship") {
         const t = BB.t - this.st;
         if (t > 3.2) {
@@ -1119,8 +1018,7 @@
               BB.save.done.push("packing");
               localStorage.setItem("bb4", JSON.stringify(BB.save));
             }
-          } else
-            this.beginRound();
+          } else this.beginRound();
         }
       }
     }
@@ -1129,8 +1027,7 @@
       const t = BB.t, [sx, sy] = BB.shakeXY;
       ctx.save();
       ctx.translate(sx, sy);
-      if (this.static)
-        ctx.drawImage(this.static, 0, 0, W, H);
+      if (this.static) ctx.drawImage(this.static, 0, 0, W, H);
       else {
         ctx.fillStyle = "#2a3a38";
         ctx.fillRect(0, 0, W, H);
@@ -1153,29 +1050,22 @@
         ctx.restore();
         if (hp >= 0) {
           R.bubble(1700, 640, this.hype.n + " PERFECT DROPS!", "#2f8a4a");
-          for (let i = 0; i < 4; i++)
-            if (BB.q)
-              BB.glow(CX0 - 40 + i * ((NB * CW + 80) / 3), CTOP - 60, 70, ["rgba(110,230,120,A)", "rgba(255,224,102,A)", "rgba(126,240,255,A)", "rgba(255,138,223,A)"][(i + Math.floor(hp * 8)) % 4], 0.6 * (1 - hp / 1.6));
-        } else if (sc >= 0 || this.scr && t - this.scr < 1.6)
-          R.bubble(1700, 640, this.oopsTxt || "Whoops!", "#5a5040");
-        else if (this.spT && t - this.spT.t < 1.6)
-          R.bubble(1700, 640, this.spT.sp === "fragile" ? "Fragile... handled with care!" : this.spT.sp === "express" ? "Express delivery! +1 star" : "Mystery crate packed!", "#7a3fd0");
+          for (let i = 0; i < 4; i++) if (BB.q) BB.glow(CX0 - 40 + i * ((NB * CW + 80) / 3), CTOP - 60, 70, ["rgba(110,230,120,A)", "rgba(255,224,102,A)", "rgba(126,240,255,A)", "rgba(255,138,223,A)"][(i + Math.floor(hp * 8)) % 4], 0.6 * (1 - hp / 1.6));
+        } else if (sc >= 0 || this.scr && t - this.scr < 1.6) R.bubble(1700, 640, this.oopsTxt || "Whoops!", "#5a5040");
+        else if (this.spT && t - this.spT.t < 1.6) R.bubble(1700, 640, this.spT.sp === "fragile" ? "Fragile... handled with care!" : this.spT.sp === "express" ? "Express delivery! +1 star" : "Mystery crate packed!", "#7a3fd0");
       }
-      if (this.jr)
-        BB.staticJr(this.jr.x, FLOOR, 120, { run: 1, spd: 712 });
-      if (this.wreck)
-        for (const c of this.wreck) {
-          ctx.save();
-          ctx.translate(c.x, c.y);
-          ctx.rotate(c.r);
-          R.crateDraw(c.k, -60, -50, 120, 100, { tag: false });
-          ctx.restore();
-        }
+      if (this.jr) BB.staticJr(this.jr.x, FLOOR, 120, { run: 1, spd: 712 });
+      if (this.wreck) for (const c of this.wreck) {
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.r);
+        R.crateDraw(c.k, -60, -50, 120, 100, { tag: false });
+        ctx.restore();
+      }
       if (this.prank && this.prank.ph !== "done") {
         const p = this.prank;
         BB.staticJr(p.x, NEXTP.y - 10, 110, { run: p.ph === "in" || p.ph === "run" ? 1 : 0, dizzy: p.ph === "hit", glitch: p.ph === "hit" ? 0.6 : 0, spd: p.ph === "run" ? 1e3 : 600, flip: p.ph !== "run" });
-        if (p.ph === "wait")
-          R.bubble(p.x, NEXTP.y - 230, "wrong fit! hee hee");
+        if (p.ph === "wait") R.bubble(p.x, NEXTP.y - 230, "wrong fit! hee hee");
       }
       if (this.jrCrate) {
         const j = this.jrCrate, k = clamp((t - j.t) / 0.5, 0, 1);
@@ -1190,8 +1080,7 @@
       }
       for (const c of this.crush || []) {
         const a = t - c.t;
-        if (a > 1.6)
-          continue;
+        if (a > 1.6) continue;
         const sq = ease.out(clamp(a / 0.18, 0, 1));
         ctx.save();
         ctx.globalAlpha = a < 1.2 ? 1 : 1 - (a - 1.2) / 0.4;
@@ -1225,29 +1114,22 @@
         const k = ease.back(clamp((t - this.boinkT) / 0.3, 0, 1));
         BB.text("BOINK!", CX0 - 150, ROWY - 180, 80 * k, "#e65046", { font: "Rammetto One", stroke: 8 });
         const b = this.bounce[this.bounce.length - 1];
-        if (b && b.why)
-          R.bubble(CX0 - 170, ROWY - 300, b.why, COL.ink);
+        if (b && b.why) R.bubble(CX0 - 170, ROWY - 300, b.why, COL.ink);
       }
       ctx.restore();
       R.drawMotes(this.motes, BB.paused ? 0 : Math.min(0.05, BB.dt || 0.016), t);
       BB.drawParts();
       this.drawHUD();
       BB.captionBox();
-      if (this.state === "play" && this.ri === 0 && t - this.cardT < 2.6)
-        BB.titleCard("ROOM 3: PACKING STATION", "Static Jr. destroyed the orders. Pack new ones!", (t - this.cardT) / 2.6);
-      if (this.state === "end")
-        this.drawEnd();
-      if (BB.paused)
-        BB.pauseOverlay(howTo, () => this.resume());
+      if (this.state === "play" && this.ri === 0 && t - this.cardT < 2.6) BB.titleCard("ROOM 3: PACKING STATION", "Static Jr. destroyed the orders. Pack new ones!", (t - this.cardT) / 2.6);
+      if (this.state === "end") this.drawEnd();
     }
     drawBelt() {
-      if (!BB.q)
-        return;
+      if (!BB.q) return;
       const y = 388;
       const segs = [[0, CX0 - 40], [CX0 + NB * CW + 40, W]];
       for (const [a0, a1] of segs) {
-        if (a1 <= a0)
-          continue;
+        if (a1 <= a0) continue;
         BB.rrect(a0, y, a1 - a0, 18, 4, BB.lg(y, y + 18, ["#bff0e0", "#6fbca5", "#2f6b5c"]), "rgba(20,30,28,.9)", 2);
         ctx.fillStyle = "rgba(255,255,255,.5)";
         ctx.fillRect(a0 + 2, y + 2, a1 - a0 - 4, 2);
@@ -1269,8 +1151,7 @@
       }
       for (let i = 0; i < 6; i++) {
         const x = (this.belt + i * 330) % 1980 - 60;
-        if (x > CX0 - 110 && x < CX0 + NB * CW + 50)
-          continue;
+        if (x > CX0 - 110 && x < CX0 + NB * CW + 50) continue;
         ctx.fillStyle = "rgba(0,0,0,.35)";
         ctx.beginPath();
         ctx.ellipse(x + 34, y + 1, 36, 5, 0, 0, 7);
@@ -1292,19 +1173,16 @@
       ctx.save();
       ctx.translate(out + inn, 0);
       const y = ROWY + CH;
-      for (let i = 0; i < NB; i++)
-        BB.rrect(CX0 + 4 + i * CW, y - 4, CW - 8, 16, 4, BB.lg(y - 4, y + 12, ["#d6b07a", "#9a6e3a"]), "#5a3a1a", 2);
+      for (let i = 0; i < NB; i++) BB.rrect(CX0 + 4 + i * CW, y - 4, CW - 8, 16, 4, BB.lg(y - 4, y + 12, ["#d6b07a", "#9a6e3a"]), "#5a3a1a", 2);
       const blink = this.blink && t - this.blink < 1.2 && Math.sin((t - this.blink) * 18) > 0;
-      for (let c = 0; c < NB; c++)
-        if (!this.cells[c]) {
-          BB.rrect(CX0 + c * CW + 8, ROWY + 6, CW - 16, CH - 12, 12, blink ? "rgba(255,224,102,.35)" : "rgba(255,255,255,.05)", blink ? COL.yellow : "rgba(255,255,255,.18)", 3);
-          BB.ctext(String(c + 1), CX0 + c * CW + CW / 2, ROWY + CH / 2, 52, blink ? COL.yellow : "rgba(255,255,255,.18)");
-        }
+      for (let c = 0; c < NB; c++) if (!this.cells[c]) {
+        BB.rrect(CX0 + c * CW + 8, ROWY + 6, CW - 16, CH - 12, 12, blink ? "rgba(255,224,102,.35)" : "rgba(255,255,255,.05)", blink ? COL.yellow : "rgba(255,255,255,.18)", 3);
+        BB.ctext(String(c + 1), CX0 + c * CW + CW / 2, ROWY + CH / 2, 52, blink ? COL.yellow : "rgba(255,255,255,.18)");
+      }
       const wb = this.wobT && t - this.wobT < 0.7 ? 1 - (t - this.wobT) / 0.7 : 0, bh = this.bandHit, ac = BB.ac.currentTime;
       for (const p of this.placed) {
         const w = R.BEATS[p.k], sq = Math.max(0, 1 - (t - p.t) / 0.25) * 0.12, on = bh && bh.col === p.col && ac >= bh.at && ac - bh.at < 0.25;
-        if (on && BB.q)
-          BB.glow(CX0 + p.col * CW + w * CW / 2, ROWY + CH / 2, 90 + w * 30, "rgba(255,224,102,A)", 0.45 * (1 - (ac - bh.at) / 0.25));
+        if (on && BB.q) BB.glow(CX0 + p.col * CW + w * CW / 2, ROWY + CH / 2, 90 + w * 30, "rgba(255,224,102,A)", 0.45 * (1 - (ac - bh.at) / 0.25));
         ctx.save();
         ctx.translate(CX0 + p.col * CW + w * CW / 2, ROWY + CH);
         ctx.rotate(wb * 0.06 * Math.sin(t * 28 + p.col));
@@ -1321,8 +1199,7 @@
           const sw = (t - this.st) / 1.2;
           for (let c = 0; c < NB; c++) {
             const l = clamp(1 - Math.abs(sw * NB - c - 0.5), 0, 1);
-            if (l > 0 && BB.q)
-              BB.glow(CX0 + c * CW + CW / 2, ROWY + CH / 2, 120, "rgba(110,230,120,A)", l * 0.5);
+            if (l > 0 && BB.q) BB.glow(CX0 + c * CW + CW / 2, ROWY + CH / 2, 120, "rgba(110,230,120,A)", l * 0.5);
           }
         }
         if (this.state === "ship") {
@@ -1334,16 +1211,14 @@
     }
     drawChuteContents() {
       const cu = this.cur, t = BB.t;
-      if (!cu || this.state !== "play")
-        return;
+      if (!cu || this.state !== "play") return;
       const w = R.BEATS[cu.k], cw = w * CW - 12;
       ctx.save();
       ctx.beginPath();
       ctx.rect(CX0, CTOP - 20, NB * CW, ROWY + CH - CTOP + 20);
       ctx.clip();
       for (const a of this.air) {
-        if (a === cu)
-          continue;
+        if (a === cu) continue;
         const aw = R.BEATS[a.k] * CW - 12;
         ctx.save();
         ctx.globalAlpha = 0.82;
@@ -1353,9 +1228,7 @@
         BB.text("TAP ME", a.x + 6 + aw / 2, a.y - 23, 18, "#fff");
       }
       let fit = true;
-      for (let i = 0; i < w; i++)
-        if (this.cells[cu.col + i])
-          fit = false;
+      for (let i = 0; i < w; i++) if (this.cells[cu.col + i]) fit = false;
       const gx = CX0 + cu.col * CW + 6;
       BB.rrect(gx, ROWY + 6, cw, CH - 12, 12, fit ? "rgba(110,230,120,.18)" : "rgba(230,80,70,.22)", fit ? "rgba(110,230,120,.8)" : "#e65046", 3);
       ctx.setLineDash([10, 12]);
@@ -1426,8 +1299,7 @@
     }
     drawOrder() {
       const Rd = this.Rd;
-      if (!Rd)
-        return;
+      if (!Rd) return;
       const x = 50, y = 300, w = 520, h = 300;
       ctx.save();
       ctx.translate(x, y);
@@ -1482,13 +1354,11 @@
     }
     drawPB() {
       const p = this.pb;
-      if (!p)
-        return;
+      if (!p) return;
       const now = BB.ac.currentTime;
       for (const n of p.notes) {
         const on = now >= n.t && now < n.t + n.n * p.spb, x = CX0 + n.col * CW + 4, w = n.n * CW - 8;
-        if (!on)
-          continue;
+        if (!on) continue;
         const a = 1 - (now - n.t) / (n.n * p.spb) * 0.5;
         ctx.save();
         ctx.globalAlpha = a;
@@ -1508,8 +1378,7 @@
         BB.text(r.done && left > 0 ? "\u2605 BONUS STAR!" : live ? "RUSH ORDER" : "RUSH OVER: keep packing!", x + 20, y + 28, 24, live ? "#ffb3a8" : COL.yellow, { align: "left", stroke: 3 });
         BB.text(Math.ceil(left) + " beats", x + w - 20, y + 28, 24, "#fff", { align: "right", stroke: 3 });
         BB.rrect(x + 20, y + 50, w - 40, 20, 10, "#2d4744");
-        if (f > 0)
-          BB.rrect(x + 20, y + 50, (w - 40) * f, 20, 10, f < 0.25 ? "#e65046" : "#ffe066");
+        if (f > 0) BB.rrect(x + 20, y + 50, (w - 40) * f, 20, 10, f < 0.25 ? "#e65046" : "#ffe066");
       } else if (st) {
         BB.rrect(x, y, w, 60, 18, "rgba(12,28,26,.88)", COL.teal2, 4);
         BB.text("BONUS STARS: " + "\u2605".repeat(st), x + w / 2, y + 30, 26, COL.yellow, { stroke: 3 });
@@ -1520,29 +1389,22 @@
     }
     drawHUD() {
       const t = BB.t;
-      BB.panel(40, 24, 420, 110, 28);
-      BB.text("ORDERS PACKED", 64, 52, 30, COL.yellow, { align: "left", stroke: 4 });
-      BB.text(`${this.packed} of ${ROUNDS.length}`, 64, 98, 28, "#fff", { align: "left", font: "Rammetto One", stroke: 4 });
-      for (let i = 0; i < ROUNDS.length; i++)
-        BB.rrect(196 + i * 38, 80, 30, 36, 8, i < this.packed ? BB.lg(80, 116, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
-      BB.pauseBtn(() => this.pause());
-      if (this.state === "intro")
-        BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
+      BB.panel(40, 24, 440, 114, 28);
+      BB.text("ORDERS PACKED", 72, 58, 26, COL.yellow, { align: "left", stroke: 4, maxW: 360 });
+      BB.text("".concat(this.packed, " of ").concat(ROUNDS.length), 72, 90, 24, "#fff", { align: "left", font: "Rammetto One", stroke: 4, maxW: 360 });
+      for (let i = 0; i < ROUNDS.length; i++) BB.rrect(196 + i * 38, 80, 30, 36, 8, i < this.packed ? BB.lg(80, 116, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
+      if (this.state === "intro") BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
       else {
-        BB.micMeter(40, H - 150);
         BB.overrideBtn(() => this.manualOverride(), { pop: this.ovPop && t - this.ovPop < 0.3 ? 1.08 : 1 });
       }
-      if (this.cb && this.state === "clap")
-        this.cb.draw(W / 2, H - 95);
-      if (this.cb && this.cb.few && t - this.cb.few < 1.2)
-        R.bubble(W / 2, H - 300, "Everyone together!", COL.ink);
+      if (this.cb && this.state === "clap") this.cb.draw(W / 2, H - 95);
+      if (this.cb && this.cb.few && t - this.cb.few < 1.2) R.bubble(W / 2, H - 300, "Everyone together!", COL.ink);
     }
     drawEnd() {
       const t = BB.t - this.st;
-      if (t < 0.4)
-        return;
+      if (t < 0.4) return;
       const k = ease.back(clamp((t - 0.4) / 0.6, 0, 1));
-      ctx.fillStyle = `rgba(8,18,17,${0.5 * clamp(t, 0, 1)})`;
+      ctx.fillStyle = "rgba(8,18,17,".concat(0.5 * clamp(t, 0, 1), ")");
       ctx.fillRect(0, 0, W, H);
       ctx.save();
       ctx.translate(W / 2, 360);

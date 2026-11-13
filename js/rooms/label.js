@@ -49,7 +49,7 @@ function nearMiss(ans,pool,n){const out=[],seen=new Set([key(ans)]),one=pool.fil
   for(let t=0;t<200&&out.length<n;t++){const c=ops[Math.random()*ops.length|0](ans);if(!c||R.len(c)!==R.len(ans)||c.every(k=>k==='r'))continue;const kk=key(c);if(seen.has(kk))continue;seen.add(kk);out.push(c)}
   while(out.length<n){const c=genRhythm(pool.length>1?pool:['q','e'],null,R.len(ans));if(!seen.has(key(c))){seen.add(key(c));out.push(c)}}return out}
 const howTo={title:'LABEL ROOM: Static Jr. scrambled the labels!',
-  steps:['Tap the box to shake it and hear its rhythm.','Pick the label card with the matching notes.','Tap the box again to hear it again.','Right label = it ships down the conveyor!','TEACHER picks which notes can appear.'],
+  steps:['Tap the box to hear its rhythm.','Pick the matching label card.','Right label = it ships!','Teachers can pick which notes appear (in Teacher).'],
   words:'ta = 1 sound   ti-ti = 2   tika-tika = 4   rest = silence   (all 1 beat)',
   example:(x,y,w,h,t)=>{ctx.save();ctx.translate(x+w/2,y+h/2);const sh=Math.sin(t*20)*(t%2<.5?6:0);drawBox(-90+sh,-160,180,150,null,t);
     [['q','e','q','q'],['q','q','e','q']].forEach((s,i)=>drawCard(-220+i*230,40,210,140,s,{badge:'AB'[i],hl:i===1&&t%3>1.5}));ctx.restore()}};
@@ -100,7 +100,7 @@ function drawCardRaw(x,y,w,h,seq,o={}){ctx.save();
   if(o.x){ctx.strokeStyle='#d24a3c';ctx.lineWidth=10;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+30,y+30);ctx.lineTo(x+w-30,y+h-30);ctx.moveTo(x+w-30,y+30);ctx.lineTo(x+30,y+h-30);ctx.stroke()}
   ctx.restore()}
 class LabelRoom{constructor(o={}){this.o=o}
-  enter(){BB.groove.start(100,'pack');this.allowed=loadAllowed();this.streak=0;this.best=0;this.score=0;this.shipped=this.o.startAt||0;this.last=null;this.said={};this.motes=R.motes(18);this.belt=0;this.lamps=[0,0,0,0];
+  enter(){this.howTo=howTo;BB.groove.start(100,'pack');this.allowed=loadAllowed();this.streak=0;this.best=0;this.score=0;this.shipped=this.o.startAt||0;this.last=null;this.said={};this.motes=R.motes(18);this.belt=0;this.lamps=[0,0,0,0];
     this.clapBack=localStorage.getItem('bb_lbl_clap')==='1';this.state='load';this.teacher=false;this.lastOverride=-9;
     R.loadImgs([['mail_bg','jpg'],['pack_blur','jpg'],['crate','png']]).then(()=>{this.static=this.bake();if(this.o.skipIntro||this.o.startAt)this.newBox(true);else this.startIntro()});BB.mic.take();window.__lbl=this}
   exit(){BB.paused=false;if(window.__lbl===this)window.__lbl=null}
@@ -157,10 +157,10 @@ class LabelRoom{constructor(o={}){this.o=o}
     if(this.clapBack){this.state='clap';this.cb=new R.ClapBack(this.ans,{bpm:100,onQuiet:()=>{this.score++},onSneak:()=>{this.score=Math.max(0,this.score-1)},onDone:()=>setTimeout(()=>BB.scene===this&&this.ship(),500)});BB.say('lb_clap',{overlap:true})}else setTimeout(()=>BB.scene===this&&this.ship(),500)}
   ship(){this.cb=null;this.state='ship';this.st=BB.t;BB.sfx.whoosh(undefined,1)}
   manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;if(this.cb)this.cb.override();else if(this.state==='pick')this.tapBox()}
-  pause(){BB.paused=true;BB.ac.suspend()}
-  resume(){BB.paused=false;BB.ensureMic()}
+  pause(){BB.openMenu()}
+  resume(){BB.closeMenu()}
   cardRect(i){const n=this.cards.length,cw=(this.L||4)>4?470:n>3?340:400,ch=215,gap=30,tot=n*cw+(n-1)*gap,x0=W/2-tot/2;return{x:x0+i*(cw+gap),y:690,w:cw,h:ch}}
-  update(dt){BB.dt=dt;if(BB.keys.includes('p')){this.pause();return}if(BB.keys.includes(' '))this.manualOverride();
+  update(dt){BB.dt=dt;if(BB.keys.includes(' '))this.manualOverride();
     for(const k of BB.keys){if(k>='1'&&k<='4'&&this.cards&&this.cards[+k-1])this.pick(this.cards[+k-1]);if(k==='b')this.tapBox()}
     if(this.state==='intro'){const t=BB.t-this.st;this.introJr(dt);for(const f of this.flurry){f.vy=Math.min(f.vy+500*dt,170);f.vx*=1-dt*1.2;f.y+=f.vy*dt;f.x+=f.vx*dt+Math.sin(BB.t*1.6+f.p)*70*dt;f.r+=f.vr*dt;if(f.y>BELT_Y-60){Object.assign(f,this.flake(-90))}if(f.x>1450)f.x=1450}if(BB.keys.includes('s'))this.skipIntro();if(t>2&&this.voEnd&&BB.t>this.voEnd+.4)this.skipIntro();if(t>14)this.skipIntro()}
     const bv=this.beatV();this.belt=bv;
@@ -192,7 +192,7 @@ class LabelRoom{constructor(o={}){this.o=o}
     if(this.state==='enter'&&this.cardT&&t-this.cardT<2.6)BB.titleCard('ROOM 4: LABEL ROOM','Static Jr. scrambled the labels. Match them!',(t-this.cardT)/2.6);
     if(this.state==='end')this.drawEnd();
     if(this.teacher)this.drawTeacher();
-    if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
+    }
   drawBelt(t){const y=BELT_Y,x0=40,x1=1480;// belt surface with moving cleats locked to the beat grid
     BB.rrect(x0,y,x1-x0,26,8,BB.lg(y,y+26,['#3a4644','#222b2a']),'#121918',2);ctx.save();ctx.beginPath();ctx.rect(x0,y,x1-x0,26);ctx.clip();
     const off=((this.belt*60)%60+60)%60;ctx.fillStyle='rgba(160,210,200,.22)';for(let x=x0-60+off;x<x1;x+=60)ctx.fillRect(x,y+3,6,20);ctx.restore();
@@ -213,15 +213,13 @@ class LabelRoom{constructor(o={}){this.o=o}
     const sh=c.shake&&t-c.shake<.4?Math.sin((t-c.shake)*50)*10:0;ctx.save();ctx.globalAlpha=a;
     drawCard(x+sh,y,w,h,c.s,{badge:fl&&fl.i===i?null:'ABCD'[i],x:c.x,syl:this.revealed&&c.s===this.ans,hl:this.revealed&&c.s===this.ans&&Math.sin(t*6)>0});ctx.restore();
     if(this.state==='pick'&&!c.out)BB.button(r.x,r.y,r.w,r.h,'',{style:'none',id:'card'+i,onClick:()=>this.pick(c)})})}
-  drawHUD(t){if(this.state==='end')return;PANEL(40,24,470,110,28);BB.text('BOXES SHIPPED',64,52,30,COL.yellow,{align:'left',stroke:4});BB.text(`${this.shipped} of ${BOXES}`,64,98,28,'#fff',{align:'left',font:'Rammetto One',stroke:4});
+  drawHUD(t){if(this.state==='end')return;PANEL(40,24,490,114,28);BB.text('BOXES SHIPPED',72,58,26,COL.yellow,{align:'left',stroke:4,maxW:400});BB.text(`${this.shipped} of ${BOXES}`,72,90,24,'#fff',{align:'left',font:'Rammetto One',stroke:4,maxW:400});
     for(let i=0;i<BOXES;i++)BB.rrect(196+i*28,82,22,32,6,i<this.shipped?BB.lg(82,114,['#a6f5ae','#3fb45a']):'#2d4744','#fff',3);
-    PANEL(1196,24,260,110,28);BB.text('POINTS '+this.score,1326,56,30,'#fff',{stroke:4,maxW:224});BB.text('STREAK '+this.streak+(this.streak>=3?' \u2605':''),1326,100,26,COL.yellow,{stroke:4,maxW:290});
+    PANEL(1190,24,280,114,28);BB.text('POINTS '+this.score,1330,58,28,'#fff',{stroke:4,maxW:220});BB.text('STREAK '+this.streak+(this.streak>=3?' \u2605':''),1330,90,24,COL.yellow,{stroke:4,maxW:220});
     if(this.gain&&t-this.gain.t<1.4){const k=(t-this.gain.t)/1.4;ctx.save();ctx.globalAlpha=1-k;BB.text('+'+this.gain.p,1326,170-k*40,44,COL.green,{font:'Rammetto One',stroke:6});ctx.restore()}
-    BB.button(1680,24,200,110,'TEACHER',{size:30,id:'teacher',onClick:()=>{this.teacher=true}});
-    BB.pauseBtn(()=>this.pause(),738)/* v14.1.2 top row: 40|738|1196|1680, widths 470/240/260/200, even ~218 gaps, all 110 tall */;
     if(this.state==='end')return;if(this.state==='intro'){BB.button(W-370,H-150,330,110,'SKIP INTRO',{size:34,id:'skip',onClick:()=>this.skipIntro()});return}
     // v14.0.2: hint panel removed (teacher); tap the box to hear it again
-    BB.micMeter(40,H-150);if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});this.cb.draw(W/2,H-95)}}
+    if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});this.cb.draw(W/2,H-95)}}
   drawTeacher(){ctx.fillStyle='rgba(8,18,17,.78)';ctx.fillRect(0,0,W,H);const x=W/2-560,y=150,w=1120,h=780;PANEL(x,y,w,h,40);
     BB.text('TEACHER SETTINGS',W/2,y+70,52,'#fff',{font:'Rammetto One',stroke:7});BB.text('Notes allowed on the labels (higher streaks unlock more of these)',W/2,y+130,28,COL.yellow,{stroke:4,maxW:w-80});
     ALL.forEach((k,i)=>{const cx=x+90+(i%4)*240,cy=y+180+Math.floor(i/4)*220,on=this.allowed.includes(k);

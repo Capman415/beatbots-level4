@@ -376,6 +376,7 @@
       this.o = o;
     }
     enter() {
+      this.howTo = { title: "CHECKPOINT", steps: ["The class answers together \u2014 not a one-kid test.", "Follow the beat, or pick the matching rhythm.", "Get enough right to unlock Static Jr.", "No mic? Use Manual Override."], words: "" };
       this.qi = 0;
       this.score = 0;
       this.state = "intro";
@@ -527,7 +528,7 @@
       }
     }
     drawBanner() {
-      BB.panel(80, 40, 1760, 110, 28);
+      BB.panel(80, 40, 1710, 110, 28);
       BB.text("CHECKPOINT  " + Math.min(this.qi + 1, TOTAL) + " / " + TOTAL, W / 2, 78, 36, COL.yellow, { font: "Rammetto One", stroke: 5 });
       BB.text("Score  " + this.score + "  \xB7  need " + PASS + " of " + TOTAL + " to unlock Static Jr.", W / 2, 118, 28, "#cfe8e2", { stroke: 4 });
     }
@@ -615,7 +616,7 @@
       if (this.Q.kind === "follow" || this.state === "follow") this.drawFollow();
       else if (this.Q.kind === "choice") this.drawChoice();
       else if (this.Q.kind === "hearPick") this.drawHearPick();
-      BB.button(W - 300, 24, 260, 70, "SKIP Q", { size: 28, id: "asskip", onClick: () => this.grade(false, "skip") });
+      BB.button(W - 430, 24, 260, 70, "SKIP Q", { size: 28, id: "asskip", onClick: () => this.grade(false, "skip") });
       BB.captionBox();
     }
   }

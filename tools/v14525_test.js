@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v14.5.25: random left/center/right tire lanes; hop then straight roll; jump dodge stays jump
+// v14.5.26: random left/center/right tire lanes; hop then straight roll; jump dodge stays jump
 'use strict';
 const fs=require('fs'),path=require('path');
 const d=fs.readFileSync(path.join(__dirname,'../js/rooms/delivery.js'),'utf8');
@@ -75,14 +75,14 @@ ok(jumps.length>=4,'fight still has multiple jump/tire throws');
 ok(/DL=\(\)=>KB\('LEAN LEFT!','L',\[\[2,'junkR'\]\]/.test(d)&&/DR=\(\)=>KB\('LEAN RIGHT!','R',\[\[2,'junkL'\]\]/.test(d),'lean-left/right still dodge the opposite flying junk');
 
 const ver=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json'),'utf8'));
-ok(ver.version==='v14.5.25'&&ver.build==='1794301525','version.json is v14.5.25 / 1794301525');
-ok(/BB\.VERSION='v14\.5\.25'/.test(fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8')),'engine version synced');
-ok((fs.readFileSync(path.join(__dirname,'../index.html'),'utf8').match(/1794301525/g)||[]).length>=2,'index.html build synced');
-ok(/bb-1794301525/.test(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8')),'sw cache synced');
+ok(ver.version==='v14.5.26'&&ver.build==='1794301526','version.json is v14.5.26 / 1794301526');
+ok(/BB\.VERSION='v14\.5\.26'/.test(fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8')),'engine version synced');
+ok((fs.readFileSync(path.join(__dirname,'../index.html'),'utf8').match(/1794301526/g)||[]).length>=2,'index.html build synced');
+ok(/bb-1794301526/.test(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8')),'sw cache synced');
 
 ok(/dead-on tread face rolling straight at the camera/.test(d),'head-on tire art kept');
 ok(/no extra hand motion/.test(d)&&/bb_sj8/.test(d)&&/sum\*\.70/.test(d)&&/SAFE_Y=200/.test(d),'prior 21–24 work kept');
 ok(/W\/2,350,40/.test(fs.readFileSync(path.join(__dirname,'../js/rooms/assess.js'),'utf8')),'assess layout kept');
 
 if(fails){console.error(fails+' FAIL');process.exit(1)}
-console.log('v14.5.25 tests OK');
+console.log('v14.5.26 tests OK');

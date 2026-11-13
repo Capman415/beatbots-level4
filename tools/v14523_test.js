@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v14.5.25: cylinder-mapped chevrons kept; silhouette is now a head-on capsule
+// v14.5.26: cylinder-mapped chevrons kept; silhouette is now a head-on capsule
 'use strict';
 const fs=require('fs'),path=require('path');
 const d=fs.readFileSync(path.join(__dirname,'../js/rooms/delivery.js'),'utf8');
@@ -23,10 +23,10 @@ ok(/tire\?62\*P\.sc/.test(d),'ground-contact and toward-camera growth offset unc
 ok(!/roundRect\(-14,-62,56,124/.test(d),'no hanging 56x124 slab');
 
 const ver=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json'),'utf8'));
-ok(ver.version==='v14.5.25'&&ver.build==='1794301525','version.json is v14.5.25 / 1794301525');
-ok(/BB\.VERSION='v14\.5\.25'/.test(fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8')),'engine version synced');
-ok((fs.readFileSync(path.join(__dirname,'../index.html'),'utf8').match(/1794301525/g)||[]).length>=2,'index.html build synced');
-ok(/bb-1794301525/.test(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8')),'sw cache synced');
+ok(ver.version==='v14.5.26'&&ver.build==='1794301526','version.json is v14.5.26 / 1794301526');
+ok(/BB\.VERSION='v14\.5\.26'/.test(fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8')),'engine version synced');
+ok((fs.readFileSync(path.join(__dirname,'../index.html'),'utf8').match(/1794301526/g)||[]).length>=2,'index.html build synced');
+ok(/bb-1794301526/.test(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8')),'sw cache synced');
 
 // keep prior behavior
 ok(/no extra hand motion/.test(d)&&!/sx=jx\+sd\*/.test(d),'6-7 still has no extra hands');

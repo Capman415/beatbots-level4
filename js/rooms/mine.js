@@ -49,7 +49,8 @@ const /* v14.5.17 NOTE MINE polish: REWARD EFFECTS ONLY. Same rocks, same strike
    - on 3 of the 10 rocks Static Jr. lunges for the flying note and misses (the note is never taken, count unchanged) */
 CEL_T0=.35,CEL_STEP=.42,POP_DUR=2.4,SNATCH=[1,3,7],snatchAt=i=>SNATCH.includes(i),celBeat=dt=>dt<CEL_T0?-1:Math.min(3,Math.floor((dt-CEL_T0)/CEL_STEP)),
 strikesFor=R=>R?(R.bonus?4:(R.st||4)):4;// steady measures per whole note (bonus rocks need 2)
-BB.MINE={CEL_T0,CEL_STEP,POP_DUR,SNATCH,snatchAt,celBeat};
+const nextFloorOf=i=>{const f=ROCKS[i]&&ROCKS[i].f;if(f==null)return null;for(let j=i+1;j<ROCKS.length;j++)if(ROCKS[j].f!==f)return FLOORS[ROCKS[j].f];return null};
+BB.MINE={CEL_T0,CEL_STEP,POP_DUR,SNATCH,snatchAt,celBeat,nextFloorOf,FLOORS,ROCKS};
 const SOFT_MAX=window.GroupGate?GroupGate.SOFT_MAX:.72,LOUD_MIN=window.GroupGate?GroupGate.LOUD_MIN:.7;
 // dirt pattern
 let dirtPat=null;function dirt(){if(dirtPat)return dirtPat;const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
@@ -65,7 +66,7 @@ function litC(k,amb){if(litCache[k])return litCache[k];const im=BB.V2['tun'+k];i
   const gr=g.createLinearGradient(0,GY,0,rail(4)+200);gr.addColorStop(0,'rgba(20,10,5,.15)');gr.addColorStop(1,'rgba(10,5,3,.55)');g.fillStyle=gr;g.fillRect(0,GY,e.width,D);
   const p=ctx.createPattern(c,'repeat-x');p.setTransform(new DOMMatrix([1,0,0,1,0,GY]));return ePat=p}
 const howTo={title:'NOTE MINE: dig up the whole notes!',
-  steps:['Watch the green beat lights.','WARM UP: 4 claps in a row on the lights.','Then 4 MORE claps in a row strike the rock. Miss a beat and you lose one strike.','Tougher rocks later need 6 or 8 strikes.','Piano = soft claps. Forte = loud claps.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+  steps:['Watch the green beat lights.','Warm up: 4 claps in a row.','Then clap on the beat to strike the rock.','Piano = soft. Forte = loud.'],
   words:'"ta - a - a - a" (one whole note = 4 beats)   andante = walking speed,  allegro = fast',
   example:(x,y,w,h,t)=>{const bpm=90,ph=t*bpm/60,b=Math.floor(ph)%4,f=ph%1;
     const lit=[0,0,0,0];lit[b]=1-f*.6;ctx.save();ctx.translate(x+w/2,y+h-80);ctx.scale(.62,.62);BB.beatPills(0,0,lit);ctx.restore();
@@ -114,7 +115,7 @@ function drawCart(x,base,n){// painted cart, sized to sit inside the elevator ca
 // ---- the room ----
 class MineRoom{
   constructor(o={}){this.o=o}
-  enter(){BB.groove.start(96,'mine');Object.assign(this,{cam:{x:960,y:540,z:1},count:0,binCount:0,lit:[0,0,0,0,0],pipeGlow:0,elevY:GY,botX:1960,botOnElev:true,
+  enter(){this.howTo=howTo;BB.groove.start(96,'mine');Object.assign(this,{cam:{x:960,y:540,z:1},count:0,binCount:0,lit:[0,0,0,0,0],pipeGlow:0,elevY:GY,botX:1960,botOnElev:true,
     jr:{x:1650,y:GY,vis:true,mode:'munch'},rockI:0,state:'intro',st:0,beat:null,flying:[],pipeNotes:[],stage:0,wob:0,shk:0,
     hatch:0,btnPress:0,sprCheer:0,said:{},prank:null,cardT:-9,lastOverride:-9,doneT:0,marks:[0,0,0,0],dust:[]});this.introT0=BB.t;
     for(let i=0;i<40;i++)this.dust.push({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:5+Math.random()*12});
@@ -148,7 +149,7 @@ class MineRoom{
   // -------- rock flow --------
   beginRock(first){const R=ROCKS[this.rockI];this.R=R;if(strikesFor(R)>4&&!R.bonus&&!(this.said||{})['st'+R.st]){(this.said=this.said||{})['st'+R.st]=1;setTimeout(()=>BB.scene===this&&BB.say('mn_more',{overlap:true}),5200)}this.stage=0;this.state='drop';this.st=BB.t;this.rockY=-400;this.marks=[0,0,0,0];this.missVO=false;
     const newFloor=first||ROCKS[this.rockI-1]&&ROCKS[this.rockI-1].f!==R.f;
-    if(newFloor){this.cardT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4){this.startCave()}// v12.6: no loudness check here - the cave-in uses the levels from mic setup
+    if(newFloor){this.cardT=BB.t;this.nextPrevT=BB.t;this.prewarm(R.f);if(ROCKS[this.rockI+2])this.prewarm(ROCKS[this.rockI+2].f);if(R.f===4){this.startCave()}// v12.6: no loudness check here - the cave-in uses the levels from mic setup
       this.voEnd=BB.t+9;setTimeout(()=>{if(BB.scene===this)this.voEnd=BB.t+BB.say(FLOORS[R.f].vo)},R.f===4?3000:first?2200:300)}
     else this.voEnd=BB.t+.5;
     if(R.bonus&&!newFloor){this.voEnd=BB.t+.5;BB.caption={txt:'BONUS! Andante + forte: slow and LOUD!',who:'sprocket',until:BB.t+3.5,start:BB.t}}}
@@ -233,7 +234,7 @@ class MineRoom{
     {const ix=ROCK_X-30,iy=rail(R.f)-170,lq=!BB.q;BB.burst(ix,iy,lq?8:18,{world:1,cols:['#a08c78','#6e5a4a','#cbb79c'],speed:520,size:10,kind:'dot'});if(!lq)BB.burst(ix,iy,10,{world:1,cols:['rgba(210,190,160,.5)'],speed:160,size:22,kind:'dot',g:-40})}// v12.6 chips + dust at the impact point
     if(this.stage>=NEED)this.popNote()}
   popNote(){const R=this.R;BB.burst(ROCK_X,rail(R.f)-140,BB.q?14:6,{world:1,cols:['#8c7764','#5e4c3e','#a8957f'],speed:700,size:30,kind:'dot',g:900});// v12.6 chunks split off on the final break
-    this.state='pop';this.st=BB.t;this.beat=null;BB.sfx.chime();BB.sfx.pop();BB.shake(6);
+    this.state='pop';this.st=BB.t;this.beat=null;if(nextFloorOf(this.rockI)&&(!ROCKS[this.rockI+1]||ROCKS[this.rockI+1].f!==this.R.f))this.nextRevealT=BB.t;BB.sfx.chime();BB.sfx.pop();BB.shake(6);
     BB.burst(ROCK_X,rail(R.f)-150,40,{world:1,cols:['#ffe066','#fff','#6ee678'],speed:800,size:14,kind:'star',g:500});
     this.halves={t:BB.t};this.startCel();this.flying.push({t0:BB.t,x0:ROCK_X,y0:rail(R.f)-150,x1:PIPE_X,y1:rail(R.f)-120,gold:!!R.bonus,f:R.f});
     if(this.rockI===0)setTimeout(()=>BB.scene===this&&BB.say('got_note'),500);
@@ -245,10 +246,10 @@ class MineRoom{
   manualOverride(){if(BB.t-this.lastOverride<.5)return;this.lastOverride=BB.t;this.ovPop=BB.t;try{this.log({i:this.beat?Math.round(this.beatNow()):'',res:'manual-override'})}catch(e){}
     if(this.state==='dig'||this.state==='count'){this.marks=[1,1,1,1];if(this.state==='count'){this.state='dig';this.beat.evalM=Math.max(1,Math.ceil(this.beatNow()/4))}
       this.beat.evalM=Math.max(this.beat.evalM,Math.ceil(this.beatNow()/4));this.strikes=Math.max(this.strikes||0,Math.ceil((this.stage+(this.R.bonus?2:1))*strikesFor(this.R)/NEED));this.crack()}}
-  pause(){BB.paused=true;BB.ac.suspend()}
-  resume(){BB.paused=false;BB.ensureMic()}
+  pause(){BB.openMenu()}
+  resume(){BB.closeMenu()}
   update(dt){const t=BB.t;
-    if(BB.keys.includes(' '))this.manualOverride();if(BB.keys.includes('p')){this.pause();return}
+    if(BB.keys.includes(' '))this.manualOverride();
     if(this.state==='intro'){this.intro(t-this.introT0,dt);if(BB.keys.includes('s'))this.skipIntro()}
     if(this.introT0===undefined)this.introT0=t;
     this.wob=Math.max(0,this.wob-dt*1.5);this.shk=Math.max(0,this.shk-dt*3);for(let i=0;i<4;i++)if(this.marks[i])this.marks[i]=Math.min(1,this.marks[i]+dt*5);
@@ -316,7 +317,7 @@ class MineRoom{
     BB.captionBox();if(this.state!=='intro')this.drawChipFly();
     if(this.R&&BB.t-this.cardT<2.4&&this.state!=='end'){const F=FLOORS[this.R.f];BB.titleCard(this.rockI===0?'ROOM 1: NOTE MINE':F.name,this.rockI===0?'Static Jr. ate the whole notes. Dig them back up!':F.mean,(BB.t-this.cardT)/2.4)}
     if(this.state==='end')this.drawEnd();
-    if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}
+    }
   drawWorld(){const c=this.cam,t=BB.t;const vx0=c.x-W/2/c.z-50,vx1=c.x+W/2/c.z+50,vy0=c.y-H/2/c.z-50,vy1=c.y+H/2/c.z+50;
     // sky + warehouse interior
     if(vy0<GY){const g=ctx.createLinearGradient(0,0,0,GY);g.addColorStop(0,'#9ccfe6');g.addColorStop(1,'#c7e3ee');ctx.fillStyle=g;ctx.fillRect(vx0,Math.min(vy0,0),vx1-vx0,GY-Math.min(vy0,0));
@@ -392,7 +393,7 @@ class MineRoom{
         ctx.restore()}}
     if(this.jr.vis&&this.jr.mode!=='dive')this.drawJrWarehouse();
   }
-  // v12.8: phones (low quality) draw the static warehouse (wall tiles, conveyor render, signs, Smash-O-Matic prop) from one baked,
+  // v12.8: phones (low quality) draw the static warehouse (wall tiles, conveyor render, signs, Drill-O-Matic 3000 prop) from one baked,
   // reduced-resolution layer; only the belt cleats, bulbs, bin notes, button and Sprocket are drawn per frame. Desktop unchanged.
   whStatic(vx0,vx1){const t=BB.t;const wh=BB.V2.wh;
     if(wh){const s=GY/946,tw=wh.width*s,th=wh.height*s;for(let i=Math.floor(vx0/tw);i*tw<vx1;i++){ctx.save();ctx.translate(i*tw+(i%2?tw:0),0);if(i%2)ctx.scale(-1,1);ctx.drawImage(wh,0,0,tw,th);ctx.restore()}}
@@ -403,7 +404,7 @@ class MineRoom{
     // NOTE MINE sign over hatch
     {const nx=(HATCH[0]+HATCH[1])/2;BB.plaque(nx,452,250,80,'NOTE MINE',32,'#b5482a',{font:'Rammetto One',r:18});BB.text('▼',nx,508,30,COL.yellow,{stroke:5})}// v12.6: centred over the hatch// v12.2: moved clear of the lift post
     const mx=SMASH_X;BB.prop('smash',mx,GY+6,420,{shadowA:.4});
-    {const py=GY-498;BB.plaque(mx,py+31,230,66,'SMASH-O-MATIC',24,'#b5482a',{font:'Rammetto One',r:16,cols:['#fdf8ea','#ecdcb8','#caa77a']})}
+    {const py=GY-260;BB.plaque(mx,py,380,70,'Drill-O-Matic 3000',24,'#b5482a',{font:'Rammetto One',r:16,cols:['#fdf8ea','#ecdcb8','#caa77a']})}/* v14.5.26: was SMASH-O-MATIC; plaque sits on the machine body, clear of the HUD */
 }
   whBake(){const V=BB.V2;if(!V.wh||!V.conveyor)return null;if(this._wh)return this._wh;const S=.42,XA=-2400,X1=6400,Y1=GY+40,c=document.createElement('canvas');c.width=Math.ceil((X1-XA)*S);c.height=Math.ceil(Y1*S);
     const g=c.getContext('2d');g.scale(S,S);g.translate(-XA,0);BB.withCtx(g,()=>this.whStatic(XA,X1));this._wh={c,XA,X1,Y1};return this._wh}
@@ -448,8 +449,8 @@ class MineRoom{
     if(active&&BB.phone&&BB.q&&l>0){const lc=litC(k,L.amb);if(lc){ctx.globalAlpha=l;ctx.drawImage(lc,2200,y);ctx.globalAlpha=1}}// phone: pre-baked lantern light (no per-frame blend)
     if(k===1&&active&&this.beat){ctx.save();ctx.beginPath();ctx.rect(1460,y,1880,420);ctx.clip();ctx.lineCap='round';for(let i=0;i<12;i++){const sx=3400-((t*1600+i*397)%2000),sy=y+50+(i*71)%300,len=120+(i%4)*40,g=ctx.createLinearGradient(sx,0,sx+len,0);g.addColorStop(0,'rgba(255,220,160,.32)');g.addColorStop(1,'rgba(255,220,160,0)');ctx.strokeStyle=g;ctx.lineWidth=3+(i%3)*2;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx+len,sy);ctx.stroke()}ctx.restore()}
     ctx.restore();
-    // painted tempo word on the tunnel wall
-    BB.text(F.name,2330,y+48,34,COL.yellow,{font:'Rammetto One',align:'left',stroke:5});
+    // v14.5.26: only the CURRENT floor keeps its wall name. The next floor's sign used to sit under the count-in numbers.
+    if(active)BB.text(F.name,2330,y+48,34,COL.yellow,{font:'Rammetto One',align:'left',stroke:5});
     // leader robot for this floor
     const ph=active&&this.beat?(this.beatNow()%1+1)%1:(t*1.2)%1,b=BB.bounce(ph,active?.07:.02);
     if(k===0)BB.sprite('turtle',LEAD_X,rail(k),190,{squash:b});
@@ -498,6 +499,12 @@ class MineRoom{
     if(this.pipeGlow>0){ctx.save();ctx.globalAlpha=this.pipeGlow*(.35+.2*Math.sin(BB.t*4));const g=ctx.createLinearGradient(x-14,0,x+14,0);g.addColorStop(0,'rgba(255,233,160,0)');g.addColorStop(.5,'rgba(255,240,180,1)');g.addColorStop(1,'rgba(255,233,160,0)');ctx.fillStyle=g;ctx.fillRect(x-14,GY,28,bot-GY);ctx.restore()}
     for(let k=0;k<5;k++){const hy=rail(k)-120,L=LIGHT[k];BB.prop('funnel',x,hy+70,150,{shadow:false,rim:L.rim,amb:L.amb,ambA:.12})}
     for(const p of this.pipeNotes){BB.glow(x,p.y,60,'rgba(255,240,170,A)',.9);BB.wholeNote(x,p.y,20,{fill:p.gold?'#ffe066':'#fff'})}}
+  /* v14.5.26 next-tempo preview: shown at the start of a floor (~2s, fades before count-in numbers) and again as a 'next up' reveal when that floor is finished. Hidden during play and whenever the count-in number is up. Sits well above the H-200 count-in. */
+  drawNextTempo(){const nx=nextFloorOf(this.rockI||0);if(!nx)return;
+    if(this.state==='count'&&this.warm>0)return;// never share the screen with '1...' / '2...'
+    let a=0;const fade=(t0,hold,out)=>{if(t0==null)return 0;const d=BB.t-t0;if(d<0||d>hold+out)return 0;return d<hold?Math.min(1,d/.2):1-(d-hold)/out};
+    a=Math.max(fade(this.nextPrevT,1.6,.6),fade(this.nextRevealT,2,.6));if(a<=0)return;
+    ctx.save();ctx.globalAlpha=a;BB.plaque(W/2,H-360,560,88,'NEXT UP: '+nx.name,40,'#28403c',{font:'Rammetto One',r:18,cols:['#fdf8ea','#ecdcb8','#caa77a']});ctx.restore()}
   // -------- HUD --------
   drawChipFly(){const f=this.chipFly;if(!f||f.done)return;const tt=clamp((BB.t-f.t)/1.1,0,1);if(BB.t<f.t){}const e=ease.inOut(tt),im=BB.V2.chip;if(!im)return;
     const x=lerp(f.x0,762,e),y=lerp(f.y0,83,e)-Math.sin(tt*Math.PI)*160,h=lerp(150,78,e)*(BB.t<f.t?ease.back(clamp(1-(f.t-BB.t)/.3,0,1)):1),w=im.width*h/im.height;
@@ -506,24 +513,28 @@ class MineRoom{
   drawHUD(){const R=this.R||ROCKS[0],F=FLOORS[R.f];
     // cart meter: WHOLE NOTES n of 8
     const mp=this.meterPop&&BB.t-this.meterPop<.5?1+.12*Math.sin((BB.t-this.meterPop)*Math.PI*2):1;
-    {const cp=this.chipPop&&BB.t-this.chipPop<.6?1+.15*Math.sin((BB.t-this.chipPop)/.6*Math.PI):1,im=BB.V2.chip;ctx.save();ctx.translate(752,79);ctx.scale(cp,cp);BB.panel(-55,-55,110,110,26);
-      if(im){const h=60,w=im.width*h/im.height;if(this.chip){BB.glow(0,0,70,'rgba(255,220,120,A)',.35+.1*Math.sin(BB.t*3));ctx.drawImage(im,-w/2,-h/2-6,w,h)}else{ctx.globalAlpha=.22;ctx.drawImage(im,-w/2,-h/2-6,w,h);ctx.globalAlpha=1}}
-      BB.text('BEAT CHIP',0,38,15,this.chip?COL.yellow:'#8fb5ad',{stroke:3});ctx.restore()}
-    ctx.save();ctx.translate(40,24);ctx.scale(mp,mp);BB.panel(0,0,480,110,28);
-    BB.text('WHOLE NOTES',24,30,30,COL.yellow,{align:'left',stroke:4});BB.text(`${this.count} of 8`,24,76,26,'#fff',{align:'left',font:'Rammetto One',stroke:4});
-    for(let i=0;i<8;i++){const on=i<this.count;BB.wholeNote(206+i*32,76,12,{fill:on?'#6ee678':'#2d4744',ring:on?COL.ink:'#22383a'})}
+    {const cp=this.chipPop&&BB.t-this.chipPop<.6?1+.15*Math.sin((BB.t-this.chipPop)/.6*Math.PI):1,im=BB.V2.chip;ctx.save();ctx.translate(768,80);ctx.scale(cp,cp);BB.panel(-65,-65,130,130,26);/* v14.5.26: chip + label stay inside the well */
+      if(im){const h=48,w=im.width*h/im.height;if(this.chip){BB.glow(0,-8,64,'rgba(255,220,120,A)',.35+.1*Math.sin(BB.t*3));ctx.drawImage(im,-w/2,-h/2-10,w,h)}else{ctx.globalAlpha=.22;ctx.drawImage(im,-w/2,-h/2-10,w,h);ctx.globalAlpha=1}}
+      BB.text('BEAT CHIP',0,36,14,this.chip?COL.yellow:'#8fb5ad',{stroke:3,maxW:88});ctx.restore()}
+    ctx.save();ctx.translate(40,24);ctx.scale(mp,mp);BB.panel(0,0,500,114,28);/* v14.5.26: title, count and pips padded inside the well */
+    BB.text('WHOLE NOTES',32,42,26,COL.yellow,{align:'left',stroke:4,maxW:200});BB.text(`${this.count} of 8`,32,80,24,'#fff',{align:'left',font:'Rammetto One',stroke:4,maxW:160});
+    for(let i=0;i<8;i++){const on=i<this.count;BB.wholeNote(226+i*30,80,11,{fill:on?'#6ee678':'#2d4744',ring:on?COL.ink:'#22383a'})}
     ctx.restore();
-    // tempo / dynamics sign with Italian word
-    const sg=R.sign||[F.name,F.mean],icons=R.icons||(F.icon?[F.icon]:[]);BB.panel(W-520,24,480,110,28);/* v14.1.2 mirrors WHOLE NOTES */
-    icons.forEach((ic,i)=>BB.sprite(ic,W-470+i*70,124,76,{shadow:false})/* inside border */);
-    BB.text(sg[0],W-500+icons.length*70,60,sg[0].length>10?32:40,'#fff',{align:'left',font:'Rammetto One',stroke:5,maxW:440-icons.length*70});
-    BB.text(sg[1]+(R.dyn==='p'?'  (p)':R.dyn==='f'?'  (f)':'')+`  ·  ${R.bpm} bpm`,W-500+icons.length*70,104,24,COL.yellow,{align:'left',stroke:4,maxW:440-icons.length*70});
-    BB.pauseBtn(()=>this.pause(),984);
+    // v14.5.26 tempo / dynamics: content centered in the well, tested against the longest label (ANDANTE + FORTE)
+    const sg=R.sign||[F.name,F.mean],icons=(R.icons||(F.icon?[F.icon]:[])).filter(Boolean),tpx=W-630,tpy=24,tpw=480,tph=114;/* v14.5.26: ends at 1770, clear of the hamburger at ~1820 */
+    BB.panel(tpx,tpy,tpw,tph,28);
+    {const ix=tpx+28,iw=tpw-56,ic=icons.length,iwIcon=ic?56:0,row=ic?iwIcon*ic+12:0,midY=tpy+tph/2,title=sg[0],sub=sg[1]+(R.dyn==='p'?'  (p)':R.dyn==='f'?'  (f)':'')+`  ·  ${R.bpm} bpm`,tSize=title.length>12?26:32;
+      const meas=(t,sz,f)=>{try{return BB.measure(t,sz,f)}catch(e){return t.length*sz*.62}},textW=Math.min(iw-row,Math.max(meas(title,tSize,'Rammetto One'),meas(sub,22))+12),x0=ix+Math.max(0,(iw-row-textW)/2);
+      icons.forEach((icn,i)=>BB.sprite(icn,x0+iwIcon/2+i*iwIcon,tpy+tph-22,iwIcon-6,{shadow:false}));
+      const cx=x0+row+textW/2;
+      BB.text(title,cx,midY-14,tSize,'#fff',{font:'Rammetto One',stroke:5,maxW:textW});
+      BB.text(sub,cx,midY+18,22,COL.yellow,{stroke:4,maxW:textW});}
     // beat lights (the green lights keep the beat)
     const lit=[0,0,0,0];let count=false;
     if(this.beat){const bn=this.beatNow()-BB.visLat()/this.beat.spb;if(bn>=0){const bi=Math.floor(bn),f=bn-bi;lit[bi%4]=Math.max(.25,1-f*.9);count=this.state==='count'}}
-    const need=strikesFor(this.R),pw=need>6?26:34,sw=need*pw-8+40,gx=W/2-(392+20+sw)/2;/* v14.1.2 lights+STRIKES centred group, level with MIC/MANUAL */
-    BB.beatPills(gx+196,H-95,lit,{marks:this.marks,wobble:this.wob*(this.prank&&this.prank.ph==='throw'?1:.4)});
+    const need=strikesFor(this.R),pw=need>6?28:34,sPad=24,sW=need*pw+sPad*2,pillW=352,gap=64,group=pillW+gap+sW,gx0=(W-group)/2;/* v14.5.26: roomier pips, 64px gap so strikes never crowd the beat lights */
+    BB.beatPills(gx0+pillW/2,H-95,lit,{marks:this.marks,wobble:this.wob*(this.prank&&this.prank.ph==='throw'?1:.4)});
+    this.drawNextTempo();
     if(count){BB.text(this.warm>0?this.warm+' ...':'WARM UP: clap 4 in a row!',W/2,H-200,this.warm>0?70:44,COL.yellow,{font:'Rammetto One',stroke:8})}
     else if(this.state==='dig'){BB.text(R.dyn==='p'?'soft claps!':R.dyn==='f'?'LOUD claps!':(strikesFor(R)+' strikes break the rock!'),W/2,H-185,34,'#fff',{stroke:6})}
     if(this.cel){const d=BB.t-this.cel.t,cb=celBeat(d),a=clamp(d/.25,0,1)*clamp((POP_DUR-d)/.3,0,1),cx=W/2,cy=H-250;ctx.save();ctx.globalAlpha=a;
@@ -534,11 +545,11 @@ class MineRoom{
       {const hop=Math.abs(Math.sin(d*Math.PI*1.2))*26*clamp(1-d/POP_DUR,0,1);BB.contactShadow(cx+430,cy+82,60,.4);BB.sprite('sprocket',cx+430,cy+82-hop,190,{squash:Math.sin(d*12)*.03})}ctx.restore()}
     if(this.pebbles){ctx.fillStyle='#8a7060';ctx.strokeStyle=COL.ink;ctx.lineWidth=3;for(const q of this.pebbles){ctx.beginPath();ctx.ellipse(q.x,q.y,14,10,q.x,0,7);ctx.fill();ctx.stroke()}}
     // crack progress chips next to the lights
-    BB.panel(gx+412,H-150,sw,110,26);for(let i=0;i<need;i++){const on=this.state==='pop'||i<(this.strikes||0);BB.rrect(gx+432+i*pw,H-90,pw-8,36,8,on?COL.yellow:'#3a4a48','#fff',2)}
-    BB.text('STRIKES',gx+412+sw/2,H-118,20,'#fff',{stroke:4});
-    BB.micMeter(40,H-150,{band:R.dyn==='p'?'soft':R.dyn==='f'?'loud':null});
+    BB.panel(gx0+pillW+gap,H-154,sW,118,26);
+    BB.text('STRIKES',gx0+pillW+gap+sW/2,H-154+36,22,'#fff',{stroke:4});
+    for(let i=0;i<need;i++){const on=this.state==='pop'||i<(this.strikes||0);BB.rrect(gx0+pillW+gap+sPad+i*pw,H-154+58,pw-8,32,8,on?COL.yellow:'#3a4a48','#fff',2)}
     BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&BB.t-this.ovPop<.3?1.08:1})}
-  drawIntroHUD(){BB.button(W-370,H-150,330,110,'SKIP INTRO',{size:34,id:'skip',onClick:()=>this.skipIntro()});BB.pauseBtn(()=>this.pause(),984)}
+  drawIntroHUD(){BB.button(W-370,H-150,330,110,'SKIP INTRO',{size:34,id:'skip',onClick:()=>this.skipIntro()})}
   drawEnd(){const t=BB.t-this.st;if(t<7.4)return;const k=ease.back(clamp((t-7.4)/.6,0,1));// after Sorter Bot rolls off at the surface
     ctx.save();ctx.translate(W/2,330);ctx.scale(k,k);BB.panel(-560,-250,1120,500,44);
     BB.text('ROOM 1 COMPLETE!',0,-160,72,'#fff',{font:'Rammetto One',stroke:9});

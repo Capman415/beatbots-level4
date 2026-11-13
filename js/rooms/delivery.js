@@ -134,10 +134,10 @@ const bossMode=()=>{try{const q=new URLSearchParams(location.search).get('boss')
 const CHIP_ROOMS=['mine','smasher','packing','label'],chipCount=()=>{try{const d=(BB.save&&BB.save.done)||JSON.parse(localStorage.getItem('bb4')||'{"done":[]}').done||[];return CHIP_ROOMS.filter(r=>d.includes(r)).length}catch(e){return 0}},
   deluxeOn=()=>{try{const q=new URLSearchParams(location.search).get('deluxe');if(q!=null)return q==='1'}catch(e){}return chipCount()>=4};BB.chipCount=chipCount;
 const SHIELD=[2,5,7],FACE=[3,6],JR={x:1430,y:540},LCH={x:300,y:760},TRK={x:1110,y:560};
-const howTo={title:'DELIVERY SHOWDOWN: beat Static Jr.!',steps:['Each box shows a rhythm. Listen, then clap it back.','A good clap THROWS the box at Static Jr.','Every hit drops a box into the truck. Fill it up!','Shield up? Only a PERFECT clap breaks it.','Face box? Drag it onto his head to BONK him.','No mic? Tap MANUAL OVERRIDE when they nail it.'],
+const howTo={title:'DELIVERY SHOWDOWN: beat Static Jr.!',steps:['Listen, then clap the rhythm back.','A good clap throws the box at Static Jr.','Shield up? Only a PERFECT clap breaks it.','No mic? Use Manual Override.'],
   words:'ta = 1   ti-ti = 2 quick   tika-tika = 4 quicker   ta-ah = 2 beats   rest = silent beat',example:(x,y,w,h,t)=>{}};
 class DeliveryRoom{constructor(o={}){this.o=o}
-  enter(){BB.groove.start(100,'pack');this.n=this.o.startAt||0;this.hp=TOTAL-this.n;this.state='load';this.said={};this.bolts=[];this.fx=[];this.motes=R.motes(10);this.ph=0;this.jrK=null;
+  enter(){this.howTo=howTo;BB.groove.start(100,'pack');this.n=this.o.startAt||0;this.hp=TOTAL-this.n;this.state='load';this.said={};this.bolts=[];this.fx=[];this.motes=R.motes(10);this.ph=0;this.jrK=null;
     R.loadImgs([['pack_blur','jpg'],['dock_bg','jpg'],['chip','png']]).then(()=>{this.static=R.bake(g=>this.bake(g));this.state='intro';this.st=BB.t;if(bossMode()==='clap')BB.say('jr_boss');else{BB.celebrate&&0;BB.burst(W/2,300,40,{cols:['#ffe066','#6ee678','#fff','#ff8adf'],kind:'star',size:14,speed:900,g:400})}this.voEnd=BB.t+3.2;setTimeout(()=>BB.scene===this&&!this.move&&BB.say('dl_intro'),2600)});this.move=bossMode()!=='clap';if(this.move)setTimeout(()=>BB.scene===this&&this.state==='intro'&&BB.say('bb_treat',{overlap:true}),11200);if(!this.move)BB.mic.take();window.__dl=this}
   exit(){BB.paused=false;BB.fuzz=0}
   bake(g){const V=BB.V2;if(V.dock_bg){/* v14.2 painted night dock (assets/v2/dock_bg.jpg); hazard stripe lifted to the old y=740 dock edge */g.drawImage(V.dock_bg,0,-90,W,H);g.drawImage(V.dock_bg,0,H-90,W,90,0,H-90,W,90);return}if(V.pack_blur){g.filter='brightness(.35) saturate(.6)';g.drawImage(V.pack_blur,0,0,W,H);g.filter='none'}
@@ -173,14 +173,14 @@ class DeliveryRoom{constructor(o={}){this.o=o}
   bombAt(i){const r=Math.sin(i*12.9898)*43758.5453,f=r-Math.floor(r);return{x:260+f*(W-520),y:420+((f*7)%1)*300}}
   skipKO(){if(this.state!=='end'||this.cel)return;(this.heroes||[]).forEach(h=>h.armed=2);BB.groove.stop();this.st=BB.t-KO_CEL+.05;this.ko=this.dinged=1;KO_HITS.forEach((h,i)=>this['h'+i]=1);BB.say('dl_done',{overlap:true})}
   manualOverride(){if(BB.t-(this.lastOv||0)<.5)return;this.lastOv=BB.t;this.ovPop=BB.t;if(this.cb)this.cb.override()}
-  pause(){BB.paused=true;BB.ac.suspend()}
-  resume(){BB.paused=false;BB.ensureMic()}
+  pause(){BB.openMenu()}
+  resume(){BB.closeMenu()}
   // static attacks (cosmetic + brief fuzz; never hides the rhythm for long)
   attack(){const p=this.phase(),r=Math.random();this.jrK={t:BB.t,ph:'zap'};
     if(r<.55||!this.cb){const n=1+p;for(let i=0;i<n;i++)this.bolts.push({x:JR.x,y:JR.y-170,tx:300+Math.random()*(W-600),ty:200+Math.random()*500,t:BB.t+i*.18});BB.sfx.zap()}
     else{this.fuzzT=BB.t;this.fuzzD=.35+.1*p;BB.sfx.glitch();if(!this.said.x){this.said.x=1;BB.say('jr_extra',{overlap:true,nocap:true})}}
     this.atk=BB.t+[5,3.6,2.6][p]+Math.random()*2}
-  update(dt){this.voiceTick(dt);this.powerTick(dt,BB.t-this.st);if(BB.keys.includes('p')){this.pause();return}if(BB.keys.includes(' ')){if(this.state!=='end')this.manualOverride();else this.manualPc=1}const t=BB.t-this.st;
+  update(dt){this.voiceTick(dt);this.powerTick(dt,BB.t-this.st);if(BB.keys.includes(' ')){if(this.state!=='end')this.manualOverride();else this.manualPc=1}const t=BB.t-this.st;
     if(this.state==='intro'&&t>(this.move?KO_INTRO:6)){if(this.move)this.startKO();else this.newBox()}
     if(this.state==='intro'&&this.move){if(t>8&&!this.saidJr){this.saidJr=1;BB.say('jr_boss',{overlap:true})}if(t>1.2&&!this.saidFx){this.saidFx=1;BB.say('bb_fixed',{overlap:true})}}
     if(this.state==='show'&&t>1.4&&BB.t>this.voEnd&&!this.face)this.startClap();
@@ -401,7 +401,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       for(let q=0;q<4;q++)BB.rrect(-110+q*90,50,60,34,12,q===(bb|0)?'#6ee678':'#2d4744','#fff',3);ctx.restore();
       const nx=KO_BARS[bi+1];if(nx&&bb>2&&!(KO_BARS[bi]&&(KO_BARS[bi].chant||KO_BARS[bi].chantIntro)))BB.text('NEXT: '+nx.cue,cx,cy+150,34,'#fff',{stroke:5,maxW:900});
       if(bb%1<.5&&!bar.count&&!bar.chant&&!bar.chantIntro)R.bubble(LCH.x+20,LCH.y-300,bar.cue.toLowerCase())}
-    if(!this.cel)(this.q||(f=>f())).call(this,()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'koskip',onClick:()=>this.skipKO()}));
+    if(!this.cel)(this.q||(f=>f())).call(this,()=>BB.button(W-430,30,260,90,'SKIP',{size:40,id:'koskip',onClick:()=>this.skipKO()}));
     if(k>KO_CEL){const a=clamp((k-KO_CEL)/.4,0,1),s=.7+.3*ease.back(a);ctx.save();ctx.globalAlpha=a;ctx.translate(W/2,190);ctx.scale(s,s);BB.text('DELIVERY DOCK FIXED!',0,0,92,'#ffd63c',{font:'Rammetto One',stroke:12,strokeCol:'#782814'});
       if(BB.V2.chip){const im=BB.V2.chip,h=150,w=im.width*h/im.height;BB.glow(0,170,110,'rgba(255,220,120,A)',.5);ctx.drawImage(im,-w/2,170-h/2,w,h)}BB.text('Level 4 Beat Chip earned!',0,275,40,'#fff',{stroke:6});
       BB.panel(-430,320,860,90,24);BB.text('Great work, Rhythm Engineers!',0,366,44,COL.yellow,{stroke:5});ctx.restore();
@@ -518,7 +518,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       if(u>=2)BB.text('BURP! bzzt!',JR.x-40,JR.y-260,56,'#7ef0ff',{font:'Rammetto One',stroke:7});else BB.text('CHOMP!',JR.x-300,JR.y-260,52,'#ffe066',{font:'Rammetto One',stroke:7})}
     let cur=null;for(const l of SJ)if(v>=l[0])cur=l;if(cur&&v<cur[0]+2.4&&cur[1]!=='bb_sj6'){if(cur[1]==='bb_sp1')R.bubble(LCH.x-10,LCH.y-310,cur[2].toLowerCase());else R.bubble(JR.x-40,JR.y-360,cur[2].toLowerCase(),'#2a6f8a')}
     if(v>=22){const u=v-22,s=u<.2?lerp(3.2,1,u/.2):1+.03*Math.sin(t*20);if(!this.fightSlam){this.fightSlam=1;BB.shake(26);BB.sfx.pkTa&&BB.sfx.pkTa();BB.sfx.bonk&&BB.sfx.bonk();BB.burst(W/2,480,50,{cols:['#ffe066','#ff8adf','#fff'],kind:'star',size:16,speed:1200,g:300})}ctx.save();ctx.translate(W/2,480);ctx.scale(s,s);BB.text('FIGHT!',0,0,220,'#ffd63c',{font:'Rammetto One',stroke:16,strokeCol:'#782814'});ctx.restore()}
-    this.q(()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'soskip',onClick:()=>{if(this.state==='intro')this.startKO()}}))}
+    this.q(()=>BB.button(W-430,30,260,90,'SKIP',{size:40,id:'soskip',onClick:()=>{if(this.state==='intro')this.startKO()}}))}
   drawDmg(d,t,wreck){/* cumulative cartoon damage on Jr (local sprite coords: feet y=230, screen ~(-15,-40), antenna knob (0,-175)). No gore: dents, tape, patches, fuzz, stars. */
     if(wreck)d=1;const ink='#3a2a1e';ctx.save();
     const tape=(x,y,r,w=70)=>{ctx.save();ctx.translate(x,y);ctx.rotate(r);BB.rrect(-w/2,-12,w,24,6,'#f3e2c0','#b89a6a',2);ctx.fillStyle='#e8c9a0';ctx.fillRect(-8,-8,16,16);ctx.restore()};
@@ -694,7 +694,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     else if(k<11.2){const v=k-8,s=v<.3?lerp(3,1,v/.3):1+.04*Math.sin(t*8);if(v<.05&&!this.rvl){this.rvl=1;BB.shake(18);BB.sfx.pkTa&&BB.sfx.pkTa();BB.sfx.bonk&&BB.sfx.bonk();BB.burst(W/2,400,50,{cols:['#ffe066','#ff8adf','#7ef0ff','#6ee678'],kind:'star',size:15,speed:1100,g:400})}
       ctx.save();ctx.translate(W/2,330);ctx.scale(s,s);BB.text('YOUR REWARD:',0,-90,64,'#fff',{stroke:9});BB.text('BOSS BRAIN BREAK!',0,30,120,'#ff8adf',{font:'Rammetto One',stroke:14,strokeCol:'#3a1040'});ctx.restore();if(v<.12){ctx.fillStyle=`rgba(255,255,255,${.5*(1-v/.12)})`;ctx.fillRect(0,0,W,H)}}
     else{BB.panel(W/2-560,140,1120,200,30);BB.text('STAND UP, RHYTHM ENGINEERS!',W/2,190,64,COL.yellow,{stroke:8,maxW:1060});BB.text('DODGE: duck, lean, freeze, jump.  ATTACK: CLAP! Faster = stronger!  Everybody wins!',W/2,265,34,'#fff',{stroke:5,maxW:1040})}
-    this.q(()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'rwskip',onClick:()=>{if(this.state==='intro'){BB.sayStop&&BB.sayStop();this.startKO()}}}))}
+    this.q(()=>BB.button(W-430,30,260,90,'SKIP',{size:40,id:'rwskip',onClick:()=>{if(this.state==='intro'){BB.sayStop&&BB.sayStop();this.startKO()}}}))}
   drawTease(k,t){/* v14.3.2 next-adventure tease: light through the roof, Sprocket looks up. Deliberately vague: no theme, no villain */
     const v=k-(KO_CEL+3);if(v<0)return;if(!this.teased){this.teased=1;BB.say('bb_tease',{overlap:true})}const a=clamp(v/1,0,1);
     ctx.save();ctx.globalAlpha=a*.55;const g=ctx.createLinearGradient(LCH.x,0,LCH.x-120,LCH.y);g.addColorStop(0,'rgba(255,250,220,.9)');g.addColorStop(1,'rgba(255,250,220,0)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(LCH.x-260,0);ctx.lineTo(LCH.x+60,0);ctx.lineTo(LCH.x+40,LCH.y+80);ctx.lineTo(LCH.x-420,LCH.y+80);ctx.fill();ctx.restore();
@@ -814,9 +814,9 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     if(this.face){const f=this.face,s=95;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.drag?0:Math.sin(t*3)*.1);BB.rrect(-s,-s,s*2,s*2,16,BB.lg(-s,s,['#9b8fe0','#4b3f8f']),COL.ink,6);ctx.save();ctx.beginPath();ctx.roundRect(-s+5,-s+5,s*2-10,s*2-10,12);ctx.clip();BB.staticJr(0,s*1.25,s*2.1,{});ctx.restore();
       BB.rrect(-90,s+6,180,34,10,'rgba(12,28,26,.85)',COL.yellow,2);BB.text(f.drag?'DROP ON HIS HEAD!':'DRAG ME TO HIM!',0,s+23,18,'#fff',{maxW:170});ctx.restore();
       if(!f.drag){ctx.save();ctx.globalAlpha=.5+.4*Math.sin(t*8);ctx.strokeStyle=COL.yellow;ctx.lineWidth=6;ctx.setLineDash([14,10]);ctx.beginPath();ctx.moveTo(f.x,f.y-s);ctx.quadraticCurveTo((f.x+JR.x)/2,Math.min(f.y,JR.y)-260,JR.x,JR.y-230);ctx.stroke();ctx.restore()}}
-    if(!end&&!(this.move&&this.state==='intro')){BB.panel(40,24,400,110,28);BB.text('TRUCK LOAD  '+fill+' of '+TOTAL,64,52,28,COL.yellow,{align:'left',stroke:4});for(let i=0;i<TOTAL;i++)BB.rrect(64+i*44,78,36,36,8,i<fill?BB.lg(78,114,['#e2b272','#b07a40']):'#2d4744','#fff',3);
+    if(!end&&!(this.move&&this.state==='intro')){BB.panel(40,24,430,114,28);BB.text('TRUCK LOAD  '+fill+' of '+TOTAL,72,56,26,COL.yellow,{align:'left',stroke:4,maxW:380});for(let i=0;i<TOTAL;i++)BB.rrect(72+i*42,80,32,28,8,i<fill?BB.lg(80,108,['#e2b272','#b07a40']):'#2d4744','#fff',3);
       if(this.phT&&t-this.phT<2.4)BB.text(this.ph===1?'PHASE 2: FASTER!':'PHASE 3: WILD STATIC!',W/2,200,64,'#ff8adf',{font:'Rammetto One',stroke:8})}
-    if(!end&&!this.move){BB.pauseBtn(()=>this.pause());BB.micMeter(40,H-150)}if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});if(BB.fuzz){ctx.save();ctx.translate((Math.random()-.5)*10,(Math.random()-.5)*4)}this.cb.draw(W/2,H-95);if(BB.fuzz)ctx.restore()}
+    if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});if(BB.fuzz){ctx.save();ctx.translate((Math.random()-.5)*10,(Math.random()-.5)*4)}this.cb.draw(W/2,H-95);if(BB.fuzz)ctx.restore()}
     // screen fuzz (brief, translucent: rhythm stays readable)
     if(BB.fuzz){ctx.save();ctx.globalAlpha=.22;for(let i=0;i<70;i++){ctx.fillStyle=Math.random()<.5?'#fff':'#7ef0ff';ctx.fillRect(Math.random()*W,Math.random()*H,40+Math.random()*260,2+Math.random()*5)}ctx.restore()}
     if(this.state==='intro'&&!this.move&&k<2.6)BB.titleCard('ROOM 5: DELIVERY SHOWDOWN','Clap the boxes. Beat Static Jr.!',k/2.6);
@@ -824,5 +824,5 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     if(end)this.drawTease(k,t);
     if(end&&k>KO_CEL+2){/* v14.2: last room -> back to the room map (finale done) */BB.button(W/2-520,860,480,130,'ROOM MAP',{style:'green',size:56,id:'tomap',onClick:()=>BB.roomDone('finale')});BB.button(W/2+40,860,480,130,'PLAY AGAIN',{size:50,id:'again',onClick:()=>BB.go(new DeliveryRoom())})}
     this.drawSceneFront(k,t);this.drawFx2();this.drawRim();ctx.restore();this.drawSplit(k);this.drawCloseup(k);this.drawVoice(k,t);this.drawClapWin(k,t);this.drawMeter(k,t);this.drawFreeze(k,t);this.drawPowerHud(k,t);this.drawLetterbox(CAM.lb);for(const f of this.qq)f();this.drawReplay(k,t);
-    if(BB.paused)BB.pauseOverlay(howTo,()=>this.resume())}}
+    }}
 BB.DeliveryRoom=DeliveryRoom})();

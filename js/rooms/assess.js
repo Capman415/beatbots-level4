@@ -121,7 +121,7 @@ class FollowPulse{constructor(o={}){this.bpm=o.bpm||92;this.spb=60/this.bpm;this
     BB.text('Clap with the lights — 8 steady ta beats.',cx,y+130,24,'#cfe8e2',{stroke:4})}}
 
 class AssessRoom{constructor(o={}){this.o=o}
-  enter(){this.qi=0;this.score=0;this.state='intro';this.st=BB.t;this.cb=null;this.fp=null;this.flash=null;this.picked=null;this.run=BB.assessLog.startRun();
+  enter(){this.howTo={title:'CHECKPOINT',steps:['The class answers together — not a one-kid test.','Follow the beat, or pick the matching rhythm.','Get enough right to unlock Static Jr.','No mic? Use Manual Override.'],words:''};this.qi=0;this.score=0;this.state='intro';this.st=BB.t;this.cb=null;this.fp=null;this.flash=null;this.picked=null;this.run=BB.assessLog.startRun();
     BB.groove&&BB.groove.start(96,'pack');BB.mic&&BB.mic.take&&BB.mic.take();
     this.voEnd=BB.t+(BB.say('as_intro')||2.5)+.3;window.__as=this;
     if(this.o.auto||BB.debug)setTimeout(()=>BB.scene===this&&this.state==='intro'&&this.beginQ(),900)}
@@ -155,7 +155,7 @@ class AssessRoom{constructor(o={}){this.o=o}
     if(this.state==='hear'&&BB.t>(this.hearEnd||0)){this.state='q';this.st=BB.t}
     if(this.fp)this.fp.update(dt);
     if(BB.debug&&(this.state==='q'||this.state==='follow'||this.state==='hear')&&BB.t-this.st>1.2&&!this._auto){this._auto=1;setTimeout(()=>{this._auto=0;if(BB.scene===this)this.override()},400)}}
-  drawBanner(){BB.panel(80,40,1760,110,28);BB.text('CHECKPOINT  '+(Math.min(this.qi+1,TOTAL))+' / '+TOTAL,W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
+  drawBanner(){BB.panel(80,40,1710,110,28);BB.text('CHECKPOINT  '+(Math.min(this.qi+1,TOTAL))+' / '+TOTAL,W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
     BB.text('Score  '+this.score+'  ·  need '+PASS+' of '+TOTAL+' to unlock Static Jr.',W/2,118,28,'#cfe8e2',{stroke:4})}
   drawProgress(){for(let i=0;i<TOTAL;i++){const x=260+i*175,y=155,done=i<this.qi,cur=i===this.qi&&this.state!=='end'&&this.state!=='intro';
       BB.rrect(x,y,150,18,9,done?'#6ee678':cur?'#ffe066':'#2a3a38','#fff',2)}}
@@ -199,7 +199,7 @@ class AssessRoom{constructor(o={}){this.o=o}
     if(this.Q.kind==='follow'||this.state==='follow')this.drawFollow();
     else if(this.Q.kind==='choice')this.drawChoice();
     else if(this.Q.kind==='hearPick')this.drawHearPick();
-    BB.button(W-300,24,260,70,'SKIP Q',{size:28,id:'asskip',onClick:()=>this.grade(false,'skip')});
+    BB.button(W-430,24,260,70,'SKIP Q',{size:28,id:'asskip',onClick:()=>this.grade(false,'skip')});
     BB.captionBox()}}
 BB.AssessRoom=AssessRoom;BB._assessQS=QS;BB._assessPASS=PASS;BB._assessTOTAL=TOTAL;BB.FollowPulse=FollowPulse;
 /* open Delivery through the gate unless already unlocked this session or ?assess=0 */
