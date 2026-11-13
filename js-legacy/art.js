@@ -1327,7 +1327,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     BB.text(c.txt, x + w / 2 + 40, y + 50, fs, c.who === "jr" ? "#c0392b" : COL.ink, { maxW: w - 170 });
     ctx.restore();
   };
-  BB.MENU_BTN = { x: W - 100, y: 26, s: 72 };
+  BB.MENU_BTN = { x: 28, y: 26, s: 72 };
   BB.MENU_INK = "#0d0c22";
   BB.MENU_MUTED = "#6b6a80";
   BB.MENU_BG = "#f6f5f2";
@@ -1340,38 +1340,44 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    const shadow = (fn) => {
-      ctx.save();
-      ctx.strokeStyle = "rgba(0,0,0,.5)";
-      ctx.lineWidth = ctx.lineWidth;
-      ctx.translate(0, 2);
-      fn();
-      ctx.restore();
-      ctx.strokeStyle = "#f6f3ea";
-      fn();
-    };
     if (open) {
       ctx.lineWidth = 3.5;
       const r = 15;
-      shadow(() => {
-        ctx.beginPath();
-        ctx.moveTo(cx - r, cy - r);
-        ctx.lineTo(cx + r, cy + r);
-        ctx.moveTo(cx + r, cy - r);
-        ctx.lineTo(cx - r, cy + r);
-        ctx.stroke();
-      });
+      ctx.strokeStyle = "rgba(13,12,34,.2)";
+      ctx.translate(0, 1);
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy - r);
+      ctx.lineTo(cx + r, cy + r);
+      ctx.moveTo(cx + r, cy - r);
+      ctx.lineTo(cx - r, cy + r);
+      ctx.stroke();
+      ctx.translate(0, -1);
+      ctx.strokeStyle = BB.MENU_INK;
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy - r);
+      ctx.lineTo(cx + r, cy + r);
+      ctx.moveTo(cx + r, cy - r);
+      ctx.lineTo(cx - r, cy + r);
+      ctx.stroke();
     } else {
       const thick = 11, barW = 68, gap = 16, step = thick + gap, x0 = cx - barW / 2, x1 = cx + barW / 2;
       ctx.lineWidth = thick;
-      shadow(() => {
-        for (const dy of [-step, 0, step]) {
-          ctx.beginPath();
-          ctx.moveTo(x0, cy + dy);
-          ctx.lineTo(x1, cy + dy);
-          ctx.stroke();
-        }
-      });
+      ctx.strokeStyle = "rgba(0,0,0,.5)";
+      ctx.translate(0, 2);
+      for (const dy of [-step, 0, step]) {
+        ctx.beginPath();
+        ctx.moveTo(x0, cy + dy);
+        ctx.lineTo(x1, cy + dy);
+        ctx.stroke();
+      }
+      ctx.translate(0, -2);
+      ctx.strokeStyle = "#f6f3ea";
+      for (const dy of [-step, 0, step]) {
+        ctx.beginPath();
+        ctx.moveTo(x0, cy + dy);
+        ctx.lineTo(x1, cy + dy);
+        ctx.stroke();
+      }
     }
     ctx.restore();
   };
@@ -1408,7 +1414,7 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       BB.go(new BB.AssessRoom());
     } });
     items.push({ label: "Teacher", id: "mteacher", onClick: () => BB.menuGoPage("teacher"), chevron: 1 });
-    BB.text(play ? "Paused" : "Menu", x + pad, y + 72, 30, BB.MENU_MUTED, { align: "left", font: "Lilita One" });
+    BB.text(play ? "Paused" : "Menu", x + 124, y + 62, 30, BB.MENU_MUTED, { align: "left", font: "Lilita One" });
     let yy = y + 140;
     items.forEach((it, i) => {
       const delay = i * 0.055, kk = BB.menuEase ? BB.menuEase(Math.max(0, Math.min(1, (k - delay) / 0.72))) : 1, ox = (1 - kk) * 24;
@@ -1421,8 +1427,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   };
   BB.drawDrawerBack = (x, y, w) => {
     x = Math.max(x, 0);
-    BB.button(x + 36, y + 28, 200, 64, "", { id: "mback", style: "none", onClick: () => BB.menuGoBack() });
-    const bx = x + 56, by = y + 60;
+    BB.button(x + 120, y + 28, 200, 64, "", { id: "mback", style: "none", onClick: () => BB.menuGoBack() });
+    const bx = x + 140, by = y + 60;
     ctx.strokeStyle = BB.MENU_INK;
     ctx.lineWidth = 3.5;
     ctx.lineCap = "round";
@@ -1622,14 +1628,19 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   let ctx = BB.ctx;
   BB._sw.push((g) => ctx = g);
   BB.V2 = {};
-  BB.loadV2 = () => Promise.all([["rock", "png"], ["crystal", "png"], ["cart", "png"], ["elev", "png"], ["smash", "png"], ["bin", "png"], ["rubble", "png"], ["wh", "jpg"], ["tun0", "jpg"], ["tun1", "jpg"], ["tun2", "jpg"], ["tun3", "jpg"], ["tun4", "jpg"], ["pipe", "png"], ["funnel", "png"], ["title_bg", "jpg"], ["map_bg", "jpg"], ["hub_bg", "jpg"], ["conveyor", "png"], ["redbtn", "png"], ["smash_blur", "jpg"], ["pack_blur", "jpg"], ["mine_door", "jpg"], ["label_door", "jpg"], ["dock_door", "jpg"], ["logo", "png"], ["mic", "png"], ["lock", "png"], ["chip", "png"], ["earth", "jpg"], ["shaft", "jpg"]].map(([n, e]) => new Promise((r) => {
+  BB.loadV2 = () => Promise.all([["rock", "png"], ["crystal", "png"], ["cart", "png"], ["elev", "png"], ["smash", "png"], ["bin", "png"], ["rubble", "png"], ["wh", "jpg"], ["tun0", "jpg"], ["tun1", "jpg"], ["tun2", "jpg"], ["tun3", "jpg"], ["tun4", "jpg"], ["pipe", "png"], ["funnel", "png"], ["title_bg", "jpg"], ["map_bg", "jpg"], ["hub_bg", "jpg"], ["conveyor", "png"], ["redbtn", "png"], ["smash_blur", "jpg"], ["pack_blur", "jpg"], ["mine_door", "jpg"], ["label_door", "jpg"], ["dock_door", "jpg"], ["logo", "webp"], ["mic", "png"], ["lock", "png"], ["chip", "png"], ["earth", "jpg"], ["shaft", "jpg"]].map(([n, e]) => new Promise((r) => {
     const i = new Image();
     i.onload = () => {
       BB.V2[n] = i;
       (i.decode ? i.decode().catch(() => {
       }) : Promise.resolve()).then(r);
     };
-    i.onerror = () => r();
+    i.onerror = () => {
+      if (e === "webp") {
+        i.onerror = () => r();
+        i.src = "assets/v2/" + n + ".png?v=" + (BB.VERSION || "");
+      } else r();
+    };
     i.src = "assets/v2/" + n + "." + e + "?v=" + (BB.VERSION || "");
   })));
   const tcache = {};

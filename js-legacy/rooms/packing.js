@@ -1389,9 +1389,9 @@
     }
     drawHUD() {
       const t = BB.t;
-      BB.panel(40, 24, 440, 114, 28);
-      BB.text("ORDERS PACKED", 72, 58, 26, COL.yellow, { align: "left", stroke: 4, maxW: 360 });
-      BB.text("".concat(this.packed, " of ").concat(ROUNDS.length), 72, 90, 24, "#fff", { align: "left", font: "Rammetto One", stroke: 4, maxW: 360 });
+      BB.panel(124, 24, 440, 114, 28);
+      BB.text("ORDERS PACKED", 156, 58, 26, COL.yellow, { align: "left", stroke: 4, maxW: 360 });
+      BB.text("".concat(this.packed, " of ").concat(ROUNDS.length), 156, 90, 24, "#fff", { align: "left", font: "Rammetto One", stroke: 4, maxW: 360 });
       for (let i = 0; i < ROUNDS.length; i++) BB.rrect(196 + i * 38, 80, 30, 36, 8, i < this.packed ? BB.lg(80, 116, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
       if (this.state === "intro") BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
       else {

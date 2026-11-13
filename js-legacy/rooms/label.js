@@ -911,9 +911,9 @@
     }
     drawHUD(t) {
       if (this.state === "end") return;
-      PANEL(40, 24, 490, 114, 28);
-      BB.text("BOXES SHIPPED", 72, 58, 26, COL.yellow, { align: "left", stroke: 4, maxW: 400 });
-      BB.text("".concat(this.shipped, " of ").concat(BOXES), 72, 90, 24, "#fff", { align: "left", font: "Rammetto One", stroke: 4, maxW: 400 });
+      PANEL(124, 24, 490, 114, 28);
+      BB.text("BOXES SHIPPED", 156, 58, 26, COL.yellow, { align: "left", stroke: 4, maxW: 400 });
+      BB.text("".concat(this.shipped, " of ").concat(BOXES), 156, 90, 24, "#fff", { align: "left", font: "Rammetto One", stroke: 4, maxW: 400 });
       for (let i = 0; i < BOXES; i++) BB.rrect(196 + i * 28, 82, 22, 32, 6, i < this.shipped ? BB.lg(82, 114, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
       PANEL(1190, 24, 280, 114, 28);
       BB.text("POINTS " + this.score, 1330, 58, 28, "#fff", { stroke: 4, maxW: 220 });

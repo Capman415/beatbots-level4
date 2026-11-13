@@ -95,18 +95,18 @@
       ctx.translate(W / 2, 300);
       const s = BB.ease.back(k);
       ctx.scale(s, s);
-      BB.glow(0, -60, 700, "rgba(255,220,150,A)", 0.22);
+      BB.glow(0, -40, 700, "rgba(255,220,150,A)", 0.22);
       const lg = BB.V2.logo;
       if (lg) {
-        const h = 380, w = lg.width * h / lg.height;
+        const h = 420, w = lg.width * h / lg.height;
         ctx.save();
         ctx.shadowColor = "rgba(0,0,0,.45)";
-        ctx.shadowBlur = 30;
-        ctx.shadowOffsetY = 14;
-        ctx.drawImage(lg, -w / 2, -300, w, h);
+        ctx.shadowBlur = 28;
+        ctx.shadowOffsetY = 12;
+        ctx.drawImage(lg, -w / 2, -310, w, h);
         ctx.restore();
-      }
-      BB.logoText("LEVEL 4: THE RHYTHM WAREHOUSE", 0, 150, 74, { maxW: 1500, matte: 1 });
+      } else BB.logoText("STEADY BOTS", 0, -40, 96, { maxW: 1500, matte: 1 });
+      BB.logoText("LEVEL 4: THE RHYTHM WAREHOUSE", 0, 170, 70, { maxW: 1500, matte: 1 });
       ctx.restore();
       const b = Math.sin(BB.t * 4);
       BB.contactShadow(380, 1010, 190, 0.5);

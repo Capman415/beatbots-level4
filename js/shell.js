@@ -32,10 +32,11 @@ class TitleScene{enter(){this.t0=BB.t}
     if(BB.keys.includes('Enter'))this.start()}
   start(){BB.unlockAudio();BB.groove&&BB.groove.stop();BB.sfx.fanfare();BB.go(new MicScene())}
   draw(){menuBg();const t=BB.t-this.t0,k=Math.min(1,t/.8);
-    // v12.7: the real Beat Bots logo + logo-style rendered yellow subtitle (no panel, nothing on a border)
-    ctx.save();ctx.translate(W/2,300);const s=BB.ease.back(k);ctx.scale(s,s);BB.glow(0,-60,700,'rgba(255,220,150,A)',.22);
-    const lg=BB.V2.logo;if(lg){const h=380,w=lg.width*h/lg.height;ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=30;ctx.shadowOffsetY=14;ctx.drawImage(lg,-w/2,-300,w,h);ctx.restore()}
-    BB.logoText('LEVEL 4: THE RHYTHM WAREHOUSE',0,150,74,{maxW:1500,matte:1});ctx.restore();
+    // v14.5.26: approved Steady Bots color logo (transparent, no note) + level subtitle
+    ctx.save();ctx.translate(W/2,300);const s=BB.ease.back(k);ctx.scale(s,s);BB.glow(0,-40,700,'rgba(255,220,150,A)',.22);
+    const lg=BB.V2.logo;if(lg){const h=420,w=lg.width*h/lg.height;ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=28;ctx.shadowOffsetY=12;ctx.drawImage(lg,-w/2,-310,w,h);ctx.restore()}
+    else BB.logoText('STEADY BOTS',0,-40,96,{maxW:1500,matte:1});
+    BB.logoText('LEVEL 4: THE RHYTHM WAREHOUSE',0,170,70,{maxW:1500,matte:1});ctx.restore();
     const b=Math.sin(BB.t*4);
     BB.contactShadow(380,1010,190,.5);BB.sprite('sprocket',380,1010,430,{squash:b*.02,shadow:false});
     BB.contactShadow(1560,1010,160,.5);BB.sprite('sorter',1560,1010,360,{squash:-b*.02,shadow:false});

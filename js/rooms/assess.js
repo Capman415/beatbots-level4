@@ -17,36 +17,98 @@ BB.assessTol=spb=>{const G=window.GroupGate;if(G&&G.early&&G.late)return{early:G
   return{early:Math.min(.12,spb*.28),late:Math.min(.18,spb*.4),src:'u'}};
 BB.assessMatchBeat=(onT,expT,spb,lat)=>{const tol=BB.assessTol(spb),dd=(onT-(lat||0))-expT,ok=dd>=-tol.early&&dd<=tol.late;return{ok,off:dd,tol}};
 
-const QS=[
- {id:'as_pulse',topic:'steady-beat',room:'assess',kind:'follow',
-  prompt:'FOLLOW THE BEAT: Clap with the lights — 8 steady ta beats.',
-  bpm:92,countIn:4,practice:4,n:8,need:.625},
- {id:'as_piano',topic:'piano',room:'assess',kind:'choice',
-  prompt:'What does PIANO mean?',
-  choices:[{k:'soft',lab:'SOFT / quiet',sub:'tiny quiet claps'},{k:'slow',lab:'SLOW',sub:'not about speed'},{k:'loud',lab:'LOUD',sub:'that is forte'}],ans:'soft'},
- {id:'as_andante',topic:'andante',room:'assess',kind:'choice',
-  prompt:'What does ANDANTE mean?',
-  choices:[{k:'walk',lab:'WALKING pace',sub:'moderately slow'},{k:'loud',lab:'LOUD',sub:'not about volume'},{k:'soft',lab:'SOFT',sub:'that is piano'}],ans:'walk'},
- {id:'as_allegro',topic:'allegro',room:'assess',kind:'choice',
-  prompt:'What does ALLEGRO mean?',
-  choices:[{k:'fast',lab:'FAST / lively',sub:'keep up!'},{k:'loud',lab:'LOUD',sub:'not about volume'},{k:'soft',lab:'SOFT',sub:'that is piano'}],ans:'fast'},
- {id:'as_hear1',topic:'hear-pick',room:'assess',kind:'hearPick',bpm:88,
-  prompt:'Listen, then tap the matching rhythm.',
-  seq:['q','e','q','r'],
-  choices:[{k:'a',lab:['q','e','q','r']},{k:'b',lab:['q','q','e','r']},{k:'c',lab:['e','q','q','r']}],ans:'a'},
- {id:'as_hear2',topic:'hear-pick',room:'assess',kind:'hearPick',bpm:88,
-  prompt:'Listen, then tap the matching rhythm.',
-  seq:['e','q','e','q'],
-  choices:[{k:'a',lab:['q','e','q','e']},{k:'b',lab:['e','q','e','q']},{k:'c',lab:['q','q','q','q']}],ans:'b'},
- {id:'as_hear3',topic:'hear-pick',room:'assess',kind:'hearPick',bpm:90,
-  prompt:'Listen, then tap the matching rhythm.',
-  seq:['q','q','q','q'],
-  choices:[{k:'a',lab:['q','q','e','r']},{k:'b',lab:['e','e','q','r']},{k:'c',lab:['q','q','q','q']}],ans:'c'},
- {id:'as_hear4',topic:'hear-pick',room:'assess',kind:'hearPick',bpm:86,
-  prompt:'Listen, then tap the matching rhythm.',
-  seq:['q','r','e','q'],
-  choices:[{k:'a',lab:['q','e','r','q']},{k:'b',lab:['q','r','e','q']},{k:'c',lab:['e','q','r','q']}],ans:'b'},
+
+/* v14.5.26: level-appropriate 4-beat rhythm pool + seedable assessment builder.
+   Tokens: q quarter, e beamed eighths, r quarter rest, h half, w whole, s tika-tika (16ths). */
+const BEAT={w:4,h:2,q:1,e:1,s:1,r:1};
+const POOL=[
+ {id:'r_qqqq',seq:['q','q','q','q']},
+ {id:'r_eqqq',seq:['e','q','q','q']},
+ {id:'r_qeqq',seq:['q','e','q','q']},
+ {id:'r_qqeq',seq:['q','q','e','q']},
+ {id:'r_qqqe',seq:['q','q','q','e']},
+ {id:'r_eqeq',seq:['e','q','e','q']},
+ {id:'r_qeqe',seq:['q','e','q','e']},
+ {id:'r_eeqq',seq:['e','e','q','q']},
+ {id:'r_qqee',seq:['q','q','e','e']},
+ {id:'r_qeeq',seq:['q','e','e','q']},
+ {id:'r_eeee',seq:['e','e','e','e']},
+ {id:'r_qqqr',seq:['q','q','q','r']},
+ {id:'r_qeqr',seq:['q','e','q','r']},
+ {id:'r_qreq',seq:['q','r','e','q']},
+ {id:'r_eqqr',seq:['e','q','q','r']},
+ {id:'r_qerq',seq:['q','e','r','q']},
+ {id:'r_rqqq',seq:['r','q','q','q']},
+ {id:'r_qrqq',seq:['q','r','q','q']},
+ {id:'r_hqq',seq:['h','q','q']},
+ {id:'r_qhq',seq:['q','h','q']},
+ {id:'r_qqh',seq:['q','q','h']},
+ {id:'r_hh',seq:['h','h']},
+ {id:'r_heq',seq:['h','e','q']},
+ {id:'r_hqe',seq:['h','q','e']},
+ {id:'r_eqh',seq:['e','q','h']},
+ {id:'r_sqqq',seq:['s','q','q','q']},
+ {id:'r_qsqq',seq:['q','s','q','q']},
+ {id:'r_qqsq',seq:['q','q','s','q']},
+ {id:'r_seqq',seq:['s','e','q','q']},
+ {id:'r_qseq',seq:['q','s','e','q']},
+ {id:'r_w',seq:['w']}
 ];
+POOL.forEach(p=>{const n=p.seq.reduce((a,k)=>a+(BEAT[k]||0),0);if(n!==4)throw new Error('pool '+p.id+' is '+n+' beats')});
+const WORDINGS={
+ follow:[
+  {id:'follow-v1',prompt:'FOLLOW THE BEAT: Clap with the lights — 8 steady ta beats.'},
+  {id:'follow-v2',prompt:'Clap a STEADY BEAT with the lights. 8 claps in a row.'},
+  {id:'follow-v3',prompt:'Keep a steady beat: clap when the lights flash — 8 times.'}
+ ],
+ piano:[
+  {id:'piano-v1',prompt:'What does PIANO mean?',choices:[{k:'soft',lab:'SOFT / quiet'},{k:'slow',lab:'SLOW'},{k:'loud',lab:'LOUD'}],ans:'soft'},
+  {id:'piano-v2',prompt:'If the music says PIANO, how should you play?',choices:[{k:'soft',lab:'SOFT / quietly'},{k:'fast',lab:'FAST'},{k:'loud',lab:'LOUD'}],ans:'soft'},
+  {id:'piano-v3',prompt:'PIANO is another word for…',choices:[{k:'soft',lab:'SOFT / quiet'},{k:'slow',lab:'SLOW'},{k:'loud',lab:'LOUD'}],ans:'soft'}
+ ],
+ andante:[
+  {id:'andante-v1',prompt:'What does ANDANTE mean?',choices:[{k:'walk',lab:'WALKING pace'},{k:'loud',lab:'LOUD'},{k:'soft',lab:'SOFT'}],ans:'walk'},
+  {id:'andante-v2',prompt:'ANDANTE is a tempo that is…',choices:[{k:'walk',lab:'WALKING pace'},{k:'fast',lab:'FAST / racing'},{k:'loud',lab:'LOUD'}],ans:'walk'},
+  {id:'andante-v3',prompt:'If the music says ANDANTE, you should play at a…',choices:[{k:'walk',lab:'WALKING pace'},{k:'soft',lab:'SOFT volume'},{k:'fast',lab:'VERY FAST pace'}],ans:'walk'}
+ ],
+ allegro:[
+  {id:'allegro-v1',prompt:'What does ALLEGRO mean?',choices:[{k:'fast',lab:'FAST / lively'},{k:'loud',lab:'LOUD'},{k:'soft',lab:'SOFT'}],ans:'fast'},
+  {id:'allegro-v2',prompt:'ALLEGRO is a tempo that is…',choices:[{k:'fast',lab:'FAST / lively'},{k:'slow',lab:'SLOW / dragging'},{k:'soft',lab:'SOFT'}],ans:'fast'},
+  {id:'allegro-v3',prompt:'If the music says ALLEGRO, you should play…',choices:[{k:'fast',lab:'FAST / lively'},{k:'loud',lab:'LOUD only'},{k:'walk',lab:'WALKING pace'}],ans:'fast'}
+ ],
+ hear:[
+  {id:'hear-v1',prompt:'Listen, then tap the matching rhythm.'},
+  {id:'hear-v2',prompt:'Which rhythm did you hear?'},
+  {id:'hear-v3',prompt:'Listen first. Then pick the notes that match.'},
+  {id:'hear-v4',prompt:'Tap the rhythm you just heard.'}
+ ]
+};
+function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+function shuf(a,rnd){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function pick(a,rnd){return a[Math.floor(rnd()*a.length)]}
+function buildAssess(seed){
+  const rnd=mulberry32((seed>>>0)||1),qs=[];
+  const fv=pick(WORDINGS.follow,rnd);
+  qs.push({id:'as_pulse',topic:'steady-beat',room:'assess',kind:'follow',prompt:fv.prompt,variantId:fv.id,bpm:92,countIn:4,practice:4,n:8,need:.625});
+  for(const topic of['piano','andante','allegro']){
+    const v=pick(WORDINGS[topic],rnd);
+    qs.push({id:'as_'+topic,topic,room:'assess',kind:'choice',prompt:v.prompt,choices:shuf(v.choices,rnd),ans:v.ans,variantId:v.id});
+  }
+  const targets=shuf(POOL,rnd).slice(0,4);
+  targets.forEach((tgt,i)=>{
+    const others=shuf(POOL.filter(p=>p.id!==tgt.id),rnd).slice(0,2);
+    const opts=shuf([tgt,...others],rnd);
+    const labs=opts.map(p=>p.seq.join(','));
+    if(new Set(labs).size!==opts.length)throw new Error('duplicate hear choices');
+    const pv=pick(WORDINGS.hear,rnd);
+    qs.push({id:'as_hear'+(i+1),topic:'hear-pick',room:'assess',kind:'hearPick',bpm:86+i*2,
+      prompt:pv.prompt,variantId:pv.id,seq:tgt.seq,rhythmId:tgt.id,
+      choices:opts.map(p=>({k:p.id,lab:p.seq})),ans:tgt.id});
+  });
+  return qs;
+}
+BB.buildAssess=buildAssess;BB._rhythmPool=POOL;BB._assessWordings=WORDINGS;
+
 
 /* assessment log: numbers/choices only, never audio */
 {const KEY='bb_assess2',SKEY='bb_assess_sess',CAP=2000,T0=17e9;
@@ -65,11 +127,11 @@ const QS=[
   startRun(){const i=curRun();sess[i].open=1;sess[i].correct=0;sess[i].total=0;sess[i].passed=0;dirty=1;return sess[i]},
   add(o){try{const i=curRun(),S=sess[i],ms=v=>v==null||v===''||isNaN(+v)?'':Math.round(+v*1000);
    /* row: ts, sessIdx, qid, room/topic, ok, choice/response, offset_ms, ver, beat_i, topic, matched, expected, thr_early_ms, thr_late_ms, manual, offs_pipe */
-   ev.push([Math.round(Date.now()/100)-T0,i,o.qid||'',o.room||o.topic||'',o.ok?1:0,o.choice||'',ms(o.ms),BB.VERSION||'',o.i??'',o.topic||'',o.matched??'',o.expected??'',ms(o.thrEarly),ms(o.thrLate),o.manual?1:0,o.offs||'']);
+   ev.push([Math.round(Date.now()/100)-T0,i,o.qid||'',o.room||o.topic||'',o.ok?1:0,o.choice||'',ms(o.ms),BB.VERSION||'',o.i??'',o.topic||'',o.matched??'',o.expected??'',ms(o.thrEarly),ms(o.thrLate),o.manual?1:0,o.offs||'',o.rhythmId||'',o.variantId||'']);
    if(ev.length>CAP)ev.splice(0,ev.length-CAP);S.total++;if(o.ok)S.correct++;dirty=1}catch(e){}},
   finish(passed){const i=curRun();sess[i].open=0;sess[i].passed=passed?1:0;sess[i].ver=BB.VERSION||'';dirty=1;save()},
-  csv(){save();return 'session_id,date,day,class,grade,timestamp,q_id,room,topic,correct,choice,offset_ms,matched,expected,thr_early_ms,thr_late_ms,manual,offsets_ms,app_version,beat_index\n'+ev.map(r=>{const S=sess[r[1]]||{};
-   return[S.id||'',S.date||'',S.day||'',S.cls||'',S.grade||'',r[0]?new Date((r[0]+T0)*100).toISOString():'',r[2],r[3],r[9]||'',r[4],r[5],r[6],r[10],r[11],r[12],r[13],r[14],r[15],r[7],r[8]].map(qcsv).join(',')}).join('\n')},
+  csv(){save();return 'session_id,date,day,class,grade,timestamp,q_id,room,topic,correct,choice,offset_ms,matched,expected,thr_early_ms,thr_late_ms,manual,offsets_ms,app_version,beat_index,rhythm_id,variant_id\n'+ev.map(r=>{const S=sess[r[1]]||{};
+   return[S.id||'',S.date||'',S.day||'',S.cls||'',S.grade||'',r[0]?new Date((r[0]+T0)*100).toISOString():'',r[2],r[3],r[9]||'',r[4],r[5],r[6],r[10],r[11],r[12],r[13],r[14],r[15],r[7],r[8],r[16]||'',r[17]||''].map(qcsv).join(',')}).join('\n')},
   summaryCsv(){save();return 'session_id,date,day,class,grade,correct,total,passed,app_version\n'+sess.map(S=>[S.id||'',S.date||'',S.day||'',S.cls||'',S.grade||'',S.correct||0,S.total||0,S.passed?1:0,S.ver||''].map(qcsv).join(',')).join('\n')},
   download(){dl(BB.assessLog.csv(),'beatbots_assess_'+dstr(new Date())+'.csv')},
   downloadSummary(){dl(BB.assessLog.summaryCsv(),'beatbots_assess_summary_'+dstr(new Date())+'.csv')},
@@ -121,12 +183,12 @@ class FollowPulse{constructor(o={}){this.bpm=o.bpm||92;this.spb=60/this.bpm;this
     BB.text('Clap with the lights — 8 steady ta beats.',cx,y+130,24,'#cfe8e2',{stroke:4})}}
 
 class AssessRoom{constructor(o={}){this.o=o}
-  enter(){this.howTo={title:'CHECKPOINT',steps:['The class answers together — not a one-kid test.','Follow the beat, or pick the matching rhythm.','Get enough right to unlock Static Jr.','No mic? Use Manual Override.'],words:''};this.qi=0;this.score=0;this.state='intro';this.st=BB.t;this.cb=null;this.fp=null;this.flash=null;this.picked=null;this.run=BB.assessLog.startRun();
+  enter(){this.howTo={title:'CHECKPOINT',steps:['The class answers together — not a one-kid test.','Follow the beat, or pick the matching rhythm.','Get enough right to unlock Static Jr.','No mic? Use Manual Override.'],words:''};this.qi=0;this.score=0;this.state='intro';this.st=BB.t;this.cb=null;this.fp=null;this.flash=null;this.picked=null;this.seed=(this.o&&this.o.seed!=null)?(this.o.seed>>>0):((Date.now()^((Math.random()*1e9)|0))>>>0);this.deck=buildAssess(this.seed);this.run=BB.assessLog.startRun();
     BB.groove&&BB.groove.start(96,'pack');BB.mic&&BB.mic.take&&BB.mic.take();
     this.voEnd=BB.t+(BB.say('as_intro')||2.5)+.3;window.__as=this;
     if(this.o.auto||BB.debug)setTimeout(()=>BB.scene===this&&this.state==='intro'&&this.beginQ(),900)}
   exit(){this.cb=null;this.fp=null}
-  beginQ(){this.cb=null;this.fp=null;this.picked=null;this.flash=null;this.hearPlayed=0;this.state='q';this.st=BB.t;this.Q=QS[this.qi];
+  beginQ(){this.cb=null;this.fp=null;this.picked=null;this.flash=null;this.hearPlayed=0;this.state='q';this.st=BB.t;this.Q=this.deck[this.qi];
     if(this.Q.kind==='follow')this.startFollow();
     if(this.Q.kind==='hearPick'){this.state='hear';this.st=BB.t;this.playHear()}}
   playHear(){const seq=this.Q.seq,spb=60/(this.Q.bpm||88),t0=BB.ac.currentTime+.35;seq.forEach((k,i)=>{let b=0;for(let j=0;j<i;j++)b+=R.BEATS[seq[j]];const t=t0+b*spb;(R.SUB[k]||[0]).forEach(f=>BB.sfx.block(t+f*spb))});
@@ -137,14 +199,14 @@ class AssessRoom{constructor(o={}){this.o=o}
   grade(ok,choice,perf){if(this.state==='graded'||this.state==='end')return;this.state='graded';this.st=BB.t;this.lastOk=ok;if(ok)this.score++;
     const Q=this.Q,p=perf||{};
     BB.assessLog.add({qid:Q.id,room:Q.room,topic:Q.topic,ok,choice:choice||'',ms:p.ms,matched:p.matched,expected:p.expected,
-      thrEarly:p.thrEarly,thrLate:p.thrLate,manual:!!p.manual,offs:p.offs||''});
+      thrEarly:p.thrEarly,thrLate:p.thrLate,manual:!!p.manual,offs:p.offs||'',rhythmId:Q.rhythmId||'',variantId:Q.variantId||''});
     BB.sfx[ok?'ding':'wobble']();BB.burst(W/2,420,ok?28:10,{cols:ok?['#6ee678','#ffe066','#fff']:['#c8b49a'],kind:ok?'star':'dust',size:ok?14:12,speed:ok?700:200});
     setTimeout(()=>{if(BB.scene!==this)return;this.qi++;if(this.qi>=TOTAL)this.finish();else{if(BB.say)BB.say('as_next',{overlap:true,nocap:true});this.beginQ()}},ok?900:1100)}
   finish(){const passed=this.score>=PASS;this.state='end';this.st=BB.t;this.passed=passed;BB.assessLog.finish(passed);
     BB.assessUnlocked=!!passed;try{if(passed)localStorage.setItem('bb_assess_ok','1')}catch(e){}
     BB.say(passed?'as_pass':'as_fail');BB.sfx[passed?'fanfare':'wobble']()}
   goBoss(){BB.assessUnlocked=1;BB.go(new BB.DeliveryRoom(this.o||{}))}
-  retry(){this.qi=0;this.score=0;this.run=BB.assessLog.startRun();this.beginQ()}
+  retry(){this.qi=0;this.score=0;this.seed=(this.seed+0x9e3779b9)>>>0;this.deck=buildAssess(this.seed);this.run=BB.assessLog.startRun();this.beginQ()}
   pick(choice){if(this.state!=='q'&&this.state!=='hear')return;const Q=this.Q;let ok=false;
     if(Q.kind==='choice'||Q.kind==='hearPick')ok=choice===Q.ans;
     this.picked=choice;this.grade(ok,String(choice))}
@@ -155,7 +217,7 @@ class AssessRoom{constructor(o={}){this.o=o}
     if(this.state==='hear'&&BB.t>(this.hearEnd||0)){this.state='q';this.st=BB.t}
     if(this.fp)this.fp.update(dt);
     if(BB.debug&&(this.state==='q'||this.state==='follow'||this.state==='hear')&&BB.t-this.st>1.2&&!this._auto){this._auto=1;setTimeout(()=>{this._auto=0;if(BB.scene===this)this.override()},400)}}
-  drawBanner(){BB.panel(80,40,1710,110,28);BB.text('CHECKPOINT  '+(Math.min(this.qi+1,TOTAL))+' / '+TOTAL,W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
+  drawBanner(){BB.panel(124,40,1480,110,28);BB.text('CHECKPOINT  '+(Math.min(this.qi+1,TOTAL))+' / '+TOTAL,W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
     BB.text('Score  '+this.score+'  ·  need '+PASS+' of '+TOTAL+' to unlock Static Jr.',W/2,118,28,'#cfe8e2',{stroke:4})}
   drawProgress(){for(let i=0;i<TOTAL;i++){const x=260+i*175,y=155,done=i<this.qi,cur=i===this.qi&&this.state!=='end'&&this.state!=='intro';
       BB.rrect(x,y,150,18,9,done?'#6ee678':cur?'#ffe066':'#2a3a38','#fff',2)}}
@@ -169,14 +231,13 @@ class AssessRoom{constructor(o={}){this.o=o}
       /* v14.5.21: removed spoiler/hint sub-labels under each choice (e.g. 'that is forte', 'not about speed') */
       BB.text(c.lab,x+bw/2,530,c.lab.length>12?32:44,'#ffe9a0',{font:'Rammetto One',stroke:6,strokeCol:'#1a1a1a',maxW:bw-24})})}
   drawHearPick(){const Q=this.Q;
-    /* v14.5.18 audio-first: while the drum plays (and while waiting), show ALL answer options — never the target Q.seq, and never highlight the correct choice. Target only after a correct grade (drawGraded). */
+    /* audio-first: options stay up while the drum plays — never draw the target Q.seq, never highlight the answer. Target notation only after a correct grade. */
     const listening=this.state==='hear',n=Q.choices.length,bw=480,gap=30,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
-    /* v14.5.21: dropped the duplicate headline + the 'no peeking at the answer first' developer line; prompt already says Listen, then tap... */
     if(!listening)BB.button(W/2-160,385,320,64,'REPLAY RHYTHM',{size:26,id:'asreplay',onClick:()=>{this.state='hear';this.st=BB.t;this.playHear()}});
     Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.button(x,460,bw,280,'',{style:'cream',id:'ash'+i,onClick:()=>this.pick(c.k)});
-      R.pills(x+bw/2,600,c.lab,{bw:70,gap:10,words:true})})}
+      R.rhythmLine(x+bw/2,600,c.lab,{w:bw-80,size:18,ink:'#19191f'})})}
   drawGradedHear(){const Q=this.Q;if(!(Q&&Q.kind==='hearPick'&&this.lastOk))return;
-    BB.text('Heard rhythm:',W/2,560,28,'#cfe8e2',{stroke:4});R.pills(W/2,640,Q.seq,{words:true,bw:70,gap:10})}
+    BB.text('Heard rhythm:',W/2,540,28,'#cfe8e2',{stroke:4});R.rhythmLine(W/2,640,Q.seq,{w:640,size:22,ink:'#19191f'})}
   draw(){ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);if(BB.V2&&BB.V2.hub_bg){ctx.globalAlpha=.35;ctx.drawImage(BB.V2.hub_bg,0,0,W,H);ctx.globalAlpha=1}
     BB.contactShadow(220,980,110,.45);BB.sprite&&BB.sprite('sprocket',220,980,360,{squash:BB.isTalking&&BB.isTalking('sprocket')?Math.sin(BB.t*16)*.015:0});
     if(this.state==='intro'){BB.panel(260,200,1400,560,40);BB.text('CHECKPOINT',W/2,300,72,'#fff',{font:'Rammetto One',stroke:10});
@@ -199,9 +260,9 @@ class AssessRoom{constructor(o={}){this.o=o}
     if(this.Q.kind==='follow'||this.state==='follow')this.drawFollow();
     else if(this.Q.kind==='choice')this.drawChoice();
     else if(this.Q.kind==='hearPick')this.drawHearPick();
-    BB.button(W-430,24,260,70,'SKIP Q',{size:28,id:'asskip',onClick:()=>this.grade(false,'skip')});
+    BB.button(W-300,24,260,70,'SKIP Q',{size:28,id:'asskip',onClick:()=>this.grade(false,'skip')});
     BB.captionBox()}}
-BB.AssessRoom=AssessRoom;BB._assessQS=QS;BB._assessPASS=PASS;BB._assessTOTAL=TOTAL;BB.FollowPulse=FollowPulse;
+BB.AssessRoom=AssessRoom;BB._assessQS=buildAssess(1);BB._assessPASS=PASS;BB._assessTOTAL=TOTAL;BB.FollowPulse=FollowPulse;
 /* open Delivery through the gate unless already unlocked this session or ?assess=0 */
 BB.openDelivery=(o={})=>{try{const q=new URLSearchParams(location.search).get('assess');if(q==='0'||BB.assessUnlocked)return new BB.DeliveryRoom(o)}catch(e){}return new AssessRoom(o)};
 })();

@@ -401,7 +401,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       for(let q=0;q<4;q++)BB.rrect(-110+q*90,50,60,34,12,q===(bb|0)?'#6ee678':'#2d4744','#fff',3);ctx.restore();
       const nx=KO_BARS[bi+1];if(nx&&bb>2&&!(KO_BARS[bi]&&(KO_BARS[bi].chant||KO_BARS[bi].chantIntro)))BB.text('NEXT: '+nx.cue,cx,cy+150,34,'#fff',{stroke:5,maxW:900});
       if(bb%1<.5&&!bar.count&&!bar.chant&&!bar.chantIntro)R.bubble(LCH.x+20,LCH.y-300,bar.cue.toLowerCase())}
-    if(!this.cel)(this.q||(f=>f())).call(this,()=>BB.button(W-430,30,260,90,'SKIP',{size:40,id:'koskip',onClick:()=>this.skipKO()}));
+    if(!this.cel)(this.q||(f=>f())).call(this,()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'koskip',onClick:()=>this.skipKO()}));
     if(k>KO_CEL){const a=clamp((k-KO_CEL)/.4,0,1),s=.7+.3*ease.back(a);ctx.save();ctx.globalAlpha=a;ctx.translate(W/2,190);ctx.scale(s,s);BB.text('DELIVERY DOCK FIXED!',0,0,92,'#ffd63c',{font:'Rammetto One',stroke:12,strokeCol:'#782814'});
       if(BB.V2.chip){const im=BB.V2.chip,h=150,w=im.width*h/im.height;BB.glow(0,170,110,'rgba(255,220,120,A)',.5);ctx.drawImage(im,-w/2,170-h/2,w,h)}BB.text('Level 4 Beat Chip earned!',0,275,40,'#fff',{stroke:6});
       BB.panel(-430,320,860,90,24);BB.text('Great work, Rhythm Engineers!',0,366,44,COL.yellow,{stroke:5});ctx.restore();
@@ -518,7 +518,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       if(u>=2)BB.text('BURP! bzzt!',JR.x-40,JR.y-260,56,'#7ef0ff',{font:'Rammetto One',stroke:7});else BB.text('CHOMP!',JR.x-300,JR.y-260,52,'#ffe066',{font:'Rammetto One',stroke:7})}
     let cur=null;for(const l of SJ)if(v>=l[0])cur=l;if(cur&&v<cur[0]+2.4&&cur[1]!=='bb_sj6'){if(cur[1]==='bb_sp1')R.bubble(LCH.x-10,LCH.y-310,cur[2].toLowerCase());else R.bubble(JR.x-40,JR.y-360,cur[2].toLowerCase(),'#2a6f8a')}
     if(v>=22){const u=v-22,s=u<.2?lerp(3.2,1,u/.2):1+.03*Math.sin(t*20);if(!this.fightSlam){this.fightSlam=1;BB.shake(26);BB.sfx.pkTa&&BB.sfx.pkTa();BB.sfx.bonk&&BB.sfx.bonk();BB.burst(W/2,480,50,{cols:['#ffe066','#ff8adf','#fff'],kind:'star',size:16,speed:1200,g:300})}ctx.save();ctx.translate(W/2,480);ctx.scale(s,s);BB.text('FIGHT!',0,0,220,'#ffd63c',{font:'Rammetto One',stroke:16,strokeCol:'#782814'});ctx.restore()}
-    this.q(()=>BB.button(W-430,30,260,90,'SKIP',{size:40,id:'soskip',onClick:()=>{if(this.state==='intro')this.startKO()}}))}
+    this.q(()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'soskip',onClick:()=>{if(this.state==='intro')this.startKO()}}))}
   drawDmg(d,t,wreck){/* cumulative cartoon damage on Jr (local sprite coords: feet y=230, screen ~(-15,-40), antenna knob (0,-175)). No gore: dents, tape, patches, fuzz, stars. */
     if(wreck)d=1;const ink='#3a2a1e';ctx.save();
     const tape=(x,y,r,w=70)=>{ctx.save();ctx.translate(x,y);ctx.rotate(r);BB.rrect(-w/2,-12,w,24,6,'#f3e2c0','#b89a6a',2);ctx.fillStyle='#e8c9a0';ctx.fillRect(-8,-8,16,16);ctx.restore()};
@@ -694,7 +694,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     else if(k<11.2){const v=k-8,s=v<.3?lerp(3,1,v/.3):1+.04*Math.sin(t*8);if(v<.05&&!this.rvl){this.rvl=1;BB.shake(18);BB.sfx.pkTa&&BB.sfx.pkTa();BB.sfx.bonk&&BB.sfx.bonk();BB.burst(W/2,400,50,{cols:['#ffe066','#ff8adf','#7ef0ff','#6ee678'],kind:'star',size:15,speed:1100,g:400})}
       ctx.save();ctx.translate(W/2,330);ctx.scale(s,s);BB.text('YOUR REWARD:',0,-90,64,'#fff',{stroke:9});BB.text('BOSS BRAIN BREAK!',0,30,120,'#ff8adf',{font:'Rammetto One',stroke:14,strokeCol:'#3a1040'});ctx.restore();if(v<.12){ctx.fillStyle=`rgba(255,255,255,${.5*(1-v/.12)})`;ctx.fillRect(0,0,W,H)}}
     else{BB.panel(W/2-560,140,1120,200,30);BB.text('STAND UP, RHYTHM ENGINEERS!',W/2,190,64,COL.yellow,{stroke:8,maxW:1060});BB.text('DODGE: duck, lean, freeze, jump.  ATTACK: CLAP! Faster = stronger!  Everybody wins!',W/2,265,34,'#fff',{stroke:5,maxW:1040})}
-    this.q(()=>BB.button(W-430,30,260,90,'SKIP',{size:40,id:'rwskip',onClick:()=>{if(this.state==='intro'){BB.sayStop&&BB.sayStop();this.startKO()}}}))}
+    this.q(()=>BB.button(W-300,30,260,90,'SKIP',{size:40,id:'rwskip',onClick:()=>{if(this.state==='intro'){BB.sayStop&&BB.sayStop();this.startKO()}}}))}
   drawTease(k,t){/* v14.3.2 next-adventure tease: light through the roof, Sprocket looks up. Deliberately vague: no theme, no villain */
     const v=k-(KO_CEL+3);if(v<0)return;if(!this.teased){this.teased=1;BB.say('bb_tease',{overlap:true})}const a=clamp(v/1,0,1);
     ctx.save();ctx.globalAlpha=a*.55;const g=ctx.createLinearGradient(LCH.x,0,LCH.x-120,LCH.y);g.addColorStop(0,'rgba(255,250,220,.9)');g.addColorStop(1,'rgba(255,250,220,0)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(LCH.x-260,0);ctx.lineTo(LCH.x+60,0);ctx.lineTo(LCH.x+40,LCH.y+80);ctx.lineTo(LCH.x-420,LCH.y+80);ctx.fill();ctx.restore();
@@ -814,7 +814,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     if(this.face){const f=this.face,s=95;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.drag?0:Math.sin(t*3)*.1);BB.rrect(-s,-s,s*2,s*2,16,BB.lg(-s,s,['#9b8fe0','#4b3f8f']),COL.ink,6);ctx.save();ctx.beginPath();ctx.roundRect(-s+5,-s+5,s*2-10,s*2-10,12);ctx.clip();BB.staticJr(0,s*1.25,s*2.1,{});ctx.restore();
       BB.rrect(-90,s+6,180,34,10,'rgba(12,28,26,.85)',COL.yellow,2);BB.text(f.drag?'DROP ON HIS HEAD!':'DRAG ME TO HIM!',0,s+23,18,'#fff',{maxW:170});ctx.restore();
       if(!f.drag){ctx.save();ctx.globalAlpha=.5+.4*Math.sin(t*8);ctx.strokeStyle=COL.yellow;ctx.lineWidth=6;ctx.setLineDash([14,10]);ctx.beginPath();ctx.moveTo(f.x,f.y-s);ctx.quadraticCurveTo((f.x+JR.x)/2,Math.min(f.y,JR.y)-260,JR.x,JR.y-230);ctx.stroke();ctx.restore()}}
-    if(!end&&!(this.move&&this.state==='intro')){BB.panel(40,24,430,114,28);BB.text('TRUCK LOAD  '+fill+' of '+TOTAL,72,56,26,COL.yellow,{align:'left',stroke:4,maxW:380});for(let i=0;i<TOTAL;i++)BB.rrect(72+i*42,80,32,28,8,i<fill?BB.lg(80,108,['#e2b272','#b07a40']):'#2d4744','#fff',3);
+    if(!end&&!(this.move&&this.state==='intro')){BB.panel(124,24,430,114,28);BB.text('TRUCK LOAD  '+fill+' of '+TOTAL,156,56,26,COL.yellow,{align:'left',stroke:4,maxW:380});for(let i=0;i<TOTAL;i++)BB.rrect(156+i*42,80,32,28,8,i<fill?BB.lg(80,108,['#e2b272','#b07a40']):'#2d4744','#fff',3);
       if(this.phT&&t-this.phT<2.4)BB.text(this.ph===1?'PHASE 2: FASTER!':'PHASE 3: WILD STATIC!',W/2,200,64,'#ff8adf',{font:'Rammetto One',stroke:8})}
     if(this.cb){BB.overrideBtn(()=>this.manualOverride(),{pop:this.ovPop&&t-this.ovPop<.3?1.08:1});if(BB.fuzz){ctx.save();ctx.translate((Math.random()-.5)*10,(Math.random()-.5)*4)}this.cb.draw(W/2,H-95);if(BB.fuzz)ctx.restore()}
     // screen fuzz (brief, translucent: rhythm stays readable)

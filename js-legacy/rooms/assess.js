@@ -22,91 +22,125 @@
     const tol = BB.assessTol(spb), dd = onT - (lat || 0) - expT, ok = dd >= -tol.early && dd <= tol.late;
     return { ok, off: dd, tol };
   };
-  const QS = [
-    {
-      id: "as_pulse",
-      topic: "steady-beat",
-      room: "assess",
-      kind: "follow",
-      prompt: "FOLLOW THE BEAT: Clap with the lights \u2014 8 steady ta beats.",
-      bpm: 92,
-      countIn: 4,
-      practice: 4,
-      n: 8,
-      need: 0.625
-    },
-    {
-      id: "as_piano",
-      topic: "piano",
-      room: "assess",
-      kind: "choice",
-      prompt: "What does PIANO mean?",
-      choices: [{ k: "soft", lab: "SOFT / quiet", sub: "tiny quiet claps" }, { k: "slow", lab: "SLOW", sub: "not about speed" }, { k: "loud", lab: "LOUD", sub: "that is forte" }],
-      ans: "soft"
-    },
-    {
-      id: "as_andante",
-      topic: "andante",
-      room: "assess",
-      kind: "choice",
-      prompt: "What does ANDANTE mean?",
-      choices: [{ k: "walk", lab: "WALKING pace", sub: "moderately slow" }, { k: "loud", lab: "LOUD", sub: "not about volume" }, { k: "soft", lab: "SOFT", sub: "that is piano" }],
-      ans: "walk"
-    },
-    {
-      id: "as_allegro",
-      topic: "allegro",
-      room: "assess",
-      kind: "choice",
-      prompt: "What does ALLEGRO mean?",
-      choices: [{ k: "fast", lab: "FAST / lively", sub: "keep up!" }, { k: "loud", lab: "LOUD", sub: "not about volume" }, { k: "soft", lab: "SOFT", sub: "that is piano" }],
-      ans: "fast"
-    },
-    {
-      id: "as_hear1",
-      topic: "hear-pick",
-      room: "assess",
-      kind: "hearPick",
-      bpm: 88,
-      prompt: "Listen, then tap the matching rhythm.",
-      seq: ["q", "e", "q", "r"],
-      choices: [{ k: "a", lab: ["q", "e", "q", "r"] }, { k: "b", lab: ["q", "q", "e", "r"] }, { k: "c", lab: ["e", "q", "q", "r"] }],
-      ans: "a"
-    },
-    {
-      id: "as_hear2",
-      topic: "hear-pick",
-      room: "assess",
-      kind: "hearPick",
-      bpm: 88,
-      prompt: "Listen, then tap the matching rhythm.",
-      seq: ["e", "q", "e", "q"],
-      choices: [{ k: "a", lab: ["q", "e", "q", "e"] }, { k: "b", lab: ["e", "q", "e", "q"] }, { k: "c", lab: ["q", "q", "q", "q"] }],
-      ans: "b"
-    },
-    {
-      id: "as_hear3",
-      topic: "hear-pick",
-      room: "assess",
-      kind: "hearPick",
-      bpm: 90,
-      prompt: "Listen, then tap the matching rhythm.",
-      seq: ["q", "q", "q", "q"],
-      choices: [{ k: "a", lab: ["q", "q", "e", "r"] }, { k: "b", lab: ["e", "e", "q", "r"] }, { k: "c", lab: ["q", "q", "q", "q"] }],
-      ans: "c"
-    },
-    {
-      id: "as_hear4",
-      topic: "hear-pick",
-      room: "assess",
-      kind: "hearPick",
-      bpm: 86,
-      prompt: "Listen, then tap the matching rhythm.",
-      seq: ["q", "r", "e", "q"],
-      choices: [{ k: "a", lab: ["q", "e", "r", "q"] }, { k: "b", lab: ["q", "r", "e", "q"] }, { k: "c", lab: ["e", "q", "r", "q"] }],
-      ans: "b"
-    }
+  const BEAT = { w: 4, h: 2, q: 1, e: 1, s: 1, r: 1 };
+  const POOL = [
+    { id: "r_qqqq", seq: ["q", "q", "q", "q"] },
+    { id: "r_eqqq", seq: ["e", "q", "q", "q"] },
+    { id: "r_qeqq", seq: ["q", "e", "q", "q"] },
+    { id: "r_qqeq", seq: ["q", "q", "e", "q"] },
+    { id: "r_qqqe", seq: ["q", "q", "q", "e"] },
+    { id: "r_eqeq", seq: ["e", "q", "e", "q"] },
+    { id: "r_qeqe", seq: ["q", "e", "q", "e"] },
+    { id: "r_eeqq", seq: ["e", "e", "q", "q"] },
+    { id: "r_qqee", seq: ["q", "q", "e", "e"] },
+    { id: "r_qeeq", seq: ["q", "e", "e", "q"] },
+    { id: "r_eeee", seq: ["e", "e", "e", "e"] },
+    { id: "r_qqqr", seq: ["q", "q", "q", "r"] },
+    { id: "r_qeqr", seq: ["q", "e", "q", "r"] },
+    { id: "r_qreq", seq: ["q", "r", "e", "q"] },
+    { id: "r_eqqr", seq: ["e", "q", "q", "r"] },
+    { id: "r_qerq", seq: ["q", "e", "r", "q"] },
+    { id: "r_rqqq", seq: ["r", "q", "q", "q"] },
+    { id: "r_qrqq", seq: ["q", "r", "q", "q"] },
+    { id: "r_hqq", seq: ["h", "q", "q"] },
+    { id: "r_qhq", seq: ["q", "h", "q"] },
+    { id: "r_qqh", seq: ["q", "q", "h"] },
+    { id: "r_hh", seq: ["h", "h"] },
+    { id: "r_heq", seq: ["h", "e", "q"] },
+    { id: "r_hqe", seq: ["h", "q", "e"] },
+    { id: "r_eqh", seq: ["e", "q", "h"] },
+    { id: "r_sqqq", seq: ["s", "q", "q", "q"] },
+    { id: "r_qsqq", seq: ["q", "s", "q", "q"] },
+    { id: "r_qqsq", seq: ["q", "q", "s", "q"] },
+    { id: "r_seqq", seq: ["s", "e", "q", "q"] },
+    { id: "r_qseq", seq: ["q", "s", "e", "q"] },
+    { id: "r_w", seq: ["w"] }
   ];
+  POOL.forEach((p) => {
+    const n = p.seq.reduce((a, k) => a + (BEAT[k] || 0), 0);
+    if (n !== 4) throw new Error("pool " + p.id + " is " + n + " beats");
+  });
+  const WORDINGS = {
+    follow: [
+      { id: "follow-v1", prompt: "FOLLOW THE BEAT: Clap with the lights \u2014 8 steady ta beats." },
+      { id: "follow-v2", prompt: "Clap a STEADY BEAT with the lights. 8 claps in a row." },
+      { id: "follow-v3", prompt: "Keep a steady beat: clap when the lights flash \u2014 8 times." }
+    ],
+    piano: [
+      { id: "piano-v1", prompt: "What does PIANO mean?", choices: [{ k: "soft", lab: "SOFT / quiet" }, { k: "slow", lab: "SLOW" }, { k: "loud", lab: "LOUD" }], ans: "soft" },
+      { id: "piano-v2", prompt: "If the music says PIANO, how should you play?", choices: [{ k: "soft", lab: "SOFT / quietly" }, { k: "fast", lab: "FAST" }, { k: "loud", lab: "LOUD" }], ans: "soft" },
+      { id: "piano-v3", prompt: "PIANO is another word for\u2026", choices: [{ k: "soft", lab: "SOFT / quiet" }, { k: "slow", lab: "SLOW" }, { k: "loud", lab: "LOUD" }], ans: "soft" }
+    ],
+    andante: [
+      { id: "andante-v1", prompt: "What does ANDANTE mean?", choices: [{ k: "walk", lab: "WALKING pace" }, { k: "loud", lab: "LOUD" }, { k: "soft", lab: "SOFT" }], ans: "walk" },
+      { id: "andante-v2", prompt: "ANDANTE is a tempo that is\u2026", choices: [{ k: "walk", lab: "WALKING pace" }, { k: "fast", lab: "FAST / racing" }, { k: "loud", lab: "LOUD" }], ans: "walk" },
+      { id: "andante-v3", prompt: "If the music says ANDANTE, you should play at a\u2026", choices: [{ k: "walk", lab: "WALKING pace" }, { k: "soft", lab: "SOFT volume" }, { k: "fast", lab: "VERY FAST pace" }], ans: "walk" }
+    ],
+    allegro: [
+      { id: "allegro-v1", prompt: "What does ALLEGRO mean?", choices: [{ k: "fast", lab: "FAST / lively" }, { k: "loud", lab: "LOUD" }, { k: "soft", lab: "SOFT" }], ans: "fast" },
+      { id: "allegro-v2", prompt: "ALLEGRO is a tempo that is\u2026", choices: [{ k: "fast", lab: "FAST / lively" }, { k: "slow", lab: "SLOW / dragging" }, { k: "soft", lab: "SOFT" }], ans: "fast" },
+      { id: "allegro-v3", prompt: "If the music says ALLEGRO, you should play\u2026", choices: [{ k: "fast", lab: "FAST / lively" }, { k: "loud", lab: "LOUD only" }, { k: "walk", lab: "WALKING pace" }], ans: "fast" }
+    ],
+    hear: [
+      { id: "hear-v1", prompt: "Listen, then tap the matching rhythm." },
+      { id: "hear-v2", prompt: "Which rhythm did you hear?" },
+      { id: "hear-v3", prompt: "Listen first. Then pick the notes that match." },
+      { id: "hear-v4", prompt: "Tap the rhythm you just heard." }
+    ]
+  };
+  function mulberry32(a) {
+    return function() {
+      let t = a += 1831565813;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function shuf(a, rnd) {
+    a = a.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function pick(a, rnd) {
+    return a[Math.floor(rnd() * a.length)];
+  }
+  function buildAssess(seed) {
+    const rnd = mulberry32(seed >>> 0 || 1), qs = [];
+    const fv = pick(WORDINGS.follow, rnd);
+    qs.push({ id: "as_pulse", topic: "steady-beat", room: "assess", kind: "follow", prompt: fv.prompt, variantId: fv.id, bpm: 92, countIn: 4, practice: 4, n: 8, need: 0.625 });
+    for (const topic of ["piano", "andante", "allegro"]) {
+      const v = pick(WORDINGS[topic], rnd);
+      qs.push({ id: "as_" + topic, topic, room: "assess", kind: "choice", prompt: v.prompt, choices: shuf(v.choices, rnd), ans: v.ans, variantId: v.id });
+    }
+    const targets = shuf(POOL, rnd).slice(0, 4);
+    targets.forEach((tgt, i) => {
+      const others = shuf(POOL.filter((p) => p.id !== tgt.id), rnd).slice(0, 2);
+      const opts = shuf([tgt, ...others], rnd);
+      const labs = opts.map((p) => p.seq.join(","));
+      if (new Set(labs).size !== opts.length) throw new Error("duplicate hear choices");
+      const pv = pick(WORDINGS.hear, rnd);
+      qs.push({
+        id: "as_hear" + (i + 1),
+        topic: "hear-pick",
+        room: "assess",
+        kind: "hearPick",
+        bpm: 86 + i * 2,
+        prompt: pv.prompt,
+        variantId: pv.id,
+        seq: tgt.seq,
+        rhythmId: tgt.id,
+        choices: opts.map((p) => ({ k: p.id, lab: p.seq })),
+        ans: tgt.id
+      });
+    });
+    return qs;
+  }
+  BB.buildAssess = buildAssess;
+  BB._rhythmPool = POOL;
+  BB._assessWordings = WORDINGS;
   {
     const KEY = "bb_assess2", SKEY = "bb_assess_sess", CAP = 2e3, T0 = 17e9;
     const ld = (k, d) => {
@@ -180,7 +214,7 @@
         var _a, _b, _c;
         try {
           const i = curRun(), S = sess[i], ms = (v) => v == null || v === "" || isNaN(+v) ? "" : Math.round(+v * 1e3);
-          ev.push([Math.round(Date.now() / 100) - T0, i, o.qid || "", o.room || o.topic || "", o.ok ? 1 : 0, o.choice || "", ms(o.ms), BB.VERSION || "", (_a = o.i) != null ? _a : "", o.topic || "", (_b = o.matched) != null ? _b : "", (_c = o.expected) != null ? _c : "", ms(o.thrEarly), ms(o.thrLate), o.manual ? 1 : 0, o.offs || ""]);
+          ev.push([Math.round(Date.now() / 100) - T0, i, o.qid || "", o.room || o.topic || "", o.ok ? 1 : 0, o.choice || "", ms(o.ms), BB.VERSION || "", (_a = o.i) != null ? _a : "", o.topic || "", (_b = o.matched) != null ? _b : "", (_c = o.expected) != null ? _c : "", ms(o.thrEarly), ms(o.thrLate), o.manual ? 1 : 0, o.offs || "", o.rhythmId || "", o.variantId || ""]);
           if (ev.length > CAP) ev.splice(0, ev.length - CAP);
           S.total++;
           if (o.ok) S.correct++;
@@ -198,9 +232,9 @@
       },
       csv() {
         save();
-        return "session_id,date,day,class,grade,timestamp,q_id,room,topic,correct,choice,offset_ms,matched,expected,thr_early_ms,thr_late_ms,manual,offsets_ms,app_version,beat_index\n" + ev.map((r) => {
+        return "session_id,date,day,class,grade,timestamp,q_id,room,topic,correct,choice,offset_ms,matched,expected,thr_early_ms,thr_late_ms,manual,offsets_ms,app_version,beat_index,rhythm_id,variant_id\n" + ev.map((r) => {
           const S = sess[r[1]] || {};
-          return [S.id || "", S.date || "", S.day || "", S.cls || "", S.grade || "", r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", r[2], r[3], r[9] || "", r[4], r[5], r[6], r[10], r[11], r[12], r[13], r[14], r[15], r[7], r[8]].map(qcsv).join(",");
+          return [S.id || "", S.date || "", S.day || "", S.cls || "", S.grade || "", r[0] ? new Date((r[0] + T0) * 100).toISOString() : "", r[2], r[3], r[9] || "", r[4], r[5], r[6], r[10], r[11], r[12], r[13], r[14], r[15], r[7], r[8], r[16] || "", r[17] || ""].map(qcsv).join(",");
         }).join("\n");
       },
       summaryCsv() {
@@ -385,6 +419,8 @@
       this.fp = null;
       this.flash = null;
       this.picked = null;
+      this.seed = this.o && this.o.seed != null ? this.o.seed >>> 0 : (Date.now() ^ (Math.random() * 1e9 | 0)) >>> 0;
+      this.deck = buildAssess(this.seed);
       this.run = BB.assessLog.startRun();
       BB.groove && BB.groove.start(96, "pack");
       BB.mic && BB.mic.take && BB.mic.take();
@@ -404,7 +440,7 @@
       this.hearPlayed = 0;
       this.state = "q";
       this.st = BB.t;
-      this.Q = QS[this.qi];
+      this.Q = this.deck[this.qi];
       if (this.Q.kind === "follow") this.startFollow();
       if (this.Q.kind === "hearPick") {
         this.state = "hear";
@@ -458,7 +494,9 @@
         thrEarly: p.thrEarly,
         thrLate: p.thrLate,
         manual: !!p.manual,
-        offs: p.offs || ""
+        offs: p.offs || "",
+        rhythmId: Q.rhythmId || "",
+        variantId: Q.variantId || ""
       });
       BB.sfx[ok ? "ding" : "wobble"]();
       BB.burst(W / 2, 420, ok ? 28 : 10, { cols: ok ? ["#6ee678", "#ffe066", "#fff"] : ["#c8b49a"], kind: ok ? "star" : "dust", size: ok ? 14 : 12, speed: ok ? 700 : 200 });
@@ -493,6 +531,8 @@
     retry() {
       this.qi = 0;
       this.score = 0;
+      this.seed = this.seed + 2654435769 >>> 0;
+      this.deck = buildAssess(this.seed);
       this.run = BB.assessLog.startRun();
       this.beginQ();
     }
@@ -528,7 +568,7 @@
       }
     }
     drawBanner() {
-      BB.panel(80, 40, 1710, 110, 28);
+      BB.panel(124, 40, 1480, 110, 28);
       BB.text("CHECKPOINT  " + Math.min(this.qi + 1, TOTAL) + " / " + TOTAL, W / 2, 78, 36, COL.yellow, { font: "Rammetto One", stroke: 5 });
       BB.text("Score  " + this.score + "  \xB7  need " + PASS + " of " + TOTAL + " to unlock Static Jr.", W / 2, 118, 28, "#cfe8e2", { stroke: 4 });
     }
@@ -565,14 +605,14 @@
       Q.choices.forEach((c, i) => {
         const x = x0 + i * (bw + gap);
         BB.button(x, 460, bw, 280, "", { style: "cream", id: "ash" + i, onClick: () => this.pick(c.k) });
-        R.pills(x + bw / 2, 600, c.lab, { bw: 70, gap: 10, words: true });
+        R.rhythmLine(x + bw / 2, 600, c.lab, { w: bw - 80, size: 18, ink: "#19191f" });
       });
     }
     drawGradedHear() {
       const Q = this.Q;
       if (!(Q && Q.kind === "hearPick" && this.lastOk)) return;
-      BB.text("Heard rhythm:", W / 2, 560, 28, "#cfe8e2", { stroke: 4 });
-      R.pills(W / 2, 640, Q.seq, { words: true, bw: 70, gap: 10 });
+      BB.text("Heard rhythm:", W / 2, 540, 28, "#cfe8e2", { stroke: 4 });
+      R.rhythmLine(W / 2, 640, Q.seq, { w: 640, size: 22, ink: "#19191f" });
     }
     draw() {
       ctx.fillStyle = "#0d1d1b";
@@ -616,12 +656,12 @@
       if (this.Q.kind === "follow" || this.state === "follow") this.drawFollow();
       else if (this.Q.kind === "choice") this.drawChoice();
       else if (this.Q.kind === "hearPick") this.drawHearPick();
-      BB.button(W - 430, 24, 260, 70, "SKIP Q", { size: 28, id: "asskip", onClick: () => this.grade(false, "skip") });
+      BB.button(W - 300, 24, 260, 70, "SKIP Q", { size: 28, id: "asskip", onClick: () => this.grade(false, "skip") });
       BB.captionBox();
     }
   }
   BB.AssessRoom = AssessRoom;
-  BB._assessQS = QS;
+  BB._assessQS = buildAssess(1);
   BB._assessPASS = PASS;
   BB._assessTOTAL = TOTAL;
   BB.FollowPulse = FollowPulse;

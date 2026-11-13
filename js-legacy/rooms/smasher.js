@@ -1506,11 +1506,11 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     }
     drawHUD() {
       const t = BB.t;
-      spr("hud" + this.done, 30, 14, 580, 150, () => {
-        BB.panel(40, 24, 420, 114, 28);
-        BB.text("ORDERS DONE", 72, 58, 26, COL.yellow, { align: "left", stroke: 4, maxW: 340 });
-        BB.text("".concat(this.done, " of 5"), 72, 90, 24, "#fff", { align: "left", font: "Rammetto One", stroke: 4, maxW: 340 });
-        for (let i = 0; i < 5; i++) BB.rrect(196 + i * 42, 80, 32, 36, 8, i < this.done ? BB.lg(80, 116, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
+      spr("hud" + this.done, 110, 14, 580, 150, () => {
+        BB.panel(124, 24, 420, 114, 28);
+        BB.text("ORDERS DONE", 156, 58, 26, COL.yellow, { align: "left", stroke: 4, maxW: 340 });
+        BB.text("".concat(this.done, " of 5"), 156, 90, 24, "#fff", { align: "left", font: "Rammetto One", stroke: 4, maxW: 340 });
+        for (let i = 0; i < 5; i++) BB.rrect(280 + i * 42, 80, 32, 36, 8, i < this.done ? BB.lg(80, 116, ["#a6f5ae", "#3fb45a"]) : "#2d4744", "#fff", 3);
       });
       if (this.state === "intro") BB.button(W - 370, H - 150, 330, 110, "SKIP INTRO", { size: 34, id: "skip", onClick: () => this.skipIntro() });
       else {

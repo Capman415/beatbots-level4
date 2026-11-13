@@ -1908,7 +1908,7 @@
         ctx.restore();
       }
       ctx.save();
-      ctx.translate(40, 24);
+      ctx.translate(124, 24);
       ctx.scale(mp, mp);
       BB.panel(0, 0, 500, 114, 28);
       BB.text("WHOLE NOTES", 32, 42, 26, COL.yellow, { align: "left", stroke: 4, maxW: 200 });
@@ -1918,7 +1918,7 @@
         BB.wholeNote(226 + i * 30, 80, 11, { fill: on ? "#6ee678" : "#2d4744", ring: on ? COL.ink : "#22383a" });
       }
       ctx.restore();
-      const sg = R.sign || [F.name, F.mean], icons = (R.icons || (F.icon ? [F.icon] : [])).filter(Boolean), tpx = W - 630, tpy = 24, tpw = 480, tph = 114;
+      const sg = R.sign || [F.name, F.mean], icons = (R.icons || (F.icon ? [F.icon] : [])).filter(Boolean), tpx = W - 520, tpy = 24, tpw = 480, tph = 114;
       BB.panel(tpx, tpy, tpw, tph, 28);
       {
         const ix = tpx + 28, iw = tpw - 56, ic = icons.length, iwIcon = ic ? 56 : 0, row = ic ? iwIcon * ic + 12 : 0, midY = tpy + tph / 2, title = sg[0], sub = sg[1] + (R.dyn === "p" ? "  (p)" : R.dyn === "f" ? "  (f)" : "") + "  \xB7  ".concat(R.bpm, " bpm"), tSize = title.length > 12 ? 26 : 32;

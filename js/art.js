@@ -285,17 +285,18 @@ BB.captionBox=()=>{const c=BB.caption;if(!c||BB.t>c.until)return;const k=Math.mi
     ctx.lineWidth=4;ctx.strokeStyle=COL.ink;ctx.beginPath();ctx.arc(pcx,pcy,pr,0,7);ctx.stroke()}
   BB.text(c.txt,x+w/2+40,y+50,fs,c.who==='jr'?'#c0392b':COL.ink,{maxW:w-170});ctx.restore()};
 // ---------- v14.5.26 left-half nav drawer (Dribbble-like, replaces pauseOverlay) ----------
-BB.MENU_BTN={x:W-100,y:26,s:72};
+BB.MENU_BTN={x:28,y:26,s:72};/* v14.5.26: top-left; X sits on the open drawer */
 BB.MENU_INK='#0d0c22';BB.MENU_MUTED='#6b6a80';BB.MENU_BG='#f6f5f2';BB.MENU_ACCENT='#0e9a6e';
 BB.drawMenuBtn=()=>{if(!BB.showHamburger||!BB.showHamburger())return;const{x,y,s}=BB.MENU_BTN,open=!!(BB.menuOpen||BB.menuClosing);
   BB.button(x,y,s,s,'',{id:'menubtn',style:'none',onClick:()=>BB.toggleMenu()});
   const cx=x+s/2,cy=y+s/2;ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-  const shadow=(fn)=>{ctx.save();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=ctx.lineWidth;ctx.translate(0,2);fn();ctx.restore();ctx.strokeStyle='#f6f3ea';fn()};
-  if(open){/* instantly a thin X in the same corner — not a morph, not a box */
-    ctx.lineWidth=3.5;const r=15;shadow(()=>{ctx.beginPath();ctx.moveTo(cx-r,cy-r);ctx.lineTo(cx+r,cy+r);ctx.moveTo(cx+r,cy-r);ctx.lineTo(cx-r,cy+r);ctx.stroke()})}
-  else{/* classic thick equal-length pills, rounded caps, even gaps, icon only */
+  if(open){/* thin navy X — same top-left spot, now on the off-white drawer */
+    ctx.lineWidth=3.5;const r=15;ctx.strokeStyle='rgba(13,12,34,.2)';ctx.translate(0,1);ctx.beginPath();ctx.moveTo(cx-r,cy-r);ctx.lineTo(cx+r,cy+r);ctx.moveTo(cx+r,cy-r);ctx.lineTo(cx-r,cy+r);ctx.stroke();ctx.translate(0,-1);
+    ctx.strokeStyle=BB.MENU_INK;ctx.beginPath();ctx.moveTo(cx-r,cy-r);ctx.lineTo(cx+r,cy+r);ctx.moveTo(cx+r,cy-r);ctx.lineTo(cx-r,cy+r);ctx.stroke()}
+  else{/* cream pills with a dark shadow so they read on the game HUD */
     const thick=11,barW=68,gap=16,step=thick+gap,x0=cx-barW/2,x1=cx+barW/2;ctx.lineWidth=thick;
-    shadow(()=>{for(const dy of[-step,0,step]){ctx.beginPath();ctx.moveTo(x0,cy+dy);ctx.lineTo(x1,cy+dy);ctx.stroke()}})}
+    ctx.strokeStyle='rgba(0,0,0,.5)';ctx.translate(0,2);for(const dy of[-step,0,step]){ctx.beginPath();ctx.moveTo(x0,cy+dy);ctx.lineTo(x1,cy+dy);ctx.stroke()}ctx.translate(0,-2);
+    ctx.strokeStyle='#f6f3ea';for(const dy of[-step,0,step]){ctx.beginPath();ctx.moveTo(x0,cy+dy);ctx.lineTo(x1,cy+dy);ctx.stroke()}}
   ctx.restore()};
 BB.menuRow=(x,y,w,h,label,id,onClick,o={})=>{if(o.hit!==false)BB.button(x,y,w,h,'',{id,style:'none',onClick});
   const ink=o.accent?BB.MENU_ACCENT:BB.MENU_INK;
@@ -310,14 +311,14 @@ BB.drawDrawerMain=(x,y,w,h,k)=>{
   items.push({label:'Mic Setup',id:'menumic',onClick:()=>BB.menuGoPage('mic'),chevron:1});
   items.push({label:'Assessment',id:'menuassess',onClick:()=>{BB.caption=null;BB.go(new BB.AssessRoom())}});
   items.push({label:'Teacher',id:'mteacher',onClick:()=>BB.menuGoPage('teacher'),chevron:1});
-  BB.text(play?'Paused':'Menu',x+pad,y+72,30,BB.MENU_MUTED,{align:'left',font:'Lilita One'});
+  BB.text(play?'Paused':'Menu',x+124,y+62,30,BB.MENU_MUTED,{align:'left',font:'Lilita One'});/* right of the top-left X */
   let yy=y+140;
   items.forEach((it,i)=>{const delay=i*0.055,kk=BB.menuEase?BB.menuEase(Math.max(0,Math.min(1,(k-delay)/0.72))):1,ox=(1-kk)*24;
     ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,kk*1.15));
     BB.menuRow(x+pad+ox,yy,w-pad*2,rowH,it.label,it.id,it.onClick,{pad:0,size:52,chevron:it.chevron,accent:it.accent,hit:live});
     ctx.restore();yy+=rowH+8})};
-BB.drawDrawerBack=(x,y,w)=>{x=Math.max(x,0);BB.button(x+36,y+28,200,64,'',{id:'mback',style:'none',onClick:()=>BB.menuGoBack()});
-  const bx=x+56,by=y+60;ctx.strokeStyle=BB.MENU_INK;ctx.lineWidth=3.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bx+12,by-12);ctx.lineTo(bx,by);ctx.lineTo(bx+12,by+12);ctx.stroke();
+BB.drawDrawerBack=(x,y,w)=>{x=Math.max(x,0);BB.button(x+120,y+28,200,64,'',{id:'mback',style:'none',onClick:()=>BB.menuGoBack()});
+  const bx=x+140,by=y+60;ctx.strokeStyle=BB.MENU_INK;ctx.lineWidth=3.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(bx+12,by-12);ctx.lineTo(bx,by);ctx.lineTo(bx+12,by+12);ctx.stroke();
   BB.text('Back',bx+28,by,28,BB.MENU_INK,{align:'left',font:'Lilita One'})};
 BB.drawDrawerHowTo=(x,y,w,h)=>{const howTo=BB.scene&&BB.scene.howTo;if(!howTo){BB.menuGoBack();return}
   x=Math.max(x,0);BB.drawDrawerBack(x,y,w);const pad=64;
@@ -391,7 +392,7 @@ BB.titleCard=(txt,sub,k)=>{if(k<=0||k>=1)return;const a=k<.15?k/.15:k>.85?(1-k)/
 })();
 // ===== v2 painted props: grounded, tinted, clamped to their tunnel box =====
 (()=>{let ctx=BB.ctx;BB._sw.push(g=>ctx=g);BB.V2={};
-BB.loadV2=()=>Promise.all([['rock','png'],['crystal','png'],['cart','png'],['elev','png'],['smash','png'],['bin','png'],['rubble','png'],['wh','jpg'],['tun0','jpg'],['tun1','jpg'],['tun2','jpg'],['tun3','jpg'],['tun4','jpg'],['pipe','png'],['funnel','png'],['title_bg','jpg'],['map_bg','jpg'],['hub_bg','jpg'],['conveyor','png'],['redbtn','png'],['smash_blur','jpg'],['pack_blur','jpg'],['mine_door','jpg'],['label_door','jpg'],['dock_door','jpg'],['logo','png'],['mic','png'],['lock','png'],['chip','png'],['earth','jpg'],['shaft','jpg']].map(([n,e])=>new Promise(r=>{const i=new Image();i.onload=()=>{BB.V2[n]=i;(i.decode?i.decode().catch(()=>{}):Promise.resolve()).then(r)};i.onerror=()=>r();i.src='assets/v2/'+n+'.'+e+'?v='+(BB.VERSION||'')})));
+BB.loadV2=()=>Promise.all([['rock','png'],['crystal','png'],['cart','png'],['elev','png'],['smash','png'],['bin','png'],['rubble','png'],['wh','jpg'],['tun0','jpg'],['tun1','jpg'],['tun2','jpg'],['tun3','jpg'],['tun4','jpg'],['pipe','png'],['funnel','png'],['title_bg','jpg'],['map_bg','jpg'],['hub_bg','jpg'],['conveyor','png'],['redbtn','png'],['smash_blur','jpg'],['pack_blur','jpg'],['mine_door','jpg'],['label_door','jpg'],['dock_door','jpg'],['logo','webp'],['mic','png'],['lock','png'],['chip','png'],['earth','jpg'],['shaft','jpg']].map(([n,e])=>new Promise(r=>{const i=new Image();i.onload=()=>{BB.V2[n]=i;(i.decode?i.decode().catch(()=>{}):Promise.resolve()).then(r)};i.onerror=()=>{if(e==='webp'){i.onerror=()=>r();i.src='assets/v2/'+n+'.png?v='+(BB.VERSION||'')}else r()};i.src='assets/v2/'+n+'.'+e+'?v='+(BB.VERSION||'')})));
 const tcache={};
 // cached copy of a prop with a top-down rim light + ambient tint baked in (no per-frame compositing cost)
 BB.tinted=(name,rim,amb,ambA=.18)=>{const key=name+rim+amb+ambA;if(tcache[key])return tcache[key];const im=BB.V2[name];if(!im)return null;

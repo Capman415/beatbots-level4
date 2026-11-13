@@ -73,10 +73,12 @@ ok(/b\.id==='menubtn'/.test(eng),'click snap skips the hamburger so nearby taps/
 ok(/Drill-O-Matic 3000/.test(rooms.mine),'mine plaque is Drill-O-Matic 3000');
 ok(/was SMASH-O-MATIC/.test(rooms.mine),'comment records the previous name');
 ok(/py=GY-260/.test(rooms.mine),'plaque sits on the machine, not under the HUD');
-ok(/tpx=W-630/.test(rooms.mine),'tempo panel is inset so the hamburger cannot clip ANDANTE');
+ok(/tpx=W-520/.test(rooms.mine),'tempo panel sits on the right now that the hamburger is top-left');
+ok(/MENU_BTN=\{x:28,y:26,s:72\}/.test(art),'hamburger is in the top-left corner');
+ok(/translate\(124,24\)/.test(rooms.mine)&&/panel\(124,24/.test(rooms.smasher)&&/panel\(124,24/.test(rooms.packing)&&/PANEL\(124,24/.test(rooms.label)&&/panel\(124,24/.test(rooms.delivery),'top-left HUD panels are shifted right of the hamburger');
 ok(/gap=64/.test(rooms.mine)&&/pillW=352/.test(rooms.mine),'strikes are gapped away from the beat lights');
 ok(/SMASH-O-MATIC/.test(rooms.smasher),'Note Smasher keeps its own SMASH-O-MATIC 4000 name');
-ok(/W-430/.test(rooms.delivery)&&/W-430/.test(rooms.assess),'SKIP controls sit clear of the hamburger');
+ok(/W-300/.test(rooms.delivery)&&/W-300/.test(rooms.assess),'SKIP controls return toward the right now that the hamburger is gone from that corner');
 ok(/in the menu/.test(shell),'GradePick copy points at the menu');
 ok(!/id:'hday'/.test(shell)&&!/id:'hgrade'/.test(shell),'DAY/GRADE are off the hub');
 ok(!/id:'assess'/.test(shell)&&!/BB\.button\([^)]*'MIC SETUP'/.test(shell),'Assessment and Mic Setup are off the hub');
@@ -85,6 +87,52 @@ ok(/drawNextTempo|NEXT UP/.test(rooms.mine),'next-tempo preview still present');
 for(const [n,src] of Object.entries(rooms)){
   const m=src.match(/steps:\[([^\]]+)\]/);
   if(m){const nSteps=(m[1].match(/'(?:\\'|[^'])*'/g)||[]).length;ok(nSteps<=4,n+' How To Play has at most 4 steps ('+nSteps+')')}
+}
+
+
+// --- Steady Bots title logo ---
+ok(/\['logo','webp'\]/.test(art),'title logo loads the webp asset (png fallback on error)');
+ok(/assets\/v2\/logo\.webp/.test(read('sw.js'))&&/assets\/v2\/logo\.png/.test(read('sw.js')),'sw.js precaches logo.webp and logo.png');
+ok(/STEADY BOTS/.test(shell)||/BB\.V2\.logo/.test(shell),'title screen draws the Steady Bots logo');
+ok(!/the real Beat Bots logo/.test(shell),'title screen comment no longer names the old Beat Bots logo');
+ok(/Steady Bots Level 4/.test(read('index.html')),'document title is Steady Bots Level 4');
+ok(fs.existsSync(path.join(ROOT,'assets/v2/logo.webp'))&&fs.existsSync(path.join(ROOT,'assets/v2/logo.png')),'logo.webp and logo.png are in assets/v2');
+
+// --- assessment: notation, pool, randomization, CSV ---
+const as=rooms.assess;
+ok(/R\.rhythmLine/.test(as),'hearPick choices and reveals use real notation (R.rhythmLine)');
+ok(!/R\.pills\([^)]*c\.lab/.test(as)&&!/drawGradedHear[\s\S]*?R\.pills\(W\/2/.test(as),'ta/ti-ti word pills are gone from hear choices and the reveal');
+ok(/buildAssess/.test(as)&&/_rhythmPool/.test(as),'assessment builds a seedable randomized deck from a rhythm pool');
+ok(/rhythm_id,variant_id/.test(as),'CSV keeps existing columns and appends rhythm_id,variant_id');
+ok(/o\.rhythmId/.test(as)&&/o\.variantId/.test(as),'log rows store rhythm and variant ids');
+ok(/state==='hear'/.test(as),'listening-first hear state is unchanged');
+{
+  const src=as;
+  const start=src.indexOf('const BEAT=');
+  const end=src.indexOf('BB.assessLog=');
+  const slice=src.slice(start,src.indexOf('/* assessment log'));
+  const BB={}; const fn=new Function('BB',slice+';return {buildAssess,POOL,WORDINGS}');
+  const {buildAssess,POOL,WORDINGS}=fn(BB);
+  ok(POOL.length>=16,'rhythm pool has a solid level-4 set');
+  ok(POOL.every(p=>p.seq.reduce((a,k)=>a+({w:4,h:2,q:1,e:1,s:1,r:1}[k]||0),0)===4),'every pool rhythm is exactly 4 beats');
+  ok(POOL.some(p=>p.seq.includes('s'))&&POOL.some(p=>p.seq.includes('h'))&&POOL.some(p=>p.seq.includes('w'))&&POOL.some(p=>p.seq.includes('r')),'pool covers tika-tika, half, whole, and rest');
+  const d1=buildAssess(1),d2=buildAssess(2),d3=buildAssess(1);
+  ok(d1.length===8&&d1.filter(q=>q.kind==='hearPick').length===4,'each run is still 8 questions with 4 hearPicks');
+  ok(JSON.stringify(d1)===JSON.stringify(d3),'the same seed rebuilds the same deck');
+  ok(JSON.stringify(d1)!==JSON.stringify(d2),'different seeds produce different decks');
+  const ids1=d1.filter(q=>q.kind==='hearPick').map(q=>q.rhythmId);
+  const ids2=d2.filter(q=>q.kind==='hearPick').map(q=>q.rhythmId);
+  ok(new Set(ids1).size===4&&new Set(ids2).size===4,'hearPick targets in a run do not repeat');
+  for(const q of d1.concat(d2)){
+    if(q.kind!=='hearPick')continue;
+    const ks=q.choices.map(c=>c.k);
+    ok(new Set(ks).size===ks.length,q.id+' choices are unique');
+    ok(ks.includes(q.ans),q.id+' includes the correct answer');
+    ok(q.rhythmId===q.ans,q.id+' ans is the target rhythm id');
+    ok(q.variantId&&q.prompt,q.id+' has a wording variant');
+  }
+  const prompts=new Set([d1,d2,buildAssess(3),buildAssess(4),buildAssess(5)].flat().map(q=>q.prompt));
+  ok(prompts.size>=6,'wordings vary across seeds');
 }
 
 // --- smash asset: no leftover white background / enclosed gaps ---

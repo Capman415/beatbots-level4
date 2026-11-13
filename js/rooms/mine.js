@@ -516,12 +516,12 @@ class MineRoom{
     {const cp=this.chipPop&&BB.t-this.chipPop<.6?1+.15*Math.sin((BB.t-this.chipPop)/.6*Math.PI):1,im=BB.V2.chip;ctx.save();ctx.translate(768,80);ctx.scale(cp,cp);BB.panel(-65,-65,130,130,26);/* v14.5.26: chip + label stay inside the well */
       if(im){const h=48,w=im.width*h/im.height;if(this.chip){BB.glow(0,-8,64,'rgba(255,220,120,A)',.35+.1*Math.sin(BB.t*3));ctx.drawImage(im,-w/2,-h/2-10,w,h)}else{ctx.globalAlpha=.22;ctx.drawImage(im,-w/2,-h/2-10,w,h);ctx.globalAlpha=1}}
       BB.text('BEAT CHIP',0,36,14,this.chip?COL.yellow:'#8fb5ad',{stroke:3,maxW:88});ctx.restore()}
-    ctx.save();ctx.translate(40,24);ctx.scale(mp,mp);BB.panel(0,0,500,114,28);/* v14.5.26: title, count and pips padded inside the well */
+    ctx.save();ctx.translate(124,24);ctx.scale(mp,mp);BB.panel(0,0,500,114,28);/* v14.5.26: shifted right of the top-left hamburger */
     BB.text('WHOLE NOTES',32,42,26,COL.yellow,{align:'left',stroke:4,maxW:200});BB.text(`${this.count} of 8`,32,80,24,'#fff',{align:'left',font:'Rammetto One',stroke:4,maxW:160});
     for(let i=0;i<8;i++){const on=i<this.count;BB.wholeNote(226+i*30,80,11,{fill:on?'#6ee678':'#2d4744',ring:on?COL.ink:'#22383a'})}
     ctx.restore();
     // v14.5.26 tempo / dynamics: content centered in the well, tested against the longest label (ANDANTE + FORTE)
-    const sg=R.sign||[F.name,F.mean],icons=(R.icons||(F.icon?[F.icon]:[])).filter(Boolean),tpx=W-630,tpy=24,tpw=480,tph=114;/* v14.5.26: ends at 1770, clear of the hamburger at ~1820 */
+    const sg=R.sign||[F.name,F.mean],icons=(R.icons||(F.icon?[F.icon]:[])).filter(Boolean),tpx=W-520,tpy=24,tpw=480,tph=114;/* v14.5.26: hamburger moved to top-left; tempo returns to the right with a 40px margin */
     BB.panel(tpx,tpy,tpw,tph,28);
     {const ix=tpx+28,iw=tpw-56,ic=icons.length,iwIcon=ic?56:0,row=ic?iwIcon*ic+12:0,midY=tpy+tph/2,title=sg[0],sub=sg[1]+(R.dyn==='p'?'  (p)':R.dyn==='f'?'  (f)':'')+`  ·  ${R.bpm} bpm`,tSize=title.length>12?26:32;
       const meas=(t,sz,f)=>{try{return BB.measure(t,sz,f)}catch(e){return t.length*sz*.62}},textW=Math.min(iw-row,Math.max(meas(title,tSize,'Rammetto One'),meas(sub,22))+12),x0=ix+Math.max(0,(iw-row-textW)/2);

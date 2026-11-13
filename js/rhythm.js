@@ -96,6 +96,27 @@ R.pills=(cx,y,seq,st={})=>{const L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0))
         if(m)BB.star(xx+ww/2,y,13*ease.back(Math.min(1,m)),COL.yellow,BB.t);si++})}
     b+=n});
   if(st.words){b=0;seq.forEach(k=>{const n=R.BEATS[k],x=cx-tot/2+b*(bw+gap),w=n*bw+(n-1)*gap;BB.text(R.SAY[k],x+w/2,y-72,28,'#fff',{stroke:5});b+=n})}};
+/* v14.5.26: staff-less / single-line percussion rhythm for Assessment choices + reveals.
+   Notes sit on one staff line (heads on the line). Placement is by onset beat so a
+   half or whole occupies the start of its span. Sized for classroom viewing (grades 1–6). */
+R.rhythmLine=(cx,y,seq,st={})=>{if(!seq||!seq.length)return;
+  const L=Math.max(4,seq.reduce((a,k)=>a+(R.BEATS[k]||0),0)),Wline=st.w||420,beatW=Wline/L,x0=cx-Wline/2,ink=st.ink||'#19191f',s=st.size||18,g=st.g||ctx;
+  g.save();
+  /* cream paper plate so black ink stays readable on dark cream-button faces and on the game bg */
+  if(st.plate!==false){const pw=Wline+56,ph=st.ph||(s*7.4+28),px=cx-pw/2,py=y-s*5.2-10;
+    const r=18;g.fillStyle=st.plate||'#f7f4ea';g.beginPath();g.moveTo(px+r,py);g.lineTo(px+pw-r,py);g.quadraticCurveTo(px+pw,py,px+pw,py+r);g.lineTo(px+pw,py+ph-r);g.quadraticCurveTo(px+pw,py+ph,px+pw-r,py+ph);g.lineTo(px+r,py+ph);g.quadraticCurveTo(px,py+ph,px,py+ph-r);g.lineTo(px,py+r);g.quadraticCurveTo(px,py,px+r,py);g.closePath();g.fill();
+    if(st.plateStroke!==false){g.strokeStyle=st.plateStroke||'rgba(25,25,31,.18)';g.lineWidth=2;g.stroke()}}
+  /* single percussion staff line + start/end barlines + faint beat ticks */
+  g.strokeStyle=st.line||'rgba(25,25,31,.55)';g.lineWidth=Math.max(2,s*.12);g.lineCap='butt';
+  const lx0=x0-8,lx1=x0+Wline+8;g.beginPath();g.moveTo(lx0,y);g.lineTo(lx1,y);g.stroke();
+  g.lineWidth=Math.max(2.5,s*.16);g.beginPath();g.moveTo(lx0,y-s*2.4);g.lineTo(lx0,y+s*1.4);g.moveTo(lx1,y-s*2.4);g.lineTo(lx1,y+s*1.4);g.stroke();
+  g.strokeStyle=st.ticks||'rgba(25,25,31,.22)';g.lineWidth=1.5;
+  for(let i=1;i<L;i++){const tx=x0+i*beatW;g.beginPath();g.moveTo(tx,y-s*.7);g.lineTo(tx,y+s*.7);g.stroke()}
+  /* notes: glyph heads sit on the line; half/whole start at their onset beat */
+  let b=0;seq.forEach(k=>{const n=R.BEATS[k]||1,x=x0+b*beatW+(k==='e'||k==='s'?n*beatW/2:beatW*.5);
+    R.glyph(k,x,y,s,ink,g);b+=n});
+  g.restore()};
+
 // ---------- extra sounds (all logged as self-sounds so the mic ignores them) ----------
 const ac=BB.ac,bus=BB.outBus;let nb=null;
 function tone(type,f,t,d,pk,f2){BB.selfSound(t,d,null);const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(pk,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(bus);o.start(t);o.stop(t+d+.05)}

@@ -6,12 +6,12 @@ const src=fs.readFileSync(path.join(__dirname,'../js/rooms/assess.js'),'utf8');
 let fails=0;const ok=(c,m)=>{if(!c){fails++;console.error('FAIL',m)}else console.log('ok',m)};
 
 ok(/const PASS=6,TOTAL=8/.test(src),'PASS=6 TOTAL=8');
-ok((src.match(/id:'as_/g)||[]).length===8,'exactly 8 question ids');
+ok(/buildAssess/.test(src)&&/id:'as_pulse'/.test(src)&&/id:'as_'\+topic/.test(src),'builder still uses the 8 slot ids');
 ok(/kind:'follow'/.test(src),'follow-along question present');
-ok(/id:'as_piano'/.test(src)&&/ans:'soft'/.test(src),'piano = soft');
-ok(/id:'as_andante'/.test(src)&&/ans:'walk'/.test(src),'andante = walking');
-ok(/id:'as_allegro'/.test(src)&&/ans:'fast'/.test(src),'allegro = fast');
-ok((src.match(/kind:'hearPick'/g)||[]).length===4,'four hearPick items');
+ok(/id:'piano-v1'/.test(src)&&/ans:'soft'/.test(src),'piano = soft');
+ok(/id:'andante-v1'/.test(src)&&/ans:'walk'/.test(src),'andante = walking');
+ok(/id:'allegro-v1'/.test(src)&&/ans:'fast'/.test(src),'allegro = fast');
+ok(/kind:'hearPick'/.test(src),'hearPick items are still built');
 ok(/REPLAY RHYTHM/.test(src),'replay button');
 ok(/manual-override/.test(src),'manual override logged distinctly');
 ok(/thr_early_ms/.test(src)&&/matched/.test(src),'CSV has performance evidence columns');
@@ -36,15 +36,24 @@ ok(!match(exp+0.40,exp,spb,'5').ok,'grade5 +400ms miss');
 ok(match(exp+0.25,exp,spb,'K').ok,'gradeK +250ms still hit');
 ok(!match(exp-0.25,exp,spb,'5').ok,'grade5 -250ms early miss');
 
-/* hearPick uniqueness: parse seq/choices from source roughly */
-const hears=[...src.matchAll(/id:'(as_hear\d)'[\s\S]*?seq:(\[[^\]]+\])[\s\S]*?choices:\[([\s\S]*?)\],ans:'(\w)'/g)];
-ok(hears.length===4,'parsed 4 hearPick blocks');
-for(const h of hears){
-  const seq=h[2],ans=h[4],ch=h[3];
-  const labs=[...ch.matchAll(/lab:(\[[^\]]+\])/g)].map(m=>m[1]);
-  ok(new Set(labs).size===labs.length,h[1]+' choices distinct');
-  const ansLab=(ch.match(new RegExp("k:'"+ans+"',lab:(\\[[^\\]]+\\])"))||[])[1];
-  ok(ansLab===seq,h[1]+' ans lab equals heard seq '+seq);
+/* hearPick uniqueness + seed variation: run the real builder */
+{
+  const start=src.indexOf('const BEAT=');
+  const slice=src.slice(start,src.indexOf('/* assessment log'));
+  const {buildAssess}=new Function('BB',slice+';return {buildAssess}')({});
+  for(const seed of [1,2,7,99]){
+    const deck=buildAssess(seed);
+    ok(deck.length===8,'seed '+seed+' has 8 questions');
+    const hears=deck.filter(q=>q.kind==='hearPick');
+    ok(hears.length===4,'seed '+seed+' has 4 hearPicks');
+    ok(new Set(hears.map(q=>q.rhythmId)).size===4,'seed '+seed+' hear targets do not repeat');
+    for(const q of hears){
+      const ks=q.choices.map(c=>c.k);
+      ok(new Set(ks).size===ks.length,q.id+' choices distinct');
+      ok(ks.includes(q.ans),q.id+' correct answer present');
+    }
+  }
+  ok(JSON.stringify(buildAssess(1))!==JSON.stringify(buildAssess(2)),'randomization varies across seeds');
 }
 
 /* Pass gate math */
