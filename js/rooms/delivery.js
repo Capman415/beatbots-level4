@@ -91,16 +91,22 @@ const clapDyn=o=>{if(!o)return 0;if(o.sim&&o.dyn!=null)return clamp(o.dyn,0,1);c
   dynFill=ds=>{if(!ds||!ds.length)return 0;let sum=0;for(const d of ds)sum+=.12+.88*clamp(d,0,1);return clamp(sum*.70,0,3)},
   dynLevel=f=>f>=2.4?2:f>=1.2?1:0,BLAST_R=[170,280,460],HIT_DMG=6;
 /* v14.5.9 THROW LANES: each dodge has its own lane so throws spread across the screen. lean left <- junk flies RIGHT; lean right <- LEFT; duck <- HIGH; jump <- tire rolls along the floor to the BOTTOM; freeze bombs alternate bottom-left / bottom-right / centre. */
-const BOMB_LANES=['botL','botR','mid'],LANE_TG={left:{x:W*.1,y:H*.55},right:{x:W*.94,y:H*.76},high:{x:W*.4,y:600},floor:{x:1390,y:H*.86},botL:{x:W*.26,y:H*.82},botR:{x:W*.84,y:H*.84},mid:{x:W*.5,y:H*.62}},
-  throwLane=(kind,n)=>kind==='junkR'?'right':kind==='junkL'?'left':kind==='junkT'?'high':kind==='junkF'?'floor':kind==='bomb'?BOMB_LANES[(n||0)%3]:'mid',
+/* v14.5.25: each jump/tire throw picks a random floorL/floorC/floorR (no back-to-back repeat). The roll itself stays straight down that lane; jump is still the dodge for every tire, because the hazard is a floor roll toward the camera, not a side-flying object. */
+const TIRE_LANES=['floorL','floorC','floorR'],TIRE_HOP=.36,
+  pickTireLanes=(n,rnd)=>{rnd=rnd||Math.random;const L=TIRE_LANES,out=[];n=n|0;if(n<=0)return out;while(out.length<n){const d=L.slice();for(let i=d.length-1;i>0;i--){const j=(rnd()*(i+1))|0,t=d[i];d[i]=d[j];d[j]=t}if(out.length&&d[0]===out[out.length-1]){const k=1+((rnd()*(d.length-1))|0),t=d[0];d[0]=d[k];d[k]=t}for(let i=0;i<d.length&&out.length<n;i++)out.push(d[i])}return out},
+  tireLane=(n,seq)=>seq&&seq[n]!=null?seq[n]:['floorL','floorC','floorR','floorC'][n%4],
+  BOMB_LANES=['botL','botR','mid'],LANE_TG={left:{x:W*.1,y:H*.55},right:{x:W*.94,y:H*.76},high:{x:W*.4,y:600},floor:{x:1390,y:H*.86},floorL:{x:W*.22,y:H*.86},floorC:{x:W*.5,y:H*.86},floorR:{x:W*.78,y:H*.86},botL:{x:W*.26,y:H*.82},botR:{x:W*.84,y:H*.84},mid:{x:W*.5,y:H*.62}},
+  throwLane=(kind,n,seq)=>kind==='junkR'?'right':kind==='junkL'?'left':kind==='junkT'?'high':kind==='junkF'?tireLane(n,seq):kind==='bomb'?BOMB_LANES[(n||0)%3]:'mid',
   DODGE_VO={L:'dl_left',R:'dl_right',duck:'dl_duck',jump:'dl_jump',freeze:'dl_freeze'};
 /* v14.5.10 THROW PATHS (pure; visual review fix): objects leave Static Jr.'s hand fast (ease-out) so the trip across the screen is visible,
    stay BELOW the cue card / DODGE banner / speech bubble (y>=430), keep flying OFF the matching screen edge after the dodge beat (v 1..1.5) instead of vanishing.
    v = 0 at release, 1 on the dodge beat. sx,sy = release point. Returns {x,y,sc,a} or null when gone. */
 /* v14.5.18 TOWARD-CAMERA throws (Level-3 feel): grow hard toward the viewer, dive toward the bottom of the screen, stay opaque until past the bottom edge (no mid-air fade behind Sprocket). Lateral lane targets kept. fg=1 when the object should paint AFTER Sprocket. */
 /* v14.5.21 HIGH ARCS: mid-flight peak sits in the upper half (brief UI coverage OK). After the dodge beat they still dive past the bottom in the foreground. Floor tire stays a ground roll. */
+/* v14.5.25 TIRE LANES: each throw hops from Jr into a random left/center/right floor lane, then rolls perfectly straight (constant x) toward the camera. Jump is still the dodge for every tire lane. */
 const SAFE_Y=200,throwPath=(lane,v,sx,sy)=>{if(v<0||v>1.6)return null;const T=LANE_TG[lane]||LANE_TG.mid,u=Math.min(v,1),po=Math.max(0,v-1),cam=Math.pow(u,1.5);
-  if(lane==='floor'){const p=Math.pow(u,1.15);let x=sx,y=lerp(sy,T.y,p)+po*2400;const sc=.5+3.6*Math.pow(u,1.25)+po*4;return{x,y,sc,a:y>H+160?clamp(1-(y-(H+160))/280,0,1):1,fg:sc>=1.7||u>=.4}}
+  if(lane==='floor'||lane==='floorL'||lane==='floorC'||lane==='floorR'){const p=Math.pow(u,1.15);const tx=lane==='floor'?sx:T.x;let y=lerp(sy,T.y,p)+po*2400,x=tx;const sc=.5+3.6*Math.pow(u,1.25)+po*4;
+    if(lane!=='floor'&&v<TIRE_HOP){const h=v/TIRE_HOP,pe=1-Math.pow(1-h,2);x=lerp(sx,tx,pe);y-=Math.sin(h*Math.PI)*130}return{x,y,sc,a:y>H+160?clamp(1-(y-(H+160))/280,0,1):1,fg:sc>=1.7||u>=.4}}
   const p=1-Math.pow(1-u,1.7),dx=T.x-sx;let x=sx+dx*p+dx*po*1.15,peak=lane==='high'?210:260,apex=lane==='high'?200:240;
   let y=lerp(sy,Math.min(T.y,apex+40),p)-Math.sin(u*Math.PI)*peak;y=lerp(y,H+260,Math.pow(cam,2.2)*.18+po*2.2);
   const sc=.48+1.05*p+(lane==='high'?3.6:4.4)*Math.pow(cam,1.35)+po*3.8,a=y>H+140?clamp(1-(y-(H+140))/280,0,1):(x<-220||x>W+220)?0:1;
@@ -114,7 +120,7 @@ const LANE_DIR={left:-1,right:1,high:-1,floor:-1,botL:-1,botR:1,mid:-1},
     const rot=clamp(d*(.12+amp*e+.25*po)+tilt*e+.06*Math.sin(u*7),-.6,.6);return{rot,sx:kind==='bomb'?1:1-.16*Math.sin(Math.PI*Math.min(u,1))}};
 BB.throwTurn=throwTurn;BB.LANE_DIR=LANE_DIR;
 BB.throwPath=throwPath;BB.SAFE_Y=SAFE_Y;
-BB.throwLane=throwLane;BB.LANE_TG=LANE_TG;BB.DODGE_VO=DODGE_VO;
+BB.throwLane=throwLane;BB.LANE_TG=LANE_TG;BB.DODGE_VO=DODGE_VO;BB.TIRE_LANES=TIRE_LANES;BB.TIRE_HOP=TIRE_HOP;BB.pickTireLanes=pickTireLanes;BB.tireLane=tireLane;
 /* v14.5.10 PUNCH RUSH sensitivity (rush bars only): expected shortest clap gap -> ClapDet refractory .6x = .15 s (group flams up to ~150 ms stay one punch) (grade bounce floor still applies), re-arm only after the level decays, so held noise / one flam = one punch */
 const PUNCH_GAP=.25;BB.PUNCH_GAP=PUNCH_GAP;
 BB.clapDyn=clapDyn;BB.dynFill=dynFill;BB.dynLevel=dynLevel;BB.BLAST_R=BLAST_R;BB.HIT_DMG=HIT_DMG;
@@ -163,7 +169,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
   throwBox(assist){this.state='throw';this.st=BB.t;this.thr={assist,seq:this.seq};BB.sfx.whoosh()}
   landHit(){this.hp--;this.n++;this.jrK={t:BB.t,ph:'hit'};BB.sfx.bonk();BB.shake(6);BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(JR.x,JR.y-150,24,{cols:['#ffe066','#fff','#ff8adf'],kind:'star',size:14,speed:700,g:300});
     this.fx.push({k:'bonk',t:BB.t});this.drop={t:BB.t}}
-  startKO(){this.deluxe=deluxeOn();this.chips=this.deluxe?4:chipCount();this.state='end';this.cb=null;this.bolts=[];this.face=null;BB.groove.start(100,'pack');this.a0=BB.groove.t0;this.st=BB.t+(this.a0-BB.ac.currentTime)-KO_T0;/* v14.5.21: no opening glitch/fuzz/blast on Jr before the first throw */this.fuzzT=0;this.fuzzD=0;BB.fuzz=0;if(BB.parts)BB.parts.length=0;BB.mic.take();BB.ensureMic&&BB.ensureMic();this.heroes=HERO_AT.map(h=>Object.assign({},h));this.heroes.push({t:KO_BIG,run:-1,style:3,w:1.2});this.cts=[];this.cpm=0;this.fireRun=0;this.blasts=[];this.hitShow=null;this.cFire=null;this.lastCl=null;this.combo=0;KO_HITS.forEach((h,i)=>this['h'+i]=0)}
+  startKO(){this.deluxe=deluxeOn();this.chips=this.deluxe?4:chipCount();this.state='end';this.cb=null;this.bolts=[];this.face=null;BB.groove.start(100,'pack');this.a0=BB.groove.t0;this.st=BB.t+(this.a0-BB.ac.currentTime)-KO_T0;/* v14.5.21: no opening glitch/fuzz/blast on Jr before the first throw */this.fuzzT=0;this.fuzzD=0;BB.fuzz=0;if(BB.parts)BB.parts.length=0;BB.mic.take();BB.ensureMic&&BB.ensureMic();this.heroes=HERO_AT.map(h=>Object.assign({},h));this.heroes.push({t:KO_BIG,run:-1,style:3,w:1.2});this.cts=[];this.cpm=0;this.fireRun=0;this.blasts=[];this.hitShow=null;this.cFire=null;this.lastCl=null;this.combo=0;KO_HITS.forEach((h,i)=>this['h'+i]=0);this.tireSeq=pickTireLanes(KO_HITS.filter(h=>h[1]==='junkF').length)}
   bombAt(i){const r=Math.sin(i*12.9898)*43758.5453,f=r-Math.floor(r);return{x:260+f*(W-520),y:420+((f*7)%1)*300}}
   skipKO(){if(this.state!=='end'||this.cel)return;(this.heroes||[]).forEach(h=>h.armed=2);BB.groove.stop();this.st=BB.t-KO_CEL+.05;this.ko=this.dinged=1;KO_HITS.forEach((h,i)=>this['h'+i]=1);BB.say('dl_done',{overlap:true})}
   manualOverride(){if(BB.t-(this.lastOv||0)<.5)return;this.lastOv=BB.t;this.ovPop=BB.t;if(this.cb)this.cb.override()}
@@ -364,7 +370,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       if(kind==='rain'){for(let i=0;i<3;i++){const uu=u-i*.15;if(uu<0)continue;const y=uu<=1?lerp(-150,jy-330,uu*uu):jy-330-Math.sin(Math.min(1,(uu-1))*Math.PI)*160+(uu-1)*600*(uu-1);box(jx+(i-1)*90+(uu>1?(i-1)*(uu-1)*400:0),y,.8,uu*3*(i-1))}}
       if(kind==='zap'){const v=k-(hk-KO_B*1.5);if(v>0&&v<KO_B*1.5+.4){const p=v/(KO_B*1.5);const x=p<.5?lerp(jx-100,200,p*2):lerp(200,jx,(p-.5)*2),y=p<.5?lerp(jy-200,260,p*2):lerp(260,jy-200,(p-.5)*2);if(p<1){ctx.save();ctx.strokeStyle='#bff8ff';ctx.shadowColor='#7ef0ff';ctx.shadowBlur=24;ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(x-50,y-15);for(let i=0;i<5;i++)ctx.lineTo(x-50+i*25,y+(i%2?20:-20));ctx.stroke();ctx.restore();if(p>.3&&p<.6)BB.text('BOING! it bounced back!',200,200,34,'#fff',{stroke:5})}}}
       if(KO_ATK(kind)&&kind!=='zap'){/* v14.5.10: lane paths via throwPath (see helper); drawn here, banners/bubbles are drawn AFTER (post) so text is never covered */
-        const fl=1.2,v=(k-(hk-fl))/fl;if(v<0||v>1.5)continue;const i=KO_HITS.findIndex(h=>h[0]===hk&&h[1]===kind),lane=throwLane(kind,KO_HITS.slice(0,i).filter(h=>h[1]==='bomb').length),tire=kind==='junkF';
+        const fl=1.2,v=(k-(hk-fl))/fl;if(v<0||v>1.5)continue;const i=KO_HITS.findIndex(h=>h[0]===hk&&h[1]===kind),tire=kind==='junkF',n=KO_HITS.slice(0,i).filter(h=>h[1]===(tire?'junkF':'bomb')).length,lane=throwLane(kind,n,tire?this.tireSeq:null);
         const junk=kind==='bomb'?'bomb':tire?'tire':lane==='left'?'sock':lane==='right'?'chicken':i%2?'sock':'chicken';
         const P=tire?throwPath(lane,v,JR.x-40,JR.y+170):throwPath(lane,v,lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(!P)continue;
         const paint=()=>{ctx.save();ctx.globalAlpha=P.a;ctx.translate(P.x,P.y-(tire?62*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=throwTurn(lane,v,tire?'tire':junk);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}if(tire)this.drawTireRoll(v*16);else this.drawJunk(junk,t);ctx.restore();

@@ -20,13 +20,13 @@ ok(/tire\?62\*P\.sc/.test(d),'tire ground-contact offset restored to 62');
 ok(/roundRect\(-HW,-R,HW\*2,R\*2,RAD\)/.test(d),'symmetric capsule silhouette, no hanging slab');
 
 const ver=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json'),'utf8'));
-ok(ver.version==='v14.5.24'&&ver.build==='1794301524','version.json is v14.5.24 / 1794301524');
+ok(ver.version==='v14.5.25'&&ver.build==='1794301525','version.json is v14.5.25 / 1794301525');
 const eng=fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8');
-ok(/BB\.VERSION='v14\.5\.24'/.test(eng),'engine version synced');
+ok(/BB\.VERSION='v14\.5\.25'/.test(eng),'engine version synced');
 const idx=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-ok((idx.match(/1794301524/g)||[]).length>=2,'index.html build synced');
+ok((idx.match(/1794301525/g)||[]).length>=2,'index.html build synced');
 const sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
-ok(/bb-1794301524/.test(sw),'sw cache synced');
+ok(/bb-1794301525/.test(sw),'sw cache synced');
 
 // other v14.5.21 work stays
 ok(/bb_sj8/.test(d)&&/Even my static has better timing than that!/.test(d),'intro line kept');

@@ -7,7 +7,7 @@ ok(/this\._throwFG=\[\]/.test(src),'drawKO clears FG queue');
 ok(/if\(P\.fg\)this\._throwFG\.push\(paint\);else paint\(\)/.test(src),'late/large throws queued to FG');
 ok(/this\._throwFG\.forEach\(f=>f\(\)\)/.test(src)&&/drawLauncher\(\)/.test(src)
   && src.indexOf('this._throwFG.forEach')>src.indexOf("R.paint(ctx,()=>this.drawLauncher())"),'FG flush runs AFTER drawLauncher (in front of Sprocket)');
-const help=src.match(/const BOMB_LANES=[\s\S]*?DODGE_VO=\{[^}]*\};/)[0]+src.match(/const SAFE_Y=\d+,throwPath=[\s\S]*?fg:sc>=1\.7\|\|u>=\.4\}\};/)[0]+src.match(/const LANE_DIR=[\s\S]*?sx:kind==='bomb'\?1:1-\.16\*Math\.sin\(Math\.PI\*Math\.min\(u,1\)\)\}\};/)[0];
+const help=src.match(/const TIRE_LANES=[\s\S]*?DODGE_VO=\{[^}]*\};/)[0]+src.match(/const SAFE_Y=\d+,throwPath=[\s\S]*?fg:sc>=1\.7\|\|u>=\.4\}\};/)[0]+src.match(/const LANE_DIR=[\s\S]*?sx:kind==='bomb'\?1:1-\.16\*Math\.sin\(Math\.PI\*Math\.min\(u,1\)\)\}\};/)[0];
 const L=new Function('W','H','clamp','lerp',help+';return{throwPath,LANE_TG}')(1920,1080,(v,a,b)=>v<a?a:v>b?b:v,(a,b,t)=>a+(b-a)*t);
 const P0=L.throwPath('left',0,1340,500),P1=L.throwPath('left',1,1340,500),Pmid=L.throwPath('left',.5,1340,500),Pdive=L.throwPath('left',1.25,1340,500);
 ok(P1.sc>P0.sc*4,'left lane grows >4x toward camera');

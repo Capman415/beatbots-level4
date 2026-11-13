@@ -8,7 +8,7 @@ const out=process.argv[2]||'/workspace/previews/v14.5.24';fs.mkdirSync(out,{recu
 const W=1920,H=1080,clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,JR={x:1430,y:540};
 
 function extract(srcText){
-  const help=srcText.match(/const BOMB_LANES=[\s\S]*?DODGE_VO=\{[^}]*\};/)[0]
+  const help=srcText.match(/const TIRE_LANES=[\s\S]*?DODGE_VO=\{[^}]*\};/)[0]
     +srcText.match(/const SAFE_Y=\d+,throwPath=[\s\S]*?fg:sc>=1\.7\|\|u>=\.4\}\};/)[0]
     +srcText.match(/const LANE_DIR=[\s\S]*?sx:kind==='bomb'\?1:1-\.16\*Math\.sin\(Math\.PI\*Math\.min\(u,1\)\)\}\};/)[0];
   const L=new Function('W','H','clamp','lerp',help+';return{throwPath,throwTurn,LANE_TG}')(W,H,clamp,lerp);

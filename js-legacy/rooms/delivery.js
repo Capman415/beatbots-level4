@@ -133,14 +133,40 @@
     for (const d of ds) sum += 0.12 + 0.88 * clamp(d, 0, 1);
     return clamp(sum * 0.7, 0, 3);
   }, dynLevel = (f) => f >= 2.4 ? 2 : f >= 1.2 ? 1 : 0, BLAST_R = [170, 280, 460], HIT_DMG = 6;
-  const BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.1, y: H * 0.55 }, right: { x: W * 0.94, y: H * 0.76 }, high: { x: W * 0.4, y: 600 }, floor: { x: 1390, y: H * 0.86 }, botL: { x: W * 0.26, y: H * 0.82 }, botR: { x: W * 0.84, y: H * 0.84 }, mid: { x: W * 0.5, y: H * 0.62 } }, throwLane = (kind, n) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? "floor" : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
+  const TIRE_LANES = ["floorL", "floorC", "floorR"], TIRE_HOP = 0.36, pickTireLanes = (n, rnd) => {
+    rnd = rnd || Math.random;
+    const L = TIRE_LANES, out = [];
+    n = n | 0;
+    if (n <= 0) return out;
+    while (out.length < n) {
+      const d = L.slice();
+      for (let i = d.length - 1; i > 0; i--) {
+        const j = rnd() * (i + 1) | 0, t = d[i];
+        d[i] = d[j];
+        d[j] = t;
+      }
+      if (out.length && d[0] === out[out.length - 1]) {
+        const k = 1 + (rnd() * (d.length - 1) | 0), t = d[0];
+        d[0] = d[k];
+        d[k] = t;
+      }
+      for (let i = 0; i < d.length && out.length < n; i++) out.push(d[i]);
+    }
+    return out;
+  }, tireLane = (n, seq) => seq && seq[n] != null ? seq[n] : ["floorL", "floorC", "floorR", "floorC"][n % 4], BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.1, y: H * 0.55 }, right: { x: W * 0.94, y: H * 0.76 }, high: { x: W * 0.4, y: 600 }, floor: { x: 1390, y: H * 0.86 }, floorL: { x: W * 0.22, y: H * 0.86 }, floorC: { x: W * 0.5, y: H * 0.86 }, floorR: { x: W * 0.78, y: H * 0.86 }, botL: { x: W * 0.26, y: H * 0.82 }, botR: { x: W * 0.84, y: H * 0.84 }, mid: { x: W * 0.5, y: H * 0.62 } }, throwLane = (kind, n, seq) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? tireLane(n, seq) : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
   const SAFE_Y = 200, throwPath = (lane, v, sx, sy) => {
     if (v < 0 || v > 1.6) return null;
     const T = LANE_TG[lane] || LANE_TG.mid, u = Math.min(v, 1), po = Math.max(0, v - 1), cam = Math.pow(u, 1.5);
-    if (lane === "floor") {
+    if (lane === "floor" || lane === "floorL" || lane === "floorC" || lane === "floorR") {
       const p2 = Math.pow(u, 1.15);
-      let x2 = sx, y2 = lerp(sy, T.y, p2) + po * 2400;
+      const tx = lane === "floor" ? sx : T.x;
+      let y2 = lerp(sy, T.y, p2) + po * 2400, x2 = tx;
       const sc2 = 0.5 + 3.6 * Math.pow(u, 1.25) + po * 4;
+      if (lane !== "floor" && v < TIRE_HOP) {
+        const h = v / TIRE_HOP, pe = 1 - Math.pow(1 - h, 2);
+        x2 = lerp(sx, tx, pe);
+        y2 -= Math.sin(h * Math.PI) * 130;
+      }
       return { x: x2, y: y2, sc: sc2, a: y2 > H + 160 ? clamp(1 - (y2 - (H + 160)) / 280, 0, 1) : 1, fg: sc2 >= 1.7 || u >= 0.4 };
     }
     const p = 1 - Math.pow(1 - u, 1.7), dx = T.x - sx;
@@ -164,6 +190,10 @@
   BB.throwLane = throwLane;
   BB.LANE_TG = LANE_TG;
   BB.DODGE_VO = DODGE_VO;
+  BB.TIRE_LANES = TIRE_LANES;
+  BB.TIRE_HOP = TIRE_HOP;
+  BB.pickTireLanes = pickTireLanes;
+  BB.tireLane = tireLane;
   const PUNCH_GAP = 0.25;
   BB.PUNCH_GAP = PUNCH_GAP;
   BB.clapDyn = clapDyn;
@@ -484,6 +514,7 @@
       this.lastCl = null;
       this.combo = 0;
       KO_HITS.forEach((h, i) => this["h" + i] = 0);
+      this.tireSeq = pickTireLanes(KO_HITS.filter((h) => h[1] === "junkF").length);
     }
     bombAt(i) {
       const r = Math.sin(i * 12.9898) * 43758.5453, f = r - Math.floor(r);
@@ -1935,7 +1966,7 @@
         if (KO_ATK(kind) && kind !== "zap") {
           const fl = 1.2, v = (k - (hk - fl)) / fl;
           if (v < 0 || v > 1.5) continue;
-          const i = KO_HITS.findIndex((h) => h[0] === hk && h[1] === kind), lane = throwLane(kind, KO_HITS.slice(0, i).filter((h) => h[1] === "bomb").length), tire = kind === "junkF";
+          const i = KO_HITS.findIndex((h) => h[0] === hk && h[1] === kind), tire = kind === "junkF", n = KO_HITS.slice(0, i).filter((h) => h[1] === (tire ? "junkF" : "bomb")).length, lane = throwLane(kind, n, tire ? this.tireSeq : null);
           const junk = kind === "bomb" ? "bomb" : tire ? "tire" : lane === "left" ? "sock" : lane === "right" ? "chicken" : i % 2 ? "sock" : "chicken";
           const P = tire ? throwPath(lane, v, JR.x - 40, JR.y + 170) : throwPath(lane, v, lane === "right" || lane === "botR" ? JR.x + 60 : JR.x - 90, JR.y - 40);
           if (!P) continue;

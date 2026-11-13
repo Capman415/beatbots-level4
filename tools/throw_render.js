@@ -6,7 +6,7 @@
 const fs=require('fs'),path=require('path');const {createCanvas}=require(process.env.CV||'/tmp/cv/node_modules/@napi-rs/canvas');
 const src=fs.readFileSync(path.join(__dirname,'../js/rooms/delivery.js'),'utf8'),out=process.argv[2]||'/tmp/throws';fs.mkdirSync(out,{recursive:true});
 const W=1920,H=1080,clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,JR={x:1430,y:540};
-const help=src.match(/const BOMB_LANES=[\s\S]*?DODGE_VO=\{[^}]*\};/)[0]+src.match(/const SAFE_Y=\d+,throwPath=[\s\S]*?fg:sc>=1\.7\|\|u>=\.4\}\};/)[0]+src.match(/const LANE_DIR=[\s\S]*?sx:kind==='bomb'\?1:1-\.16\*Math\.sin\(Math\.PI\*Math\.min\(u,1\)\)\}\};/)[0];
+const help=src.match(/const TIRE_LANES=[\s\S]*?DODGE_VO=\{[^}]*\};/)[0]+src.match(/const SAFE_Y=\d+,throwPath=[\s\S]*?fg:sc>=1\.7\|\|u>=\.4\}\};/)[0]+src.match(/const LANE_DIR=[\s\S]*?sx:kind==='bomb'\?1:1-\.16\*Math\.sin\(Math\.PI\*Math\.min\(u,1\)\)\}\};/)[0];
 const L=new Function('W','H','clamp','lerp',help+';return{throwLane,throwPath,LANE_TG,throwTurn}')(W,H,clamp,lerp);
 const cv=createCanvas(W,H),ctx=cv.getContext('2d'),COL={ink:'#19191f'};
 const BB={rrect:(x,y,w,h,r,f,s,lw)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));if(f){ctx.fillStyle=f;ctx.fill()}if(s&&lw){ctx.strokeStyle=s;ctx.lineWidth=lw;ctx.stroke()}}};
