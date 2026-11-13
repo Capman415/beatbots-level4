@@ -269,7 +269,7 @@ async function main(){
     return null};
   // Use the real R.rhythmLayout + R.rhythmLine so previews cannot drift from the game.
   const R=(()=>{const R={BEATS:{w:4,h:2,q:1,e:1,s:1,r:1}};
-    const a=rhythmSrc.indexOf('R.rhythmLayout=');
+    const a=rhythmSrc.indexOf('R.CHOICE=');
     const b=rhythmSrc.indexOf('\n// ---------- extra sounds');
     if(a<0||b<0) throw new Error('could not extract R.rhythmLayout / R.rhythmLine from rhythm.js');
     new Function('R','ctx',rhythmSrc.slice(a,b))(R,ctx);
@@ -282,10 +282,10 @@ async function main(){
     BB.panel(124,40,1480,110,28);
     BB.text('CHECKPOINT  '+(qi+1)+' / 8',W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
     BB.text('Score  0  ·  need 6 of 8 to unlock Static Jr.',W/2,118,28,'#cfe8e2',{stroke:4});
-    BB.text(Q.prompt,W/2,350,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700});
-    const n=Q.choices.length,bw=480,gap=30,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
-    Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.rrect(x,460,bw,280,28,BB.lg(460,740,['#1b3a36','#142826']),'#8a806b',4);
-      R.rhythmLine(x+bw/2,600,c.lab,{w:bw-80,size:18,ink:'#19191f'});});
+    BB.text(Q.prompt,W/2,260,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700});
+    const n=Q.choices.length,C=R.CHOICE,bw=C.bw,bh=C.bh,gap=C.gap,tot=n*bw+(n-1)*gap,x0=W/2-tot/2,y=C.y;
+    Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.rrect(x,y,bw,bh,28,BB.lg(y,y+bh,['#1b3a36','#142826']),'#8a806b',4);
+      R.rhythmCard(x,y,bw,bh,c.lab,{ink:'#19191f',letter:String.fromCharCode(65+i)});});
     BB.rrect(W-300,24,260,70,20,BB.lg(24,94,['#fbf6e6','#e8e2cd']),'#8a806b',3);
     BB.text('SKIP Q',W-170,59,28,COL.yellow,{stroke:4});
     BB.drawMenuBtn(false);
@@ -304,7 +304,7 @@ async function main(){
   ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);
   BB.panel(124,40,1480,110,28);
   BB.text('CHECKPOINT  2 / 8',W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
-  BB.text(vocab.prompt,W/2,350,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700});
+  BB.text(vocab.prompt,W/2,260,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700});
   {const n=vocab.choices.length,bw=Math.min(420,Math.floor(1500/n)-24),gap=24,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
     vocab.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.rrect(x,420,bw,220,28,BB.lg(420,640,['#1b3a36','#142826']),'#8a806b',4);
       BB.text(c.lab,x+bw/2,530,c.lab.length>12?32:44,'#ffe9a0',{font:'Rammetto One',stroke:6,maxW:bw-24});});}
@@ -316,15 +316,15 @@ async function main(){
   BB.panel(124,40,1480,110,28);
   BB.text('CHECKPOINT  5 / 8',W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
   BB.text('GOT IT!',W/2,400,72,COL.green,{font:'Rammetto One',stroke:10});
-  BB.text('Heard rhythm:',W/2,540,28,'#cfe8e2',{stroke:4});
-  R.rhythmLine(W/2,640,rev.seq,{w:640,size:22,ink:'#19191f'});
+  BB.text('Heard rhythm:',W/2,500,34,'#ffe9a0',{font:'Rammetto One',stroke:6});
+  R.rhythmCard(W/2-480,560,960,280,rev.seq,{ink:'#19191f',size:28});
   BB.drawMenuBtn(false);
   save(c,'assess_reveal.png');
   // listening-first: hear state shows prompt, no target notation under a "listen" banner
   ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);
   BB.panel(124,40,1480,110,28);
   BB.text('CHECKPOINT  5 / 8',W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
-  BB.text(rev.prompt,W/2,350,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700});
+  BB.text(rev.prompt,W/2,260,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700});
   BB.text('Listening…',W/2,500,48,COL.yellow,{font:'Rammetto One',stroke:6});
   BB.drawMenuBtn(false);
   save(c,'assess_listen_first.png');
@@ -335,9 +335,9 @@ async function main(){
     BB.panel(124,40,1480,110,28);
     BB.text(title,W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
     BB.text('Choice-card scale — every beat an equal slot',W/2,118,28,'#cfe8e2',{stroke:4});
-    const n=seqs.length,bw=480,gap=30,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
-    seqs.forEach((seq,i)=>{const x=x0+i*(bw+gap);BB.rrect(x,460,bw,280,28,BB.lg(460,740,['#1b3a36','#142826']),'#8a806b',4);
-      R.rhythmLine(x+bw/2,600,seq,{w:bw-80,size:18,ink:'#19191f'});});
+    const n=seqs.length,C=R.CHOICE,bw=C.bw,bh=C.bh,gap=C.gap,tot=n*bw+(n-1)*gap,x0=W/2-tot/2,y=C.y;
+    seqs.forEach((seq,i)=>{const x=x0+i*(bw+gap);BB.rrect(x,y,bw,bh,28,BB.lg(y,y+bh,['#1b3a36','#142826']),'#8a806b',4);
+      R.rhythmCard(x,y,bw,bh,seq,{ink:'#19191f',letter:String.fromCharCode(65+i)});});
     BB.drawMenuBtn(false);
     save(c,name);
   }
@@ -345,15 +345,15 @@ async function main(){
   drawDense('assess_dense_mixed.png','DENSE MIXED  ·  Q / S / E',[['q','s','e','q'],['s','e','s','e'],['e','s','e','s']]);
   // 2x close-up of the originally cramped middle card (ta, tika-tika, ti-ti, ta)
   {
-    const bw=480;
+    const C=R.CHOICE,bw=C.bw,bh=C.bh,x=W/2-bw/2,y=H/2-bh/2;
     ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);
-    BB.rrect(W/2-bw/2,H/2-160,bw,280,28,BB.lg(H/2-160,H/2+120,['#1b3a36','#142826']),'#8a806b',4);
-    R.rhythmLine(W/2,H/2,['q','s','e','q'],{w:bw-80,size:18,ink:'#19191f'});
-    const z=2,cw=Math.round(bw*z)+40,ch=Math.round(280*z)+40;
+    BB.rrect(x,y,bw,bh,28,BB.lg(y,y+bh,['#1b3a36','#142826']),'#8a806b',4);
+    R.rhythmCard(x,y,bw,bh,['q','s','e','q'],{ink:'#19191f',letter:'B'});
+    const z=2,cw=Math.round(bw*z)+40,ch=Math.round(bh*z)+40;
     const c2=createCanvas(cw,ch),g2=c2.getContext('2d');
-    const sx=W/2-bw/2-10,sy=H/2-160-10;
+    const sx=x-10,sy=y-10;
     g2.imageSmoothingEnabled=false;
-    g2.drawImage(c,sx,sy,bw+20,280+20,0,0,cw,ch);
+    g2.drawImage(c,sx,sy,bw+20,bh+20,0,0,cw,ch);
     const out=path.join(OUT,'assess_hear_qseq_2x.png');
     fs.writeFileSync(out,c2.toBuffer('image/png'));
     console.log('wrote',out);

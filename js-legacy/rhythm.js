@@ -320,11 +320,17 @@
       });
     }
   };
+  R.CHOICE = { bw: 620, bh: 370, gap: 16, pad: 8, side: 14, size: 32, y: 400 };
+  R.choiceWline = (o = {}) => {
+    var _a, _b, _c;
+    const C = R.CHOICE;
+    return ((_a = o.bw) != null ? _a : C.bw) - 2 * ((_b = o.pad) != null ? _b : C.pad) - 2 * ((_c = o.side) != null ? _c : C.side);
+  };
   R.rhythmLayout = (seq, Wline, st = {}) => {
     if (!seq || !seq.length) return { L: 0, beatW: 0, s: 0, Wline: Wline || 0, items: [] };
     const L = Math.max(4, seq.reduce((a, k) => a + (R.BEATS[k] || 0), 0)), beatW = Wline / L;
     const densest = seq.some((k) => k === "s") ? 4 : seq.some((k) => k === "e") ? 2 : 1;
-    const s = Math.max(6, Math.min(st.size || 18, beatW / (densest * 2.35)));
+    const s = Math.max(6, Math.min(st.size || 18, beatW / (densest * 2.1)));
     const items = [];
     let b = 0;
     seq.forEach((k) => {
@@ -342,8 +348,8 @@
     const Wline = st.w || 420, lay = R.rhythmLayout(seq, Wline, st), s = lay.s, beatW = lay.beatW, x0 = cx - Wline / 2, ink = st.ink || "#19191f", g = st.g || ctx;
     g.save();
     if (st.plate !== false) {
-      const pw = Wline + 56, ph = st.ph || s * 7.4 + 28, px = cx - pw / 2, py = y - s * 5.2 - 10;
-      const r = 18;
+      const pw = st.pw || Wline + 56, ph = st.ph || s * 7.4 + 28, px = st.px != null ? st.px : cx - pw / 2, py = st.py != null ? st.py : y - s * 5.2 - 10;
+      const r = st.pr || 18;
       g.fillStyle = st.plate || "#f7f4ea";
       g.beginPath();
       g.moveTo(px + r, py);
@@ -361,6 +367,13 @@
         g.strokeStyle = st.plateStroke || "rgba(25,25,31,.18)";
         g.lineWidth = 2;
         g.stroke();
+      }
+      if (st.letter) {
+        g.fillStyle = st.letterInk || "#3a3934";
+        g.font = "".concat(Math.max(20, Math.min(30, ph * 0.08)), "px 'Lilita One'");
+        g.textAlign = "left";
+        g.textBaseline = "top";
+        g.fillText(st.letter, px + 14, py + 10);
       }
     }
     g.strokeStyle = st.line || "rgba(25,25,31,.55)";
@@ -421,7 +434,7 @@
         g.beginPath();
         g.ellipse(0, 0, s * 1.15, s * 0.78, 0, 0, 7);
         g.fill();
-        g.globalCompositeOperation = "destination-out";
+        g.fillStyle = st.plate || "#f7f4ea";
         g.beginPath();
         g.ellipse(0, 0, s * 0.55, s * 0.42, -0.8, 0, 7);
         g.fill();
@@ -453,6 +466,16 @@
       }
     });
     g.restore();
+  };
+  R.rhythmCard = (x, y, bw, bh, seq, st = {}) => {
+    var _a, _b, _c;
+    if (!seq || !seq.length) return;
+    const C = R.CHOICE, pad = (_a = st.pad) != null ? _a : C.pad, side = (_b = st.side) != null ? _b : C.side, size = (_c = st.size) != null ? _c : C.size;
+    const pw = bw - 2 * pad, ph = bh - 2 * pad, px = x + pad, py = y + pad, Wline = Math.max(80, pw - 2 * side);
+    const lay = R.rhythmLayout(seq, Wline, { size }), s = lay.s;
+    const needTop = s * 5.2 + 12, needBot = s * 2.4 + 12;
+    const yStaff = Math.min(py + ph - needBot, Math.max(py + needTop, py + needTop + (ph - needTop - needBot) / 2));
+    R.rhythmLine(px + pw / 2, yStaff, seq, { w: Wline, size, ink: st.ink, g: st.g, plate: st.plate, plateStroke: st.plateStroke, px, py, pw, ph, pr: st.pr || 16, letter: st.letter, letterInk: st.letterInk });
   };
   const ac = BB.ac, bus = BB.outBus;
   let nb = null;

@@ -100,11 +100,16 @@ R.pills=(cx,y,seq,st={})=>{const L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0))
    Every beat is an equal-width slot. Eighths sit 2-to-a-slot, sixteenths 4-to-a-slot,
    evenly spaced, heads never overlapping, beams staying inside the slot. Head size
    shrinks automatically so even four tika-tika groups fit a choice card. */
+/* Classroom choice-card geometry: cream plate fills most of a wide, tall card.
+   Packing 2.10 leaves ~8% air between rotated heads and keeps stems in-slot, while
+   a ~576px staff yields dense heads ≥ 1.6× the previous 400px / size-18 card. */
+R.CHOICE={bw:620,bh:370,gap:16,pad:8,side:14,size:32,y:400};
+R.choiceWline=(o={})=>{const C=R.CHOICE;return(o.bw??C.bw)-2*(o.pad??C.pad)-2*(o.side??C.side)};
 R.rhythmLayout=(seq,Wline,st={})=>{if(!seq||!seq.length)return{L:0,beatW:0,s:0,Wline:Wline||0,items:[]};
   const L=Math.max(4,seq.reduce((a,k)=>a+(R.BEATS[k]||0),0)),beatW=Wline/L;
   const densest=seq.some(k=>k==='s')?4:seq.some(k=>k==='e')?2:1;
-  /* head diameter ≈ 2s; require air between centres. 2.35 also keeps stems inside the slot. */
-  const s=Math.max(6,Math.min(st.size||18,beatW/(densest*2.35)));
+  /* head AABB half-width ≈ 0.97s; 2.10 leaves a little air and keeps the last stem in the slot */
+  const s=Math.max(6,Math.min(st.size||18,beatW/(densest*2.10)));
   const items=[];let b=0;
   seq.forEach(k=>{const n=R.BEATS[k]||1,slotX=b*beatW,slotW=n*beatW,sub=(k==='s')?4:(k==='e')?2:1;
     const useW=(k==='h'||k==='w')?beatW:slotW; /* half/whole sit at the onset beat */
@@ -114,10 +119,12 @@ R.rhythmLayout=(seq,Wline,st={})=>{if(!seq||!seq.length)return{L:0,beatW:0,s:0,W
 R.rhythmLine=(cx,y,seq,st={})=>{if(!seq||!seq.length)return;
   const Wline=st.w||420,lay=R.rhythmLayout(seq,Wline,st),s=lay.s,beatW=lay.beatW,x0=cx-Wline/2,ink=st.ink||'#19191f',g=st.g||ctx;
   g.save();
-  /* cream paper plate so black ink stays readable on dark cream-button faces and on the game bg */
-  if(st.plate!==false){const pw=Wline+56,ph=st.ph||(s*7.4+28),px=cx-pw/2,py=y-s*5.2-10;
-    const r=18;g.fillStyle=st.plate||'#f7f4ea';g.beginPath();g.moveTo(px+r,py);g.lineTo(px+pw-r,py);g.quadraticCurveTo(px+pw,py,px+pw,py+r);g.lineTo(px+pw,py+ph-r);g.quadraticCurveTo(px+pw,py+ph,px+pw-r,py+ph);g.lineTo(px+r,py+ph);g.quadraticCurveTo(px,py+ph,px,py+ph-r);g.lineTo(px,py+r);g.quadraticCurveTo(px,py,px+r,py);g.closePath();g.fill();
-    if(st.plateStroke!==false){g.strokeStyle=st.plateStroke||'rgba(25,25,31,.18)';g.lineWidth=2;g.stroke()}}
+  /* cream paper plate so black ink stays readable on dark cream-button faces and on the game bg.
+     st.px/py/pw/ph pin the plate to a card (nearly full width and height). */
+  if(st.plate!==false){const pw=st.pw||(Wline+56),ph=st.ph||(s*7.4+28),px=st.px!=null?st.px:cx-pw/2,py=st.py!=null?st.py:y-s*5.2-10;
+    const r=st.pr||18;g.fillStyle=st.plate||'#f7f4ea';g.beginPath();g.moveTo(px+r,py);g.lineTo(px+pw-r,py);g.quadraticCurveTo(px+pw,py,px+pw,py+r);g.lineTo(px+pw,py+ph-r);g.quadraticCurveTo(px+pw,py+ph,px+pw-r,py+ph);g.lineTo(px+r,py+ph);g.quadraticCurveTo(px,py+ph,px,py+ph-r);g.lineTo(px,py+r);g.quadraticCurveTo(px,py,px+r,py);g.closePath();g.fill();
+    if(st.plateStroke!==false){g.strokeStyle=st.plateStroke||'rgba(25,25,31,.18)';g.lineWidth=2;g.stroke()}
+    if(st.letter){g.fillStyle=st.letterInk||'#3a3934';g.font=`${Math.max(20,Math.min(30,ph*0.08))}px 'Lilita One'`;g.textAlign='left';g.textBaseline='top';g.fillText(st.letter,px+14,py+10)}}
   /* single percussion staff line + start/end barlines + faint beat ticks */
   g.strokeStyle=st.line||'rgba(25,25,31,.55)';g.lineWidth=Math.max(2,s*.12);g.lineCap='butt';
   const lx0=x0-8,lx1=x0+Wline+8;g.beginPath();g.moveTo(lx0,y);g.lineTo(lx1,y);g.stroke();
@@ -129,12 +136,21 @@ R.rhythmLine=(cx,y,seq,st={})=>{if(!seq||!seq.length)return;
   const stemAt=hx=>{g.lineWidth=lw;g.beginPath();g.moveTo(hx+s*.86,y-s*.2);g.lineTo(hx+s*.86,y-stLen);g.stroke()};
   lay.items.forEach(it=>{const k=it.k,heads=it.heads.map(hx=>x0+hx);
     g.fillStyle=ink;g.strokeStyle=ink;g.lineCap='butt';g.lineJoin='round';
-    if(k==='w'){const hx=heads[0];g.save();g.translate(hx,y);g.beginPath();g.ellipse(0,0,s*1.15,s*.78,0,0,7);g.fill();g.globalCompositeOperation='destination-out';g.beginPath();g.ellipse(0,0,s*.55,s*.42,-.8,0,7);g.fill();g.restore()}
+    if(k==='w'){const hx=heads[0];g.save();g.translate(hx,y);g.beginPath();g.ellipse(0,0,s*1.15,s*.78,0,0,7);g.fill();g.fillStyle=st.plate||'#f7f4ea';g.beginPath();g.ellipse(0,0,s*.55,s*.42,-.8,0,7);g.fill();g.restore()}
     else if(k==='r'){const hx=heads[0],u=s*.9,yy=y-s*1.7;g.lineWidth=lw*1.2;g.beginPath();g.moveTo(hx-u*.4,yy-u*1.6);g.lineTo(hx+u*.5,yy-u*.5);g.lineTo(hx-u*.3,yy+u*.3);g.lineTo(hx+u*.5,yy+u*1.2);g.stroke();
       g.beginPath();g.moveTo(hx+u*.5,yy+u*1.2);g.quadraticCurveTo(hx-u*.7,yy+u*.9,hx-u*.1,yy+u*2.1);g.stroke()}
     else{const filled=k!=='h';heads.forEach(hx=>{headAt(hx,y,filled);if(k!=='w')stemAt(hx)});
       if(k==='e'||k==='s'){const bx0=heads[0]+s*.86-lw/2,bx1=heads[heads.length-1]+s*.86+lw/2;g.fillRect(bx0,y-stLen,bx1-bx0,bh);if(k==='s')g.fillRect(bx0,y-stLen+bh*1.7,bx1-bx0,bh)}}});
   g.restore()};
+
+/* Fill a choice (or reveal) card with a nearly full-bleed cream plate and scaled notation. */
+R.rhythmCard=(x,y,bw,bh,seq,st={})=>{if(!seq||!seq.length)return;
+  const C=R.CHOICE,pad=st.pad??C.pad,side=st.side??C.side,size=st.size??C.size;
+  const pw=bw-2*pad,ph=bh-2*pad,px=x+pad,py=y+pad,Wline=Math.max(80,pw-2*side);
+  const lay=R.rhythmLayout(seq,Wline,{size}),s=lay.s;
+  const needTop=s*5.2+12,needBot=s*2.4+12;
+  const yStaff=Math.min(py+ph-needBot,Math.max(py+needTop,py+needTop+(ph-needTop-needBot)/2));
+  R.rhythmLine(px+pw/2,yStaff,seq,{w:Wline,size,ink:st.ink,g:st.g,plate:st.plate,plateStroke:st.plateStroke,px,py,pw,ph,pr:st.pr||16,letter:st.letter,letterInk:st.letterInk})};
 
 // ---------- extra sounds (all logged as self-sounds so the mic ignores them) ----------
 const ac=BB.ac,bus=BB.outBus;let nb=null;

@@ -224,7 +224,7 @@ class AssessRoom{constructor(o={}){this.o=o}
     BB.text('Score  '+this.score+'  ·  need '+PASS+' of '+TOTAL+' to unlock Static Jr.',W/2,118,28,'#cfe8e2',{stroke:4})}
   drawProgress(){for(let i=0;i<TOTAL;i++){const x=260+i*175,y=155,done=i<this.qi,cur=i===this.qi&&this.state!=='end'&&this.state!=='intro';
       BB.rrect(x,y,150,18,9,done?'#6ee678':cur?'#ffe066':'#2a3a38','#fff',2)}}
-  drawPrompt(txt){/* v14.5.21: sit the question closer to the answer choices (was y=230, choices start at 420) */BB.text(txt,W/2,350,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700})}
+  drawPrompt(txt){/* sit the question above the taller notation cards (replay lives between them) */BB.text(txt,W/2,260,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700})}
   drawFollow(){if(this.fp)this.fp.draw(W/2,500);BB.text('No mic? Teacher taps MANUAL OVERRIDE when the class nails it (logged as override, not a measured clap).',W/2,780,24,COL.yellow,{stroke:4,maxW:1600});
     BB.button(W/2-220,840,440,90,'MANUAL OVERRIDE',{style:'cream',size:32,id:'asov',onClick:()=>this.override()})}
   drawChoice(){const Q=this.Q,n=Q.choices.length,bw=Math.min(420,Math.floor(1500/n)-24),gap=24,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
@@ -235,12 +235,14 @@ class AssessRoom{constructor(o={}){this.o=o}
       BB.text(c.lab,x+bw/2,530,c.lab.length>12?32:44,'#ffe9a0',{font:'Rammetto One',stroke:6,strokeCol:'#1a1a1a',maxW:bw-24})})}
   drawHearPick(){const Q=this.Q;
     /* audio-first: options stay up while the drum plays — never draw the target Q.seq, never highlight the answer. Target notation only after a correct grade. */
-    const listening=this.state==='hear',n=Q.choices.length,bw=480,gap=30,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
-    if(!listening)BB.button(W/2-160,385,320,64,'REPLAY RHYTHM',{size:26,id:'asreplay',onClick:()=>{this.state='hear';this.st=BB.t;this.playHear()}});
-    Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.button(x,460,bw,280,'',{style:'cream',id:'ash'+i,onClick:()=>this.pick(c.k)});
-      R.rhythmLine(x+bw/2,600,c.lab,{w:bw-80,size:18,ink:'#19191f'})})}
+    const listening=this.state==='hear',n=Q.choices.length,C=R.CHOICE,bw=C.bw,bh=C.bh,gap=C.gap,tot=n*bw+(n-1)*gap,x0=W/2-tot/2,y=C.y;
+    if(!listening)BB.button(W/2-160,320,320,64,'REPLAY RHYTHM',{size:26,id:'asreplay',onClick:()=>{this.state='hear';this.st=BB.t;this.playHear()}});
+    Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.button(x,y,bw,bh,'',{style:'cream',id:'ash'+i,onClick:()=>this.pick(c.k)});
+      R.rhythmCard(x,y,bw,bh,c.lab,{ink:'#19191f',letter:String.fromCharCode(65+i)})})}
   drawGradedHear(){const Q=this.Q;if(!(Q&&Q.kind==='hearPick'&&this.lastOk))return;
-    BB.text('Heard rhythm:',W/2,540,28,'#cfe8e2',{stroke:4});R.rhythmLine(W/2,640,Q.seq,{w:640,size:22,ink:'#19191f'})}
+    /* label sits clearly above the cream plate, gold on the dark room for classroom contrast */
+    BB.text('Heard rhythm:',W/2,500,34,'#ffe9a0',{font:'Rammetto One',stroke:6});
+    R.rhythmCard(W/2-480,560,960,280,Q.seq,{ink:'#19191f',size:28})}
   draw(){ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);if(BB.V2&&BB.V2.hub_bg){ctx.globalAlpha=.35;ctx.drawImage(BB.V2.hub_bg,0,0,W,H);ctx.globalAlpha=1}
     BB.contactShadow(220,980,110,.45);BB.sprite&&BB.sprite('sprocket',220,980,360,{squash:BB.isTalking&&BB.isTalking('sprocket')?Math.sin(BB.t*16)*.015:0});
     if(this.state==='intro'){BB.panel(260,200,1400,560,40);BB.text('CHECKPOINT',W/2,300,72,'#fff',{font:'Rammetto One',stroke:10});

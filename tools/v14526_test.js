@@ -100,7 +100,7 @@ ok(fs.existsSync(path.join(ROOT,'assets/v2/logo.webp'))&&fs.existsSync(path.join
 
 // --- assessment: notation, pool, randomization, CSV ---
 const as=rooms.assess;
-ok(/R\.rhythmLine/.test(as),'hearPick choices and reveals use real notation (R.rhythmLine)');
+ok(/R\.rhythmCard/.test(as)&&/R\.CHOICE/.test(read('js/rhythm.js')),'hearPick choices use full-card notation (R.rhythmCard)');
 ok(!/R\.pills\([^)]*c\.lab/.test(as)&&!/drawGradedHear[\s\S]*?R\.pills\(W\/2/.test(as),'ta/ti-ti word pills are gone from hear choices and the reveal');
 ok(/buildAssess/.test(as)&&/_rhythmPool/.test(as),'assessment builds a seedable randomized deck from a rhythm pool');
 ok(/rhythm_id,variant_id/.test(as),'CSV keeps existing columns and appends rhythm_id,variant_id');
@@ -139,11 +139,11 @@ ok(/state==='hear'/.test(as),'listening-first hear state is unchanged');
 // --- rhythmLine slot layout: no overlapping heads, even spacing, dense ssss fits a choice card ---
 {
   const rsrc=read('js/rhythm.js');
-  const chunk=rsrc.match(/R\.rhythmLayout=\([\s\S]*?return\{L,beatW,s,Wline,items\}\};/);
-  ok(!!chunk,'rhythmLayout helper is exported for tests');
+  const a=rsrc.indexOf('R.CHOICE='),b=rsrc.indexOf('\n// ---------- extra sounds');
+  ok(a>=0&&b>a,'rhythmLayout / CHOICE helpers are exported for tests');
   const R={BEATS:{w:4,h:2,q:1,e:1,s:1,r:1}};
-  new Function('R',chunk[0])(R);
-  const Wline=400; /* choice card: bw 480 minus padding, matches drawHearPick */
+  new Function('R','ctx',rsrc.slice(a,b))(R,{});
+  const Wline=400; /* compact staff still has equal slots and no overlaps */
   const minGap=(lay)=> {
     const xs=[];lay.items.forEach(it=>it.heads.forEach(x=>xs.push(x)));
     xs.sort((a,b)=>a-b);
@@ -180,6 +180,26 @@ ok(/state==='hear'/.test(as),'listening-first hear state is unchanged');
   ok(qonly.s>=ssss.s,'lines without sixteenths can keep a larger head size');
   const wide=R.rhythmLayout(['s','s','s','s'],640,{size:22});
   ok(wide.s>ssss.s,'a wider reveal line can use larger heads');
+  /* classroom choice-card scale */
+  ok(R.CHOICE.bw>=600&&R.CHOICE.bh>=340,'choice cards are wide and tall enough for a classroom');
+  const CW=R.choiceWline(),hint=R.CHOICE.size;
+  const classS=R.rhythmLayout(['s','s','s','s'],CW,{size:hint});
+  const classQ=R.rhythmLayout(['q','q','q','q'],CW,{size:hint});
+  const classM=R.rhythmLayout(['q','s','e','q'],CW,{size:hint});
+  ok(classS.s+1e-6>=10.638*1.6,'dense (tika-tika ×4) heads are at least 1.6× the previous choice-card size');
+  ok(classQ.s>classS.s+6,'quarter-only rhythms stay larger than dense sixteenth lines');
+  {
+    const {g,s,xs}=minGap(classS);
+    ok(g+1e-6>=2*s,'classroom ssss heads do not overlap');
+    const half=s*0.97;
+    ok(xs[0]-half>=-0.5&&xs[xs.length-1]+half<=CW+0.5,'classroom ssss heads stay on the staff');
+    ok(classS.items.every(it=>{
+      const last=it.heads[it.heads.length-1],stem=last+s*0.86;
+      return stem<=it.slotX+it.slotW+0.75;
+    }),'classroom ssss stems/beams stay in their beat slot');
+  }
+  ok(minGap(classM).g+1e-6>=2*classM.s,'classroom mixed q-s-e-q heads do not overlap');
+  ok(/Heard rhythm:[\s\S]*?W\/2,500,34,'#ffe9a0'[\s\S]*?rhythmCard\(W\/2-480,560/.test(as),'Heard rhythm label sits above the reveal plate');
 }
 
 // --- smash asset: no leftover white background / enclosed gaps ---

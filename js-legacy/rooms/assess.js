@@ -582,7 +582,7 @@
       }
     }
     drawPrompt(txt) {
-      BB.text(txt, W / 2, 350, 40, "#fff", { font: "Rammetto One", stroke: 7, maxW: 1700 });
+      BB.text(txt, W / 2, 260, 40, "#fff", { font: "Rammetto One", stroke: 7, maxW: 1700 });
     }
     drawFollow() {
       if (this.fp) this.fp.draw(W / 2, 500);
@@ -599,23 +599,23 @@
     }
     drawHearPick() {
       const Q = this.Q;
-      const listening = this.state === "hear", n = Q.choices.length, bw = 480, gap = 30, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2;
-      if (!listening) BB.button(W / 2 - 160, 385, 320, 64, "REPLAY RHYTHM", { size: 26, id: "asreplay", onClick: () => {
+      const listening = this.state === "hear", n = Q.choices.length, C = R.CHOICE, bw = C.bw, bh = C.bh, gap = C.gap, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2, y = C.y;
+      if (!listening) BB.button(W / 2 - 160, 320, 320, 64, "REPLAY RHYTHM", { size: 26, id: "asreplay", onClick: () => {
         this.state = "hear";
         this.st = BB.t;
         this.playHear();
       } });
       Q.choices.forEach((c, i) => {
         const x = x0 + i * (bw + gap);
-        BB.button(x, 460, bw, 280, "", { style: "cream", id: "ash" + i, onClick: () => this.pick(c.k) });
-        R.rhythmLine(x + bw / 2, 600, c.lab, { w: bw - 80, size: 18, ink: "#19191f" });
+        BB.button(x, y, bw, bh, "", { style: "cream", id: "ash" + i, onClick: () => this.pick(c.k) });
+        R.rhythmCard(x, y, bw, bh, c.lab, { ink: "#19191f", letter: String.fromCharCode(65 + i) });
       });
     }
     drawGradedHear() {
       const Q = this.Q;
       if (!(Q && Q.kind === "hearPick" && this.lastOk)) return;
-      BB.text("Heard rhythm:", W / 2, 540, 28, "#cfe8e2", { stroke: 4 });
-      R.rhythmLine(W / 2, 640, Q.seq, { w: 640, size: 22, ink: "#19191f" });
+      BB.text("Heard rhythm:", W / 2, 500, 34, "#ffe9a0", { font: "Rammetto One", stroke: 6 });
+      R.rhythmCard(W / 2 - 480, 560, 960, 280, Q.seq, { ink: "#19191f", size: 28 });
     }
     draw() {
       ctx.fillStyle = "#0d1d1b";
