@@ -320,9 +320,26 @@
       });
     }
   };
+  R.rhythmLayout = (seq, Wline, st = {}) => {
+    if (!seq || !seq.length) return { L: 0, beatW: 0, s: 0, Wline: Wline || 0, items: [] };
+    const L = Math.max(4, seq.reduce((a, k) => a + (R.BEATS[k] || 0), 0)), beatW = Wline / L;
+    const densest = seq.some((k) => k === "s") ? 4 : seq.some((k) => k === "e") ? 2 : 1;
+    const s = Math.max(6, Math.min(st.size || 18, beatW / (densest * 2.35)));
+    const items = [];
+    let b = 0;
+    seq.forEach((k) => {
+      const n = R.BEATS[k] || 1, slotX = b * beatW, slotW = n * beatW, sub = k === "s" ? 4 : k === "e" ? 2 : 1;
+      const useW = k === "h" || k === "w" ? beatW : slotW;
+      const heads = [];
+      for (let i = 0; i < sub; i++) heads.push(slotX + (i + 0.5) * useW / sub);
+      items.push({ k, n, b, slotX, slotW, heads, s, sub });
+      b += n;
+    });
+    return { L, beatW, s, Wline, items };
+  };
   R.rhythmLine = (cx, y, seq, st = {}) => {
     if (!seq || !seq.length) return;
-    const L = Math.max(4, seq.reduce((a, k) => a + (R.BEATS[k] || 0), 0)), Wline = st.w || 420, beatW = Wline / L, x0 = cx - Wline / 2, ink = st.ink || "#19191f", s = st.size || 18, g = st.g || ctx;
+    const Wline = st.w || 420, lay = R.rhythmLayout(seq, Wline, st), s = lay.s, beatW = lay.beatW, x0 = cx - Wline / 2, ink = st.ink || "#19191f", g = st.g || ctx;
     g.save();
     if (st.plate !== false) {
       const pw = Wline + 56, ph = st.ph || s * 7.4 + 28, px = cx - pw / 2, py = y - s * 5.2 - 10;
@@ -363,18 +380,77 @@
     g.stroke();
     g.strokeStyle = st.ticks || "rgba(25,25,31,.22)";
     g.lineWidth = 1.5;
-    for (let i = 1; i < L; i++) {
+    for (let i = 1; i < lay.L; i++) {
       const tx = x0 + i * beatW;
       g.beginPath();
       g.moveTo(tx, y - s * 0.7);
       g.lineTo(tx, y + s * 0.7);
       g.stroke();
     }
-    let b = 0;
-    seq.forEach((k) => {
-      const n = R.BEATS[k] || 1, x = x0 + b * beatW + (k === "e" || k === "s" ? n * beatW / 2 : beatW * 0.5);
-      R.glyph(k, x, y, s, ink, g);
-      b += n;
+    const stLen = s * 3.4, lw = Math.max(2, s * 0.24), bh = s * 0.62;
+    const headAt = (hx, hy, filled) => {
+      g.save();
+      g.translate(hx, hy);
+      g.rotate(-0.35);
+      g.beginPath();
+      g.ellipse(0, 0, s, s * 0.72, 0, 0, 7);
+      if (filled) g.fill();
+      else {
+        g.lineWidth = s * 0.34;
+        g.stroke();
+      }
+      g.restore();
+    };
+    const stemAt = (hx) => {
+      g.lineWidth = lw;
+      g.beginPath();
+      g.moveTo(hx + s * 0.86, y - s * 0.2);
+      g.lineTo(hx + s * 0.86, y - stLen);
+      g.stroke();
+    };
+    lay.items.forEach((it) => {
+      const k = it.k, heads = it.heads.map((hx) => x0 + hx);
+      g.fillStyle = ink;
+      g.strokeStyle = ink;
+      g.lineCap = "butt";
+      g.lineJoin = "round";
+      if (k === "w") {
+        const hx = heads[0];
+        g.save();
+        g.translate(hx, y);
+        g.beginPath();
+        g.ellipse(0, 0, s * 1.15, s * 0.78, 0, 0, 7);
+        g.fill();
+        g.globalCompositeOperation = "destination-out";
+        g.beginPath();
+        g.ellipse(0, 0, s * 0.55, s * 0.42, -0.8, 0, 7);
+        g.fill();
+        g.restore();
+      } else if (k === "r") {
+        const hx = heads[0], u = s * 0.9, yy = y - s * 1.7;
+        g.lineWidth = lw * 1.2;
+        g.beginPath();
+        g.moveTo(hx - u * 0.4, yy - u * 1.6);
+        g.lineTo(hx + u * 0.5, yy - u * 0.5);
+        g.lineTo(hx - u * 0.3, yy + u * 0.3);
+        g.lineTo(hx + u * 0.5, yy + u * 1.2);
+        g.stroke();
+        g.beginPath();
+        g.moveTo(hx + u * 0.5, yy + u * 1.2);
+        g.quadraticCurveTo(hx - u * 0.7, yy + u * 0.9, hx - u * 0.1, yy + u * 2.1);
+        g.stroke();
+      } else {
+        const filled = k !== "h";
+        heads.forEach((hx) => {
+          headAt(hx, y, filled);
+          if (k !== "w") stemAt(hx);
+        });
+        if (k === "e" || k === "s") {
+          const bx0 = heads[0] + s * 0.86 - lw / 2, bx1 = heads[heads.length - 1] + s * 0.86 + lw / 2;
+          g.fillRect(bx0, y - stLen, bx1 - bx0, bh);
+          if (k === "s") g.fillRect(bx0, y - stLen + bh * 1.7, bx1 - bx0, bh);
+        }
+      }
     });
     g.restore();
   };

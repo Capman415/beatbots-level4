@@ -135,6 +135,53 @@ ok(/state==='hear'/.test(as),'listening-first hear state is unchanged');
   ok(prompts.size>=6,'wordings vary across seeds');
 }
 
+
+// --- rhythmLine slot layout: no overlapping heads, even spacing, dense ssss fits a choice card ---
+{
+  const rsrc=read('js/rhythm.js');
+  const chunk=rsrc.match(/R\.rhythmLayout=\([\s\S]*?return\{L,beatW,s,Wline,items\}\};/);
+  ok(!!chunk,'rhythmLayout helper is exported for tests');
+  const R={BEATS:{w:4,h:2,q:1,e:1,s:1,r:1}};
+  new Function('R',chunk[0])(R);
+  const Wline=400; /* choice card: bw 480 minus padding, matches drawHearPick */
+  const minGap=(lay)=> {
+    const xs=[];lay.items.forEach(it=>it.heads.forEach(x=>xs.push(x)));
+    xs.sort((a,b)=>a-b);
+    let g=Infinity;for(let i=1;i<xs.length;i++)g=Math.min(g,xs[i]-xs[i-1]);
+    return {xs,g,s:lay.s};
+  };
+  const ssss=R.rhythmLayout(['s','s','s','s'],Wline,{size:18});
+  ok(ssss.items.length===4&&ssss.items.every(it=>it.heads.length===4),'ssss lays out 4 equal beat slots of 4 sixteenths');
+  ok(Math.abs(ssss.beatW-100)<1e-6,'four beats share the line equally (100px slots on a 400px card)');
+  {
+    const {xs,g,s}=minGap(ssss);
+    ok(g+1e-6>=2*s,'ssss neighbouring heads are at least a full head-width apart (no overlap)');
+    const half=s*0.97; /* rotated ellipse AABB half-width */
+    ok(xs[0]-half>=-0.5&&xs[xs.length-1]+half<=Wline+0.5,'ssss heads stay inside the staff');
+    ok(ssss.items.every(it=>{
+      const last=it.heads[it.heads.length-1],stem=last+s*0.86;
+      return stem<=it.slotX+it.slotW+0.75;
+    }),'ssss beams/stems stay inside their beat slot');
+    const gap0=ssss.items[0].heads[1]-ssss.items[0].heads[0];
+    ok(ssss.items.every(it=>it.heads.every((h,i,a)=>i===0||Math.abs((a[i]-a[i-1])-gap0)<1e-6)),'sixteenths are evenly spaced inside each slot');
+  }
+  const eeee=R.rhythmLayout(['e','e','e','e'],Wline,{size:18});
+  ok(eeee.items.every(it=>it.heads.length===2),'eeee lays out 2 eighths per beat slot');
+  ok(minGap(eeee).g+1e-6>=2*eeee.s,'eeee heads do not overlap');
+  const mixed=R.rhythmLayout(['q','s','e','q'],Wline,{size:18});
+  ok(mixed.items.map(it=>it.heads.length).join(',')==='1,4,2,1','mixed q-s-e-q uses 1/4/2/1 heads');
+  {
+    const {g,s,xs}=minGap(mixed);
+    ok(g+1e-6>=2*s,'mixed q-s-e-q heads do not overlap (including across beats)');
+    const half=s*0.97;
+    ok(xs[0]-half>=-0.5&&xs[xs.length-1]+half<=Wline+0.5,'mixed heads stay on the staff');
+  }
+  const qonly=R.rhythmLayout(['q','q','q','q'],Wline,{size:18});
+  ok(qonly.s>=ssss.s,'lines without sixteenths can keep a larger head size');
+  const wide=R.rhythmLayout(['s','s','s','s'],640,{size:22});
+  ok(wide.s>ssss.s,'a wider reveal line can use larger heads');
+}
+
 // --- smash asset: no leftover white background / enclosed gaps ---
 (async()=>{
   try{

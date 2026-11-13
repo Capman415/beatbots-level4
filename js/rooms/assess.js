@@ -52,6 +52,9 @@ const POOL=[
  {id:'r_qqsq',seq:['q','q','s','q']},
  {id:'r_seqq',seq:['s','e','q','q']},
  {id:'r_qseq',seq:['q','s','e','q']},
+ {id:'r_ssss',seq:['s','s','s','s']},
+ {id:'r_sese',seq:['s','e','s','e']},
+ {id:'r_eses',seq:['e','s','e','s']},
  {id:'r_w',seq:['w']}
 ];
 POOL.forEach(p=>{const n=p.seq.reduce((a,k)=>a+(BEAT[k]||0),0);if(n!==4)throw new Error('pool '+p.id+' is '+n+' beats')});

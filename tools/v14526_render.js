@@ -267,34 +267,12 @@ async function main(){
   const runIife=(code,BB)=>{const fn=new Function('BB','COL','W','H','ctx',code.replace(/^\s*\/\/.*\n/,'')+'\nreturn BB.R;');
     // rhythm.js is ('use strict'; (()=>{...})();) — Function can't prepend easily.
     return null};
-  // Minimal local port of R.glyph + R.rhythmLine for previews (same geometry as rhythm.js)
+  // Use the real R.rhythmLayout + R.rhythmLine so previews cannot drift from the game.
   const R=(()=>{const R={BEATS:{w:4,h:2,q:1,e:1,s:1,r:1}};
-    function head(x,y,s,filled,g){g.save();g.translate(x,y);g.rotate(-.35);g.beginPath();g.ellipse(0,0,s,s*.72,0,0,7);if(filled){g.fill()}else{g.lineWidth=s*.34;g.stroke()}g.restore()}
-    R.glyph=(k,x,y,s,col='#19191f',g=ctx)=>{g.save();g.fillStyle=col;g.strokeStyle=col;g.lineCap='butt';const st=s*3.4,lw=Math.max(2,s*.24);
-      const stem=(hx,hy)=>{g.lineWidth=lw;g.beginPath();g.moveTo(hx+s*.86,hy-s*.2);g.lineTo(hx+s*.86,hy-st);g.stroke()};
-      if(k==='w'){g.save();g.translate(x,y);g.beginPath();g.ellipse(0,0,s*1.15,s*.78,0,0,7);g.fill();g.globalCompositeOperation='destination-out';g.beginPath();g.ellipse(0,0,s*.55,s*.42,-.8,0,7);g.fill();g.restore()}
-      else if(k==='h'){head(x,y,s,false,g);stem(x,y)}
-      else if(k==='q'){head(x,y,s,true,g);stem(x,y)}
-      else if(k==='e'||k==='s'){const n=k==='e'?2:4,gap=k==='e'?s*2.9:s*2.2,x0=x-gap*(n-1)/2;
-        for(let i=0;i<n;i++){head(x0+i*gap,y,s*(k==='s'?.86:1),true,g);stem(x0+i*gap,y)}
-        const bx0=x0+s*.86-lw/2,bx1=x0+(gap*(n-1))+s*.86+lw/2,bh=s*.62;g.fillRect(bx0,y-st,bx1-bx0,bh);if(k==='s')g.fillRect(bx0,y-st+bh*1.7,bx1-bx0,bh)}
-      else if(k==='r'){g.lineWidth=lw*1.2;g.lineJoin='round';const u=s*.9,yy=y-s*1.7;g.beginPath();g.moveTo(x-u*.4,yy-u*1.6);g.lineTo(x+u*.5,yy-u*.5);g.lineTo(x-u*.3,yy+u*.3);g.lineTo(x+u*.5,yy+u*1.2);g.stroke();
-        g.beginPath();g.moveTo(x+u*.5,yy+u*1.2);g.quadraticCurveTo(x-u*.7,yy+u*.9,x-u*.1,yy+u*2.1);g.stroke()}
-      g.restore()};
-    R.rhythmLine=(cx,y,seq,st={})=>{if(!seq||!seq.length)return;
-      const L=Math.max(4,seq.reduce((a,k)=>a+(R.BEATS[k]||0),0)),Wline=st.w||420,beatW=Wline/L,x0=cx-Wline/2,ink=st.ink||'#19191f',s=st.size||18,g=st.g||ctx;
-      g.save();
-      if(st.plate!==false){const pw=Wline+56,ph=st.ph||(s*7.4+28),px=cx-pw/2,py=y-s*5.2-10;
-        const r=18;g.fillStyle=st.plate||'#f7f4ea';g.beginPath();g.moveTo(px+r,py);g.lineTo(px+pw-r,py);g.quadraticCurveTo(px+pw,py,px+pw,py+r);g.lineTo(px+pw,py+ph-r);g.quadraticCurveTo(px+pw,py+ph,px+pw-r,py+ph);g.lineTo(px+r,py+ph);g.quadraticCurveTo(px,py+ph,px,py+ph-r);g.lineTo(px,py+r);g.quadraticCurveTo(px,py,px+r,py);g.closePath();g.fill();
-        g.strokeStyle='rgba(25,25,31,.18)';g.lineWidth=2;g.stroke()}
-      g.strokeStyle=st.line||'rgba(25,25,31,.55)';g.lineWidth=Math.max(2,s*.12);g.lineCap='butt';
-      const lx0=x0-8,lx1=x0+Wline+8;g.beginPath();g.moveTo(lx0,y);g.lineTo(lx1,y);g.stroke();
-      g.lineWidth=Math.max(2.5,s*.16);g.beginPath();g.moveTo(lx0,y-s*2.4);g.lineTo(lx0,y+s*1.4);g.moveTo(lx1,y-s*2.4);g.lineTo(lx1,y+s*1.4);g.stroke();
-      g.strokeStyle='rgba(25,25,31,.22)';g.lineWidth=1.5;
-      for(let i=1;i<L;i++){const tx=x0+i*beatW;g.beginPath();g.moveTo(tx,y-s*.7);g.lineTo(tx,y+s*.7);g.stroke()}
-      let b=0;seq.forEach(k=>{const n=R.BEATS[k]||1,x=x0+b*beatW+(k==='e'||k==='s'?n*beatW/2:beatW*.5);
-        R.glyph(k,x,y,s,ink,g);b+=n});
-      g.restore()};
+    const a=rhythmSrc.indexOf('R.rhythmLayout=');
+    const b=rhythmSrc.indexOf('\n// ---------- extra sounds');
+    if(a<0||b<0) throw new Error('could not extract R.rhythmLayout / R.rhythmLine from rhythm.js');
+    new Function('R','ctx',rhythmSrc.slice(a,b))(R,ctx);
     return R})();
   const slice=assessSrc.slice(assessSrc.indexOf('const BEAT='),assessSrc.indexOf('/* assessment log'));
   const {buildAssess}=new Function('BB',slice+';return {buildAssess}')({});
@@ -350,6 +328,36 @@ async function main(){
   BB.text('Listening…',W/2,500,48,COL.yellow,{font:'Rammetto One',stroke:6});
   BB.drawMenuBtn(false);
   save(c,'assess_listen_first.png');
+
+  // densest pool rhythms (tika-tika x4 and mixed), drawn as hear/pick choice rows
+  function drawDense(name, title, seqs){
+    ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);
+    BB.panel(124,40,1480,110,28);
+    BB.text(title,W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
+    BB.text('Choice-card scale — every beat an equal slot',W/2,118,28,'#cfe8e2',{stroke:4});
+    const n=seqs.length,bw=480,gap=30,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
+    seqs.forEach((seq,i)=>{const x=x0+i*(bw+gap);BB.rrect(x,460,bw,280,28,BB.lg(460,740,['#1b3a36','#142826']),'#8a806b',4);
+      R.rhythmLine(x+bw/2,600,seq,{w:bw-80,size:18,ink:'#19191f'});});
+    BB.drawMenuBtn(false);
+    save(c,name);
+  }
+  drawDense('assess_dense_ssss.png','DENSEST  ·  TIKA-TIKA ×4',[['s','s','s','s'],['s','s','s','s'],['s','s','s','s']]);
+  drawDense('assess_dense_mixed.png','DENSE MIXED  ·  Q / S / E',[['q','s','e','q'],['s','e','s','e'],['e','s','e','s']]);
+  // 2x close-up of the originally cramped middle card (ta, tika-tika, ti-ti, ta)
+  {
+    const bw=480;
+    ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);
+    BB.rrect(W/2-bw/2,H/2-160,bw,280,28,BB.lg(H/2-160,H/2+120,['#1b3a36','#142826']),'#8a806b',4);
+    R.rhythmLine(W/2,H/2,['q','s','e','q'],{w:bw-80,size:18,ink:'#19191f'});
+    const z=2,cw=Math.round(bw*z)+40,ch=Math.round(280*z)+40;
+    const c2=createCanvas(cw,ch),g2=c2.getContext('2d');
+    const sx=W/2-bw/2-10,sy=H/2-160-10;
+    g2.imageSmoothingEnabled=false;
+    g2.drawImage(c,sx,sy,bw+20,280+20,0,0,cw,ch);
+    const out=path.join(OUT,'assess_hear_qseq_2x.png');
+    fs.writeFileSync(out,c2.toBuffer('image/png'));
+    console.log('wrote',out);
+  }
 
   console.log('previews ready in',OUT);
 }

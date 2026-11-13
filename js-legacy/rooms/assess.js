@@ -54,6 +54,9 @@
     { id: "r_qqsq", seq: ["q", "q", "s", "q"] },
     { id: "r_seqq", seq: ["s", "e", "q", "q"] },
     { id: "r_qseq", seq: ["q", "s", "e", "q"] },
+    { id: "r_ssss", seq: ["s", "s", "s", "s"] },
+    { id: "r_sese", seq: ["s", "e", "s", "e"] },
+    { id: "r_eses", seq: ["e", "s", "e", "s"] },
     { id: "r_w", seq: ["w"] }
   ];
   POOL.forEach((p) => {
