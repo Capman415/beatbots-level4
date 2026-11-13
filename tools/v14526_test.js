@@ -200,6 +200,25 @@ ok(/state==='hear'/.test(as),'listening-first hear state is unchanged');
   }
   ok(minGap(classM).g+1e-6>=2*classM.s,'classroom mixed q-s-e-q heads do not overlap');
   ok(/Heard rhythm:[\s\S]*?W\/2,500,34,'#ffe9a0'[\s\S]*?rhythmCard\(W\/2-480,560/.test(as),'Heard rhythm label sits above the reveal plate');
+  /* left vs right margins of the visual group (bars+note ink) after plate centering */
+  const marginCases=[
+    ['quarters',['q','q','q','q']],
+    ['rest-first',['r','q','q','q']],
+    ['tika-tika x4',['s','s','s','s']],
+    ['eighths',['e','e','e','e']],
+    ['mixed q-s-e-q',['q','s','e','q']],
+    ['mixed e-s-e-s',['e','s','e','s']],
+    ['mixed s-e-q-q',['s','e','q','q']]
+  ];
+  for(const [name,seq] of marginCases){
+    const m=R.rhythmMargins(seq,{});
+    ok(Math.abs(m.left-m.right)<=2,name+' choice-card plate margins equal within 2px (L='+m.left.toFixed(2)+' R='+m.right.toFixed(2)+')');
+    ok(Math.abs(m.barGapL-m.barGapR)<=2,name+' first-center-to-left-bar equals last-center-to-right-bar within 2px');
+    ok(m.items.every(it=>it.heads.every(h=>h>=it.slotX-0.01&&h<=it.slotX+it.slotW+0.01)),name+' noteheads stay inside their beat slots');
+  }
+  {const m=R.rhythmMargins(['e','s','e','s'],{bw:960,pw:944,size:28});
+    ok(Math.abs(m.left-m.right)<=2,'reveal-strip plate margins equal within 2px');
+    ok(Math.abs(m.barGapL-m.barGapR)<=2,'reveal-strip first/last bar gaps equal within 2px');}
 }
 
 // --- smash asset: no leftover white background / enclosed gaps ---

@@ -1,4 +1,23 @@
 "use strict";
+var __defProp = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __propIsEnum = Object.prototype.propertyIsEnumerable;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __spreadValues = (a, b) => {
+  for (var prop in b || (b = {}))
+    if (__hasOwnProp.call(b, prop))
+      __defNormalProp(a, prop, b[prop]);
+  if (__getOwnPropSymbols)
+    for (var prop of __getOwnPropSymbols(b)) {
+      if (__propIsEnum.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    }
+  return a;
+};
+var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 (() => {
   let ctx = BB.ctx;
   BB._sw.push((g) => ctx = g);
@@ -343,12 +362,75 @@
     });
     return { L, beatW, s, Wline, items };
   };
+  R.HEAD_HALF = (s) => s * Math.sqrt(Math.cos(-0.35) ** 2 + (0.72 * Math.sin(-0.35)) ** 2);
+  R.rhythmMetrics = (seq, Wline, st = {}) => {
+    const lay = R.rhythmLayout(seq, Wline, st);
+    if (!lay.items.length) return __spreadProps(__spreadValues({}, lay), { centerShift: 0, lx0: 0, lx1: Wline || 0, barL: 0, barR: Wline || 0, visL: 0, visR: Wline || 0, items: [] });
+    const s = lay.s, barPad = 8, barLw = Math.max(2.5, s * 0.16), lw = Math.max(2, s * 0.24), headHalf = R.HEAD_HALF(s);
+    const staffLen = Wline + 2 * barPad;
+    const firstIt = lay.items[0], lastIt = lay.items[lay.items.length - 1], first = firstIt.heads[0], last = lastIt.heads[lastIt.heads.length - 1];
+    let lx0 = -barPad, lx1 = Wline + barPad;
+    if (!(firstIt.n > 1 || lastIt.n > 1)) {
+      lx0 = (first + last - staffLen) / 2;
+      lx1 = lx0 + staffLen;
+    }
+    const items = lay.items, centerShift = lx0 - -barPad;
+    let visL = lx0 - barLw / 2, visR = lx1 + barLw / 2;
+    items.forEach((it) => {
+      const k = it.k, hs = it.heads;
+      if (k === "w") {
+        visL = Math.min(visL, hs[0] - s * 1.15);
+        visR = Math.max(visR, hs[0] + s * 1.15);
+      } else if (k === "r") {
+        const u = s * 0.9, sw = lw * 1.2 / 2;
+        visL = Math.min(visL, hs[0] - u * 0.7 - sw);
+        visR = Math.max(visR, hs[0] + u * 0.5 + sw);
+      } else {
+        const pad = k === "h" ? s * 0.17 : 0;
+        hs.forEach((hx) => {
+          visL = Math.min(visL, hx - headHalf - pad);
+          visR = Math.max(visR, hx + headHalf + pad, hx + s * 0.86 + lw / 2);
+        });
+      }
+      if (k === "e" || k === "s") {
+        visL = Math.min(visL, hs[0] + s * 0.86 - lw / 2);
+        visR = Math.max(visR, hs[hs.length - 1] + s * 0.86 + lw / 2);
+      }
+    });
+    return { L: lay.L, beatW: lay.beatW, s, Wline, items, centerShift, lx0, lx1, barL: lx0 - barLw / 2, barR: lx1 + barLw / 2, visL, visR, headHalf };
+  };
+  R.rhythmMargins = (seq, st = {}) => {
+    var _a, _b, _c, _d, _e, _f;
+    const C = R.CHOICE, pad = (_a = st.pad) != null ? _a : C.pad, side = (_b = st.side) != null ? _b : C.side, bw = (_c = st.bw) != null ? _c : C.bw, size = (_d = st.size) != null ? _d : C.size;
+    const pw = (_e = st.pw) != null ? _e : bw - 2 * pad, Wline = (_f = st.w) != null ? _f : Math.max(80, pw - 2 * side), m = R.rhythmMetrics(seq, Wline, __spreadValues({ size }, st));
+    const groupShift = pw / 2 - (m.visL + m.visR) / 2;
+    const last = m.items[m.items.length - 1];
+    return {
+      left: m.visL + groupShift,
+      right: pw - (m.visR + groupShift),
+      pw,
+      Wline,
+      s: m.s,
+      centerShift: m.centerShift,
+      barGapL: m.items[0].heads[0] - m.lx0,
+      barGapR: m.lx1 - last.heads[last.heads.length - 1],
+      visL: m.visL + groupShift,
+      visR: m.visR + groupShift,
+      items: m.items,
+      lx0: m.lx0,
+      lx1: m.lx1
+    };
+  };
   R.rhythmLine = (cx, y, seq, st = {}) => {
     if (!seq || !seq.length) return;
-    const Wline = st.w || 420, lay = R.rhythmLayout(seq, Wline, st), s = lay.s, beatW = lay.beatW, x0 = cx - Wline / 2, ink = st.ink || "#19191f", g = st.g || ctx;
+    const Wline = st.w || 420, met = R.rhythmMetrics(seq, Wline, st), s = met.s, beatW = met.beatW, ink = st.ink || "#19191f", g = st.g || ctx;
+    let x0 = cx - Wline / 2;
+    const pw = st.pw || Wline + 56, ph = st.ph || s * 7.4 + 28, px = st.px != null ? st.px : cx - pw / 2, py = st.py != null ? st.py : y - s * 5.2 - 10;
+    if (st.plate !== false) {
+      x0 += px + pw / 2 - (x0 + (met.visL + met.visR) / 2);
+    }
     g.save();
     if (st.plate !== false) {
-      const pw = st.pw || Wline + 56, ph = st.ph || s * 7.4 + 28, px = st.px != null ? st.px : cx - pw / 2, py = st.py != null ? st.py : y - s * 5.2 - 10;
       const r = st.pr || 18;
       g.fillStyle = st.plate || "#f7f4ea";
       g.beginPath();
@@ -379,7 +461,7 @@
     g.strokeStyle = st.line || "rgba(25,25,31,.55)";
     g.lineWidth = Math.max(2, s * 0.12);
     g.lineCap = "butt";
-    const lx0 = x0 - 8, lx1 = x0 + Wline + 8;
+    const lx0 = x0 + met.lx0, lx1 = x0 + met.lx1;
     g.beginPath();
     g.moveTo(lx0, y);
     g.lineTo(lx1, y);
@@ -393,7 +475,7 @@
     g.stroke();
     g.strokeStyle = st.ticks || "rgba(25,25,31,.22)";
     g.lineWidth = 1.5;
-    for (let i = 1; i < lay.L; i++) {
+    for (let i = 1; i < met.L; i++) {
       const tx = x0 + i * beatW;
       g.beginPath();
       g.moveTo(tx, y - s * 0.7);
@@ -421,7 +503,7 @@
       g.lineTo(hx + s * 0.86, y - stLen);
       g.stroke();
     };
-    lay.items.forEach((it) => {
+    met.items.forEach((it) => {
       const k = it.k, heads = it.heads.map((hx) => x0 + hx);
       g.fillStyle = ink;
       g.strokeStyle = ink;
@@ -472,7 +554,7 @@
     if (!seq || !seq.length) return;
     const C = R.CHOICE, pad = (_a = st.pad) != null ? _a : C.pad, side = (_b = st.side) != null ? _b : C.side, size = (_c = st.size) != null ? _c : C.size;
     const pw = bw - 2 * pad, ph = bh - 2 * pad, px = x + pad, py = y + pad, Wline = Math.max(80, pw - 2 * side);
-    const lay = R.rhythmLayout(seq, Wline, { size }), s = lay.s;
+    const lay = R.rhythmMetrics(seq, Wline, { size }), s = lay.s;
     const needTop = s * 5.2 + 12, needBot = s * 2.4 + 12;
     const yStaff = Math.min(py + ph - needBot, Math.max(py + needTop, py + needTop + (ph - needTop - needBot) / 2));
     R.rhythmLine(px + pw / 2, yStaff, seq, { w: Wline, size, ink: st.ink, g: st.g, plate: st.plate, plateStroke: st.plateStroke, px, py, pw, ph, pr: st.pr || 16, letter: st.letter, letterInk: st.letterInk });
