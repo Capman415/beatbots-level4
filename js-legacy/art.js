@@ -1543,8 +1543,8 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       });
     }
     if (BB.assessLog) {
-      row("Download assess", "asdl", () => BB.assessLog.download());
-      row("Assess summary", "asdls", () => BB.assessLog.downloadSummary());
+      row("Download assess CSV", "asdl", () => BB.assessLog.download());
+      row("Download assess summary", "asdls", () => BB.assessLog.downloadSummary());
     }
     row("Open assessment", "menuassess", () => {
       BB.caption = null;

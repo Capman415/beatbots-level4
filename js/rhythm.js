@@ -96,20 +96,21 @@ R.pills=(cx,y,seq,st={})=>{const L=Math.max(4,seq.reduce((a,k)=>a+R.BEATS[k],0))
         if(m)BB.star(xx+ww/2,y,13*ease.back(Math.min(1,m)),COL.yellow,BB.t);si++})}
     b+=n});
   if(st.words){b=0;seq.forEach(k=>{const n=R.BEATS[k],x=cx-tot/2+b*(bw+gap),w=n*bw+(n-1)*gap;BB.text(R.SAY[k],x+w/2,y-72,28,'#fff',{stroke:5});b+=n})}};
-/* v14.5.26: staff-less / single-line percussion rhythm for Assessment choices + reveals.
+/* v14.5.27: staff-less / single-line percussion for Assessment choices + reveals.
    Every beat is an equal-width slot. Eighths sit 2-to-a-slot, sixteenths 4-to-a-slot,
-   evenly spaced, heads never overlapping, beams staying inside the slot. Head size
-   shrinks automatically so even four tika-tika groups fit a choice card. */
+   evenly spaced, heads never overlapping, beams staying inside the slot.
+   ONE fixed head/stem/beam scale for every card and the reveal on a screen —
+   sized so tika-tika ×4 fits a CHOICE card with no overlaps. No per-rhythm shrink. */
 /* Classroom choice-card geometry: cream plate fills most of a wide, tall card.
-   Packing 2.10 leaves ~8% air between rotated heads and keeps stems in-slot, while
-   a ~576px staff yields dense heads ≥ 1.6× the previous 400px / size-18 card. */
-R.CHOICE={bw:620,bh:370,gap:16,pad:8,side:14,size:32,y:400};
+   Packing 2.10 leaves ~8% air between rotated heads and keeps stems in-slot. */
+R.CHOICE={bw:620,bh:370,gap:16,pad:8,side:14,size:32,y:400,pack:2.10};
 R.choiceWline=(o={})=>{const C=R.CHOICE;return(o.bw??C.bw)-2*(o.pad??C.pad)-2*(o.side??C.side)};
+R.choiceScale=(st={})=>{const C=R.CHOICE,Wline=st.w??R.choiceWline(st),pack=st.pack??C.pack,cap=st.size??C.size;
+  return Math.max(6,Math.min(cap,(Wline/4)/(4*pack)))};
 R.rhythmLayout=(seq,Wline,st={})=>{if(!seq||!seq.length)return{L:0,beatW:0,s:0,Wline:Wline||0,items:[]};
   const L=Math.max(4,seq.reduce((a,k)=>a+(R.BEATS[k]||0),0)),beatW=Wline/L;
-  const densest=seq.some(k=>k==='s')?4:seq.some(k=>k==='e')?2:1;
-  /* head AABB half-width ≈ 0.97s; 2.10 leaves a little air and keeps the last stem in the slot */
-  const s=Math.max(6,Math.min(st.size||18,beatW/(densest*2.10)));
+  /* Always pack for 4 sixteenths / beat so every rhythm shares one head size. */
+  const s=st.s!=null?st.s:Math.max(6,Math.min(st.size||18,beatW/(4*(st.pack||R.CHOICE.pack))));
   const items=[];let b=0;
   seq.forEach(k=>{const n=R.BEATS[k]||1,slotX=b*beatW,slotW=n*beatW,sub=(k==='s')?4:(k==='e')?2:1;
     const useW=(k==='h'||k==='w')?beatW:slotW; /* half/whole sit at the onset beat */
@@ -136,8 +137,8 @@ R.rhythmMetrics=(seq,Wline,st={})=>{const lay=R.rhythmLayout(seq,Wline,st);if(!l
     if(k==='e'||k==='s'){visL=Math.min(visL,hs[0]+s*.86-lw/2);visR=Math.max(visR,hs[hs.length-1]+s*.86+lw/2)}});
   return{L:lay.L,beatW:lay.beatW,s,Wline,items,centerShift,lx0,lx1,barL:lx0-barLw/2,barR:lx1+barLw/2,visL,visR,headHalf}};
 /* Left/right plate margins of the visual group after centering it in a plate of width pw. */
-R.rhythmMargins=(seq,st={})=>{const C=R.CHOICE,pad=st.pad??C.pad,side=st.side??C.side,bw=st.bw??C.bw,size=st.size??C.size;
-  const pw=st.pw??(bw-2*pad),Wline=st.w??Math.max(80,pw-2*side),m=R.rhythmMetrics(seq,Wline,{size,...st});
+R.rhythmMargins=(seq,st={})=>{const C=R.CHOICE,pad=st.pad??C.pad,side=st.side??C.side,bw=st.bw??C.bw,size=st.size??C.size,s=st.s??R.choiceScale(st);
+  const pw=st.pw??(bw-2*pad),Wline=st.w??Math.max(80,pw-2*side),m=R.rhythmMetrics(seq,Wline,{size,s,...st});
   const groupShift=pw/2-(m.visL+m.visR)/2;
   const last=m.items[m.items.length-1];
   return{left:m.visL+groupShift,right:pw-(m.visR+groupShift),pw,Wline,s:m.s,centerShift:m.centerShift,
@@ -173,12 +174,12 @@ R.rhythmLine=(cx,y,seq,st={})=>{if(!seq||!seq.length)return;
 
 /* Fill a choice (or reveal) card with a nearly full-bleed cream plate and scaled notation. */
 R.rhythmCard=(x,y,bw,bh,seq,st={})=>{if(!seq||!seq.length)return;
-  const C=R.CHOICE,pad=st.pad??C.pad,side=st.side??C.side,size=st.size??C.size;
+  const C=R.CHOICE,pad=st.pad??C.pad,side=st.side??C.side,size=st.size??C.size,s=st.s??R.choiceScale(st);
   const pw=bw-2*pad,ph=bh-2*pad,px=x+pad,py=y+pad,Wline=Math.max(80,pw-2*side);
-  const lay=R.rhythmMetrics(seq,Wline,{size}),s=lay.s;
-  const needTop=s*5.2+12,needBot=s*2.4+12;
+  const lay=R.rhythmMetrics(seq,Wline,{size,s}),ss=lay.s;
+  const needTop=ss*5.2+12,needBot=ss*2.4+12;
   const yStaff=Math.min(py+ph-needBot,Math.max(py+needTop,py+needTop+(ph-needTop-needBot)/2));
-  R.rhythmLine(px+pw/2,yStaff,seq,{w:Wline,size,ink:st.ink,g:st.g,plate:st.plate,plateStroke:st.plateStroke,px,py,pw,ph,pr:st.pr||16,letter:st.letter,letterInk:st.letterInk})};
+  R.rhythmLine(px+pw/2,yStaff,seq,{w:Wline,size,s,ink:st.ink,g:st.g,plate:st.plate,plateStroke:st.plateStroke,px,py,pw,ph,pr:st.pr||16,letter:st.letter,letterInk:st.letterInk})};
 
 // ---------- extra sounds (all logged as self-sounds so the mic ignores them) ----------
 const ac=BB.ac,bus=BB.outBus;let nb=null;

@@ -358,7 +358,7 @@ BB.drawDrawerTeacher=(x,y,w,h)=>{x=Math.max(x,0);BB.drawDrawerBack(x,y,w);const 
   head('Data');
   if(L){BB.text('Clap log  '+L.count()+' / '+L.CAP,x+pad,yy,22,BB.MENU_INK,{align:'left',font:'Lilita One'});yy+=28}
   if(L){row('Download clap log','clogdl',()=>L.download());row('Download summary','clogsum',()=>L.downloadSummary());row('Clear log','clogclr',()=>{if(window.confirm('Clear the clap log? Download it first.'))L.clear()})}
-  if(BB.assessLog){row('Download assess','asdl',()=>BB.assessLog.download());row('Assess summary','asdls',()=>BB.assessLog.downloadSummary())}
+  if(BB.assessLog){row('Download assess CSV','asdl',()=>BB.assessLog.download());row('Download assess summary','asdls',()=>BB.assessLog.downloadSummary())}
   row('Open assessment','menuassess',()=>{BB.caption=null;BB.go(new BB.AssessRoom())},{chevron:1});
   head('Options');
   if(BB.listenMode)row('Listen rule: '+BB.listenMode.label(),'lrule',()=>BB.listenMode.cycle());

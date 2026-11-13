@@ -242,23 +242,25 @@ class AssessRoom{constructor(o={}){this.o=o}
   drawGradedHear(){const Q=this.Q;if(!(Q&&Q.kind==='hearPick'&&this.lastOk))return;
     /* label sits clearly above the cream plate, gold on the dark room for classroom contrast */
     BB.text('Heard rhythm:',W/2,500,34,'#ffe9a0',{font:'Rammetto One',stroke:6});
-    R.rhythmCard(W/2-480,560,960,280,Q.seq,{ink:'#19191f',size:28})}
+    R.rhythmCard(W/2-480,560,960,280,Q.seq,{ink:'#19191f',s:R.choiceScale()})}
   draw(){ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);if(BB.V2&&BB.V2.hub_bg){ctx.globalAlpha=.35;ctx.drawImage(BB.V2.hub_bg,0,0,W,H);ctx.globalAlpha=1}
-    BB.contactShadow(220,980,110,.45);BB.sprite&&BB.sprite('sprocket',220,980,360,{squash:BB.isTalking&&BB.isTalking('sprocket')?Math.sin(BB.t*16)*.015:0});
+    /* v14.5.27: keep Sprocket off the result panel so he cannot overlap it */
+    if(this.state!=='end'){BB.contactShadow(220,980,110,.45);BB.sprite&&BB.sprite('sprocket',220,980,360,{squash:BB.isTalking&&BB.isTalking('sprocket')?Math.sin(BB.t*16)*.015:0})}
     if(this.state==='intro'){BB.panel(260,200,1400,560,40);BB.text('CHECKPOINT',W/2,300,72,'#fff',{font:'Rammetto One',stroke:10});
       BB.text(TOTAL+' checks: steady beat · piano · andante · allegro · 4 rhythm matches.',W/2,390,32,COL.yellow,{stroke:5,maxW:1200});
       BB.text('Get '+PASS+' right to unlock the boss. Class answers together — not a one-kid test.',W/2,450,28,'#cfe8e2',{stroke:4,maxW:1200});
       BB.button(W/2-260,560,520,120,'START CHECK',{style:'green',size:48,id:'asstart',onClick:()=>this.beginQ()});return}
     this.drawBanner();this.drawProgress();
-    if(this.state==='end'){BB.panel(260,240,1400,620,40);
-      BB.text(this.passed?'YOU PASSED!':'TRY AGAIN',W/2,340,72,this.passed?COL.green:COL.yellow,{font:'Rammetto One',stroke:10});
-      BB.text('Class score: '+this.score+' / '+TOTAL,W/2,440,48,'#fff',{stroke:6});
-      BB.text(this.passed?'Delivery bay unlocked. Ready for Static Jr.!':'Need '+PASS+' correct. Tap RETRY for another run.',W/2,520,32,COL.yellow,{stroke:4,maxW:1200});
-      if(this.passed)BB.button(W/2-280,620,560,120,'FIGHT STATIC JR.!',{style:'green',size:44,id:'asboss',onClick:()=>this.goBoss()});
-      else BB.button(W/2-280,620,560,120,'RETRY CHECKPOINT',{style:'green',size:44,id:'asretry',onClick:()=>this.retry()});
-      BB.button(200,780,360,80,'Download assess CSV',{size:26,id:'asdl',onClick:()=>BB.assessLog.download()});
-      BB.button(580,780,360,80,'Download summary',{size:26,id:'asdls',onClick:()=>BB.assessLog.downloadSummary()});
-      BB.button(960,780,360,80,'ROOM MAP',{size:26,id:'asmap',onClick:()=>BB.go(new BB.MapScene())});
+    if(this.state==='end'){/* v14.5.27: centered result panel, clear of the header pips; downloads live in Teacher > Data */
+      const pipBot=173,pad=56,pw=1400,ph=560,px=(W-pw)/2,availT=pipBot+40,availB=H-48,py=Math.round((availT+availB)/2-ph/2);
+      BB.panel(px,py,pw,ph,40);
+      const cx=W/2,titleY=py+pad+50,scoreY=titleY+100,subY=scoreY+62,btnH=120,btnY=py+ph-pad-btnH,priW=540,secW=420,gap=36,row=priW+gap+secW,bx=cx-row/2;
+      BB.text(this.passed?'YOU PASSED!':'TRY AGAIN',cx,titleY,72,this.passed?COL.green:COL.yellow,{font:'Rammetto One',stroke:10});
+      BB.text('Class score: '+this.score+' / '+TOTAL,cx,scoreY,48,'#fff',{stroke:6});
+      BB.text(this.passed?'Delivery bay unlocked. Ready for Static Jr.!':'Need '+PASS+' correct. Tap RETRY for another run.',cx,subY,32,COL.yellow,{stroke:4,maxW:pw-2*pad});
+      if(this.passed)BB.button(bx,btnY,priW,btnH,'FIGHT STATIC JR.!',{style:'green',size:40,id:'asboss',onClick:()=>this.goBoss()});
+      else BB.button(bx,btnY,priW,btnH,'RETRY CHECKPOINT',{style:'green',size:36,id:'asretry',onClick:()=>this.retry()});
+      BB.button(bx+priW+gap,btnY,secW,btnH,'ROOM MAP',{size:36,id:'asmap',onClick:()=>BB.go(new BB.MapScene())});
       return}
     if(this.state==='graded'){BB.text(this.lastOk?'GOT IT!':"Not yet — that's ok!",W/2,400,72,this.lastOk?COL.green:COL.yellow,{font:'Rammetto One',stroke:10});if(this.lastOk)this.drawGradedHear();BB.captionBox();return}
     this.drawPrompt(this.Q.prompt);

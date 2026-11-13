@@ -32,16 +32,16 @@ class TitleScene{enter(){this.t0=BB.t}
     if(BB.keys.includes('Enter'))this.start()}
   start(){BB.unlockAudio();BB.groove&&BB.groove.stop();BB.sfx.fanfare();BB.go(new MicScene())}
   draw(){menuBg();const t=BB.t-this.t0,k=Math.min(1,t/.8);
-    // v14.5.26: approved Steady Bots color logo (transparent, no note) + level subtitle
-    ctx.save();ctx.translate(W/2,300);const s=BB.ease.back(k);ctx.scale(s,s);BB.glow(0,-40,700,'rgba(255,220,150,A)',.22);
-    const lg=BB.V2.logo;if(lg){const h=420,w=lg.width*h/lg.height;ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=28;ctx.shadowOffsetY=12;ctx.drawImage(lg,-w/2,-310,w,h);ctx.restore()}
-    else BB.logoText('STEADY BOTS',0,-40,96,{maxW:1500,matte:1});
-    BB.logoText('LEVEL 4: THE RHYTHM WAREHOUSE',0,170,70,{maxW:1500,matte:1});ctx.restore();
+    // v14.5.27: recut logo (clean matte, no baked shadow); rest top 90 so ease.back (~1.10) keeps the antenna on stage
+    ctx.save();ctx.translate(W/2,300);const s=BB.ease.back(k);ctx.scale(s,s);BB.glow(0,-24,700,'rgba(255,220,150,A)',.22);
+    const lg=BB.V2.logo;if(lg){const h=372,w=lg.width*h/lg.height;ctx.save();ctx.shadowColor='rgba(0,0,0,.4)';ctx.shadowBlur=32;ctx.shadowOffsetY=14;ctx.drawImage(lg,-w/2,-210,w,h);ctx.restore()}
+    else BB.logoText('STEADY BOTS',0,-24,96,{maxW:1500,matte:1});
+    BB.logoText('LEVEL 4: THE RHYTHM WAREHOUSE',0,254,70,{maxW:1500,matte:1});ctx.restore();
     const b=Math.sin(BB.t*4);
     BB.contactShadow(380,1010,190,.5);BB.sprite('sprocket',380,1010,430,{squash:b*.02,shadow:false});
     BB.contactShadow(1560,1010,160,.5);BB.sprite('sorter',1560,1010,360,{squash:-b*.02,shadow:false});
     BB.staticJr(1330+Math.sin(BB.t*1.3)*60,1040,110,{spd:80,flip:Math.cos(BB.t*1.3)<0,run:.5,glitch:Math.sin(BB.t*2)>.95?1:0,rot:Math.sin(BB.t*8)*.08});
-    BB.button(W/2-260,680,520,160,'START',{style:'green',size:80,font:'Rammetto One',id:'start',pop:1+Math.sin(BB.t*3)*.03,onClick:()=>this.start()});
+    BB.button(W/2-260,705,520,160,'START',{style:'green',size:80,font:'Rammetto One',id:'start',pop:1+Math.sin(BB.t*3)*.03,onClick:()=>this.start()});
     BB.rrect(W/2-560,1018,1120,50,25,'rgba(15,25,24,.7)');BB.text('Best on a big screen. Tap full screen (top right) for the whole board.',W/2,1045,28,'#fff',{stroke:4})}}
 // ---- Mic setup ----
 class MicScene{enter(){this.state='ask';this.t0=BB.t;this.heard=0;if(BB.mic.ok)this.state='on';setTimeout(()=>BB.say('mic'),300)}

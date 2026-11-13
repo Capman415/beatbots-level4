@@ -339,17 +339,21 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
       });
     }
   };
-  R.CHOICE = { bw: 620, bh: 370, gap: 16, pad: 8, side: 14, size: 32, y: 400 };
+  R.CHOICE = { bw: 620, bh: 370, gap: 16, pad: 8, side: 14, size: 32, y: 400, pack: 2.1 };
   R.choiceWline = (o = {}) => {
     var _a, _b, _c;
     const C = R.CHOICE;
     return ((_a = o.bw) != null ? _a : C.bw) - 2 * ((_b = o.pad) != null ? _b : C.pad) - 2 * ((_c = o.side) != null ? _c : C.side);
   };
+  R.choiceScale = (st = {}) => {
+    var _a, _b, _c;
+    const C = R.CHOICE, Wline = (_a = st.w) != null ? _a : R.choiceWline(st), pack = (_b = st.pack) != null ? _b : C.pack, cap = (_c = st.size) != null ? _c : C.size;
+    return Math.max(6, Math.min(cap, Wline / 4 / (4 * pack)));
+  };
   R.rhythmLayout = (seq, Wline, st = {}) => {
     if (!seq || !seq.length) return { L: 0, beatW: 0, s: 0, Wline: Wline || 0, items: [] };
     const L = Math.max(4, seq.reduce((a, k) => a + (R.BEATS[k] || 0), 0)), beatW = Wline / L;
-    const densest = seq.some((k) => k === "s") ? 4 : seq.some((k) => k === "e") ? 2 : 1;
-    const s = Math.max(6, Math.min(st.size || 18, beatW / (densest * 2.1)));
+    const s = st.s != null ? st.s : Math.max(6, Math.min(st.size || 18, beatW / (4 * (st.pack || R.CHOICE.pack))));
     const items = [];
     let b = 0;
     seq.forEach((k) => {
@@ -400,9 +404,9 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     return { L: lay.L, beatW: lay.beatW, s, Wline, items, centerShift, lx0, lx1, barL: lx0 - barLw / 2, barR: lx1 + barLw / 2, visL, visR, headHalf };
   };
   R.rhythmMargins = (seq, st = {}) => {
-    var _a, _b, _c, _d, _e, _f;
-    const C = R.CHOICE, pad = (_a = st.pad) != null ? _a : C.pad, side = (_b = st.side) != null ? _b : C.side, bw = (_c = st.bw) != null ? _c : C.bw, size = (_d = st.size) != null ? _d : C.size;
-    const pw = (_e = st.pw) != null ? _e : bw - 2 * pad, Wline = (_f = st.w) != null ? _f : Math.max(80, pw - 2 * side), m = R.rhythmMetrics(seq, Wline, __spreadValues({ size }, st));
+    var _a, _b, _c, _d, _e, _f, _g;
+    const C = R.CHOICE, pad = (_a = st.pad) != null ? _a : C.pad, side = (_b = st.side) != null ? _b : C.side, bw = (_c = st.bw) != null ? _c : C.bw, size = (_d = st.size) != null ? _d : C.size, s = (_e = st.s) != null ? _e : R.choiceScale(st);
+    const pw = (_f = st.pw) != null ? _f : bw - 2 * pad, Wline = (_g = st.w) != null ? _g : Math.max(80, pw - 2 * side), m = R.rhythmMetrics(seq, Wline, __spreadValues({ size, s }, st));
     const groupShift = pw / 2 - (m.visL + m.visR) / 2;
     const last = m.items[m.items.length - 1];
     return {
@@ -550,14 +554,14 @@ var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
     g.restore();
   };
   R.rhythmCard = (x, y, bw, bh, seq, st = {}) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     if (!seq || !seq.length) return;
-    const C = R.CHOICE, pad = (_a = st.pad) != null ? _a : C.pad, side = (_b = st.side) != null ? _b : C.side, size = (_c = st.size) != null ? _c : C.size;
+    const C = R.CHOICE, pad = (_a = st.pad) != null ? _a : C.pad, side = (_b = st.side) != null ? _b : C.side, size = (_c = st.size) != null ? _c : C.size, s = (_d = st.s) != null ? _d : R.choiceScale(st);
     const pw = bw - 2 * pad, ph = bh - 2 * pad, px = x + pad, py = y + pad, Wline = Math.max(80, pw - 2 * side);
-    const lay = R.rhythmMetrics(seq, Wline, { size }), s = lay.s;
-    const needTop = s * 5.2 + 12, needBot = s * 2.4 + 12;
+    const lay = R.rhythmMetrics(seq, Wline, { size, s }), ss = lay.s;
+    const needTop = ss * 5.2 + 12, needBot = ss * 2.4 + 12;
     const yStaff = Math.min(py + ph - needBot, Math.max(py + needTop, py + needTop + (ph - needTop - needBot) / 2));
-    R.rhythmLine(px + pw / 2, yStaff, seq, { w: Wline, size, ink: st.ink, g: st.g, plate: st.plate, plateStroke: st.plateStroke, px, py, pw, ph, pr: st.pr || 16, letter: st.letter, letterInk: st.letterInk });
+    R.rhythmLine(px + pw / 2, yStaff, seq, { w: Wline, size, s, ink: st.ink, g: st.g, plate: st.plate, plateStroke: st.plateStroke, px, py, pw, ph, pr: st.pr || 16, letter: st.letter, letterInk: st.letterInk });
   };
   const ac = BB.ac, bus = BB.outBus;
   let nb = null;

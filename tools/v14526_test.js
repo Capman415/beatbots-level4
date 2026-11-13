@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v14.5.26: hamburger drawer menu, no pause button, HUD insets, smash white-gap cleanup
+// v14.5.27: hamburger drawer menu, no pause button, HUD insets, smash white-gap cleanup
 'use strict';
 const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
@@ -12,10 +12,10 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.error('FAIL',m)}else console
 
 // --- version ---
 const ver=JSON.parse(read('version.json'));
-ok(ver.version==='v14.5.26'&&ver.build==='1794301526','version.json is v14.5.26 / 1794301526');
-ok(/BB\.VERSION='v14.5.26'/.test(eng),'BB.VERSION synced');
-ok((read('index.html').match(/1794301526/g)||[]).length>=2,'index.html build synced');
-ok(/bb-1794301526/.test(read('sw.js')),'sw cache synced');
+ok(ver.version==='v14.5.27'&&ver.build==='1794301527','version.json is v14.5.27 / 1794301527');
+ok(/BB\.VERSION='v14.5.27'/.test(eng),'BB.VERSION synced');
+ok((read('index.html').match(/1794301527/g)||[]).length>=2,'index.html build synced');
+ok(/bb-1794301527/.test(read('sw.js')),'sw cache synced');
 
 // --- no pause button remains ---
 ok(!/BB\.pauseBtn\s*=/.test(art),'pauseBtn helper removed from art.js');
@@ -177,9 +177,10 @@ ok(/state==='hear'/.test(as),'listening-first hear state is unchanged');
     ok(xs[0]-half>=-0.5&&xs[xs.length-1]+half<=Wline+0.5,'mixed heads stay on the staff');
   }
   const qonly=R.rhythmLayout(['q','q','q','q'],Wline,{size:18});
-  ok(qonly.s>=ssss.s,'lines without sixteenths can keep a larger head size');
+  ok(Math.abs(qonly.s-ssss.s)<1e-9,'quarters use the same fixed head size as tika-tika (no per-rhythm shrink)');
   const wide=R.rhythmLayout(['s','s','s','s'],640,{size:22});
-  ok(wide.s>ssss.s,'a wider reveal line can use larger heads');
+  const wideQ=R.rhythmLayout(['q','q','q','q'],640,{size:22});
+  ok(Math.abs(wide.s-wideQ.s)<1e-9,'a wider line still uses one head size for every rhythm');
   /* classroom choice-card scale */
   ok(R.CHOICE.bw>=600&&R.CHOICE.bh>=340,'choice cards are wide and tall enough for a classroom');
   const CW=R.choiceWline(),hint=R.CHOICE.size;
@@ -187,7 +188,7 @@ ok(/state==='hear'/.test(as),'listening-first hear state is unchanged');
   const classQ=R.rhythmLayout(['q','q','q','q'],CW,{size:hint});
   const classM=R.rhythmLayout(['q','s','e','q'],CW,{size:hint});
   ok(classS.s+1e-6>=10.638*1.6,'dense (tika-tika ×4) heads are at least 1.6× the previous choice-card size');
-  ok(classQ.s>classS.s+6,'quarter-only rhythms stay larger than dense sixteenth lines');
+  ok(Math.abs(classQ.s-classS.s)<1e-9&&Math.abs(classM.s-classS.s)<1e-9,'classroom quarters, mixed, and tika-tika share one head size');
   {
     const {g,s,xs}=minGap(classS);
     ok(g+1e-6>=2*s,'classroom ssss heads do not overlap');
@@ -242,5 +243,5 @@ ok(/state==='hear'/.test(as),'listening-first hear state is unchanged');
     ok(gapClear===gaps.length,'enclosed pipe-gap samples are transparent ('+gapClear+'/'+gaps.length+')');
   }catch(e){ok(false,'smash.png inspect failed: '+e.message)}
   if(fails){console.error('\n'+fails+' failure(s)');process.exit(1)}
-  console.log('v14.5.26 tests OK');
+  console.log('v14.5.27 tests OK');
 })();

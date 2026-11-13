@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v14.5.26: head-on tire rolling straight at the camera; no diagonal path or 3/4 silhouette
+// v14.5.27: head-on tire rolling straight at the camera; no diagonal path or 3/4 silhouette
 'use strict';
 const fs=require('fs'),path=require('path');
 const d=fs.readFileSync(path.join(__dirname,'../js/rooms/delivery.js'),'utf8');
@@ -48,10 +48,10 @@ ok(L.throwTurn('floor',1,'tire').rot===0,'tire rotation is 0 at mid/end of the r
 ok(L.LANE_TG.floor.x===1390,'LANE_TG.floor.x is the release lane');
 
 const ver=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json'),'utf8'));
-ok(ver.version==='v14.5.26'&&ver.build==='1794301526','version.json is v14.5.26 / 1794301526');
-ok(/BB\.VERSION='v14\.5\.26'/.test(fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8')),'engine version synced');
-ok((fs.readFileSync(path.join(__dirname,'../index.html'),'utf8').match(/1794301526/g)||[]).length>=2,'index.html build synced');
-ok(/bb-1794301526/.test(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8')),'sw cache synced');
+ok(ver.version==='v14.5.27'&&ver.build==='1794301527','version.json is v14.5.27 / 1794301527');
+ok(/BB\.VERSION='v14\.5\.27'/.test(fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8')),'engine version synced');
+ok((fs.readFileSync(path.join(__dirname,'../index.html'),'utf8').match(/1794301527/g)||[]).length>=2,'index.html build synced');
+ok(/bb-1794301527/.test(fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8')),'sw cache synced');
 
 ok(/no extra hand motion/.test(d)&&!/sx=jx\+sd\*/.test(d),'6-7 still has no extra hands');
 ok(/bb_sj8/.test(d),'intro line kept');
@@ -60,4 +60,4 @@ ok(/SAFE_Y=200/.test(d),'high throws kept');
 ok(/W\/2,350,40/.test(fs.readFileSync(path.join(__dirname,'../js/rooms/assess.js'),'utf8')),'assess layout kept');
 
 if(fails){console.error(fails+' FAIL');process.exit(1)}
-console.log('v14.5.26 tests OK');
+console.log('v14.5.27 tests OK');
