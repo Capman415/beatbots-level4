@@ -8,7 +8,7 @@ let fails=0;const ok=(c,m)=>{if(!c){fails++;console.error('FAIL',m)}else console
 
 ok(/bb_sj8/.test(d)&&/Even my static has better timing than that!/.test(d),'new Static Jr. intro line registered');
 ok(/\[10\.8,'bb_sj8'/.test(d),'line is scheduled in the 10.8s intro gap (after 8.3, before 13.3)');
-ok(/v14\.5\.21: proper robot arms/.test(d)&&/sx=jx\+sd\*78/.test(d),'6-7 uses attached robot arms, not floating ovals');
+ok(!/BB\.rrect\(-45,-20,90,40/.test(d)&&!/sx=jx\+sd\*78/.test(d),'6-7 no floating ovals and no added metal arms (v14.5.22)');
 ok(!/g\.kind==='67'&&gv<g\.dur\)\{for\(const sd of\[-1,1\]\)\{const bob=[\s\S]*?BB\.rrect\(-45,-20,90,40/.test(d),'old floating-hand ovals removed');
 
 ok(/this\.fuzzT=0;this\.fuzzD=0/.test(d)&&/BB\.parts\)BB\.parts\.length=0/.test(d),'startKO clears fuzz and leftover particles');
@@ -26,8 +26,9 @@ ok(Math.abs(fill(.5,12)-2.4864)<.02,'12 piano claps ≈ 2.49 (MEGA)');
 ok(fill(.7,8)>=2.99,'8 mezzo claps fill all 3 canisters');
 ok(fill(.95,4)>=2.7,'4 forte claps reach MEGA');
 
-ok(/clean circular tire/.test(d)&&/ctx\.arc\(0,0,58/.test(d),'tire is a circular face, not a side slab');
-ok(!/roundRect\(-14,-62,56,124/.test(d),'old hanging-side tread rect is gone');
+ok(/tread-on tire rolling toward the viewer/.test(d)&&/ctx\.ellipse\(-14,0,30,62/.test(d),'toward-viewer sidewall tire restored');
+ok(!/roundRect\(-14,-62,56,124/.test(d),'protruding 56x124 side slab stays gone');
+ok(!/ctx\.arc\(0,0,58/.test(d),'v14.5.21 circular face-on tire is no longer used');
 
 ok(/drawBlastRing\(jx,jy-60,130/.test(d)&&/this\.hitPop=/.test(d),'hit explosions use the big-blast ring style');
 
@@ -37,9 +38,9 @@ ok(!/BB\.text\('Answers stay up while you listen/.test(a),'no-peeking line not r
 ok(/Clap with the lights — 8 steady ta beats/.test(a),'follow cue is kid-friendly');
 
 const ver=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json'),'utf8'));
-ok(ver.version==='v14.5.21'&&ver.build==='1794301521','version.json is v14.5.21 / 1794301521');
+ok(ver.version==='v14.5.22'&&ver.build==='1794301522','version.json is v14.5.22 / 1794301522');
 const eng=fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8');
-ok(/BB\.VERSION='v14\.5\.21'/.test(eng),'engine version synced');
+ok(/BB\.VERSION='v14\.5\.22'/.test(eng),'engine version synced');
 
 if(fails){console.error(fails+' FAIL');process.exit(1)}
 console.log('v14.5.21 tests OK');

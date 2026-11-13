@@ -15,8 +15,8 @@ const BOX=[{n:'cue card',x:400,y:40,w:1120,h:220},{n:'DODGE banner',x:630,y:318,
 let fails=0;const items={left:'sock',right:'chicken',high:'chicken',floor:'tire',botL:'bomb',botR:'bomb',mid:'bomb'};
 function bg(){ctx.fillStyle='#2b3140';ctx.fillRect(0,0,W,H);ctx.fillStyle='#3b3f47';ctx.fillRect(0,740,W,H-740);for(const b of BOX){ctx.fillStyle='rgba(255,224,102,.35)';ctx.fillRect(b.x,b.y,b.w,b.h);ctx.fillStyle='#fff';ctx.font='28px sans-serif';ctx.fillText(b.n,b.x+10,b.y+34)}ctx.fillStyle='#c0603a';ctx.fillRect(JR.x-110,JR.y-200,220,380)}
 for(const lane of Object.keys(items)){bg();const tire=lane==='floor',sx=tire?JR.x-40:(lane==='right'||lane==='botR')?JR.x+60:JR.x-90,sy=tire?JR.y+170:JR.y-40;let minX=1e9,maxX=-1e9,maxY=-1e9,hit=[];const sc0=[];
-  for(let v=0;v<=1.45;v+=.15){const P=L.throwPath(lane,v,sx,sy);if(!P)continue;sc0.push(P.sc);ctx.save();ctx.globalAlpha=Math.max(.25,P.a);ctx.translate(P.x,P.y-(tire?58*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=L.throwTurn(lane,v,items[lane]);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}tire?M.drawTireRoll(v*16):M.drawJunk(items[lane],0);ctx.restore();
-    const r=(tire?62:60)*P.sc,cy=P.y-(tire?58*P.sc:0);minX=Math.min(minX,P.x);maxX=Math.max(maxX,P.x);maxY=Math.max(maxY,cy-r);
+  for(let v=0;v<=1.45;v+=.15){const P=L.throwPath(lane,v,sx,sy);if(!P)continue;sc0.push(P.sc);ctx.save();ctx.globalAlpha=Math.max(.25,P.a);ctx.translate(P.x,P.y-(tire?62*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=L.throwTurn(lane,v,items[lane]);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}tire?M.drawTireRoll(v*16):M.drawJunk(items[lane],0);ctx.restore();
+    const r=(tire?62:60)*P.sc,cy=P.y-(tire?62*P.sc:0);minX=Math.min(minX,P.x);maxX=Math.max(maxX,P.x);maxY=Math.max(maxY,cy-r);
     for(const b of BOX)if(P.x+r>b.x&&P.x-r<b.x+b.w&&cy+r>b.y&&cy-r<b.y+b.h)hit.push(b.n+'@v'+v.toFixed(2))}
   ctx.fillStyle='#fff';ctx.font='48px sans-serif';ctx.fillText('lane '+lane+' ('+items[lane]+')',40,1040);fs.writeFileSync(out+'/lane_'+lane+'.png',cv.toBuffer('image/png'));
   const msg=`${lane}: x ${minX|0}..${maxX|0}, scale ${sc0[0].toFixed(2)}->${sc0[sc0.length-1].toFixed(2)}, top-of-object lowest ${maxY|0}`;

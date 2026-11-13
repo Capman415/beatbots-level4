@@ -1826,54 +1826,6 @@
         {
           const g = this.gag, gv = g ? BB.t - g.t : 9;
           if (g && g.kind === "67" && gv < g.dur) {
-            for (const sd2 of [-1, 1]) {
-              const bob = Math.cos(gv * Math.PI / 0.8 + (sd2 > 0 ? Math.PI : 0)) * 36, sx = jx + sd2 * 78, sy = jy + 58, hx = jx + sd2 * 175, hy = jy - 40 + bob, ex = lerp(sx, hx, 0.5) + sd2 * 18, ey = lerp(sy, hy, 0.45) + 8;
-              ctx.save();
-              ctx.lineCap = "round";
-              ctx.strokeStyle = "rgba(45,18,6,.95)";
-              ctx.lineWidth = 22;
-              ctx.beginPath();
-              ctx.moveTo(sx, sy);
-              ctx.lineTo(ex, ey);
-              ctx.stroke();
-              const Ug = ctx.createLinearGradient(sx, sy, ex, ey);
-              Ug.addColorStop(0, "#e3eaee");
-              Ug.addColorStop(1, "#4d575e");
-              ctx.strokeStyle = Ug;
-              ctx.lineWidth = 16;
-              ctx.beginPath();
-              ctx.moveTo(sx, sy);
-              ctx.lineTo(ex, ey);
-              ctx.stroke();
-              ctx.strokeStyle = "rgba(45,18,6,.95)";
-              ctx.lineWidth = 20;
-              ctx.beginPath();
-              ctx.moveTo(ex, ey);
-              ctx.lineTo(hx, hy);
-              ctx.stroke();
-              const Fg = ctx.createLinearGradient(ex, ey, hx, hy);
-              Fg.addColorStop(0, "#cfd8dc");
-              Fg.addColorStop(1, "#56616a");
-              ctx.strokeStyle = Fg;
-              ctx.lineWidth = 14;
-              ctx.beginPath();
-              ctx.moveTo(ex, ey);
-              ctx.lineTo(hx, hy);
-              ctx.stroke();
-              ctx.translate(hx, hy);
-              ctx.scale(sd2, 1);
-              BB.rrect(-28, -24, 56, 48, 16, BB.lg(-24, 24, ["#ecc088", "#b88246"]), "#5a3a1e", 4);
-              BB.rrect(-16, -38, 34, 18, 8, "#efe3c8", "#5a3a1e", 3);
-              for (let f = 0; f < 3; f++) {
-                ctx.strokeStyle = "rgba(90,58,30,.55)";
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(-14 + f * 14, -8);
-                ctx.lineTo(-14 + f * 14, 16);
-                ctx.stroke();
-              }
-              ctx.restore();
-            }
             BB.text(gv < 0.8 ? "6..." : "6... 7!", jx - 330, jy - 60, 72, "#ffe066", { font: "Rammetto One", stroke: 8 });
           }
           if (g && g.kind === "mw" && gv < g.dur) BB.text("hee-hee!", jx - 300, jy - 60, 64, "#ff8adf", { stroke: 7 });
@@ -1990,7 +1942,7 @@
           const paint = () => {
             ctx.save();
             ctx.globalAlpha = P.a;
-            ctx.translate(P.x, P.y - (tire ? 58 * P.sc : 0));
+            ctx.translate(P.x, P.y - (tire ? 62 * P.sc : 0));
             ctx.scale(P.sc, P.sc);
             {
               const TT = throwTurn(lane, v, tire ? "tire" : junk);
@@ -4423,42 +4375,47 @@
     }
     drawTireRoll(ph) {
       const B = () => ctx.beginPath(), V = (p, x, y, w, h, c, o) => this.junkVol(p, x, y, w, h, c, o);
+      const body = () => {
+        B();
+        ctx.moveTo(-14, -62);
+        ctx.ellipse(-14, 0, 30, 62, 0, -Math.PI / 2, Math.PI / 2, true);
+        ctx.lineTo(16, 62);
+        ctx.arc(16, 36, 26, Math.PI / 2, 0, true);
+        ctx.lineTo(42, -36);
+        ctx.arc(16, -36, 26, 0, -Math.PI / 2, true);
+        ctx.closePath();
+      };
       ctx.save();
       ctx.fillStyle = "rgba(0,0,0,.3)";
       B();
-      ctx.ellipse(0, 58, 48, 10, 0, 0, 7);
+      ctx.ellipse(0, 66, 44, 10, 0, 0, 7);
       ctx.fill();
-      ctx.rotate(ph * 0.35);
-      V(() => {
-        B();
-        ctx.arc(0, 0, 58, 0, 7);
-      }, -58, -58, 116, 116, ["#4d535c", "#2e3239", "#15171b"], { wear: 5, wc: "150,140,120" });
-      ctx.save();
-      ctx.lineCap = "round";
-      for (let q = 0; q < 12; q++) {
-        const a = q * Math.PI / 6;
-        ctx.strokeStyle = "#0b0c0e";
-        ctx.lineWidth = 7;
-        B();
-        ctx.moveTo(Math.cos(a) * 44, Math.sin(a) * 44);
-        ctx.lineTo(Math.cos(a) * 57, Math.sin(a) * 57);
-        ctx.stroke();
-        ctx.strokeStyle = "rgba(190,200,210,.35)";
-        ctx.lineWidth = 2;
-        B();
-        ctx.moveTo(Math.cos(a) * 46, Math.sin(a) * 46);
-        ctx.lineTo(Math.cos(a) * 54, Math.sin(a) * 54);
-        ctx.stroke();
-      }
       ctx.restore();
-      ctx.strokeStyle = "rgba(45,18,6,.9)";
-      ctx.lineWidth = 5;
+      V(body, -44, -62, 86, 124, ["#4d535c", "#2e3239", "#15171b"], { wear: 4, wc: "150,140,120", extra: () => {
+        ctx.save();
+        ctx.lineCap = "round";
+        for (let q = -3; q < 6; q++) {
+          const y = -62 + ((q * 26 + ph * 26) % (26 * 8) + 26 * 8) % (26 * 8) - 26;
+          ctx.strokeStyle = "#0b0c0e";
+          ctx.lineWidth = 8;
+          B();
+          ctx.moveTo(-6, y);
+          ctx.lineTo(16, y + 10);
+          ctx.lineTo(36, y);
+          ctx.stroke();
+          ctx.strokeStyle = "rgba(190,200,210,.35)";
+          ctx.lineWidth = 2;
+          B();
+          ctx.moveTo(-6, y - 4);
+          ctx.lineTo(16, y + 6);
+          ctx.lineTo(36, y - 4);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } });
       B();
-      ctx.arc(0, 0, 38, 0, 7);
-      ctx.stroke();
-      B();
-      ctx.arc(0, 0, 22, 0, 7);
-      const hub = ctx.createRadialGradient(-6, -8, 1, 0, 0, 22);
+      ctx.ellipse(-16, 0, 13, 30, 0, 0, 7);
+      const hub = ctx.createLinearGradient(0, -30, 0, 30);
       hub.addColorStop(0, "#e3eaee");
       hub.addColorStop(0.5, "#8d9aa3");
       hub.addColorStop(1, "#4d575e");
@@ -4467,15 +4424,7 @@
       ctx.lineWidth = 2.5;
       ctx.strokeStyle = "rgba(45,18,6,.9)";
       ctx.stroke();
-      for (let q = 0; q < 5; q++) {
-        const a = q * 1.2566;
-        ctx.fillStyle = "#3a4248";
-        B();
-        ctx.arc(Math.cos(a) * 12, Math.sin(a) * 12, 3.5, 0, 7);
-        ctx.fill();
-      }
-      this.junkSpec(-8, -10, 6, 4, -0.5, 0.8);
-      ctx.restore();
+      this.junkSpec(0, -30, 5, 26, 0, 0.35);
     }
     drawBlastRing(x, y, R2, u) {
       if (u < 0 || u > 1.35) return;
