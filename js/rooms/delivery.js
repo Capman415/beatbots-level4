@@ -91,7 +91,7 @@ const clapDyn=o=>{if(!o)return 0;if(o.sim&&o.dyn!=null)return clamp(o.dyn,0,1);c
   dynFill=ds=>{if(!ds||!ds.length)return 0;let sum=0;for(const d of ds)sum+=.12+.88*clamp(d,0,1);return clamp(sum*.70,0,3)},
   dynLevel=f=>f>=2.4?2:f>=1.2?1:0,BLAST_R=[170,280,460],HIT_DMG=6;
 /* v14.5.9 THROW LANES: each dodge has its own lane so throws spread across the screen. lean left <- junk flies RIGHT; lean right <- LEFT; duck <- HIGH; jump <- tire rolls along the floor to the BOTTOM; freeze bombs alternate bottom-left / bottom-right / centre. */
-const BOMB_LANES=['botL','botR','mid'],LANE_TG={left:{x:W*.1,y:H*.55},right:{x:W*.94,y:H*.76},high:{x:W*.4,y:600},floor:{x:W*.5,y:H*.86},botL:{x:W*.26,y:H*.82},botR:{x:W*.84,y:H*.84},mid:{x:W*.5,y:H*.62}},
+const BOMB_LANES=['botL','botR','mid'],LANE_TG={left:{x:W*.1,y:H*.55},right:{x:W*.94,y:H*.76},high:{x:W*.4,y:600},floor:{x:1390,y:H*.86},botL:{x:W*.26,y:H*.82},botR:{x:W*.84,y:H*.84},mid:{x:W*.5,y:H*.62}},
   throwLane=(kind,n)=>kind==='junkR'?'right':kind==='junkL'?'left':kind==='junkT'?'high':kind==='junkF'?'floor':kind==='bomb'?BOMB_LANES[(n||0)%3]:'mid',
   DODGE_VO={L:'dl_left',R:'dl_right',duck:'dl_duck',jump:'dl_jump',freeze:'dl_freeze'};
 /* v14.5.10 THROW PATHS (pure; visual review fix): objects leave Static Jr.'s hand fast (ease-out) so the trip across the screen is visible,
@@ -100,7 +100,7 @@ const BOMB_LANES=['botL','botR','mid'],LANE_TG={left:{x:W*.1,y:H*.55},right:{x:W
 /* v14.5.18 TOWARD-CAMERA throws (Level-3 feel): grow hard toward the viewer, dive toward the bottom of the screen, stay opaque until past the bottom edge (no mid-air fade behind Sprocket). Lateral lane targets kept. fg=1 when the object should paint AFTER Sprocket. */
 /* v14.5.21 HIGH ARCS: mid-flight peak sits in the upper half (brief UI coverage OK). After the dodge beat they still dive past the bottom in the foreground. Floor tire stays a ground roll. */
 const SAFE_Y=200,throwPath=(lane,v,sx,sy)=>{if(v<0||v>1.6)return null;const T=LANE_TG[lane]||LANE_TG.mid,u=Math.min(v,1),po=Math.max(0,v-1),cam=Math.pow(u,1.5);
-  if(lane==='floor'){const p=Math.pow(u,1.15);let x=lerp(sx,T.x,p),y=lerp(sy,T.y,p)+po*2400;const sc=.5+3.6*Math.pow(u,1.25)+po*4;return{x,y,sc,a:y>H+160?clamp(1-(y-(H+160))/280,0,1):1,fg:sc>=1.7||u>=.4}}
+  if(lane==='floor'){const p=Math.pow(u,1.15);let x=sx,y=lerp(sy,T.y,p)+po*2400;const sc=.5+3.6*Math.pow(u,1.25)+po*4;return{x,y,sc,a:y>H+160?clamp(1-(y-(H+160))/280,0,1):1,fg:sc>=1.7||u>=.4}}
   const p=1-Math.pow(1-u,1.7),dx=T.x-sx;let x=sx+dx*p+dx*po*1.15,peak=lane==='high'?210:260,apex=lane==='high'?200:240;
   let y=lerp(sy,Math.min(T.y,apex+40),p)-Math.sin(u*Math.PI)*peak;y=lerp(y,H+260,Math.pow(cam,2.2)*.18+po*2.2);
   const sc=.48+1.05*p+(lane==='high'?3.6:4.4)*Math.pow(cam,1.35)+po*3.8,a=y>H+140?clamp(1-(y-(H+140))/280,0,1):(x<-220||x>W+220)?0:1;
@@ -109,7 +109,7 @@ const SAFE_Y=200,throwPath=(lane,v,sx,sy)=>{if(v<0||v>1.6)return null;const T=LA
    comes at you, plus a soft 3D 'turn' (horizontal squash). Never a full spin: |rot| <= .6 rad (~34°). Tire: only a slight perspective lean, no spin. */
 const LANE_DIR={left:-1,right:1,high:-1,floor:-1,botL:-1,botR:1,mid:-1},
   throwTurn=(lane,v,kind)=>{const d=LANE_DIR[lane]||1,u=clamp(v,0,1.5),e=1-Math.pow(1-Math.min(u,1),2),po=Math.max(0,u-1);
-    if(kind==='tire')return{rot:d*.1*e,sx:1};
+    if(kind==='tire')return{rot:0,sx:1};
     const amp=kind==='bomb'?.24:kind==='sock'?.38:.44,tilt=lane==='high'?-.12:lane==='botL'||lane==='botR'||lane==='mid'?.12:0;
     const rot=clamp(d*(.12+amp*e+.25*po)+tilt*e+.06*Math.sin(u*7),-.6,.6);return{rot,sx:kind==='bomb'?1:1-.16*Math.sin(Math.PI*Math.min(u,1))}};
 BB.throwTurn=throwTurn;BB.LANE_DIR=LANE_DIR;
@@ -369,7 +369,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
         const P=tire?throwPath(lane,v,JR.x-40,JR.y+170):throwPath(lane,v,lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(!P)continue;
         const paint=()=>{ctx.save();ctx.globalAlpha=P.a;ctx.translate(P.x,P.y-(tire?62*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=throwTurn(lane,v,tire?'tire':junk);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}if(tire)this.drawTireRoll(v*16);else this.drawJunk(junk,t);ctx.restore();
           if(v<1&&v>.15&&!tire){ctx.save();ctx.globalAlpha=.55*(1-v);ctx.strokeStyle='#fff';ctx.lineWidth=5;const bk=throwPath(lane,Math.max(0,v-.12),lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(bk){ctx.beginPath();ctx.moveTo(bk.x,bk.y);ctx.lineTo(P.x,P.y);ctx.stroke()}ctx.restore()}
-          if(v>=1&&v<1.55){const w=v-1,al=clamp(1-w/.55,0,1),T=LANE_TG[lane],tx=clamp(T.x,330,W-330),ty=clamp(Math.min(T.y,H-160)-(tire?40:80),SAFE_Y+40,H-120);ctx.save();ctx.globalAlpha=al;
+          if(v>=1&&v<1.55){const w=v-1,al=clamp(1-w/.55,0,1),T=LANE_TG[lane],tx=clamp(tire?P.x:T.x,330,W-330),ty=clamp(Math.min(T.y,H-160)-(tire?40:80),SAFE_Y+40,H-120);ctx.save();ctx.globalAlpha=al;
             if(kind==='bomb'){ctx.fillStyle='rgba(255,138,223,.5)';for(let q=0;q<9;q++){const r=60+(q%3)*40;ctx.beginPath();ctx.arc(T.x+Math.cos(q*.7)*r*1.4,T.y+Math.sin(q*.7)*r,44+(q%4)*16,0,7);ctx.fill()}BB.text('POOF! MISSED!',tx,ty,72,'#fff',{font:'Rammetto One',stroke:9,strokeCol:'#3a1040'})}
             else BB.text(tire?'BOING! JUMPED IT!':'MISSED!',tx,ty,80,COL.yellow,{font:'Rammetto One',stroke:10,strokeCol:'#3a1040'});ctx.restore()}};
         if(P.fg)this._throwFG.push(paint);else paint();
@@ -735,23 +735,30 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       B();ctx.arc(-78,-10,4.5,0,7);ctx.fillStyle='#14121c';ctx.fill();S(-79,-11.5,1.6,1.6,0,1);
       ctx.strokeStyle='rgba(45,18,6,.8)';ctx.lineWidth=3;for(const d of[-10,10]){B();ctx.moveTo(-68+d,-14);ctx.lineTo(-76+d,-6);ctx.stroke()}}
     else this.drawTireRoll(t*8)}
-  drawTireRoll(ph){/* v14.5.23: same unified tread-on tire rolling toward the viewer as v14.5.22 (no hanging slab). Tread chevrons are mapped onto a 3/4 cylinder: y=R sin(α), foreshorten by cos(α), width follows the rounded outline, darker toward the wrap edges. ph scrolls in angle (ph*26/R). */const B=()=>ctx.beginPath(),V=(p,x,y,w,h,c,o)=>this.junkVol(p,x,y,w,h,c,o);
-    const body=()=>{B();ctx.moveTo(-14,-62);ctx.ellipse(-14,0,30,62,0,-Math.PI/2,Math.PI/2,true);ctx.lineTo(16,62);ctx.arc(16,36,26,Math.PI/2,0,true);ctx.lineTo(42,-36);ctx.arc(16,-36,26,0,-Math.PI/2,true);ctx.closePath()};
-    ctx.save();ctx.fillStyle='rgba(0,0,0,.3)';B();ctx.ellipse(0,66,44,10,0,0,7);ctx.fill();ctx.restore();
-    V(body,-44,-62,86,124,['#4d535c','#2e3239','#15171b'],{wear:4,wc:'150,140,120',extra:()=>{
-      const R=62,N=16,dA=Math.PI*2/N,scr=ph*26/R,wr=a=>{const t=Math.PI*2;a=(a+Math.PI)%t;if(a<0)a+=t;return a-Math.PI};
-      const xR=y=>{const ay=Math.abs(y);if(ay<=36)return 39;const c=y<0?-36:36,d=26*26-(y-c)*(y-c);return d>0?16+Math.sqrt(d)-3:13};
-      const xL=y=>{const t=Math.min(1,Math.max(0,(Math.abs(y)-28)/34));return -4+t*t*14};
-      for(let i=0;i<28;i++){const a=-Math.PI/2+(i+.5)/28*Math.PI,da=Math.PI/28,y0=R*Math.sin(a-da/2),y1=R*Math.sin(a+da/2);ctx.fillStyle=`rgba(16,8,4,${.45*(1-Math.cos(a))})`;ctx.fillRect(-44,y0,86,Math.max(.4,y1-y0))}
-      const map=(u,a)=>{const y=R*Math.sin(a);if(y<-62||y>62)return null;const l=xL(y),r=xR(y);if(r-l<2)return null;return{x:l+(r-l)*u,y}};
-      const poly=(a0,a1)=>{B();let on=0;const go=(u0,u1,b0,b1)=>{for(let s=0;s<=8;s++){const t=s/8,p=map(u0+(u1-u0)*t,b0+(b1-b0)*t);if(!p)continue;if(!on){ctx.moveTo(p.x,p.y);on=1}else ctx.lineTo(p.x,p.y)}};go(0,.58,a0,a1);go(.58,1,a1,a0)};
+  drawTireRoll(ph){/* v14.5.24: dead-on tread face rolling straight at the camera. Symmetric upright capsule (no sidewall/hub/3/4 offset). Width 64 / height 124 ≈ 52%. Centered downward chevrons mapped on a cylinder: y=R sin(α), foreshorten by cos(α), darker at wrap edges, subtle center highlight. Scroll (ph*26/R) moves bands downward toward the viewer. Thin symmetric sidewall slivers for depth. */
+    const B=()=>ctx.beginPath(),V=(p,x,y,w,h,c,o)=>this.junkVol(p,x,y,w,h,c,o),HW=32,R=62,RAD=22;
+    const body=()=>{B();ctx.roundRect(-HW,-R,HW*2,R*2,RAD)};
+    ctx.save();ctx.fillStyle='rgba(0,0,0,.3)';B();ctx.ellipse(0,R+4,HW*.9,10,0,0,7);ctx.fill();ctx.restore();
+    V(body,-HW,-R,HW*2,R*2,['#4d535c','#2e3239','#15171b'],{wear:4,wc:'150,140,120',extra:()=>{
+      const N=16,dA=Math.PI*2/N,scr=ph*26/R,wr=a=>{const t=Math.PI*2;a=(a+Math.PI)%t;if(a<0)a+=t;return a-Math.PI};
+      /* flatten junkVol's off-center light so the face reads head-on, then shade as a cylinder */
+      const rub=ctx.createLinearGradient(0,-R,0,R);rub.addColorStop(0,'#1a1c20');rub.addColorStop(.5,'#3d434b');rub.addColorStop(1,'#1a1c20');ctx.fillStyle=rub;ctx.fillRect(-HW,-R,HW*2,R*2);
+      const side=ctx.createLinearGradient(-HW,0,HW,0);side.addColorStop(0,'rgba(8,6,4,.42)');side.addColorStop(.22,'rgba(8,6,4,0)');side.addColorStop(.78,'rgba(8,6,4,0)');side.addColorStop(1,'rgba(8,6,4,.42)');ctx.fillStyle=side;ctx.fillRect(-HW,-R,HW*2,R*2);
+      for(let i=0;i<28;i++){const a=-Math.PI/2+(i+.5)/28*Math.PI,da=Math.PI/28,y0=R*Math.sin(a-da/2),y1=R*Math.sin(a+da/2);ctx.fillStyle=`rgba(16,8,4,${.5*(1-Math.cos(a))})`;ctx.fillRect(-HW,y0,HW*2,Math.max(.4,y1-y0))}
+      const hl=ctx.createRadialGradient(0,0,4,0,0,R*.85);hl.addColorStop(0,'rgba(255,226,180,.28)');hl.addColorStop(.45,'rgba(255,200,150,.08)');hl.addColorStop(1,'rgba(255,200,150,0)');ctx.fillStyle=hl;ctx.fillRect(-HW,-R,HW*2,R*2);
+      const xEdge=y=>{const inset=3,ay=Math.abs(y),mid=R-RAD;if(ay<=mid)return HW-inset;const c=y<0?-mid:mid,d=RAD*RAD-(y-c)*(y-c);return d>0?Math.max(0,HW-RAD+Math.sqrt(d)-inset):0};
+      const map=(u,a)=>{const y=R*Math.sin(a);if(y<-R||y>R)return null;const e=xEdge(y);if(e<2)return null;return{x:-e+2*e*u,y}};
+      const poly=(a0,a1)=>{B();let on=0;const go=(u0,u1,b0,b1)=>{for(let s=0;s<=8;s++){const t=s/8,p=map(u0+(u1-u0)*t,b0+(b1-b0)*t);if(!p)continue;if(!on){ctx.moveTo(p.x,p.y);on=1}else ctx.lineTo(p.x,p.y)}};go(.08,.5,a0,a1);go(.5,.92,a1,a0)};
       ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
       for(let k=0;k<N;k++){const a0=wr(k*dA+scr),a1=a0+dA*.4;if(a1<-Math.PI/2-.3||a0>Math.PI/2+.3)continue;const fo=Math.max(0,Math.cos(Math.max(-Math.PI/2,Math.min(Math.PI/2,.5*(a0+a1)))));if(fo<.05)continue;
-        ctx.strokeStyle='#0b0c0e';ctx.lineWidth=Math.max(1.15,7.5*fo);poly(a0,a1);ctx.stroke();
-        ctx.strokeStyle='rgba(190,200,210,.32)';ctx.lineWidth=Math.max(.55,2*fo);poly(a0-4/R,a1-4/R);ctx.stroke()}
-      ctx.restore()}});
-    B();ctx.ellipse(-16,0,13,30,0,0,7);const hub=ctx.createLinearGradient(0,-30,0,30);hub.addColorStop(0,'#e3eaee');hub.addColorStop(.5,'#8d9aa3');hub.addColorStop(1,'#4d575e');ctx.fillStyle=hub;ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='rgba(45,18,6,.9)';ctx.stroke();
-    this.junkSpec(0,-30,5,26,0,.35)}
+        ctx.strokeStyle='#0b0c0e';ctx.lineWidth=Math.max(1.15,7.2*fo);poly(a0,a1);ctx.stroke();
+        ctx.strokeStyle='rgba(190,200,210,.32)';ctx.lineWidth=Math.max(.55,1.9*fo);poly(a0-4/R,a1-4/R);ctx.stroke()}
+      ctx.restore();
+      /* thin symmetric sidewall slivers */
+      const sliver=sign=>{B();const w=4.2;for(let i=0;i<=20;i++){const y=-R+i*(2*R)/20,e=xEdge(y)+3,x=sign*(e-w/2);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}for(let i=20;i>=0;i--){const y=-R+i*(2*R)/20,e=xEdge(y)+3,x=sign*(e+w/2);ctx.lineTo(x,y)}ctx.closePath();ctx.fillStyle='rgba(12,10,10,.72)';ctx.fill()};
+      sliver(-1);sliver(1)}});
+    this.junkSpec(0,-6,10,16,0,.22)}
+
   drawBlastRing(x,y,R,u){/* v14.5.8/19: blast visual sized by canister fill (BLAST_R). Visual only: damage + hitbox never change.
      v14.5.19 grander layered explosion (shockwaves + sparks + core) — stage stays put; no camera zoom payoff. */
     if(u<0||u>1.35)return;const uu=Math.min(u,1),e=1-Math.pow(1-uu,3),r=R*(.28+.72*e),fade=1-Math.max(0,(u-.85)/.5);ctx.save();ctx.translate(x,y);

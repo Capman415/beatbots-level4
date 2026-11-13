@@ -26,7 +26,7 @@ ok(Math.abs(fill(.5,12)-2.4864)<.02,'12 piano claps ≈ 2.49 (MEGA)');
 ok(fill(.7,8)>=2.99,'8 mezzo claps fill all 3 canisters');
 ok(fill(.95,4)>=2.7,'4 forte claps reach MEGA');
 
-ok(/tread-on tire rolling toward the viewer/.test(d)&&/ctx\.ellipse\(-14,0,30,62/.test(d),'toward-viewer sidewall tire restored');
+ok(/dead-on tread face rolling straight at the camera/.test(d),'head-on tire rolling straight at the camera');
 ok(!/roundRect\(-14,-62,56,124/.test(d),'protruding 56x124 side slab stays gone');
 ok(!/ctx\.arc\(0,0,58/.test(d),'v14.5.21 circular face-on tire is no longer used');
 
@@ -38,9 +38,9 @@ ok(!/BB\.text\('Answers stay up while you listen/.test(a),'no-peeking line not r
 ok(/Clap with the lights — 8 steady ta beats/.test(a),'follow cue is kid-friendly');
 
 const ver=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json'),'utf8'));
-ok(ver.version==='v14.5.23'&&ver.build==='1794301523','version.json is v14.5.23 / 1794301523');
+ok(ver.version==='v14.5.24'&&ver.build==='1794301524','version.json is v14.5.24 / 1794301524');
 const eng=fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8');
-ok(/BB\.VERSION='v14\.5\.23'/.test(eng),'engine version synced');
+ok(/BB\.VERSION='v14\.5\.24'/.test(eng),'engine version synced');
 
 if(fails){console.error(fails+' FAIL');process.exit(1)}
 console.log('v14.5.21 tests OK');

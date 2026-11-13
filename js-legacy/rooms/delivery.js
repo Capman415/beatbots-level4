@@ -133,13 +133,13 @@
     for (const d of ds) sum += 0.12 + 0.88 * clamp(d, 0, 1);
     return clamp(sum * 0.7, 0, 3);
   }, dynLevel = (f) => f >= 2.4 ? 2 : f >= 1.2 ? 1 : 0, BLAST_R = [170, 280, 460], HIT_DMG = 6;
-  const BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.1, y: H * 0.55 }, right: { x: W * 0.94, y: H * 0.76 }, high: { x: W * 0.4, y: 600 }, floor: { x: W * 0.5, y: H * 0.86 }, botL: { x: W * 0.26, y: H * 0.82 }, botR: { x: W * 0.84, y: H * 0.84 }, mid: { x: W * 0.5, y: H * 0.62 } }, throwLane = (kind, n) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? "floor" : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
+  const BOMB_LANES = ["botL", "botR", "mid"], LANE_TG = { left: { x: W * 0.1, y: H * 0.55 }, right: { x: W * 0.94, y: H * 0.76 }, high: { x: W * 0.4, y: 600 }, floor: { x: 1390, y: H * 0.86 }, botL: { x: W * 0.26, y: H * 0.82 }, botR: { x: W * 0.84, y: H * 0.84 }, mid: { x: W * 0.5, y: H * 0.62 } }, throwLane = (kind, n) => kind === "junkR" ? "right" : kind === "junkL" ? "left" : kind === "junkT" ? "high" : kind === "junkF" ? "floor" : kind === "bomb" ? BOMB_LANES[(n || 0) % 3] : "mid", DODGE_VO = { L: "dl_left", R: "dl_right", duck: "dl_duck", jump: "dl_jump", freeze: "dl_freeze" };
   const SAFE_Y = 200, throwPath = (lane, v, sx, sy) => {
     if (v < 0 || v > 1.6) return null;
     const T = LANE_TG[lane] || LANE_TG.mid, u = Math.min(v, 1), po = Math.max(0, v - 1), cam = Math.pow(u, 1.5);
     if (lane === "floor") {
       const p2 = Math.pow(u, 1.15);
-      let x2 = lerp(sx, T.x, p2), y2 = lerp(sy, T.y, p2) + po * 2400;
+      let x2 = sx, y2 = lerp(sy, T.y, p2) + po * 2400;
       const sc2 = 0.5 + 3.6 * Math.pow(u, 1.25) + po * 4;
       return { x: x2, y: y2, sc: sc2, a: y2 > H + 160 ? clamp(1 - (y2 - (H + 160)) / 280, 0, 1) : 1, fg: sc2 >= 1.7 || u >= 0.4 };
     }
@@ -152,7 +152,7 @@
   };
   const LANE_DIR = { left: -1, right: 1, high: -1, floor: -1, botL: -1, botR: 1, mid: -1 }, throwTurn = (lane, v, kind) => {
     const d = LANE_DIR[lane] || 1, u = clamp(v, 0, 1.5), e = 1 - Math.pow(1 - Math.min(u, 1), 2), po = Math.max(0, u - 1);
-    if (kind === "tire") return { rot: d * 0.1 * e, sx: 1 };
+    if (kind === "tire") return { rot: 0, sx: 1 };
     const amp = kind === "bomb" ? 0.24 : kind === "sock" ? 0.38 : 0.44, tilt = lane === "high" ? -0.12 : lane === "botL" || lane === "botR" || lane === "mid" ? 0.12 : 0;
     const rot = clamp(d * (0.12 + amp * e + 0.25 * po) + tilt * e + 0.06 * Math.sin(u * 7), -0.6, 0.6);
     return { rot, sx: kind === "bomb" ? 1 : 1 - 0.16 * Math.sin(Math.PI * Math.min(u, 1)) };
@@ -1967,7 +1967,7 @@
               ctx.restore();
             }
             if (v >= 1 && v < 1.55) {
-              const w = v - 1, al = clamp(1 - w / 0.55, 0, 1), T = LANE_TG[lane], tx = clamp(T.x, 330, W - 330), ty2 = clamp(Math.min(T.y, H - 160) - (tire ? 40 : 80), SAFE_Y + 40, H - 120);
+              const w = v - 1, al = clamp(1 - w / 0.55, 0, 1), T = LANE_TG[lane], tx = clamp(tire ? P.x : T.x, 330, W - 330), ty2 = clamp(Math.min(T.y, H - 160) - (tire ? 40 : 80), SAFE_Y + 40, H - 120);
               ctx.save();
               ctx.globalAlpha = al;
               if (kind === "bomb") {
@@ -4374,51 +4374,60 @@
       } else this.drawTireRoll(t * 8);
     }
     drawTireRoll(ph) {
-      const B = () => ctx.beginPath(), V = (p, x, y, w, h, c, o) => this.junkVol(p, x, y, w, h, c, o);
+      const B = () => ctx.beginPath(), V = (p, x, y, w, h, c, o) => this.junkVol(p, x, y, w, h, c, o), HW = 32, R2 = 62, RAD = 22;
       const body = () => {
         B();
-        ctx.moveTo(-14, -62);
-        ctx.ellipse(-14, 0, 30, 62, 0, -Math.PI / 2, Math.PI / 2, true);
-        ctx.lineTo(16, 62);
-        ctx.arc(16, 36, 26, Math.PI / 2, 0, true);
-        ctx.lineTo(42, -36);
-        ctx.arc(16, -36, 26, 0, -Math.PI / 2, true);
-        ctx.closePath();
+        ctx.roundRect(-HW, -R2, HW * 2, R2 * 2, RAD);
       };
       ctx.save();
       ctx.fillStyle = "rgba(0,0,0,.3)";
       B();
-      ctx.ellipse(0, 66, 44, 10, 0, 0, 7);
+      ctx.ellipse(0, R2 + 4, HW * 0.9, 10, 0, 0, 7);
       ctx.fill();
       ctx.restore();
-      V(body, -44, -62, 86, 124, ["#4d535c", "#2e3239", "#15171b"], { wear: 4, wc: "150,140,120", extra: () => {
-        const R2 = 62, N = 16, dA = Math.PI * 2 / N, scr = ph * 26 / R2, wr = (a) => {
+      V(body, -HW, -R2, HW * 2, R2 * 2, ["#4d535c", "#2e3239", "#15171b"], { wear: 4, wc: "150,140,120", extra: () => {
+        const N = 16, dA = Math.PI * 2 / N, scr = ph * 26 / R2, wr = (a) => {
           const t = Math.PI * 2;
           a = (a + Math.PI) % t;
           if (a < 0) a += t;
           return a - Math.PI;
         };
-        const xR = (y) => {
-          const ay = Math.abs(y);
-          if (ay <= 36) return 39;
-          const c = y < 0 ? -36 : 36, d = 26 * 26 - (y - c) * (y - c);
-          return d > 0 ? 16 + Math.sqrt(d) - 3 : 13;
-        };
-        const xL = (y) => {
-          const t = Math.min(1, Math.max(0, (Math.abs(y) - 28) / 34));
-          return -4 + t * t * 14;
-        };
+        const rub = ctx.createLinearGradient(0, -R2, 0, R2);
+        rub.addColorStop(0, "#1a1c20");
+        rub.addColorStop(0.5, "#3d434b");
+        rub.addColorStop(1, "#1a1c20");
+        ctx.fillStyle = rub;
+        ctx.fillRect(-HW, -R2, HW * 2, R2 * 2);
+        const side = ctx.createLinearGradient(-HW, 0, HW, 0);
+        side.addColorStop(0, "rgba(8,6,4,.42)");
+        side.addColorStop(0.22, "rgba(8,6,4,0)");
+        side.addColorStop(0.78, "rgba(8,6,4,0)");
+        side.addColorStop(1, "rgba(8,6,4,.42)");
+        ctx.fillStyle = side;
+        ctx.fillRect(-HW, -R2, HW * 2, R2 * 2);
         for (let i = 0; i < 28; i++) {
           const a = -Math.PI / 2 + (i + 0.5) / 28 * Math.PI, da = Math.PI / 28, y0 = R2 * Math.sin(a - da / 2), y1 = R2 * Math.sin(a + da / 2);
-          ctx.fillStyle = "rgba(16,8,4,".concat(0.45 * (1 - Math.cos(a)), ")");
-          ctx.fillRect(-44, y0, 86, Math.max(0.4, y1 - y0));
+          ctx.fillStyle = "rgba(16,8,4,".concat(0.5 * (1 - Math.cos(a)), ")");
+          ctx.fillRect(-HW, y0, HW * 2, Math.max(0.4, y1 - y0));
         }
+        const hl = ctx.createRadialGradient(0, 0, 4, 0, 0, R2 * 0.85);
+        hl.addColorStop(0, "rgba(255,226,180,.28)");
+        hl.addColorStop(0.45, "rgba(255,200,150,.08)");
+        hl.addColorStop(1, "rgba(255,200,150,0)");
+        ctx.fillStyle = hl;
+        ctx.fillRect(-HW, -R2, HW * 2, R2 * 2);
+        const xEdge = (y) => {
+          const inset = 3, ay = Math.abs(y), mid = R2 - RAD;
+          if (ay <= mid) return HW - inset;
+          const c = y < 0 ? -mid : mid, d = RAD * RAD - (y - c) * (y - c);
+          return d > 0 ? Math.max(0, HW - RAD + Math.sqrt(d) - inset) : 0;
+        };
         const map = (u, a) => {
           const y = R2 * Math.sin(a);
-          if (y < -62 || y > 62) return null;
-          const l = xL(y), r = xR(y);
-          if (r - l < 2) return null;
-          return { x: l + (r - l) * u, y };
+          if (y < -R2 || y > R2) return null;
+          const e = xEdge(y);
+          if (e < 2) return null;
+          return { x: -e + 2 * e * u, y };
         };
         const poly = (a0, a1) => {
           B();
@@ -4433,8 +4442,8 @@
               } else ctx.lineTo(p.x, p.y);
             }
           };
-          go(0, 0.58, a0, a1);
-          go(0.58, 1, a1, a0);
+          go(0.08, 0.5, a0, a1);
+          go(0.5, 0.92, a1, a0);
         };
         ctx.save();
         ctx.lineCap = "round";
@@ -4445,28 +4454,35 @@
           const fo = Math.max(0, Math.cos(Math.max(-Math.PI / 2, Math.min(Math.PI / 2, 0.5 * (a0 + a1)))));
           if (fo < 0.05) continue;
           ctx.strokeStyle = "#0b0c0e";
-          ctx.lineWidth = Math.max(1.15, 7.5 * fo);
+          ctx.lineWidth = Math.max(1.15, 7.2 * fo);
           poly(a0, a1);
           ctx.stroke();
           ctx.strokeStyle = "rgba(190,200,210,.32)";
-          ctx.lineWidth = Math.max(0.55, 2 * fo);
+          ctx.lineWidth = Math.max(0.55, 1.9 * fo);
           poly(a0 - 4 / R2, a1 - 4 / R2);
           ctx.stroke();
         }
         ctx.restore();
+        const sliver = (sign) => {
+          B();
+          const w = 4.2;
+          for (let i = 0; i <= 20; i++) {
+            const y = -R2 + i * (2 * R2) / 20, e = xEdge(y) + 3, x = sign * (e - w / 2);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          for (let i = 20; i >= 0; i--) {
+            const y = -R2 + i * (2 * R2) / 20, e = xEdge(y) + 3, x = sign * (e + w / 2);
+            ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = "rgba(12,10,10,.72)";
+          ctx.fill();
+        };
+        sliver(-1);
+        sliver(1);
       } });
-      B();
-      ctx.ellipse(-16, 0, 13, 30, 0, 0, 7);
-      const hub = ctx.createLinearGradient(0, -30, 0, 30);
-      hub.addColorStop(0, "#e3eaee");
-      hub.addColorStop(0.5, "#8d9aa3");
-      hub.addColorStop(1, "#4d575e");
-      ctx.fillStyle = hub;
-      ctx.fill();
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = "rgba(45,18,6,.9)";
-      ctx.stroke();
-      this.junkSpec(0, -30, 5, 26, 0, 0.35);
+      this.junkSpec(0, -6, 10, 16, 0, 0.22);
     }
     drawBlastRing(x, y, R2, u) {
       if (u < 0 || u > 1.35) return;
