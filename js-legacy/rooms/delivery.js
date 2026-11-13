@@ -4392,23 +4392,65 @@
       ctx.fill();
       ctx.restore();
       V(body, -44, -62, 86, 124, ["#4d535c", "#2e3239", "#15171b"], { wear: 4, wc: "150,140,120", extra: () => {
+        const R2 = 62, N = 16, dA = Math.PI * 2 / N, scr = ph * 26 / R2, wr = (a) => {
+          const t = Math.PI * 2;
+          a = (a + Math.PI) % t;
+          if (a < 0) a += t;
+          return a - Math.PI;
+        };
+        const xR = (y) => {
+          const ay = Math.abs(y);
+          if (ay <= 36) return 39;
+          const c = y < 0 ? -36 : 36, d = 26 * 26 - (y - c) * (y - c);
+          return d > 0 ? 16 + Math.sqrt(d) - 3 : 13;
+        };
+        const xL = (y) => {
+          const t = Math.min(1, Math.max(0, (Math.abs(y) - 28) / 34));
+          return -4 + t * t * 14;
+        };
+        for (let i = 0; i < 28; i++) {
+          const a = -Math.PI / 2 + (i + 0.5) / 28 * Math.PI, da = Math.PI / 28, y0 = R2 * Math.sin(a - da / 2), y1 = R2 * Math.sin(a + da / 2);
+          ctx.fillStyle = "rgba(16,8,4,".concat(0.45 * (1 - Math.cos(a)), ")");
+          ctx.fillRect(-44, y0, 86, Math.max(0.4, y1 - y0));
+        }
+        const map = (u, a) => {
+          const y = R2 * Math.sin(a);
+          if (y < -62 || y > 62) return null;
+          const l = xL(y), r = xR(y);
+          if (r - l < 2) return null;
+          return { x: l + (r - l) * u, y };
+        };
+        const poly = (a0, a1) => {
+          B();
+          let on = 0;
+          const go = (u0, u1, b0, b1) => {
+            for (let s = 0; s <= 8; s++) {
+              const t = s / 8, p = map(u0 + (u1 - u0) * t, b0 + (b1 - b0) * t);
+              if (!p) continue;
+              if (!on) {
+                ctx.moveTo(p.x, p.y);
+                on = 1;
+              } else ctx.lineTo(p.x, p.y);
+            }
+          };
+          go(0, 0.58, a0, a1);
+          go(0.58, 1, a1, a0);
+        };
         ctx.save();
         ctx.lineCap = "round";
-        for (let q = -3; q < 6; q++) {
-          const y = -62 + ((q * 26 + ph * 26) % (26 * 8) + 26 * 8) % (26 * 8) - 26;
+        ctx.lineJoin = "round";
+        for (let k = 0; k < N; k++) {
+          const a0 = wr(k * dA + scr), a1 = a0 + dA * 0.4;
+          if (a1 < -Math.PI / 2 - 0.3 || a0 > Math.PI / 2 + 0.3) continue;
+          const fo = Math.max(0, Math.cos(Math.max(-Math.PI / 2, Math.min(Math.PI / 2, 0.5 * (a0 + a1)))));
+          if (fo < 0.05) continue;
           ctx.strokeStyle = "#0b0c0e";
-          ctx.lineWidth = 8;
-          B();
-          ctx.moveTo(-6, y);
-          ctx.lineTo(16, y + 10);
-          ctx.lineTo(36, y);
+          ctx.lineWidth = Math.max(1.15, 7.5 * fo);
+          poly(a0, a1);
           ctx.stroke();
-          ctx.strokeStyle = "rgba(190,200,210,.35)";
-          ctx.lineWidth = 2;
-          B();
-          ctx.moveTo(-6, y - 4);
-          ctx.lineTo(16, y + 6);
-          ctx.lineTo(36, y - 4);
+          ctx.strokeStyle = "rgba(190,200,210,.32)";
+          ctx.lineWidth = Math.max(0.55, 2 * fo);
+          poly(a0 - 4 / R2, a1 - 4 / R2);
           ctx.stroke();
         }
         ctx.restore();

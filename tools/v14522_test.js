@@ -21,13 +21,13 @@ ok(/tire\?62\*P\.sc/.test(d),'tire ground-contact offset restored to 62');
 ok(/ellipse\(-14,0,30,62,0,-Math\.PI\/2,Math\.PI\/2,true\)/.test(d)&&!/roundRect\(-14,-62,56,124/.test(d),'unified sidewall+tread path, no separate 56x124 volume');
 
 const ver=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json'),'utf8'));
-ok(ver.version==='v14.5.22'&&ver.build==='1794301522','version.json is v14.5.22 / 1794301522');
+ok(ver.version==='v14.5.23'&&ver.build==='1794301523','version.json is v14.5.23 / 1794301523');
 const eng=fs.readFileSync(path.join(__dirname,'../js/engine.js'),'utf8');
-ok(/BB\.VERSION='v14\.5\.22'/.test(eng),'engine version synced');
+ok(/BB\.VERSION='v14\.5\.23'/.test(eng),'engine version synced');
 const idx=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-ok((idx.match(/1794301522/g)||[]).length>=2,'index.html build synced');
+ok((idx.match(/1794301523/g)||[]).length>=2,'index.html build synced');
 const sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
-ok(/bb-1794301522/.test(sw),'sw cache synced');
+ok(/bb-1794301523/.test(sw),'sw cache synced');
 
 // other v14.5.21 work stays
 ok(/bb_sj8/.test(d)&&/Even my static has better timing than that!/.test(d),'intro line kept');
