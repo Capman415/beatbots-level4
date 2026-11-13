@@ -26,25 +26,22 @@ BB.ctx = ctx;
 {
   const P = CanvasRenderingContext2D.prototype, dSB = Object.getOwnPropertyDescriptor(P, "shadowBlur"), dF = Object.getOwnPropertyDescriptor(P, "filter");
   BB.tierGuard = (g) => {
-    if (dSB)
-      Object.defineProperty(g, "shadowBlur", { get() {
-        return dSB.get.call(this);
-      }, set(v) {
-        dSB.set.call(this, BB.tier === 0 ? 0 : v);
-      } });
-  };
-  if (dSB)
-    Object.defineProperty(ctx, "shadowBlur", { get() {
+    if (dSB) Object.defineProperty(g, "shadowBlur", { get() {
       return dSB.get.call(this);
     }, set(v) {
       dSB.set.call(this, BB.tier === 0 ? 0 : v);
     } });
-  if (dF)
-    Object.defineProperty(ctx, "filter", { get() {
-      return dF.get.call(this);
-    }, set(v) {
-      dF.set.call(this, BB.tier === 0 ? "none" : v);
-    } });
+  };
+  if (dSB) Object.defineProperty(ctx, "shadowBlur", { get() {
+    return dSB.get.call(this);
+  }, set(v) {
+    dSB.set.call(this, BB.tier === 0 ? 0 : v);
+  } });
+  if (dF) Object.defineProperty(ctx, "filter", { get() {
+    return dF.get.call(this);
+  }, set(v) {
+    dF.set.call(this, BB.tier === 0 ? "none" : v);
+  } });
 }
 BB._sw = [(g) => ctx = g];
 BB.withCtx = (g, fn) => {
@@ -58,20 +55,17 @@ BB.withCtx = (g, fn) => {
     BB.ctx = o;
   }
 };
-BB.VERSION = "v14.5.20";
+BB.VERSION = "v14.5.21";
 BB.GRADES = ["K", "1", "2", "3", "4", "5", "6"];
 (() => {
   let g = "2";
   try {
     const s = localStorage.getItem("bb_grade");
-    if (BB.GRADES.includes(s))
-      g = s;
-    else if (localStorage.getItem("bb_kmode") === "1")
-      g = "K";
+    if (BB.GRADES.includes(s)) g = s;
+    else if (localStorage.getItem("bb_kmode") === "1") g = "K";
     else {
       const c = JSON.parse(localStorage.getItem("bb_sessclass") || "null");
-      if (BB.GRADES.includes(c))
-        g = c;
+      if (BB.GRADES.includes(c)) g = c;
     }
   } catch (e) {
   }
@@ -87,8 +81,7 @@ BB.syncK = () => {
 };
 BB.syncK();
 BB.setGrade = (v) => {
-  if (!BB.GRADES.includes(v))
-    return;
+  if (!BB.GRADES.includes(v)) return;
   BB.grade = v;
   BB.syncK();
   try {
@@ -97,8 +90,7 @@ BB.setGrade = (v) => {
   } catch (e) {
   }
   ;
-  if (BB.session && BB.session.setGrade)
-    BB.session.setGrade(v);
+  if (BB.session && BB.session.setGrade) BB.session.setGrade(v);
 };
 BB.setK = (v) => BB.setGrade(v ? "K" : BB.grade === "K" || BB.grade === "1" ? "2" : BB.grade);
 BB.gradeBadge = () => {
@@ -108,11 +100,9 @@ BB.kBadge = () => {
 BB.drawGradeHint = () => {
   try {
     const sc = BB.scene && BB.scene.constructor && BB.scene.constructor.name;
-    if (!sc || sc === "TitleScene" || sc === "MicScene" || sc === "GradePickScene")
-      return;
+    if (!sc || sc === "TitleScene" || sc === "MicScene" || sc === "GradePickScene") return;
     const g = BB.grade;
-    if (g == null || g === "")
-      return;
+    if (g == null || g === "") return;
     const dpr = BB.dpr || 1, x = 6, y = cv.height / dpr - 4;
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -136,8 +126,7 @@ BB.lowDev = /Silk|KF[A-Z]{2,4}\b|Kindle|LeapFrog|LeapPad/i.test(UA) || /Android/
 BB.tier = BB.lowDev ? 0 : BB.phone ? 1 : 2;
 try {
   const f = new URLSearchParams(location.search).get("tier");
-  if (f != null && f !== "")
-    BB.tier = +f;
+  if (f != null && f !== "") BB.tier = +f;
   BB.tierLock = f != null && f !== "";
 } catch (e) {
 }
@@ -210,27 +199,22 @@ cv.addEventListener("pointerdown", (e) => {
   ptr.y = p.y;
   ptr.down = true;
   BB.unlockAudio();
-  if (mic.state === "off" && !BB.noAutoMic)
-    BB.startMic();
-  if (!(BB.scene && BB.scene.pdown && !BB.paused && BB.scene.pdown(p)))
-    clickAt(p);
+  if (mic.state === "off" && !BB.noAutoMic) BB.startMic();
+  if (!(BB.scene && BB.scene.pdown && !BB.paused && BB.scene.pdown(p))) clickAt(p);
 });
 cv.addEventListener("pointermove", (e) => {
   const p = toLogical(e);
   ptr.x = p.x;
   ptr.y = p.y;
-  if (BB.scene && BB.scene.pmove && !BB.paused)
-    BB.scene.pmove(p);
+  if (BB.scene && BB.scene.pmove && !BB.paused) BB.scene.pmove(p);
 });
 addEventListener("pointercancel", (e) => {
   ptr.down = false;
-  if (BB.scene && BB.scene.pup)
-    BB.scene.pup(toLogical(e));
+  if (BB.scene && BB.scene.pup) BB.scene.pup(toLogical(e));
 });
 addEventListener("pointerup", (e) => {
   ptr.down = false;
-  if (BB.scene && BB.scene.pup && (e.target === cv || BB.scene.pmove))
-    BB.scene.pup(toLogical(e));
+  if (BB.scene && BB.scene.pup && (e.target === cv || BB.scene.pmove)) BB.scene.pup(toLogical(e));
 });
 const keys = [];
 addEventListener("keydown", (e) => keys.push(e.key));
@@ -239,8 +223,7 @@ let hits = [];
 BB.button = (x, y, w, h, label, o = {}) => {
   var _a;
   if (o.style === "none") {
-    if (!o.disabled)
-      hits.push({ x, y, w, h, id: o.id || label, cb: o.onClick });
+    if (!o.disabled) hits.push({ x, y, w, h, id: o.id || label, cb: o.onClick });
     return;
   }
   const hover = !o.disabled && ptr.x > x && ptr.x < x + w && ptr.y > y && ptr.y < y + h;
@@ -280,13 +263,10 @@ BB.button = (x, y, w, h, label, o = {}) => {
   }
   const fs = o.size || 40;
   BB.btnText(label, cx + ((_a = o.labelDx) != null ? _a : o.icon ? fs * 0.55 : 0), cy + (o.sub ? -fs * 0.3 : 2), fs, st, o.font || "Lilita One");
-  if (o.sub)
-    BB.btnText(o.sub, cx, cy + fs * 0.6, fs * 0.5, st, "Lilita One", 1);
-  if (o.icon)
-    o.icon(cx - BB.measure(label, fs) / 2 - fs * 0.2, cy);
+  if (o.sub) BB.btnText(o.sub, cx, cy + fs * 0.6, fs * 0.5, st, "Lilita One", 1);
+  if (o.icon) o.icon(cx - BB.measure(label, fs) / 2 - fs * 0.2, cy);
   ctx.restore();
-  if (!o.disabled)
-    hits.push({ x, y, w, h, id: o.id || label, cb: o.onClick });
+  if (!o.disabled) hits.push({ x, y, w, h, id: o.id || label, cb: o.onClick });
 };
 const BTN_INK = {
   green: { f: ["#f1faf2", "#e4f8e6", "#d3f0da"], e: "#1d5a2c", lo: "rgba(10,50,20,.55)", hi: "rgba(255,255,255,.14)" },
@@ -296,7 +276,7 @@ const BTN_INK = {
 };
 BB.btnText = (t, x, y, s, st, font = "Lilita One", sub) => {
   let k = BTN_INK[st] || BTN_INK.cream;
-  ctx.font = `${s}px '${font}'`;
+  ctx.font = "".concat(s, "px '").concat(font, "'");
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.lineJoin = "round";
@@ -323,7 +303,7 @@ BB.logoText = (t, cx, cy, s, o = {}) => {
   const key = t + s + (o.face || "") + (o.maxW || 0) + (o.matte ? "m" : "");
   let c = LT[key];
   if (!c) {
-    const f = `${s}px '${o.font || "Rammetto One"}'`, m = document.createElement("canvas").getContext("2d");
+    const f = "".concat(s, "px '").concat(o.font || "Rammetto One", "'"), m = document.createElement("canvas").getContext("2d");
     m.font = f;
     let tw = m.measureText(t).width;
     const sc = o.maxW && tw + s * 0.4 > o.maxW ? o.maxW / (tw + s * 0.4) : 1;
@@ -369,7 +349,7 @@ BB.logoText = (t, cx, cy, s, o = {}) => {
     g.fillStyle = fg;
     g.fillText(t, X - s * 0.01, Y - s * 0.01);
     const gl = g.createLinearGradient(0, Y - s * 0.45, 0, Y);
-    gl.addColorStop(0, `rgba(255,255,255,${o.matte ? 0.14 : 0.75})`);
+    gl.addColorStop(0, "rgba(255,255,255,".concat(o.matte ? 0.14 : 0.75, ")"));
     gl.addColorStop(1, "rgba(255,255,255,0)");
     g.fillStyle = gl;
     g.fillRect(0, Y - s * 0.5, c.width / sc, s * (o.matte ? 0.18 : 0.32));
@@ -423,11 +403,11 @@ BB.rrect = (x, y, w, h, r, fill, stroke, lw) => {
   }
 };
 BB.measure = (t, s, f = "Lilita One") => {
-  ctx.font = `${s}px '${f}'`;
+  ctx.font = "".concat(s, "px '").concat(f, "'");
   return ctx.measureText(t).width;
 };
 BB.ctext = (t, x, y, s, fill, font = "Rammetto One") => {
-  ctx.font = `${s}px '${font}'`;
+  ctx.font = "".concat(s, "px '").concat(font, "'");
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   const m = ctx.measureText(t);
@@ -435,14 +415,14 @@ BB.ctext = (t, x, y, s, fill, font = "Rammetto One") => {
   ctx.fillText(t, x + (m.actualBoundingBoxLeft - m.actualBoundingBoxRight) / 2, y + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
 };
 BB.text = (t, x, y, s, fill, o = {}) => {
-  ctx.font = `${s}px '${o.font || "Lilita One"}'`;
+  ctx.font = "".concat(s, "px '").concat(o.font || "Lilita One", "'");
   ctx.textAlign = o.align || "center";
   ctx.textBaseline = "middle";
   if (o.maxW) {
     const m = ctx.measureText(t).width;
     if (m > o.maxW) {
       s = s * o.maxW / m;
-      ctx.font = `${s}px '${o.font || "Lilita One"}'`;
+      ctx.font = "".concat(s, "px '").concat(o.font || "Lilita One", "'");
     }
   }
   if (o.stroke) {
@@ -463,14 +443,12 @@ const BVC = /* @__PURE__ */ new Map();
 BB.bevelCache = true;
 BB.bevel = (x, y, w, h, r, cols) => {
   const T = ctx.getTransform();
-  if (!BB.bevelCache || T.b || T.c || T.a !== T.d || !(T.a > 0))
-    return bevelLive(x, y, w, h, r, cols);
+  if (!BB.bevelCache || T.b || T.c || T.a !== T.d || !(T.a > 0)) return bevelLive(x, y, w, h, r, cols);
   const M = 40, s = T.a, X0 = T.a * (x - M) + T.e, Y0 = T.d * (y - M) + T.f, ix = Math.floor(X0), iy = Math.floor(Y0), fx = +(X0 - ix).toFixed(3), fy = +(Y0 - iy).toFixed(3);
   const k = w + "|" + h + "|" + r + "|" + (cols ? cols.join(",") : "") + "|" + s.toFixed(4) + "|" + fx + "|" + fy + "|" + BB.tier;
   let c = BVC.get(k);
   if (!c) {
-    if (BVC.size > 400)
-      BVC.clear();
+    if (BVC.size > 400) BVC.clear();
     c = document.createElement("canvas");
     c.width = Math.ceil((w + M * 2) * s + 2);
     c.height = Math.ceil((h + M * 2) * s + 2);
@@ -532,13 +510,11 @@ BB.plaque = (cx, cy, w, h, txt, size, col = "#28403c", o = {}) => {
     BB.rivet(x + 9, cy, 3.2);
     BB.rivet(x + w - 9, cy, 3.2);
   }
-  if (txt)
-    BB.text(txt, cx, cy + 1, size, col, { maxW: w - (w > 90 ? 30 : 12), stroke: o.stroke, font: o.font });
+  if (txt) BB.text(txt, cx, cy + 1, size, col, { maxW: w - (w > 90 ? 30 : 12), stroke: o.stroke, font: o.font });
 };
 BB.panelRivets = (x, y, w, h, r) => {
   const ix = Math.max(14, r * 0.95), iy = 8.5, s = 3.4;
-  for (const [rx, ry] of [[x + ix, y + iy], [x + w - ix, y + iy], [x + ix, y + h - iy], [x + w - ix, y + h - iy]])
-    BB.rivet(rx, ry, s);
+  for (const [rx, ry] of [[x + ix, y + iy], [x + w - ix, y + iy], [x + ix, y + h - iy], [x + w - ix, y + h - iy]]) BB.rivet(rx, ry, s);
 };
 BB.panel = (x, y, w, h, r = 30) => {
   BB.bevel(x, y, w, h, r);
@@ -573,8 +549,7 @@ BB.burst = (x, y, n, o = {}) => {
   var _a, _b, _c;
   if (BB.tier < 2) {
     n = Math.ceil(n * (BB.tier ? 0.4 : 0.25));
-    if (parts.length > (BB.tier ? 70 : 40))
-      return;
+    if (parts.length > (BB.tier ? 70 : 40)) return;
   }
   for (let i = 0; i < n; i++) {
     const a = ((_a = o.a0) != null ? _a : 0) + ((_b = o.spread) != null ? _b : Math.PI * 2) * Math.random(), sp = (o.speed || 400) * (0.4 + Math.random() * 0.8);
@@ -598,8 +573,7 @@ BB.updParts = (dt) => {
 };
 BB.drawParts = (world = 0) => {
   for (const p of parts) {
-    if ((p.w || 0) !== world)
-      continue;
+    if ((p.w || 0) !== world) continue;
     const k = 1 - p.age / p.life;
     ctx.globalAlpha = Math.min(1, k * 1.5);
     ctx.fillStyle = p.col;
@@ -636,13 +610,13 @@ let shakeAmt = 0;
 BB.shake = (a) => shakeAmt = Math.min(6, Math.max(shakeAmt, a));
 function silentAC() {
   const t0 = performance.now(), node = () => new Proxy(function() {
-  }, { get: (o, k) => k === "connect" ? () => node() : k === "gain" || k === "frequency" || k === "Q" || k === "detune" || k === "playbackRate" || k === "offset" ? { value: 0, setValueAtTime() {
+  }, { get: (o, k) => k === "connect" ? (() => node()) : k === "gain" || k === "frequency" || k === "Q" || k === "detune" || k === "playbackRate" || k === "offset" ? { value: 0, setValueAtTime() {
   }, linearRampToValueAtTime() {
   }, exponentialRampToValueAtTime() {
   }, setTargetAtTime() {
   }, cancelScheduledValues() {
-  } } : () => node(), set: () => true });
-  return new Proxy({}, { get: (o, k) => k === "currentTime" ? (performance.now() - t0) / 1e3 : k === "state" ? "running" : k === "sampleRate" ? 44100 : k === "destination" ? node() : k === "resume" || k === "suspend" || k === "close" ? () => Promise.resolve() : k === "decodeAudioData" ? () => Promise.reject(new Error("no audio")) : k === "createBuffer" ? (c, n, r) => ({ getChannelData: () => new Float32Array(n), length: n, sampleRate: r, duration: n / r }) : k === "outputLatency" || k === "baseLatency" ? 0 : () => node() });
+  } } : (() => node()), set: () => true });
+  return new Proxy({}, { get: (o, k) => k === "currentTime" ? (performance.now() - t0) / 1e3 : k === "state" ? "running" : k === "sampleRate" ? 44100 : k === "destination" ? node() : k === "resume" || k === "suspend" || k === "close" ? (() => Promise.resolve()) : k === "decodeAudioData" ? (() => Promise.reject(new Error("no audio"))) : k === "createBuffer" ? ((c, n, r) => ({ getChannelData: () => new Float32Array(n), length: n, sampleRate: r, duration: n / r })) : k === "outputLatency" || k === "baseLatency" ? 0 : (() => node()) });
 }
 const AC = window.AudioContext || window.webkitAudioContext;
 let ac;
@@ -680,8 +654,7 @@ BB.unlockAudio = () => {
     }
   }
 };
-for (const ev of ["touchend", "click", "keydown", "pointerup"])
-  addEventListener(ev, () => BB.unlockAudio(), { passive: true });
+for (const ev of ["touchend", "click", "keydown", "pointerup"]) addEventListener(ev, () => BB.unlockAudio(), { passive: true });
 const outAn = ac.createAnalyser();
 outAn.fftSize = 256;
 outAn.smoothingTimeConstant = 0;
@@ -690,8 +663,7 @@ const outBuf = new Float32Array(outAn.fftSize);
 BB.outRms = () => {
   outAn.getFloatTimeDomainData(outBuf);
   let s = 0;
-  for (let i = 0; i < outBuf.length; i++)
-    s += outBuf[i] * outBuf[i];
+  for (let i = 0; i < outBuf.length; i++) s += outBuf[i] * outBuf[i];
   return Math.sqrt(s / outBuf.length);
 };
 const liftBus = ac.createGain();
@@ -703,8 +675,7 @@ setInterval(() => {
 const noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
 {
   const d = noiseBuf.getChannelData(0);
-  for (let i = 0; i < d.length; i++)
-    d[i] = Math.random() * 2 - 1;
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
 }
 function env(g, t, a, peak, dec) {
   g.gain.setValueAtTime(1e-4, t);
@@ -716,8 +687,7 @@ function osc(type, f, t, dur, peak, f2, dest = sfxBus) {
   const o = ac.createOscillator(), g = ac.createGain();
   o.type = type;
   o.frequency.setValueAtTime(f, t);
-  if (f2)
-    o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
   env(g, t, 4e-3, peak, dur);
   o.connect(g).connect(dest);
   o.start(t);
@@ -729,8 +699,7 @@ function noise(t, dur, peak, ftype, f, q = 1, f2) {
   s.buffer = noiseBuf;
   fl.type = ftype;
   fl.frequency.setValueAtTime(f, t);
-  if (f2)
-    fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
   fl.Q.value = q;
   env(g, t, 3e-3, peak, dur);
   s.connect(fl).connect(g).connect(sfxBus);
@@ -743,8 +712,7 @@ const DR = {};
 }));
 function drum(n, t, v = 1, rate = 1) {
   const b = DR[n];
-  if (!b)
-    return false;
+  if (!b) return false;
   BB.selfSound(t, Math.min(0.5, b.duration), null);
   const s = ac.createBufferSource(), g = ac.createGain();
   s.buffer = b;
@@ -762,8 +730,7 @@ BB.drum = drum;
 BB.sfx = {
   // v13.0 packing playback voices (robot/factory): ka-chunk ta, double blips ti-ti, quad blips tika-tika, hum for long notes, soft hiss rest
   pkTa: (t = now()) => {
-    if (drum("box", t, 1.1))
-      return;
+    if (drum("box", t, 1.1)) return;
     if (drum("kick", t, 0.9)) {
       drum("snare", t, 0.3);
       return;
@@ -772,17 +739,13 @@ BB.sfx = {
     osc("square", 120, t, 0.13, 0.16, 60);
   },
   pkBlip: (t = now(), f = 1100) => {
-    if (drum("boxtap", t, 1, Math.min(1.25, Math.max(0.85, f / 1100))))
-      return;
-    if (drum("hat", t, 0.6, f / 1100))
-      return;
+    if (drum("boxtap", t, 1, Math.min(1.25, Math.max(0.85, f / 1100)))) return;
+    if (drum("hat", t, 0.6, f / 1100)) return;
     osc("square", f, t, 0.05, 0.09, f * 0.8);
   },
   pkHum: (t = now(), d = 0.6) => {
-    if (drum("boxlo", t, 1.1))
-      return;
-    if (drum("tomlo", t, 0.8))
-      return;
+    if (drum("boxlo", t, 1.1)) return;
+    if (drum("tomlo", t, 0.8)) return;
     noise(t, 0.06, 0.3, "lowpass", 2e3, 1, 300);
     osc("sawtooth", 196, t, d, 0.07, 180);
     osc("square", 98, t, d * 0.8, 0.05);
@@ -800,13 +763,11 @@ BB.sfx = {
   tink: (t = now(), v = 1, quiet) => {
     osc("triangle", 2200, t, 0.18, 0.22 * v);
     osc("sine", 3300, t, 0.12, 0.1 * v);
-    if (!quiet)
-      noise(t, 0.04, 0.15 * v, "bandpass", 4e3, 3);
+    if (!quiet) noise(t, 0.04, 0.15 * v, "bandpass", 4e3, 3);
   },
   // quiet: no noise burst (cave-in whisper claps)
   crack: (t = now()) => {
-    if (drum("snare", t, 0.9))
-      return;
+    if (drum("snare", t, 0.9)) return;
     noise(t, 0.25, 0.5, "lowpass", 2500, 1, 300);
     osc("square", 140, t, 0.12, 0.15, 60);
   },
@@ -837,8 +798,7 @@ BB.sfx = {
     noise(t, 0.9, 0.18, "highpass", 3e3);
   },
   burp: (t = now()) => {
-    if (drum("tomlo", t, 0.7, 0.7))
-      return;
+    if (drum("tomlo", t, 0.7, 0.7)) return;
     osc("sawtooth", 110, t, 0.45, 0.25, 70);
     noise(t, 0.4, 0.1, "lowpass", 400);
   },
@@ -846,8 +806,7 @@ BB.sfx = {
     noise(t, d, 0.3, "bandpass", 300, 2, 3e3);
   },
   bonk: (t = now()) => {
-    if (drum("tom", t, 0.8))
-      return;
+    if (drum("tom", t, 0.8)) return;
     osc("square", 600, t, 0.15, 0.18, 150);
     osc("sine", 300, t, 0.2, 0.25, 120);
   },
@@ -855,14 +814,12 @@ BB.sfx = {
     osc("triangle", 1200 + Math.random() * 600, t, 0.06, 0.12);
   },
   clunk: (t = now()) => {
-    if (drum("tomlo", t, 0.8, 0.8))
-      return;
+    if (drum("tomlo", t, 0.8, 0.8)) return;
     noise(t, 0.18, 0.4, "lowpass", 600);
     osc("square", 90, t, 0.15, 0.2, 50);
   },
   alarm: (t = now()) => {
-    for (let i = 0; i < 3; i++)
-      osc("sawtooth", 500, t + i * 0.4, 0.35, 0.12, 900);
+    for (let i = 0; i < 3; i++) osc("sawtooth", 500, t + i * 0.4, 0.35, 0.12, 900);
   },
   pop: (t = now()) => {
     osc("sine", 400, t, 0.12, 0.25, 1400);
@@ -877,8 +834,7 @@ BB.sfx = {
       drum("snare", t + 0.16, 0.4, 1.3);
       return;
     }
-    for (let i = 0; i < 5; i++)
-      osc("square", 200 + Math.random() * 1500, t + i * 0.04, 0.04, 0.06);
+    for (let i = 0; i < 5; i++) osc("square", 200 + Math.random() * 1500, t + i * 0.04, 0.04, 0.06);
   },
   fanfare: (t = now()) => {
     [[523, 0], [659, 0.15], [784, 0.3], [1046, 0.45], [784, 0.7], [1046, 0.85]].forEach(([f, d]) => {
@@ -948,31 +904,27 @@ BB.celebrate = (o = {}) => {
     s.buffer = fanBuf;
     s.connect(g).connect(sfxBus);
     s.start();
-  } else
-    BB.sfx.fanfare();
+  } else BB.sfx.fanfare();
   BB.cele = { t: BB.t, next: o.next || "", noJr: !!o.noJr };
 };
 BB.drawCelebrate = () => {
   const c = BB.cele;
-  if (!c)
-    return;
+  if (!c) return;
   const t = BB.t - c.t;
   if (t > 9) {
     BB.cele = null;
     return;
   }
   const cols = ["#ffe066", "#6ee678", "#fff", "#e65046", "#5ac8fa", "#ff9ad5"];
-  for (const [tt, x] of [[0, W * 0.2], [0.35, W * 0.8], [0.8, W * 0.5], [1.5, W * 0.3], [2.1, W * 0.7], [3, W * 0.5]])
-    if (t >= tt && !c["b" + tt]) {
-      c["b" + tt] = 1;
-      BB.burst(x, H * 0.25, 45, { cols, kind: Math.random() < 0.5 ? "star" : "spark", size: 15, speed: 900, g: 500, life: 2.2, up: 300 });
-    }
+  for (const [tt, x] of [[0, W * 0.2], [0.35, W * 0.8], [0.8, W * 0.5], [1.5, W * 0.3], [2.1, W * 0.7], [3, W * 0.5]]) if (t >= tt && !c["b" + tt]) {
+    c["b" + tt] = 1;
+    BB.burst(x, H * 0.25, 45, { cols, kind: Math.random() < 0.5 ? "star" : "spark", size: 15, speed: 900, g: 500, life: 2.2, up: 300 });
+  }
   if (t > 1.2 && t < 5.5 && BB.staticJr && !c.noJr) {
     const k = (t - 1.2) / 3.6, x = -120 + k * (W + 260), y = H - 60;
     BB.contactShadow(x, y, 50, 0.4);
     BB.staticJr(x, y, 120, { spd: 420, run: 1, flip: false, rot: Math.sin(t * 20) * 0.06 });
-    if (BB.q && Math.random() < 0.5)
-      BB.burst(x - 40, y - 6, 2, { cols: ["rgba(220,200,170,.8)"], kind: "dust", size: 8, speed: 80, g: -30, life: 0.5 });
+    if (BB.q && Math.random() < 0.5) BB.burst(x - 40, y - 6, 2, { cols: ["rgba(220,200,170,.8)"], kind: "dust", size: 8, speed: 80, g: -30, life: 0.5 });
     if (c.next && k < 0.85) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, (t - 1.2) * 3);
@@ -985,8 +937,7 @@ const VO = {};
 BB.voText = {};
 BB.caption = null;
 BB.loadVO = async (list) => {
-  for (const [k, txt, who] of list)
-    BB.voText[k] = { txt, who };
+  for (const [k, txt, who] of list) BB.voText[k] = { txt, who };
   let i = 0;
   const one = async () => {
     while (i < list.length) {
@@ -996,8 +947,7 @@ BB.loadVO = async (list) => {
         const ab = await r.arrayBuffer();
         VO[k] = await new Promise((res, rej) => {
           const p = ac.decodeAudioData(ab, res, rej);
-          if (p && p.then)
-            p.then(res, rej);
+          if (p && p.then) p.then(res, rej);
         });
       } catch (e) {
       }
@@ -1021,18 +971,15 @@ BB.say = (k, o = {}) => {
     s.buffer = b;
     s.connect(voBus);
     s.start();
-    if (!o.overlap)
-      voSrc = s;
+    if (!o.overlap) voSrc = s;
   }
-  if (!o.nocap)
-    BB.caption = { txt: info.txt, who: info.who, until: BB.t + dur + 0.4, start: BB.t };
+  if (!o.nocap) BB.caption = { txt: info.txt, who: info.who, until: BB.t + dur + 0.4, start: BB.t };
   BB.talking = { who: info.who, until: BB.t + dur, start: BB.t, dur };
   return dur;
 };
 BB.voBlockUntil = () => {
   const T = BB.talking;
-  if (!T)
-    return 0;
+  if (!T) return 0;
   const f = { k1: 0.55, m: 0.72, u: 0.88 }[BB.gradeBand()];
   return (T.start != null ? T.start : T.until - (T.dur || 0)) + (T.dur != null ? T.dur : Math.max(0, T.until - (T.start || 0))) * f;
 };
@@ -1043,8 +990,7 @@ const sensSteps = [0.5, 0.7, 1, 1.4, 2, 2.8];
 mic.sensIdx = 2;
 try {
   const v = +localStorage.getItem("bb_sens");
-  if (v >= 0 && v <= 5 && localStorage.getItem("bb_sens") !== null)
-    mic.sensIdx = v;
+  if (v >= 0 && v <= 5 && localStorage.getItem("bb_sens") !== null) mic.sensIdx = v;
 } catch (e) {
 }
 BB.setSens = (i) => {
@@ -1055,16 +1001,14 @@ BB.setSens = (i) => {
   }
 };
 BB.startMic = async () => {
-  if (mic.starting)
-    return mic.starting;
+  if (mic.starting) return mic.starting;
   mic.state = "asking";
   mic.err = "";
   ac.resume().catch(() => {
   });
   return mic.starting = (async () => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
-        throw { name: "NoSupport" };
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw { name: "NoSupport" };
       const st = await MicCore.start(true, BB.aec);
       mic.ac = MicCore.ctx;
       mic.stream = st;
@@ -1077,18 +1021,15 @@ BB.startMic = async () => {
         }
       } catch (e) {
       }
-      if (mic.track)
-        mic.track.onended = () => {
-          mic.ok = false;
-          mic.state = "lost";
-          mic.err = "Microphone disconnected. Tap MIC SETUP to turn it back on.";
-        };
+      if (mic.track) mic.track.onended = () => {
+        mic.ok = false;
+        mic.state = "lost";
+        mic.err = "Microphone disconnected. Tap MIC SETUP to turn it back on.";
+      };
       mic.ok = true;
       mic.state = "on";
-      if (BB.MLP && BB.MLP.on)
-        BB.MLP.init();
-      if (window.C96)
-        C96.start();
+      if (BB.MLP && BB.MLP.on) BB.MLP.init();
+      if (window.C96) C96.start();
       return true;
     } catch (e) {
       const n = e && e.name;
@@ -1102,36 +1043,29 @@ BB.startMic = async () => {
   })();
 };
 BB.ensureMic = () => {
-  if (ac.state !== "running")
-    ac.resume().catch(() => {
-    });
-  if (MicCore.ctx && MicCore.ctx.state !== "running")
-    MicCore.ctx.resume().catch(() => {
-    });
+  if (ac.state !== "running") ac.resume().catch(() => {
+  });
+  if (MicCore.ctx && MicCore.ctx.state !== "running") MicCore.ctx.resume().catch(() => {
+  });
   mic.onsets = [];
   mic.prev = 0;
 };
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && !BB.paused)
-    BB.ensureMic();
+  if (!document.hidden && !BB.paused) BB.ensureMic();
 });
 const selfWins = [];
 BB.selfSound = (t, dur, freqs) => {
   selfWins.push({ t, e: t + dur, freqs });
-  if (window.ClapDet)
-    ClapDet.TickLat.note(t, dur, freqs);
-  if (selfWins.length > 200)
-    selfWins.splice(0, selfWins.length - 200);
+  if (window.ClapDet) ClapDet.TickLat.note(t, dur, freqs);
+  if (selfWins.length > 200) selfWins.splice(0, selfWins.length - 200);
 };
 mic.lat = null;
 {
   let a = false;
   try {
     const q = new URLSearchParams(location.search).get("aec"), l = localStorage.getItem("bb_aec");
-    if (l != null)
-      a = l === "1";
-    if (q != null)
-      a = q === "1";
+    if (l != null) a = l === "1";
+    if (q != null) a = q === "1";
   } catch (e) {
   }
   BB.aec = a;
@@ -1139,18 +1073,15 @@ mic.lat = null;
 BB.micLat = () => micLat();
 function micLat() {
   const TL = window.ClapDet && ClapDet.TickLat;
-  if (TL && TL.heard(ac.currentTime))
-    return TL.lat;
+  if (TL && TL.heard(ac.currentTime)) return TL.lat;
   return mic.lat != null ? mic.lat : (ac.outputLatency || ac.baseLatency || 0.02) + (MicCore.ctx && MicCore.ctx.baseLatency || 0.01) + 0.03;
 }
 let fbin = null, nonTonalFloor = 1e-9;
 const ALLF = [880, 1320];
 function nonTonalEnergy(freqs) {
   const an = MicCore.an;
-  if (!an)
-    return 0;
-  if (!fbin || fbin.length !== an.frequencyBinCount)
-    fbin = new Float32Array(an.frequencyBinCount);
+  if (!an) return 0;
+  if (!fbin || fbin.length !== an.frequencyBinCount) fbin = new Float32Array(an.frequencyBinCount);
   an.getFloatFrequencyData(fbin);
   const hz = MicCore.ctx.sampleRate / an.fftSize;
   let e = 0, tot = 0;
@@ -1158,12 +1089,9 @@ function nonTonalEnergy(freqs) {
     const f = i * hz, pw = Math.pow(10, fbin[i] / 10);
     tot += pw;
     if (freqs && freqs.some((b) => {
-      for (let k = 1; k <= 5; k++)
-        if (Math.abs(f - b * k) < 90)
-          return true;
+      for (let k = 1; k <= 5; k++) if (Math.abs(f - b * k) < 90) return true;
       return false;
-    }))
-      continue;
+    })) continue;
     e += pw;
   }
   nonTonalEnergy.frac = tot > 0 ? e / tot : 0;
@@ -1173,22 +1101,18 @@ function selfCheck(T) {
   const L = micLat();
   let tonal = null;
   for (const w of selfWins) {
-    if (T < w.t + L - 0.04)
-      continue;
+    if (T < w.t + L - 0.04) continue;
     if (!w.freqs) {
-      if (T <= Math.min(w.e, w.t + 0.06) + L + 0.05)
-        return "hard";
+      if (T <= Math.min(w.e, w.t + 0.06) + L + 0.05) return "hard";
       continue;
     }
-    if (T <= w.e + L + 0.06)
-      (tonal = tonal || []).push(...w.freqs);
+    if (T <= w.e + L + 0.06) (tonal = tonal || []).push(...w.freqs);
   }
   return tonal;
 }
 BB.selfWins = selfWins;
 mic.update = (dt) => {
-  if (!mic.ok || BB.paused)
-    return;
+  if (!mic.ok || BB.paused) return;
   {
     const TL = window.ClapDet && ClapDet.TickLat;
     if (TL && TL.active() && MicCore.an) {
@@ -1199,14 +1123,12 @@ mic.update = (dt) => {
         const k = Math.round(f / hz);
         return Math.max(fb[k - 1], fb[k], fb[k + 1]);
       });
-      if (TL.lat != null && TL.lat !== was && window.GroupGate)
-        GroupGate.setLat(TL.lat);
+      if (TL.lat != null && TL.lat !== was && window.GroupGate) GroupGate.setLat(TL.lat);
     }
   }
   const r = MicCore.read();
   const rms = r.rms;
-  if (r.max >= 0.98)
-    mic.clipN = (mic.clipN || 0) + 1;
+  if (r.max >= 0.98) mic.clipN = (mic.clipN || 0) + 1;
   mic.rms = rms;
   mic.raw = rms;
   mic.max = r.max;
@@ -1225,8 +1147,7 @@ mic.update = (dt) => {
   const oR = BB.outRms(), EG = BB.echoOff ? null : window.EchoGate;
   if (EG) {
     EG.push(ac.currentTime, oR);
-    if (tNow - mic.lastOn > 0.3)
-      EG.learn(rms, EG.outAt(tNow, micLat()).peak);
+    if (tNow - mic.lastOn > 0.3) EG.learn(rms, EG.outAt(tNow, micLat()).peak);
   }
   const CD = window.ClapDet, x = CD && EG && EG.on ? EG.resid(tNow, rms, micLat()) : rms;
   mic.meter = Math.max(0, (mic.meter || 0) - dt * 1.8);
@@ -1237,12 +1158,10 @@ mic.update = (dt) => {
   if (x > thrE && !(bleed > 0.15 && ntFrac < 0.5) && (CD && CD.jumpOk ? CD.jumpOk(mic, x, mic.prev || 0, jmp, tNow) : x > mic.prev * jmp) && gap) {
     const prevOn = mic.lastOn;
     mic.lastOn = tNow;
-    if (window.GroupGate)
-      GroupGate.adaptPeak(x);
+    if (window.GroupGate) GroupGate.adaptPeak(x);
     const chk = selfCheck(tNow);
     let ok = true, sg = null;
-    if (chk === "hard")
-      ok = false;
+    if (chk === "hard") ok = false;
     else if (chk) {
       const e = nonTonalEnergy(chk);
       ok = nonTonalEnergy.frac > 0.6 && e > nonTonalFloor * 6;
@@ -1261,19 +1180,14 @@ mic.update = (dt) => {
     }
     if (CD) {
       if (ok) {
-        if (gap !== 2 && CD.fired)
-          CD.fired(mic, x);
+        if (gap !== 2 && CD.fired) CD.fired(mic, x);
         mic.up = gap === 2;
         mic.lastX = gap === 2 ? Math.max(mic.lastX || 0, x) : x;
-      } else
-        mic.lastOn = prevOn;
+      } else mic.lastOn = prevOn;
     }
-    if (mic.calib)
-      mic.calib.push(tNow);
-    if (BB.voiceSeg)
-      ok = false;
-    if (BB.debugMic && !BB.voiceSeg)
-      (mic.log = mic.log || []).push([+tNow.toFixed(3), chk === "hard" ? "hard" : chk ? "tone" : "none", ok, +(chk && chk !== "hard" ? (nonTonalEnergy(chk), nonTonalEnergy.frac) : 0).toFixed(2), BB.talking && BB.t < BB.talking.until ? "vo" : "", sg ? [+sg.hfr.toFixed(2), +sg.flat.toFixed(2), +sg.imp.toFixed(1)] : "", gap]);
+    if (mic.calib) mic.calib.push(tNow);
+    if (BB.voiceSeg) ok = false;
+    if (BB.debugMic && !BB.voiceSeg) (mic.log = mic.log || []).push([+tNow.toFixed(3), chk === "hard" ? "hard" : chk ? "tone" : "none", ok, +(chk && chk !== "hard" ? (nonTonalEnergy(chk), nonTonalEnergy.frac) : 0).toFixed(2), BB.talking && BB.t < BB.talking.until ? "vo" : "", sg ? [+sg.hfr.toFixed(2), +sg.flat.toFixed(2), +sg.imp.toFixed(1)] : "", gap]);
     if (ok) {
       const lv = window.GroupGate ? (BB.dynMode && BB.t - BB.dynMode < 0.5 || GroupGate.notePeak(rms), GroupGate.lvl(rms, sens)) : lvl;
       {
@@ -1285,20 +1199,16 @@ mic.update = (dt) => {
       }
       mic.peak = lvl;
       mic.hold = 0.6;
-    } else
-      mic.rejected = (mic.rejected || 0) + 1;
+    } else mic.rejected = (mic.rejected || 0) + 1;
   } else if (x < thr) {
     const nf = lerp(mic.floor, Math.min(x, 0.05), dt * 0.8);
     mic.floor = CD && CD.active && CD.active(tNow) && tNow - mic.lastOn < 0.35 ? Math.min(mic.floor, nf) : nf;
   }
-  if (CD && CD.track)
-    CD.track(mic, x, tNow);
-  if (x < thr)
-    nonTonalFloor = lerp(nonTonalFloor, Math.max(nt, 1e-9), Math.min(1, dt * 2));
+  if (CD && CD.track) CD.track(mic, x, tNow);
+  if (x < thr) nonTonalFloor = lerp(nonTonalFloor, Math.max(nt, 1e-9), Math.min(1, dt * 2));
   mic.prev = Math.max(x, (mic.prev || 0) * (window.GroupGate ? GroupGate.adaptDecay() : 0.6));
   mic.hold -= dt;
-  if (mic.hold < 0)
-    mic.peak = Math.max(0, mic.peak - dt);
+  if (mic.hold < 0) mic.peak = Math.max(0, mic.peak - dt);
 };
 mic.take = () => {
   const o = mic.onsets;
@@ -1334,9 +1244,8 @@ document.addEventListener("visibilitychange", () => {
     });
   } else {
     last = performance.now();
-    if (!BB.paused)
-      ac.resume().catch(() => {
-      });
+    if (!BB.paused) ac.resume().catch(() => {
+    });
   }
 });
 function frame(ts) {
@@ -1359,8 +1268,7 @@ function frame(ts) {
             BB.qUp = 1;
             BB.setTier(BB.tier + 1);
           }
-        } else
-          perfGood = 0;
+        } else perfGood = 0;
       }
       perfN = perfS = 0;
     }
@@ -1387,14 +1295,11 @@ function frame(ts) {
     if (!BB.paused) {
       BB.listening = 0;
       BB.scene.update(dt);
-      if (BB.MLP && BB.MLP.on && mic.ok)
-        BB.MLP.frame();
+      if (BB.MLP && BB.MLP.on && mic.ok) BB.MLP.frame();
     }
     BB.scene.draw(ctx);
-    if (BB.R && BB.R.drawSneak && !BB.paused)
-      BB.R.drawSneak();
-    if (BB.MLP && BB.MLP.dbg)
-      BB.MLP.draw(ctx);
+    if (BB.R && BB.R.drawSneak && !BB.paused) BB.R.drawSneak();
+    if (BB.MLP && BB.MLP.dbg) BB.MLP.draw(ctx);
   }
   BB.drawCelebrate && BB.drawCelebrate();
   BB.drawParts && 0;

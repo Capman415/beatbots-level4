@@ -118,7 +118,7 @@ class FollowPulse{constructor(o={}){this.bpm=o.bpm||92;this.spb=60/this.bpm;this
     else if(ph==='score')msg='SCORE — clap WITH the green lights!';
     else if(ph==='end')msg='';
     if(msg)BB.text(msg,cx,y-130,40,ph==='score'?COL.green:COL.yellow,{font:'Rammetto One',stroke:7});
-    BB.text('8 steady ta   ·   grade window '+Math.round(this.tol.early*1000)+'ms early / '+Math.round(this.tol.late*1000)+'ms late',cx,y+130,24,'#cfe8e2',{stroke:4})}}
+    BB.text('Clap with the lights — 8 steady ta beats.',cx,y+130,24,'#cfe8e2',{stroke:4})}}
 
 class AssessRoom{constructor(o={}){this.o=o}
   enter(){this.qi=0;this.score=0;this.state='intro';this.st=BB.t;this.cb=null;this.fp=null;this.flash=null;this.picked=null;this.run=BB.assessLog.startRun();
@@ -159,23 +159,22 @@ class AssessRoom{constructor(o={}){this.o=o}
     BB.text('Score  '+this.score+'  ·  need '+PASS+' of '+TOTAL+' to unlock Static Jr.',W/2,118,28,'#cfe8e2',{stroke:4})}
   drawProgress(){for(let i=0;i<TOTAL;i++){const x=260+i*175,y=155,done=i<this.qi,cur=i===this.qi&&this.state!=='end'&&this.state!=='intro';
       BB.rrect(x,y,150,18,9,done?'#6ee678':cur?'#ffe066':'#2a3a38','#fff',2)}}
-  drawPrompt(txt){BB.text(txt,W/2,230,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700})}
+  drawPrompt(txt){/* v14.5.21: sit the question closer to the answer choices (was y=230, choices start at 420) */BB.text(txt,W/2,350,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700})}
   drawFollow(){if(this.fp)this.fp.draw(W/2,500);BB.text('No mic? Teacher taps MANUAL OVERRIDE when the class nails it (logged as override, not a measured clap).',W/2,780,24,COL.yellow,{stroke:4,maxW:1600});
     BB.button(W/2-220,840,440,90,'MANUAL OVERRIDE',{style:'cream',size:32,id:'asov',onClick:()=>this.override()})}
   drawChoice(){const Q=this.Q,n=Q.choices.length,bw=Math.min(420,Math.floor(1500/n)-24),gap=24,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
     Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap),on=this.picked===c.k;
       BB.button(x,420,bw,220,'',{style:on?'green':'cream',id:'asc'+i,onClick:()=>this.pick(c.k)});
       /* v14.5.18: cream/gold lettering on the dark teal cream-button face (was near-black #19191f — unreadable) */
-      BB.text(c.lab,x+bw/2,500,c.lab.length>12?32:44,'#ffe9a0',{font:'Rammetto One',stroke:6,strokeCol:'#1a1a1a',maxW:bw-24});
-      if(c.sub)BB.text(c.sub,x+bw/2,580,26,'#d7efe8',{stroke:4,strokeCol:'#142826',maxW:bw-24})})}
+      /* v14.5.21: removed spoiler/hint sub-labels under each choice (e.g. 'that is forte', 'not about speed') */
+      BB.text(c.lab,x+bw/2,530,c.lab.length>12?32:44,'#ffe9a0',{font:'Rammetto One',stroke:6,strokeCol:'#1a1a1a',maxW:bw-24})})}
   drawHearPick(){const Q=this.Q;
     /* v14.5.18 audio-first: while the drum plays (and while waiting), show ALL answer options — never the target Q.seq, and never highlight the correct choice. Target only after a correct grade (drawGraded). */
     const listening=this.state==='hear',n=Q.choices.length,bw=480,gap=30,tot=n*bw+(n-1)*gap,x0=W/2-tot/2;
-    BB.text(listening?'Listen... then tap the match':'Tap the matching label',W/2,290,34,COL.yellow,{font:'Rammetto One',stroke:6});
-    if(!listening)BB.button(W/2-160,330,320,64,'REPLAY RHYTHM',{size:26,id:'asreplay',onClick:()=>{this.state='hear';this.st=BB.t;this.playHear()}});
-    else BB.text('Answers stay up while you listen — no peeking at the answer first',W/2,340,26,'#cfe8e2',{stroke:4,maxW:1500});
-    Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.button(x,410,bw,300,'',{style:'cream',id:'ash'+i,onClick:()=>this.pick(c.k)});
-      R.pills(x+bw/2,560,c.lab,{bw:70,gap:10,words:true})})}
+    /* v14.5.21: dropped the duplicate headline + the 'no peeking at the answer first' developer line; prompt already says Listen, then tap... */
+    if(!listening)BB.button(W/2-160,385,320,64,'REPLAY RHYTHM',{size:26,id:'asreplay',onClick:()=>{this.state='hear';this.st=BB.t;this.playHear()}});
+    Q.choices.forEach((c,i)=>{const x=x0+i*(bw+gap);BB.button(x,460,bw,280,'',{style:'cream',id:'ash'+i,onClick:()=>this.pick(c.k)});
+      R.pills(x+bw/2,600,c.lab,{bw:70,gap:10,words:true})})}
   drawGradedHear(){const Q=this.Q;if(!(Q&&Q.kind==='hearPick'&&this.lastOk))return;
     BB.text('Heard rhythm:',W/2,560,28,'#cfe8e2',{stroke:4});R.pills(W/2,640,Q.seq,{words:true,bw:70,gap:10})}
   draw(){ctx.fillStyle='#0d1d1b';ctx.fillRect(0,0,W,H);if(BB.V2&&BB.V2.hub_bg){ctx.globalAlpha=.35;ctx.drawImage(BB.V2.hub_bg,0,0,W,H);ctx.globalAlpha=1}

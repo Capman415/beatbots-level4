@@ -31,7 +31,7 @@ ok(/b\.pwr===2\)BB\.groove\.stop/.test(d),'beam still stops groove');
 ok(/chant\|\|b\.chantIntro/.test(d),'chant still ducks groove vol');
 
 ok(/throwPath=/.test(d)&&/_throwFG/.test(d),'throw path + FG preserved');
-ok(/dynFill=ds=>/.test(d)&&/sum\*\.38/.test(d),'amount fill preserved');
+ok(/dynFill=ds=>/.test(d)&&/sum\*\.70/.test(d),'amount fill preserved');
 ok(/intro standoff VS split only/.test(d),'no MEGA VS zoom preserved');
 
 if(fails){console.error(fails+' FAIL');process.exit(1)}

@@ -12,13 +12,10 @@
   const PASS = 6, TOTAL = 8;
   BB.assessTol = (spb) => {
     const G = window.GroupGate;
-    if (G && G.early && G.late)
-      return { early: G.early(spb), late: G.late(spb), src: "GroupGate" };
+    if (G && G.early && G.late) return { early: G.early(spb), late: G.late(spb), src: "GroupGate" };
     const b = BB.gradeBand && BB.gradeBand();
-    if (b === "k1")
-      return { early: Math.min(0.17, spb * 0.36), late: Math.min(0.32, spb * 0.6), src: "k1" };
-    if (b === "m")
-      return { early: Math.min(0.14, spb * 0.32), late: Math.min(0.25, spb * 0.5), src: "m" };
+    if (b === "k1") return { early: Math.min(0.17, spb * 0.36), late: Math.min(0.32, spb * 0.6), src: "k1" };
+    if (b === "m") return { early: Math.min(0.14, spb * 0.32), late: Math.min(0.25, spb * 0.5), src: "m" };
     return { early: Math.min(0.12, spb * 0.28), late: Math.min(0.18, spb * 0.4), src: "u" };
   };
   BB.assessMatchBeat = (onT, expT, spb, lat) => {
@@ -138,8 +135,7 @@
     };
     let dirty = 0;
     const save = () => {
-      if (!dirty)
-        return;
+      if (!dirty) return;
       try {
         localStorage.setItem(SKEY, JSON.stringify(sess));
         localStorage.setItem(KEY, JSON.stringify(ev));
@@ -164,8 +160,7 @@
     const tag = () => ({ day: BB.session && BB.session.day || "", cls: BB.session && BB.session.cls || "", grade: BB.grade || BB.session && BB.session.cls || "" });
     const curRun = () => {
       const t = tag(), td = dstr(/* @__PURE__ */ new Date()), l = sess[sess.length - 1];
-      if (l && l.open && l.date === td && l.day === t.day && l.grade === t.grade)
-        return sess.length - 1;
+      if (l && l.open && l.date === td && l.day === t.day && l.grade === t.grade) return sess.length - 1;
       const d = /* @__PURE__ */ new Date();
       sess.push({ id: td.replace(/-/g, "") + "-" + pad(d.getHours()) + pad(d.getMinutes()) + "-G" + (t.grade || "?"), date: td, day: t.day, cls: t.cls, grade: t.grade, open: 1, correct: 0, total: 0, passed: 0, ver: BB.VERSION || "" });
       dirty = 1;
@@ -186,11 +181,9 @@
         try {
           const i = curRun(), S = sess[i], ms = (v) => v == null || v === "" || isNaN(+v) ? "" : Math.round(+v * 1e3);
           ev.push([Math.round(Date.now() / 100) - T0, i, o.qid || "", o.room || o.topic || "", o.ok ? 1 : 0, o.choice || "", ms(o.ms), BB.VERSION || "", (_a = o.i) != null ? _a : "", o.topic || "", (_b = o.matched) != null ? _b : "", (_c = o.expected) != null ? _c : "", ms(o.thrEarly), ms(o.thrLate), o.manual ? 1 : 0, o.offs || ""]);
-          if (ev.length > CAP)
-            ev.splice(0, ev.length - CAP);
+          if (ev.length > CAP) ev.splice(0, ev.length - CAP);
           S.total++;
-          if (o.ok)
-            S.correct++;
+          if (o.ok) S.correct++;
           dirty = 1;
         } catch (e) {
         }
@@ -266,14 +259,10 @@
     }
     phase() {
       const b = this.beatNow();
-      if (b < 0)
-        return "wait";
-      if (b < this.countIn)
-        return "count";
-      if (b < this.scoreStart())
-        return "practice";
-      if (b < this.totalBeats())
-        return "score";
+      if (b < 0) return "wait";
+      if (b < this.countIn) return "count";
+      if (b < this.scoreStart()) return "practice";
+      if (b < this.totalBeats()) return "score";
       return "end";
     }
     expT(i) {
@@ -288,8 +277,7 @@
       }
       const ph = this.phase();
       BB.listening = ph === "score" ? 2 : ph === "practice" || ph === "count" ? 1 : 0;
-      if (window.ClapDet && ClapDet.expect && (ph === "score" || ph === "practice"))
-        ClapDet.expect(spb, ac.currentTime + 0.55);
+      if (window.ClapDet && ClapDet.expect && (ph === "score" || ph === "practice")) ClapDet.expect(spb, ac.currentTime + 0.55);
       {
         const tv = ac.currentTime - (BB.visLat ? BB.visLat() : 0);
         for (let i = 0; i < this.n; i++) {
@@ -297,25 +285,19 @@
           this.lit[i] = d >= 0 && d < 0.35 ? 1 - d / 0.35 : 0;
         }
       }
-      for (let i = 0; i < this.n; i++)
-        if (this.marks[i])
-          this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
+      for (let i = 0; i < this.n; i++) if (this.marks[i]) this.marks[i] = Math.min(1, this.marks[i] + dt * 5);
       if (ph === "count" || ph === "practice" || ph === "score" || ph === "end") {
         const ons = BB.mic.take ? BB.mic.take() : [], lat = window.GroupGate && GroupGate.lat || 0;
         if (ph === "score" || ph === "end") {
           for (const o of ons) {
-            if (o.up)
-              continue;
-            if (BB.voBlocks && BB.voBlocks())
-              continue;
+            if (o.up) continue;
+            if (BB.voBlocks && BB.voBlocks()) continue;
             const bm = BB.bounceMs ? BB.bounceMs() : 0.1;
-            if (this._lastOn != null && o.t - this._lastOn < bm)
-              continue;
+            if (this._lastOn != null && o.t - this._lastOn < bm) continue;
             this._lastOn = o.t;
             let best = -1, bd = 1;
             for (let i = 0; i < this.n; i++) {
-              if (this.got[i])
-                continue;
+              if (this.got[i]) continue;
               const m = BB.assessMatchBeat(o.t, this.expT(i), spb, lat);
               if (m.ok && Math.abs(m.off) < bd) {
                 bd = Math.abs(m.off);
@@ -337,8 +319,7 @@
       }
     }
     finish(manual) {
-      if (this.done)
-        return;
+      if (this.done) return;
       this.done = true;
       this.manual = !!manual;
       const matched = this.got.filter((x) => x === 1).length;
@@ -358,8 +339,7 @@
       });
     }
     override() {
-      if (this.done)
-        return;
+      if (this.done) return;
       for (let i = 0; i < this.n; i++) {
         if (!this.got[i]) {
           this.got[i] = 1;
@@ -384,15 +364,11 @@
       if (ph === "count") {
         const n = this.countIn - Math.floor(Math.max(0, bn));
         msg = n > 0 ? "Get ready\u2026 " + n : "GO!";
-      } else if (ph === "practice")
-        msg = "PRACTICE \u2014 clap with the lights (not scored)";
-      else if (ph === "score")
-        msg = "SCORE \u2014 clap WITH the green lights!";
-      else if (ph === "end")
-        msg = "";
-      if (msg)
-        BB.text(msg, cx, y - 130, 40, ph === "score" ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 7 });
-      BB.text("8 steady ta   \xB7   grade window " + Math.round(this.tol.early * 1e3) + "ms early / " + Math.round(this.tol.late * 1e3) + "ms late", cx, y + 130, 24, "#cfe8e2", { stroke: 4 });
+      } else if (ph === "practice") msg = "PRACTICE \u2014 clap with the lights (not scored)";
+      else if (ph === "score") msg = "SCORE \u2014 clap WITH the green lights!";
+      else if (ph === "end") msg = "";
+      if (msg) BB.text(msg, cx, y - 130, 40, ph === "score" ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 7 });
+      BB.text("Clap with the lights \u2014 8 steady ta beats.", cx, y + 130, 24, "#cfe8e2", { stroke: 4 });
     }
   }
   class AssessRoom {
@@ -413,8 +389,7 @@
       BB.mic && BB.mic.take && BB.mic.take();
       this.voEnd = BB.t + (BB.say("as_intro") || 2.5) + 0.3;
       window.__as = this;
-      if (this.o.auto || BB.debug)
-        setTimeout(() => BB.scene === this && this.state === "intro" && this.beginQ(), 900);
+      if (this.o.auto || BB.debug) setTimeout(() => BB.scene === this && this.state === "intro" && this.beginQ(), 900);
     }
     exit() {
       this.cb = null;
@@ -429,8 +404,7 @@
       this.state = "q";
       this.st = BB.t;
       this.Q = QS[this.qi];
-      if (this.Q.kind === "follow")
-        this.startFollow();
+      if (this.Q.kind === "follow") this.startFollow();
       if (this.Q.kind === "hearPick") {
         this.state = "hear";
         this.st = BB.t;
@@ -441,8 +415,7 @@
       const seq = this.Q.seq, spb = 60 / (this.Q.bpm || 88), t0 = BB.ac.currentTime + 0.35;
       seq.forEach((k, i) => {
         let b = 0;
-        for (let j = 0; j < i; j++)
-          b += R.BEATS[seq[j]];
+        for (let j = 0; j < i; j++) b += R.BEATS[seq[j]];
         const t = t0 + b * spb;
         (R.SUB[k] || [0]).forEach((f) => BB.sfx.block(t + f * spb));
       });
@@ -466,13 +439,11 @@
       });
     }
     grade(ok, choice, perf) {
-      if (this.state === "graded" || this.state === "end")
-        return;
+      if (this.state === "graded" || this.state === "end") return;
       this.state = "graded";
       this.st = BB.t;
       this.lastOk = ok;
-      if (ok)
-        this.score++;
+      if (ok) this.score++;
       const Q = this.Q, p = perf || {};
       BB.assessLog.add({
         qid: Q.id,
@@ -491,14 +462,11 @@
       BB.sfx[ok ? "ding" : "wobble"]();
       BB.burst(W / 2, 420, ok ? 28 : 10, { cols: ok ? ["#6ee678", "#ffe066", "#fff"] : ["#c8b49a"], kind: ok ? "star" : "dust", size: ok ? 14 : 12, speed: ok ? 700 : 200 });
       setTimeout(() => {
-        if (BB.scene !== this)
-          return;
+        if (BB.scene !== this) return;
         this.qi++;
-        if (this.qi >= TOTAL)
-          this.finish();
+        if (this.qi >= TOTAL) this.finish();
         else {
-          if (BB.say)
-            BB.say("as_next", { overlap: true, nocap: true });
+          if (BB.say) BB.say("as_next", { overlap: true, nocap: true });
           this.beginQ();
         }
       }, ok ? 900 : 1100);
@@ -511,8 +479,7 @@
       BB.assessLog.finish(passed);
       BB.assessUnlocked = !!passed;
       try {
-        if (passed)
-          localStorage.setItem("bb_assess_ok", "1");
+        if (passed) localStorage.setItem("bb_assess_ok", "1");
       } catch (e) {
       }
       BB.say(passed ? "as_pass" : "as_fail");
@@ -529,12 +496,10 @@
       this.beginQ();
     }
     pick(choice) {
-      if (this.state !== "q" && this.state !== "hear")
-        return;
+      if (this.state !== "q" && this.state !== "hear") return;
       const Q = this.Q;
       let ok = false;
-      if (Q.kind === "choice" || Q.kind === "hearPick")
-        ok = choice === Q.ans;
+      if (Q.kind === "choice" || Q.kind === "hearPick") ok = choice === Q.ans;
       this.picked = choice;
       this.grade(ok, String(choice));
     }
@@ -543,26 +508,21 @@
         this.fp.override();
         return;
       }
-      if (this.state === "q" || this.state === "hear" || this.state === "follow")
-        this.grade(true, "manual-override", { manual: 1 });
+      if (this.state === "q" || this.state === "hear" || this.state === "follow") this.grade(true, "manual-override", { manual: 1 });
     }
     update(dt) {
-      if (BB.keys.includes(" "))
-        this.override();
-      if (this.state === "intro" && BB.t > this.voEnd)
-        this.beginQ();
+      if (BB.keys.includes(" ")) this.override();
+      if (this.state === "intro" && BB.t > this.voEnd) this.beginQ();
       if (this.state === "hear" && BB.t > (this.hearEnd || 0)) {
         this.state = "q";
         this.st = BB.t;
       }
-      if (this.fp)
-        this.fp.update(dt);
+      if (this.fp) this.fp.update(dt);
       if (BB.debug && (this.state === "q" || this.state === "follow" || this.state === "hear") && BB.t - this.st > 1.2 && !this._auto) {
         this._auto = 1;
         setTimeout(() => {
           this._auto = 0;
-          if (BB.scene === this)
-            this.override();
+          if (BB.scene === this) this.override();
         }, 400);
       }
     }
@@ -578,11 +538,10 @@
       }
     }
     drawPrompt(txt) {
-      BB.text(txt, W / 2, 230, 40, "#fff", { font: "Rammetto One", stroke: 7, maxW: 1700 });
+      BB.text(txt, W / 2, 350, 40, "#fff", { font: "Rammetto One", stroke: 7, maxW: 1700 });
     }
     drawFollow() {
-      if (this.fp)
-        this.fp.draw(W / 2, 500);
+      if (this.fp) this.fp.draw(W / 2, 500);
       BB.text("No mic? Teacher taps MANUAL OVERRIDE when the class nails it (logged as override, not a measured clap).", W / 2, 780, 24, COL.yellow, { stroke: 4, maxW: 1600 });
       BB.button(W / 2 - 220, 840, 440, 90, "MANUAL OVERRIDE", { style: "cream", size: 32, id: "asov", onClick: () => this.override() });
     }
@@ -591,33 +550,26 @@
       Q.choices.forEach((c, i) => {
         const x = x0 + i * (bw + gap), on = this.picked === c.k;
         BB.button(x, 420, bw, 220, "", { style: on ? "green" : "cream", id: "asc" + i, onClick: () => this.pick(c.k) });
-        BB.text(c.lab, x + bw / 2, 500, c.lab.length > 12 ? 32 : 44, "#ffe9a0", { font: "Rammetto One", stroke: 6, strokeCol: "#1a1a1a", maxW: bw - 24 });
-        if (c.sub)
-          BB.text(c.sub, x + bw / 2, 580, 26, "#d7efe8", { stroke: 4, strokeCol: "#142826", maxW: bw - 24 });
+        BB.text(c.lab, x + bw / 2, 530, c.lab.length > 12 ? 32 : 44, "#ffe9a0", { font: "Rammetto One", stroke: 6, strokeCol: "#1a1a1a", maxW: bw - 24 });
       });
     }
     drawHearPick() {
       const Q = this.Q;
       const listening = this.state === "hear", n = Q.choices.length, bw = 480, gap = 30, tot = n * bw + (n - 1) * gap, x0 = W / 2 - tot / 2;
-      BB.text(listening ? "Listen... then tap the match" : "Tap the matching label", W / 2, 290, 34, COL.yellow, { font: "Rammetto One", stroke: 6 });
-      if (!listening)
-        BB.button(W / 2 - 160, 330, 320, 64, "REPLAY RHYTHM", { size: 26, id: "asreplay", onClick: () => {
-          this.state = "hear";
-          this.st = BB.t;
-          this.playHear();
-        } });
-      else
-        BB.text("Answers stay up while you listen \u2014 no peeking at the answer first", W / 2, 340, 26, "#cfe8e2", { stroke: 4, maxW: 1500 });
+      if (!listening) BB.button(W / 2 - 160, 385, 320, 64, "REPLAY RHYTHM", { size: 26, id: "asreplay", onClick: () => {
+        this.state = "hear";
+        this.st = BB.t;
+        this.playHear();
+      } });
       Q.choices.forEach((c, i) => {
         const x = x0 + i * (bw + gap);
-        BB.button(x, 410, bw, 300, "", { style: "cream", id: "ash" + i, onClick: () => this.pick(c.k) });
-        R.pills(x + bw / 2, 560, c.lab, { bw: 70, gap: 10, words: true });
+        BB.button(x, 460, bw, 280, "", { style: "cream", id: "ash" + i, onClick: () => this.pick(c.k) });
+        R.pills(x + bw / 2, 600, c.lab, { bw: 70, gap: 10, words: true });
       });
     }
     drawGradedHear() {
       const Q = this.Q;
-      if (!(Q && Q.kind === "hearPick" && this.lastOk))
-        return;
+      if (!(Q && Q.kind === "hearPick" && this.lastOk)) return;
       BB.text("Heard rhythm:", W / 2, 560, 28, "#cfe8e2", { stroke: 4 });
       R.pills(W / 2, 640, Q.seq, { words: true, bw: 70, gap: 10 });
     }
@@ -646,10 +598,8 @@
         BB.text(this.passed ? "YOU PASSED!" : "TRY AGAIN", W / 2, 340, 72, this.passed ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 10 });
         BB.text("Class score: " + this.score + " / " + TOTAL, W / 2, 440, 48, "#fff", { stroke: 6 });
         BB.text(this.passed ? "Delivery bay unlocked. Ready for Static Jr.!" : "Need " + PASS + " correct. Tap RETRY for another run.", W / 2, 520, 32, COL.yellow, { stroke: 4, maxW: 1200 });
-        if (this.passed)
-          BB.button(W / 2 - 280, 620, 560, 120, "FIGHT STATIC JR.!", { style: "green", size: 44, id: "asboss", onClick: () => this.goBoss() });
-        else
-          BB.button(W / 2 - 280, 620, 560, 120, "RETRY CHECKPOINT", { style: "green", size: 44, id: "asretry", onClick: () => this.retry() });
+        if (this.passed) BB.button(W / 2 - 280, 620, 560, 120, "FIGHT STATIC JR.!", { style: "green", size: 44, id: "asboss", onClick: () => this.goBoss() });
+        else BB.button(W / 2 - 280, 620, 560, 120, "RETRY CHECKPOINT", { style: "green", size: 44, id: "asretry", onClick: () => this.retry() });
         BB.button(200, 780, 360, 80, "Download assess CSV", { size: 26, id: "asdl", onClick: () => BB.assessLog.download() });
         BB.button(580, 780, 360, 80, "Download summary", { size: 26, id: "asdls", onClick: () => BB.assessLog.downloadSummary() });
         BB.button(960, 780, 360, 80, "ROOM MAP", { size: 26, id: "asmap", onClick: () => BB.go(new BB.MapScene()) });
@@ -657,18 +607,14 @@
       }
       if (this.state === "graded") {
         BB.text(this.lastOk ? "GOT IT!" : "Not yet \u2014 that's ok!", W / 2, 400, 72, this.lastOk ? COL.green : COL.yellow, { font: "Rammetto One", stroke: 10 });
-        if (this.lastOk)
-          this.drawGradedHear();
+        if (this.lastOk) this.drawGradedHear();
         BB.captionBox();
         return;
       }
       this.drawPrompt(this.Q.prompt);
-      if (this.Q.kind === "follow" || this.state === "follow")
-        this.drawFollow();
-      else if (this.Q.kind === "choice")
-        this.drawChoice();
-      else if (this.Q.kind === "hearPick")
-        this.drawHearPick();
+      if (this.Q.kind === "follow" || this.state === "follow") this.drawFollow();
+      else if (this.Q.kind === "choice") this.drawChoice();
+      else if (this.Q.kind === "hearPick") this.drawHearPick();
       BB.button(W - 300, 24, 260, 70, "SKIP Q", { size: 28, id: "asskip", onClick: () => this.grade(false, "skip") });
       BB.captionBox();
     }
@@ -681,8 +627,7 @@
   BB.openDelivery = (o = {}) => {
     try {
       const q = new URLSearchParams(location.search).get("assess");
-      if (q === "0" || BB.assessUnlocked)
-        return new BB.DeliveryRoom(o);
+      if (q === "0" || BB.assessUnlocked) return new BB.DeliveryRoom(o);
     } catch (e) {
     }
     return new AssessRoom(o);

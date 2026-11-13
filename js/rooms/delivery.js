@@ -22,6 +22,7 @@ BB.VO_LINES=(BB.VO_LINES||[]).concat([
  ['bb_sj1',"Your claps are softer than a marshmallow!",'jr'],
  ['bb_sj2',"I've heard louder sneezes!",'jr'],
  ['bb_sj3',"My grandma TV has better rhythm!",'jr'],
+ ['bb_sj8',"Even my static has better timing than that!",'jr'],
  ['bb_sj7',"I've seen kindergartners with better rhythm!",'jr'],
  ['bb_sj4',"Ti-ti? More like tee-hee!",'jr'],
  ['bb_sj5',"I ate all your whole notes... now I'm gonna eat your halves!",'jr'],
@@ -58,7 +59,7 @@ const A_=(cue,h)=>KB(cue,'clap',h,{atk:1}),C4=k=>A_('CLAP NOW! SLAP HIM SILLY!',
   DL=()=>KB('LEAN LEFT!','L',[[2,'junkR']],{mode:'throw'}),DR=()=>KB('LEAN RIGHT!','R',[[2,'junkL']],{mode:'throw'}),JP=()=>KB('JUMP! (rolling tire!)','jump',[[2,'junkF']],{mode:'throw'});
 /* v14.4 CALMER FLOW (like Level 3's boss): 4 rounds. Each = ROUND card, 4-5 single dodge moves (one throw per bar), an 8-beat CLAP ATTACK charge
    (centered POWER canisters; claps fill them by AMOUNT + dynamics, never speed), STOP!, ONE hit sized by the fill (SLAP / PUNCH COMBO / MEGA BLAST) on the beat, then a breather bar. */
-const CW=()=>[KB('CLAP ATTACK! CHARGE IT UP!','clap',[],{cw:1}),KB('CLAP ATTACK! KEEP CLAPPING!','clap',[],{cw:2})],
+const CW=()=>[KB('CLAP ATTACK! CHARGE IT UP!','clap',[],{cw:1}),KB('CLAP ATTACK! KEEP CLAPPING!','clap',[],{cw:2}),KB('CLAP ATTACK! KEEP GOING!','clap',[],{cw:3})],
   HIT=()=>KB('HERE IT COMES...','ready',[[1,'chunk']],{clear:1}),SAY={sj7:"I've seen kindergartners with better rhythm!",sj5:"I ate all your WHOLE notes... now I'm gonna eat your HALVES!"},OOF=g=>KB(g==='67'?'Uh-oh... what is he doing?':g?'STATIC JR. TALKS TRASH...':'OOF! He felt that!','ready',[],{rest:1,gag:g,line:SAY[g]}),
   RND=(n,name,d,g)=>[KB('ROUND '+n+': '+name,'ready',[],{count:1,phase:n,rn:1}),...d,...CW(),HIT(),OOF(g)];
 const KO_BARS=[
@@ -81,9 +82,13 @@ const BS=[],BL=[];{let x=KO_T0;KO_BARS.forEach((b,i)=>{b.bpm=b.bpm||100;BS[i]=x;
 const barAt=k=>{if(k<KO_T0)return Math.floor((k-KO_T0)/KO_BAR);const n=KO_BARS.length;if(k>=BS[n])return n+Math.floor((k-BS[n])/KO_BAR);let i=0;while(BS[i+1]<=k)i++;return i};BB.KO_BS=BS;
 /* v14.3.2 CLAP SPEED: live claps/min (rolling 1.5 s, lenient x1.2) -> tempo tier. No counting, no patterns: any clap = a punch. */
 /* v14.5.8 DYNAMICS meter: canisters follow how LOUD the claps are (piano -> forte), never how fast. Pure + exported for tests.
-   v14.5.19 AMOUNT fill: each accepted clap adds a loudness-weighted contribution (soft fills less, loud fills more). Cumulative — more claps = fuller, no n/4 chunk steps, not clap rate/speed. Soft can still reach MEGA with enough claps; loud reaches it sooner. */
+   v14.5.19 AMOUNT fill: each accepted clap adds a loudness-weighted contribution (soft fills less, loud fills more). Cumulative — more claps = fuller, no n/4 chunk steps, not clap rate/speed. Soft can still reach MEGA with enough claps; loud reaches it sooner.
+   v14.5.21 REBALANCE: per-clap gain *0.38 -> *0.70, window 2 bars (4.8s) -> 3 bars (7.2s @100 BPM).
+   contrib = (0.12 + 0.88*dyn) * 0.70. Typical on-beat class: ~12 accepted claps in 7.2s (one per 0.6s beat; 0.1s debounce still allows that).
+   12 piano (lvl .5, dyn .2) = 12*0.2072 = 2.49 -> MEGA (>=2.4). 8 mezzo (lvl .7, dyn .6) = 8*0.4536 = 3.00 MEGA.
+   8 piano = 1.66 BIG; 4 forte (dyn 1) = 2.80 MEGA. A steadily clapping class can fill all 3 within the window; dynamics still matter. */
 const clapDyn=o=>{if(!o)return 0;if(o.sim&&o.dyn!=null)return clamp(o.dyn,0,1);const G=window.GroupGate;if(G&&G.calOk&&G.calOk()&&o.rms){const L=G.loud;return clamp((G.dB(o.rms)-L.calLo)/(L.calHi-L.calLo),0,1)}return clamp(((o.lvl==null?.6:o.lvl)-.4)/.5,0,1)},
-  dynFill=ds=>{if(!ds||!ds.length)return 0;let sum=0;for(const d of ds)sum+=.12+.88*clamp(d,0,1);return clamp(sum*.38,0,3)},
+  dynFill=ds=>{if(!ds||!ds.length)return 0;let sum=0;for(const d of ds)sum+=.12+.88*clamp(d,0,1);return clamp(sum*.70,0,3)},
   dynLevel=f=>f>=2.4?2:f>=1.2?1:0,BLAST_R=[170,280,460],HIT_DMG=6;
 /* v14.5.9 THROW LANES: each dodge has its own lane so throws spread across the screen. lean left <- junk flies RIGHT; lean right <- LEFT; duck <- HIGH; jump <- tire rolls along the floor to the BOTTOM; freeze bombs alternate bottom-left / bottom-right / centre. */
 const BOMB_LANES=['botL','botR','mid'],LANE_TG={left:{x:W*.1,y:H*.55},right:{x:W*.94,y:H*.76},high:{x:W*.4,y:600},floor:{x:W*.5,y:H*.86},botL:{x:W*.26,y:H*.82},botR:{x:W*.84,y:H*.84},mid:{x:W*.5,y:H*.62}},
@@ -93,11 +98,11 @@ const BOMB_LANES=['botL','botR','mid'],LANE_TG={left:{x:W*.1,y:H*.55},right:{x:W
    stay BELOW the cue card / DODGE banner / speech bubble (y>=430), keep flying OFF the matching screen edge after the dodge beat (v 1..1.5) instead of vanishing.
    v = 0 at release, 1 on the dodge beat. sx,sy = release point. Returns {x,y,sc,a} or null when gone. */
 /* v14.5.18 TOWARD-CAMERA throws (Level-3 feel): grow hard toward the viewer, dive toward the bottom of the screen, stay opaque until past the bottom edge (no mid-air fade behind Sprocket). Lateral lane targets kept. fg=1 when the object should paint AFTER Sprocket. */
-const SAFE_Y=430,throwPath=(lane,v,sx,sy)=>{if(v<0||v>1.6)return null;const T=LANE_TG[lane]||LANE_TG.mid,u=Math.min(v,1),po=Math.max(0,v-1),cam=Math.pow(u,1.5);
+/* v14.5.21 HIGH ARCS: mid-flight peak sits in the upper half (brief UI coverage OK). After the dodge beat they still dive past the bottom in the foreground. Floor tire stays a ground roll. */
+const SAFE_Y=200,throwPath=(lane,v,sx,sy)=>{if(v<0||v>1.6)return null;const T=LANE_TG[lane]||LANE_TG.mid,u=Math.min(v,1),po=Math.max(0,v-1),cam=Math.pow(u,1.5);
   if(lane==='floor'){const p=Math.pow(u,1.15);let x=lerp(sx,T.x,p),y=lerp(sy,T.y,p)+po*2400;const sc=.5+3.6*Math.pow(u,1.25)+po*4;return{x,y,sc,a:y>H+160?clamp(1-(y-(H+160))/280,0,1):1,fg:sc>=1.7||u>=.4}}
-  const p=1-Math.pow(1-u,1.7),dx=T.x-sx;let x=sx+dx*p+dx*po*1.15,y;
-  if(lane==='high'){y=lerp(sy,Math.max(SAFE_Y+120,T.y),p)-Math.sin(u*Math.PI)*28;y=lerp(y,H+240,cam*.78+po*1.15)}
-  else{y=Math.max(SAFE_Y,lerp(sy,T.y,p)-Math.sin(u*Math.PI)*40);y=lerp(y,H+260,cam*.7+po*1.15)}
+  const p=1-Math.pow(1-u,1.7),dx=T.x-sx;let x=sx+dx*p+dx*po*1.15,peak=lane==='high'?210:260,apex=lane==='high'?200:240;
+  let y=lerp(sy,Math.min(T.y,apex+40),p)-Math.sin(u*Math.PI)*peak;y=lerp(y,H+260,Math.pow(cam,2.2)*.18+po*2.2);
   const sc=.48+1.05*p+(lane==='high'?3.6:4.4)*Math.pow(cam,1.35)+po*3.8,a=y>H+140?clamp(1-(y-(H+140))/280,0,1):(x<-220||x>W+220)?0:1;
   return{x,y,sc,a,fg:sc>=1.7||u>=.4}};
 /* v14.5.12 THROW TURN (pure): understated, lane-dependent turn while flying. Leans INTO its travel direction and turns a little more as it
@@ -158,7 +163,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
   throwBox(assist){this.state='throw';this.st=BB.t;this.thr={assist,seq:this.seq};BB.sfx.whoosh()}
   landHit(){this.hp--;this.n++;this.jrK={t:BB.t,ph:'hit'};BB.sfx.bonk();BB.shake(6);BB.say('jr_oof',{overlap:true,nocap:true});BB.burst(JR.x,JR.y-150,24,{cols:['#ffe066','#fff','#ff8adf'],kind:'star',size:14,speed:700,g:300});
     this.fx.push({k:'bonk',t:BB.t});this.drop={t:BB.t}}
-  startKO(){this.deluxe=deluxeOn();this.chips=this.deluxe?4:chipCount();this.state='end';this.cb=null;this.bolts=[];this.face=null;BB.groove.start(100,'pack');this.a0=BB.groove.t0;this.st=BB.t+(this.a0-BB.ac.currentTime)-KO_T0;BB.sfx.glitch();this.fuzzT=BB.t;this.fuzzD=.4;BB.mic.take();BB.ensureMic&&BB.ensureMic();this.heroes=HERO_AT.map(h=>Object.assign({},h));this.heroes.push({t:KO_BIG,run:-1,style:3,w:1.2});this.cts=[];this.cpm=0;this.fireRun=0}
+  startKO(){this.deluxe=deluxeOn();this.chips=this.deluxe?4:chipCount();this.state='end';this.cb=null;this.bolts=[];this.face=null;BB.groove.start(100,'pack');this.a0=BB.groove.t0;this.st=BB.t+(this.a0-BB.ac.currentTime)-KO_T0;/* v14.5.21: no opening glitch/fuzz/blast on Jr before the first throw */this.fuzzT=0;this.fuzzD=0;BB.fuzz=0;if(BB.parts)BB.parts.length=0;BB.mic.take();BB.ensureMic&&BB.ensureMic();this.heroes=HERO_AT.map(h=>Object.assign({},h));this.heroes.push({t:KO_BIG,run:-1,style:3,w:1.2});this.cts=[];this.cpm=0;this.fireRun=0;this.blasts=[];this.hitShow=null;this.cFire=null;this.lastCl=null;this.combo=0;KO_HITS.forEach((h,i)=>this['h'+i]=0)}
   bombAt(i){const r=Math.sin(i*12.9898)*43758.5453,f=r-Math.floor(r);return{x:260+f*(W-520),y:420+((f*7)%1)*300}}
   skipKO(){if(this.state!=='end'||this.cel)return;(this.heroes||[]).forEach(h=>h.armed=2);BB.groove.stop();this.st=BB.t-KO_CEL+.05;this.ko=this.dinged=1;KO_HITS.forEach((h,i)=>this['h'+i]=1);BB.say('dl_done',{overlap:true})}
   manualOverride(){if(BB.t-(this.lastOv||0)<.5)return;this.lastOv=BB.t;this.ovPop=BB.t;if(this.cb)this.cb.override()}
@@ -195,7 +200,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
           if(g&&g.kind==='mw'&&gv>g.dur){this.gag=null;this.gagLast=this.hitN;BB.text&&0;this.has.push({t:BB.t,w:'SLAP! (mid-glide!)',x:JR.x-120,y:JR.y-330,c:'#ffe066'});BB.sfx.bonk&&BB.sfx.bonk()}
           else if(!g||gv>2.6){const bt=60/(240/(BL[barAt(BB.t-this.st)]||2.4));
             if(0){this.mwN=(this.mwN||0)+1;this.gag={kind:'mw',t:BB.t,dur:4*(BL[barAt(BB.t-this.st)]||2.4)/4,beat:(BL[barAt(BB.t-this.st)]||2.4)/4};BB.say('bb_heehee',{overlap:true})}
-            else if(!KO_HITS.some(h=>KO_ATK(h[1])&&Math.abs(h[0]-(BB.t-this.st))<2.2)&&!(KO_BARS[barAt(BB.t-this.st)]||{}).chant&&(KO_BARS[barAt(BB.t-this.st)]||{}).atk&&0&&this.hitN-(this.gagLast||-9)>4&&Math.random()<1/10){this.n67=(this.n67||0)+1;this.gagLast=this.hitN;this.gag={kind:'67',t:BB.t,dur:1.6};BB.say('bb_6',{overlap:true});setTimeout(()=>BB.scene===this&&BB.say('bb_7',{overlap:true}),800)}}}BB.shake(kind==='stomp'?12:7);this.impact(kind==='stomp'||kind==='chunk'?2:1,kind==='L'?-1:kind==='R'?1:0);const sx=JR.x+(kind==='L'?-90:kind==='R'?90:0);BB.burst(sx,JR.y-60,16,{cols:['#e2b272','#ffe066','#fff'],kind:'star',size:12,speed:650,g:300});BB.burst(sx,JR.y-60,10,{cols:['#f4ecd8','#efe3c8'],kind:'spark',size:14,speed:500,g:500})}}});
+            else if(!KO_HITS.some(h=>KO_ATK(h[1])&&Math.abs(h[0]-(BB.t-this.st))<2.2)&&!(KO_BARS[barAt(BB.t-this.st)]||{}).chant&&(KO_BARS[barAt(BB.t-this.st)]||{}).atk&&0&&this.hitN-(this.gagLast||-9)>4&&Math.random()<1/10){this.n67=(this.n67||0)+1;this.gagLast=this.hitN;this.gag={kind:'67',t:BB.t,dur:1.6};BB.say('bb_6',{overlap:true});setTimeout(()=>BB.scene===this&&BB.say('bb_7',{overlap:true}),800)}}}BB.shake(kind==='stomp'?12:7);this.impact(kind==='stomp'||kind==='chunk'?2:1,kind==='L'?-1:kind==='R'?1:0);const sx=JR.x+(kind==='L'?-90:kind==='R'?90:0);/* v14.5.21 punchier hit bursts, same big-blast vocabulary */BB.burst(sx,JR.y-60,28,{cols:['#ffe066','#fff','#ff8adf','#7ef0ff'],kind:'star',size:16,speed:900,g:350,life:1.1});BB.burst(sx,JR.y-80,22,{cols:['#fff','#ffe066','#ffb020'],kind:'spark',size:14,speed:800,g:250,life:.9});this.hitPop={t:BB.t,x:sx,y:JR.y-60}}} });
       {const bi=barAt(t),b=KO_BARS[bi],on=BB.mic.take();this.blasts=this.blasts||[];if(b&&b.mode&&BB.groove)BB.groove.vol=0;/* v14.5.20 dodge stretch: keep pack groove silent */const us=b&&b.turn==='us'&&t<KO_BIG,tr=tierOf(this.cpm||0);if(us)for(const o of on)if(BB.t-(this.lastBl||0)>.1){this.lastBl=BB.t;this.cts.push(BB.t);const dy=clapDyn(o);if(b.cw){(this.dyn=this.dyn||[]).push(dy);this.cfDyn=dynFill(this.dyn)}this.combo=(BB.t-(this.lastCl||0)<.8?(this.combo||0):0)+1;this.lastCl=BB.t;if(b.rush){this.rushN=(this.rushN||0)+1;this.impact(1,this.rushN%2?-1:1,1);BB.shake(Math.min(26,5+this.rushN*.7))}else if(!b.cw)this.blasts.push({t:BB.t,x:W*(.3+Math.random()*.4),s:1+dy*.7});if(b.cw)BB.sfx.chime&&BB.sfx.chime();if(!b.rush)BB.sfx.pkTa&&BB.sfx.pkTa();if(!b.cw){if(tr>=2)BB.sfx.bonk&&BB.sfx.bonk();BB.shake(3+tr*3);BB.burst(JR.x+(Math.random()-.5)*120,JR.y-60,10+tr*8,{cols:['#ffe066','#fff',TIERS[tr][2]],kind:'star',size:10+tr*3,speed:500+tr*200,g:200})}}if(this.manualPc&&us){this.cts.push(BB.t);if(b.cw){(this.dyn=this.dyn||[]).push(.6);this.cfDyn=dynFill(this.dyn)}this.blasts.push({t:BB.t,x:W/2,s:1})}
         this.cts=(this.cts||[]).filter(x=>BB.t-x<1.5);{const raw=us?this.cts.length/1.5*60*1.2:0;this.cpm=lerp(this.cpm||0,raw,Math.min(1,(BB.dt||.016)*(raw>this.cpm?6:2)));if(b&&b.pwr===2)this.cpm=Math.max(this.cpm,Math.pow((t-BS[bi])/BL[bi],1.5)*235)}/* pwr turns auto-complete to PRESTISSIMO */
         {const tn=tierOf(this.cpm);if(us&&tn===4&&!b.cw&&!b.rush&&this.fireRun!==b.run){this.fireRun=b.run;this.fire=BB.t;BB.say('bb_fire',{overlap:true});const qb=BL[bi]/4,nb=BS[bi]+Math.ceil((t-BS[bi])/qb+1)*qb;const h=this.heroes.find(h=>h.run===b.run&&!h.armed);if(h){if(h.t>nb)h.t=nb}else this.heroes.push({t:nb,run:b.run,style:this.heroes.length%3})}
@@ -317,11 +322,11 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     if(k<KO_CEL){const x=W-40-400+20,y=200,w=360;BB.rrect(x-20,y-54,w+40,110,28,'rgba(12,16,28,.85)','#ff8adf',3);BB.text('STATIC JR. POWER',x+w/2,y-24,24,'#ffd6f4',{stroke:0});BB.rrect(x,y,w,28,10,'#2a2233',null,0);if(hpf>0)BB.rrect(x,y,w*hpf,28,10,BB.lg(y,y+28,['#ff9ad8','#c03a8e']),null,0);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,w,28);
       if(since<.25&&last&&!KO_ATK(kd)){ctx.save();ctx.globalAlpha=1-since/.25;BB.rrect(x+w*hpf,y,Math.min(w*(1-hpf),40),28,6,'#fff',null,0);ctx.restore()}}
     const post=[];post.push(()=>{if(bar&&bar.turn&&!gone){const us=bar.turn==='us',BY=318;BB.rrect(W/2-330,BY,660,66,22,us?'#ffe066':'#ff8adf',COL.ink,4);BB.text(us?(bar.rush?'EVERY CLAP = ONE PUNCH!':'PIANO TO FORTE: LOUDER = BIGGER BLAST!'):'STATIC JR. ATTACKS: DODGE!',W/2,BY+34,38,us?'#3a2a00':'#3a1040',{stroke:0,maxW:620})}});
-    {const lc=KO_PHASE_END.filter(x=>x<=k).pop(),hs=this.hitShow;if(hs&&k-hs.k>=0&&k-hs.k<2.1){this.drawBlastRing(JR.x,JR.y-90,hs.r||BLAST_R[hs.lv],(k-hs.k)/[1.05,1.2,1.45][hs.lv||0])}if(hs&&k-hs.k>=0&&k-hs.k<2.1)BB.text(['BLAST!','BIG BLAST!','MEGA BLAST!'][hs.lv],W/2,640-(k-hs.k)*26,[96,112,136][hs.lv],['#ffe066','#ff8adf','#7ef0ff'][hs.lv],{font:'Rammetto One',stroke:12,strokeCol:'#1a1a1a'});
+    {const lc=KO_PHASE_END.filter(x=>x<=k).pop(),hs=this.hitShow;if(hs&&k-hs.k>=0&&k-hs.k<2.1){this.drawBlastRing(JR.x,JR.y-90,hs.r||BLAST_R[hs.lv],(k-hs.k)/[1.05,1.2,1.45][hs.lv||0])}if(hs&&k-hs.k>=0&&k-hs.k<2.1)BB.text(['BLAST!','BIG BLAST!','MEGA BLAST!'][hs.lv],W/2,640-(k-hs.k)*26,[96,112,136][hs.lv],['#ffe066','#ff8adf','#7ef0ff'][hs.lv],{font:'Rammetto One',stroke:12,strokeCol:'#1a1a1a'});{const hp=this.hitPop,hu=hp?BB.t-hp.t:9;if(hp&&hu>=0&&hu<.55)this.drawBlastRing(hp.x,hp.y,150,hu/.55)}
       if(0){ctx.save();ctx.globalAlpha=1-(k-lc-.6)/.5;ctx.strokeStyle='#ffe066';ctx.shadowColor='#ffe066';ctx.shadowBlur=60;ctx.lineWidth=90;ctx.beginPath();ctx.moveTo(LCH.x-150,LCH.y-60);ctx.lineTo(JR.x,JR.y-60);ctx.stroke();ctx.restore()}}
     if(bar&&bar.tp&&!bar.beam){const tp=bar.tp,u=(k-BS[bi])/BL[bi];const dlx=this.deluxe&&tp.w==='PRESTISSIMO';if(bar.pwr===1){const s=.8+.2*ease.back(clamp(u*3,0,1));ctx.save();ctx.translate(730,560);ctx.scale(s,s);BB.panel(-490,-120,980,240,30);if(dlx){const g=ctx.createLinearGradient(-490,0,490,0);['#ff5a5a','#ffb020','#ffe066','#6ee678','#5ac8fa','#b07aff'].forEach((c,j)=>g.addColorStop(j/5,c));ctx.strokeStyle=g;ctx.lineWidth=12;ctx.strokeRect(-500,-130,1000,260);BB.text('ALL 4 BEAT CHIPS: DELUXE ULTRA UNLOCKED!',0,-150,44,'#ffd63c',{stroke:8,strokeCol:'#782814',maxW:1100})}BB.text('CLAP PARTY!',0,-50,62,COL.yellow,{stroke:9,maxW:940});BB.text('Clap fast! Faster = sillier! Can we hit PRESTISSIMO?',0,40,40,'#fff',{stroke:5,maxW:940});ctx.restore()}
       else{const tw=TIERS[tierOf(this.cpm||0)][0],s=1+.25*Math.exp(-(BB.t-(this.lastCl||0))*8);ctx.save();ctx.translate(730,580);ctx.scale(s,s);BB.text(dlx?'MEGA '+tw:tw,0,0,tw.length>8?(dlx?78:96):130,dlx?'#ffd63c':'#ff8adf',{font:'Rammetto One',stroke:12,strokeCol:'#3a1040'});ctx.restore();BB.text('CLAP FASTER! FASTER!',730,680,40,'#fff',{stroke:5})}}
-    if(this.blasts){this.blasts=this.blasts.filter(b=>BB.t-b.t<.5);for(const b of this.blasts){const u=(BB.t-b.t)/.35;if(u<1){const x=lerp(b.x,jx,u),y=lerp(H,jy-60,u);{const r=(26+u*20)*(b.s||1);ctx.save();ctx.translate(x,y);ctx.rotate(u*6);ctx.beginPath();for(let q=0;q<10;q++){const a=q/10*Math.PI*2,rr=q%2?r*.5:r;ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}ctx.closePath();ctx.fillStyle='#ffe066';ctx.strokeStyle=COL.ink;ctx.lineWidth=6;ctx.fill();ctx.stroke();ctx.restore()}}else BB.text('POW!',jx-200,jy-160,60*(b.s||1),'#ffe066',{font:'Rammetto One',stroke:7})}}
+    if(this.blasts){this.blasts=this.blasts.filter(b=>BB.t-b.t<.75);for(const b of this.blasts){const u=(BB.t-b.t)/.55;if(u<1){if(u<.48){const tt=u/.48,x=lerp(b.x,jx,tt),y=lerp(H,jy-60,tt),r=(34+tt*30)*(b.s||1);ctx.save();ctx.translate(x,y);ctx.rotate(tt*6);ctx.beginPath();for(let q=0;q<10;q++){const a=q/10*Math.PI*2,rr=q%2?r*.5:r;ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}ctx.closePath();ctx.fillStyle='#ffe066';ctx.strokeStyle=COL.ink;ctx.lineWidth=7;ctx.fill();ctx.stroke();ctx.restore()}else{this.drawBlastRing(jx,jy-60,130*(b.s||1),(u-.48)/.52);if(u<.7)BB.text('POW!',jx-200,jy-170,74*(b.s||1),'#ffe066',{font:'Rammetto One',stroke:9})}}}}
     // each scheduled attack beat: a clap shockwave shoots up from the class (the gag prop rides on it)
     for(const [hk,kind] of KO_HITS){if(KO_ATK(kind)||kind==='chunk'||kind==='big')continue;const u=(k-(hk-.25))/.25;if(u>=0&&u<1){ctx.save();ctx.globalAlpha=.7;ctx.strokeStyle='#fff38a';ctx.lineWidth=8;ctx.beginPath();ctx.arc(lerp(W/2,jx,u),lerp(H+40,jy-60,u),40,0,7);ctx.stroke();ctx.restore()}}
     // OVER THE TOP layer: turn-change slam cards, flashes, singed static smoke, finale star twinkle
@@ -338,15 +343,18 @@ class DeliveryRoom{constructor(o={}){this.o=o}
     this.drawHero(k,t);
     // CLAP POWER-UP meter by Sprocket
     if(bar&&bar.pwr||(bar&&bar.clear&&k-(BS[bi])<.4)){const x=LCH.x-175,y=LCH.y-330,pw=clamp((KO_BARS[barAt(k)]||{}).voice?(this.vf||0)/3:this.pw||0,0,1);BB.rrect(x-30,y-30,60,240,20,'#1e2228','#fff',4);BB.rrect(x-22,y-22+224*(1-pw),44,224*pw,14,this.deluxe&&bar.tp&&bar.tp.w==='PRESTISSIMO'?BB.lg(y,y+210,['#ff5a5a','#ffb020','#ffe066','#6ee678','#5ac8fa','#b07aff']):BB.lg(y,y+210,['#fff38a','#ffb020']),null,0);BB.text('POWER',x,y+240,28,COL.yellow,{stroke:4});if(pw>=1)BB.text('FULL!',x,y-60,44,'#6ee678',{font:'Rammetto One',stroke:6})}
-    if(k<.6&&BB.q){ctx.save();ctx.globalAlpha=.3*(1-Math.max(0,k)/.6);for(let i=0;i<30;i++){ctx.fillStyle=Math.random()<.5?'#fff':'#7ef0ff';ctx.fillRect(Math.random()*W,Math.random()*H,60+Math.random()*300,3+Math.random()*5)}ctx.restore()}
+    /* v14.5.21: removed opening screen-fuzz (k<.6 && BB.q) that looked like a glitched blast at fight start */
     {const sc=BB.t-(this.lastCl||-9);this.flinch=(since<.22&&last&&!KO_ATK(kd))||sc<.22;if(sc<.35&&!gone){const dir=(this.combo||0)%2?1:-1;jx+=dir*60*Math.exp(-sc*12);sq=Math.max(sq,.22*Math.exp(-sc*10));rot+=dir*.12*Math.exp(-sc*10)}if(hpf<.2&&!gone)rot+=Math.sin(t*3)*.06}
     if(gone&&k<KO_LAUNCH)this.drawTransform(k-KO_BIG,t);
     this.jp={x:jx,y:jy};if(jy>-400&&jx<W+400&&!(k>=KO_BIG+.45)){ctx.save();ctx.translate(jx,jy);ctx.rotate(rot);ctx.scale(1+sq*.6,1-sq);BB.staticJr(0,230,300,{dizzy:hpf<.2||gone,flip:md==='sneak'&&Math.cos((k-KO_T0)/KO_B*Math.PI/2)<0,glitch:.2+.15*Math.sin(t*20),noShadow:gone});this.drawDmg(1-hpf,t,gone);ctx.restore();
-      {const g=this.gag,gv=g?BB.t-g.t:9;if(g&&g.kind==='67'&&gv<g.dur){for(const sd of[-1,1]){const bob=Math.cos(gv*Math.PI/.8+(sd>0?Math.PI:0))*40;ctx.save();ctx.translate(jx+sd*190,jy-60+bob);BB.rrect(-45,-20,90,40,18,'#e2b272','#5a3a1e',5);BB.rrect(-30,-34,60,22,10,'#efe3c8','#5a3a1e',4);ctx.restore()}
+      {const g=this.gag,gv=g?BB.t-g.t:9;if(g&&g.kind==='67'&&gv<g.dur){/* v14.5.21: proper robot arms + fists attached at the shoulders (no floating ovals) */for(const sd of[-1,1]){const bob=Math.cos(gv*Math.PI/.8+(sd>0?Math.PI:0))*36,sx=jx+sd*78,sy=jy+58,hx=jx+sd*175,hy=jy-40+bob,ex=lerp(sx,hx,.5)+sd*18,ey=lerp(sy,hy,.45)+8;
+        ctx.save();ctx.lineCap='round';ctx.strokeStyle='rgba(45,18,6,.95)';ctx.lineWidth=22;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();const Ug=ctx.createLinearGradient(sx,sy,ex,ey);Ug.addColorStop(0,'#e3eaee');Ug.addColorStop(1,'#4d575e');ctx.strokeStyle=Ug;ctx.lineWidth=16;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+        ctx.strokeStyle='rgba(45,18,6,.95)';ctx.lineWidth=20;ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(hx,hy);ctx.stroke();const Fg=ctx.createLinearGradient(ex,ey,hx,hy);Fg.addColorStop(0,'#cfd8dc');Fg.addColorStop(1,'#56616a');ctx.strokeStyle=Fg;ctx.lineWidth=14;ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(hx,hy);ctx.stroke();
+        ctx.translate(hx,hy);ctx.scale(sd,1);BB.rrect(-28,-24,56,48,16,BB.lg(-24,24,['#ecc088','#b88246']),'#5a3a1e',4);BB.rrect(-16,-38,34,18,8,'#efe3c8','#5a3a1e',3);for(let f=0;f<3;f++){ctx.strokeStyle='rgba(90,58,30,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-14+f*14,-8);ctx.lineTo(-14+f*14,16);ctx.stroke()}ctx.restore()}
         BB.text(gv<.8?'6...':'6... 7!',jx-330,jy-60,72,'#ffe066',{font:'Rammetto One',stroke:8})}
         if(g&&g.kind==='mw'&&gv<g.dur)BB.text('hee-hee!',jx-300,jy-60,64,'#ff8adf',{stroke:7});
         if(g&&g.kind==='mw'&&gv>g.dur+1.2)this.gag=null}
-      if(k>KO_T0){ctx.save();ctx.strokeStyle='#bff8ff';ctx.lineWidth=3;for(let i=0;i<5;i++){const a=t*7+i*1.3,r=150+20*Math.sin(t*13+i);ctx.beginPath();ctx.moveTo(jx+Math.cos(a)*r,jy+40+Math.sin(a)*r*.6);ctx.lineTo(jx+Math.cos(a+.2)*(r+25),jy+40+Math.sin(a+.2)*r*.6-12);ctx.stroke()}ctx.restore()}
+      if(k>KO_T0&&last&&!KO_ATK(kd)&&since<1.2){ctx.save();ctx.strokeStyle='#bff8ff';ctx.lineWidth=3;for(let i=0;i<5;i++){const a=t*7+i*1.3,r=150+20*Math.sin(t*13+i);ctx.beginPath();ctx.moveTo(jx+Math.cos(a)*r,jy+40+Math.sin(a)*r*.6);ctx.lineTo(jx+Math.cos(a+.2)*(r+25),jy+40+Math.sin(a+.2)*r*.6-12);ctx.stroke()}ctx.restore()}
       if(bi>=14&&!gone)for(let i=0;i<4;i++){const a=t*5+i*Math.PI/2;BB.text('\u2605',jx+Math.cos(a)*110,jy-160+Math.sin(a)*26,40,'#ffe066',{stroke:4})}}
     post.push(()=>{if(md&&!gone&&!(this.gag&&BB.t-this.gag.t<2)){const lines={sneak:'tip... toe... hee hee',throw:'catch THIS!',freeze:'statues?! no fair!'};lines[md]&&R.bubble(jx,jy-200,lines[md])}
     if(bar&&bar.line&&!gone)R.bubble(jx,jy-200,bar.line)});
@@ -362,7 +370,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
         const fl=1.2,v=(k-(hk-fl))/fl;if(v<0||v>1.5)continue;const i=KO_HITS.findIndex(h=>h[0]===hk&&h[1]===kind),lane=throwLane(kind,KO_HITS.slice(0,i).filter(h=>h[1]==='bomb').length),tire=kind==='junkF';
         const junk=kind==='bomb'?'bomb':tire?'tire':lane==='left'?'sock':lane==='right'?'chicken':i%2?'sock':'chicken';
         const P=tire?throwPath(lane,v,JR.x-40,JR.y+170):throwPath(lane,v,lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(!P)continue;
-        const paint=()=>{ctx.save();ctx.globalAlpha=P.a;ctx.translate(P.x,P.y-(tire?62*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=throwTurn(lane,v,tire?'tire':junk);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}if(tire)this.drawTireRoll(v*16);else this.drawJunk(junk,t);ctx.restore();
+        const paint=()=>{ctx.save();ctx.globalAlpha=P.a;ctx.translate(P.x,P.y-(tire?58*P.sc:0));ctx.scale(P.sc,P.sc);{const TT=throwTurn(lane,v,tire?'tire':junk);ctx.rotate(TT.rot);ctx.scale(TT.sx,1)}if(tire)this.drawTireRoll(v*16);else this.drawJunk(junk,t);ctx.restore();
           if(v<1&&v>.15&&!tire){ctx.save();ctx.globalAlpha=.55*(1-v);ctx.strokeStyle='#fff';ctx.lineWidth=5;const bk=throwPath(lane,Math.max(0,v-.12),lane==='right'||lane==='botR'?JR.x+60:JR.x-90,JR.y-40);if(bk){ctx.beginPath();ctx.moveTo(bk.x,bk.y);ctx.lineTo(P.x,P.y);ctx.stroke()}ctx.restore()}
           if(v>=1&&v<1.55){const w=v-1,al=clamp(1-w/.55,0,1),T=LANE_TG[lane],tx=clamp(T.x,330,W-330),ty=clamp(Math.min(T.y,H-160)-(tire?40:80),SAFE_Y+40,H-120);ctx.save();ctx.globalAlpha=al;
             if(kind==='bomb'){ctx.fillStyle='rgba(255,138,223,.5)';for(let q=0;q<9;q++){const r=60+(q%3)*40;ctx.beginPath();ctx.arc(T.x+Math.cos(q*.7)*r*1.4,T.y+Math.sin(q*.7)*r,44+(q%4)*16,0,7);ctx.fill()}BB.text('POOF! MISSED!',tx,ty,72,'#fff',{font:'Rammetto One',stroke:9,strokeCol:'#3a1040'})}
@@ -489,7 +497,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       R.tile(k,x+4,y0,cw-8,bh,{ns:R.cardNs(k,cw,bh,1),shadow:false,label:true})});
     if(!pre){const px=-w/2+30+u*(w-60);ctx.fillStyle='#ffd84a';ctx.fillRect(px-3,y0-6,6,bh+12)}ctx.restore()}
   drawStandoff(v,t){/* ~23 s face-off: wind + packing peanut, staredown, Jr's silly rhythm smack talk, Sprocket answers, COME AT ME, BRO!, FIGHT! */
-    const SJ=[[3.3,'bb_sj1','Your claps are softer than a marshmallow!'],[5.8,'bb_sj2',"I've heard louder sneezes!"],[8.3,'bb_sj3','My grandma TV has better rhythm!'],[13.3,'bb_sj4','Ti-ti? More like tee-hee!'],[15.8,'bb_sp1','Rhythm Engineers... let\'s show him!'],[20.2,'bb_sj6','COME AT ME, BRO!']];
+    const SJ=[[3.3,'bb_sj1','Your claps are softer than a marshmallow!'],[5.8,'bb_sj2',"I've heard louder sneezes!"],[8.3,'bb_sj3','My grandma TV has better rhythm!'],[10.8,'bb_sj8','Even my static has better timing than that!'],[13.3,'bb_sj4','Ti-ti? More like tee-hee!'],[15.8,'bb_sp1','Rhythm Engineers... let\'s show him!'],[20.2,'bb_sj6','COME AT ME, BRO!']];
     for(const [a,id] of SJ)if(v>=a&&!this['so'+id]){this['so'+id]=1;BB.say(id,{overlap:true})}
     const fx=v<1.5?lerp(W+300,JR.x,ease.out?ease.out(v/1.5):v/1.5):JR.x,hop=v<1.5?Math.abs(Math.sin(v*8))*50:Math.abs(Math.sin(t*3))*6;
     ctx.save();ctx.strokeStyle='rgba(238,228,204,.35)';ctx.lineWidth=4;for(let i=0;i<9;i++){const y=420+i*60,x=((t*900+i*377)%(W+600))-300;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+160,y-6);ctx.stroke()}ctx.restore();
@@ -621,7 +629,7 @@ class DeliveryRoom{constructor(o={}){this.o=o}
   /* v14.4 centred CLAP METER: the 3 POWER canisters fill from claps in the window; fill picks the hit size */
   drawMeter(k,t){if(this.state!=='end'||k<KO_T0||k>KO_BIG)return;const bi=barAt(k),b=KO_BARS[bi]||{};
     if(b.cw){const f=this.cf||0,X0=W/2-140,Y0=420,lv=dynLevel(f);this.drawCans(X0,Y0,f,k,t,0);
-      const s0=BS[bi-(b.cw-1)],left=Math.max(0,8-Math.floor((k-s0)/(BL[bi]/4)));for(let q=0;q<8;q++)BB.rrect(W/2-236+q*60,Y0+300,44,22,10,q<8-left?'#2d4744':'#6ee678','#fff',3);
+      const s0=BS[bi-(b.cw-1)],left=Math.max(0,12-Math.floor((k-s0)/(BL[bi]/4)));for(let q=0;q<12;q++)BB.rrect(W/2-330+q*55,Y0+300,44,22,10,q<12-left?'#2d4744':'#6ee678','#fff',3);
       ['p  BLAST','mf  BIG BLAST','f  MEGA BLAST'].forEach((w,q)=>{const x=W/2+(q-1)*300;BB.rrect(x-135,Y0+340,270,56,18,q===lv?['#ffe066','#ff8adf','#7ef0ff'][q]:'rgba(20,30,40,.75)','#fff',3);BB.text(w,x,Y0+369,34,q===lv?'#1a1a1a':'#9fb0b8',{stroke:0,maxW:250})});}
     if(b.rush&&this.rushN)BB.text(this.rushN+(this.rushN===1?' PUNCH!':' PUNCHES!'),W/2,660,Math.min(130,70+this.rushN*2),this.rushN>30?'#ff5a5a':this.rushN>15?'#ffb020':'#ffe066',{font:'Rammetto One',stroke:10,strokeCol:'#1a1a1a'})}
   drawPowerHud(k,t){if(this.state!=='end'||k<KO_T0||k>KO_BIG+1)return;const b=KO_BARS[barAt(k)]||{};if(b.cw||b.rush||b.voice||b.chant||b.chantIntro||b.phase)return;
@@ -730,13 +738,15 @@ class DeliveryRoom{constructor(o={}){this.o=o}
       B();ctx.arc(-78,-10,4.5,0,7);ctx.fillStyle='#14121c';ctx.fill();S(-79,-11.5,1.6,1.6,0,1);
       ctx.strokeStyle='rgba(45,18,6,.8)';ctx.lineWidth=3;for(const d of[-10,10]){B();ctx.moveTo(-68+d,-14);ctx.lineTo(-76+d,-6);ctx.stroke()}}
     else this.drawTireRoll(t*8)}
-  drawTireRoll(ph){/* tread-on view of a tire rolling at the viewer, rubber rendered like the robots; ph scrolls the tread */const B=()=>ctx.beginPath(),V=(p,x,y,w,h,c,o)=>this.junkVol(p,x,y,w,h,c,o);
-    ctx.save();ctx.fillStyle='rgba(0,0,0,.3)';B();ctx.ellipse(6,66,56,11,0,0,7);ctx.fill();ctx.restore();
-    V(()=>{B();ctx.ellipse(-14,0,30,62,0,0,7)},-44,-62,60,124,['#4d535c','#2e3239','#15171b'],{wear:4,wc:'150,140,120'});
-    B();ctx.ellipse(-16,0,13,30,0,0,7);const hub=ctx.createLinearGradient(0,-30,0,30);hub.addColorStop(0,'#e3eaee');hub.addColorStop(.5,'#8d9aa3');hub.addColorStop(1,'#4d575e');ctx.fillStyle=hub;ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='rgba(45,18,6,.9)';ctx.stroke();
-    V(()=>{B();ctx.roundRect(-14,-62,56,124,26)},-14,-62,56,124,['#3f444c','#25282e','#111316'],{wear:2,wc:'170,160,140',extra:()=>{
-      for(let q=-3;q<6;q++){const y=-62+((q*26+ph*26)%(26*8)+26*8)%(26*8)-26;ctx.lineCap='round';ctx.strokeStyle='#0b0c0e';ctx.lineWidth=8;B();ctx.moveTo(-10,y);ctx.lineTo(14,y+10);ctx.lineTo(38,y);ctx.stroke();ctx.strokeStyle='rgba(190,200,210,.35)';ctx.lineWidth=2;B();ctx.moveTo(-10,y-4);ctx.lineTo(14,y+6);ctx.lineTo(38,y-4);ctx.stroke()}}});
-    this.junkSpec(0,-30,5,26,0,.35)}
+  drawTireRoll(ph){/* v14.5.21: clean circular tire face rolling toward the viewer — one solid body, tread rotates in place, nothing hanging off the side. ph = roll angle. */const B=()=>ctx.beginPath(),V=(p,x,y,w,h,c,o)=>this.junkVol(p,x,y,w,h,c,o);
+    ctx.save();ctx.fillStyle='rgba(0,0,0,.3)';B();ctx.ellipse(0,58,48,10,0,0,7);ctx.fill();
+    ctx.rotate(ph*.35);
+    V(()=>{B();ctx.arc(0,0,58,0,7)},-58,-58,116,116,['#4d535c','#2e3239','#15171b'],{wear:5,wc:'150,140,120'});
+    ctx.save();ctx.lineCap='round';for(let q=0;q<12;q++){const a=q*Math.PI/6;ctx.strokeStyle='#0b0c0e';ctx.lineWidth=7;B();ctx.moveTo(Math.cos(a)*44,Math.sin(a)*44);ctx.lineTo(Math.cos(a)*57,Math.sin(a)*57);ctx.stroke();ctx.strokeStyle='rgba(190,200,210,.35)';ctx.lineWidth=2;B();ctx.moveTo(Math.cos(a)*46,Math.sin(a)*46);ctx.lineTo(Math.cos(a)*54,Math.sin(a)*54);ctx.stroke()}ctx.restore();
+    ctx.strokeStyle='rgba(45,18,6,.9)';ctx.lineWidth=5;B();ctx.arc(0,0,38,0,7);ctx.stroke();
+    B();ctx.arc(0,0,22,0,7);const hub=ctx.createRadialGradient(-6,-8,1,0,0,22);hub.addColorStop(0,'#e3eaee');hub.addColorStop(.5,'#8d9aa3');hub.addColorStop(1,'#4d575e');ctx.fillStyle=hub;ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='rgba(45,18,6,.9)';ctx.stroke();
+    for(let q=0;q<5;q++){const a=q*1.2566;ctx.fillStyle='#3a4248';B();ctx.arc(Math.cos(a)*12,Math.sin(a)*12,3.5,0,7);ctx.fill()}
+    this.junkSpec(-8,-10,6,4,-.5,.8);ctx.restore()}
   drawBlastRing(x,y,R,u){/* v14.5.8/19: blast visual sized by canister fill (BLAST_R). Visual only: damage + hitbox never change.
      v14.5.19 grander layered explosion (shockwaves + sparks + core) — stage stays put; no camera zoom payoff. */
     if(u<0||u>1.35)return;const uu=Math.min(u,1),e=1-Math.pow(1-uu,3),r=R*(.28+.72*e),fade=1-Math.max(0,(u-.85)/.5);ctx.save();ctx.translate(x,y);

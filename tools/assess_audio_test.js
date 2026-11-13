@@ -1,0 +1,24 @@
+// v14.5.18: assessment audio-first + readable choice letters
+const fs=require('fs');
+const src=fs.readFileSync(__dirname+'/../js/rooms/assess.js','utf8');
+const ok=(c,m)=>{if(!c){console.error('FAIL',m);process.exitCode=1}else console.log('ok',m)};
+ok(!/state==='hear'[\s\S]{0,180}R\.pills\(W\/2,\d+,Q\.seq/.test(src),'hear state does not draw Q.seq target pills');
+ok(/Q\.choices\.forEach/.test(src)&&/ash/.test(src),'listen UI keeps answer options visible');
+ok(/Q\.choices\.forEach\(\(c,i\)=>\{[\s\S]*?R\.pills\(x\+bw\/2,600,c\.lab/.test(src),'all choice option rhythms drawn');
+ok(/drawGradedHear\(\)\{[\s\S]*?lastOk[\s\S]*?R\.pills\(W\/2,\d+,Q\.seq/.test(src),'target Q.seq only after correct grade');
+ok(/if\(this\.lastOk\)this\.drawGradedHear\(\)/.test(src),'graded screen calls drawGradedHear on correct');
+ok(!/BB\.text\(c\.lab,x\+bw\/2,500,c\.lab\.length>12\?32:44,'#19191f'/.test(src),'choice labels no longer near-black');
+ok(/BB\.text\(c\.lab[\s\S]{0,80}'#ffe9a0'/.test(src),'choice labels light gold');
+ok(!/c\.sub\)BB\.text\(c\.sub/.test(src),'choice spoiler subtext is no longer drawn');
+ok(/W\/2,350,40/.test(src),'question prompt sits lower, closer to the choices');
+ok(!/BB\.text\('Answers stay up while you listen/.test(src),'removed no-peeking developer line');
+ok(!/grade window/.test(src)&&/Clap with the lights/.test(src),'grade-window ms debug replaced with kid-friendly cue');
+ok(/PASS=6,TOTAL=8/.test(src)&&/BB\.assessLog\.add/.test(src),'pass threshold + logging unchanged');
+ok(/playHear\(\)\{const seq=this\.Q\.seq/.test(src),'playHear still uses seq audio');
+ok(/onClick:\(\)=>\{this\.state='hear';this\.st=BB\.t;this\.playHear\(\)\}/.test(src),'REPLAY available after listen');
+ok(/pick\(choice\)\{if\(this\.state!=='q'&&this\.state!=='hear'\)return/.test(src),'pick allowed in hear and q');
+const hearFn=src.slice(src.indexOf('drawHearPick(){'),src.indexOf('drawGradedHear(){'));
+const hearCode=hearFn.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/.*$/gm,'');
+ok(!/Q\.seq/.test(hearCode),'drawHearPick code never references Q.seq');
+ok(/c\.lab/.test(hearFn),'drawHearPick still draws each choice lab');
+if(!process.exitCode)console.log('assess audio-first tests OK');
