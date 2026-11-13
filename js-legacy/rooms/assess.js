@@ -571,9 +571,10 @@
       }
     }
     drawBanner() {
-      BB.panel(124, 40, 1480, 110, 28);
-      BB.text("CHECKPOINT  " + Math.min(this.qi + 1, TOTAL) + " / " + TOTAL, W / 2, 78, 36, COL.yellow, { font: "Rammetto One", stroke: 5 });
-      BB.text("Score  " + this.score + "  \xB7  need " + PASS + " of " + TOTAL + " to unlock Static Jr.", W / 2, 118, 28, "#cfe8e2", { stroke: 4 });
+      const bw = 1480, bh = 110, bx = (W - bw) / 2, by = 40, mid = by + 16 + (bh - 32) / 2;
+      BB.panel(bx, by, bw, bh, 28);
+      BB.text("CHECKPOINT  " + Math.min(this.qi + 1, TOTAL) + " / " + TOTAL, W / 2, mid - 18, 36, COL.yellow, { font: "Rammetto One", stroke: 5 });
+      BB.text("Score  " + this.score + "  \xB7  need " + PASS + " of " + TOTAL + " to unlock Static Jr.", W / 2, mid + 22, 28, "#cfe8e2", { stroke: 4 });
     }
     drawProgress() {
       for (let i = 0; i < TOTAL; i++) {
@@ -661,7 +662,7 @@
       if (this.Q.kind === "follow" || this.state === "follow") this.drawFollow();
       else if (this.Q.kind === "choice") this.drawChoice();
       else if (this.Q.kind === "hearPick") this.drawHearPick();
-      BB.button(W - 300, 24, 260, 70, "SKIP Q", { size: 28, id: "asskip", onClick: () => this.grade(false, "skip") });
+      BB.button(W / 2 - 130, 974, 260, 70, "SKIP Q", { size: 28, id: "asskip", onClick: () => this.grade(false, "skip") });
       BB.captionBox();
     }
   }

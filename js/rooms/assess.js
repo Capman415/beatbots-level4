@@ -220,8 +220,11 @@ class AssessRoom{constructor(o={}){this.o=o}
     if(this.state==='hear'&&BB.t>(this.hearEnd||0)){this.state='q';this.st=BB.t}
     if(this.fp)this.fp.update(dt);
     if(BB.debug&&(this.state==='q'||this.state==='follow'||this.state==='hear')&&BB.t-this.st>1.2&&!this._auto){this._auto=1;setTimeout(()=>{this._auto=0;if(BB.scene===this)this.override()},400)}}
-  drawBanner(){BB.panel(124,40,1480,110,28);BB.text('CHECKPOINT  '+(Math.min(this.qi+1,TOTAL))+' / '+TOTAL,W/2,78,36,COL.yellow,{font:'Rammetto One',stroke:5});
-    BB.text('Score  '+this.score+'  ·  need '+PASS+' of '+TOTAL+' to unlock Static Jr.',W/2,118,28,'#cfe8e2',{stroke:4})}
+  drawBanner(){/* v14.5.28: bar is centered on the 1920×1080 stage; title + score are centered in the well */
+    const bw=1480,bh=110,bx=(W-bw)/2,by=40,mid=by+16+(bh-32)/2;
+    BB.panel(bx,by,bw,bh,28);
+    BB.text('CHECKPOINT  '+(Math.min(this.qi+1,TOTAL))+' / '+TOTAL,W/2,mid-18,36,COL.yellow,{font:'Rammetto One',stroke:5});
+    BB.text('Score  '+this.score+'  ·  need '+PASS+' of '+TOTAL+' to unlock Static Jr.',W/2,mid+22,28,'#cfe8e2',{stroke:4})}
   drawProgress(){for(let i=0;i<TOTAL;i++){const x=260+i*175,y=155,done=i<this.qi,cur=i===this.qi&&this.state!=='end'&&this.state!=='intro';
       BB.rrect(x,y,150,18,9,done?'#6ee678':cur?'#ffe066':'#2a3a38','#fff',2)}}
   drawPrompt(txt){/* sit the question above the taller notation cards (replay lives between them) */BB.text(txt,W/2,260,40,'#fff',{font:'Rammetto One',stroke:7,maxW:1700})}
@@ -267,7 +270,8 @@ class AssessRoom{constructor(o={}){this.o=o}
     if(this.Q.kind==='follow'||this.state==='follow')this.drawFollow();
     else if(this.Q.kind==='choice')this.drawChoice();
     else if(this.Q.kind==='hearPick')this.drawHearPick();
-    BB.button(W-300,24,260,70,'SKIP Q',{size:28,id:'asskip',onClick:()=>this.grade(false,'skip')});
+    /* v14.5.28: Skip sits at the bottom center, clear of the cards, replay, and Sprocket */
+    BB.button(W/2-130,974,260,70,'SKIP Q',{size:28,id:'asskip',onClick:()=>this.grade(false,'skip')});
     BB.captionBox()}}
 BB.AssessRoom=AssessRoom;BB._assessQS=buildAssess(1);BB._assessPASS=PASS;BB._assessTOTAL=TOTAL;BB.FollowPulse=FollowPulse;
 /* open Delivery through the gate unless already unlocked this session or ?assess=0 */

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v14.5.27: recut Steady Bots title logo (clean matte, no baked shadow), moved down, code drop shadow
+// v14.5.28: recut Steady Bots title logo (clean matte, no baked shadow), moved down, code drop shadow
 'use strict';
 const fs=require('fs'),path=require('path'),{execFileSync}=require('child_process');
 const ROOT=path.join(__dirname,'..');
@@ -8,10 +8,10 @@ const shell=read('js/shell.js'),eng=read('js/engine.js'),art=read('js/art.js');
 let fails=0;const ok=(c,m)=>{if(!c){fails++;console.error('FAIL',m)}else console.log('ok',m)};
 
 const ver=JSON.parse(read('version.json'));
-ok(ver.version==='v14.5.27'&&ver.build==='1794301527','version.json is v14.5.27 / 1794301527');
-ok(/BB\.VERSION='v14.5.27'/.test(eng),'BB.VERSION synced');
-ok((read('index.html').match(/1794301527/g)||[]).length>=2,'index.html build synced');
-ok(/bb-1794301527/.test(read('sw.js')),'sw cache bumped so devices fetch the new logo');
+ok(ver.version==='v14.5.28'&&ver.build==='1794301528','version.json is v14.5.28 / 1794301528');
+ok(/BB\.VERSION='v14.5.28'/.test(eng),'BB.VERSION synced');
+ok((read('index.html').match(/1794301528/g)||[]).length>=2,'index.html build synced');
+ok(/bb-1794301528/.test(read('sw.js')),'sw cache bumped so devices fetch the new logo');
 ok(/assets\/v2\/logo\.webp/.test(read('sw.js'))&&/assets\/v2\/logo\.png/.test(read('sw.js')),'sw.js still precaches logo.webp and logo.png');
 
 ok(/\['logo','webp'\]/.test(art),'title logo loads the webp asset (png fallback on error)');
@@ -150,5 +150,5 @@ try{
   ok(/row\('Download assess summary','asdls',\(\)=>BB\.assessLog\.downloadSummary\(\)\)/.test(teach),'Data row downloads the assess summary');
 }
 
-if(fails){console.error(fails+' v14.5.27 test(s) failed');process.exit(1)}
-console.log('v14.5.27 tests OK');
+if(fails){console.error(fails+' v14.5.28 test(s) failed');process.exit(1)}
+console.log('v14.5.28 tests OK');
